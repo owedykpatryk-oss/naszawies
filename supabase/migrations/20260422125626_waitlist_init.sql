@@ -1,0 +1,1 @@
+-- Pusty migrator utworzony przez `supabase migration new`; faktyczna tabela waitlist: migracja 20250422130000.

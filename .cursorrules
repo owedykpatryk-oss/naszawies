@@ -1,0 +1,124 @@
+# .cursorrules — naszawies.pl
+
+Projekt: naszawies.pl — bezpłatna platforma cyfrowa dla polskich sołtysów i mieszkańców wsi.
+
+**Język:** w tym repozytorium obowiązuje **polszczyzna** we wszystkim, co sami piszemy (interfejs, komunikaty, komentarze, opisy commitów, treści pomocnicze). Nie dotyczy to cytowanych fragmentów z dokumentacji zewnętrznej ani nazw narzuconych przez biblioteki (np. `children`, `metadata`).
+
+Dokumentacja źródłowa specyfikacji: folder nadrzędny `Cloude Docs/naszawies-package/` (PROJECT.md, ROADMAP.md, database/, docs/).
+
+## Stack (ZAWSZE ten sam)
+- Next.js 14 App Router + TypeScript strict
+- Supabase (PostgreSQL + Auth + Storage + Realtime)
+- Tailwind CSS + shadcn/ui
+- React Hook Form + Zod (walidacja)
+- TanStack Query (server state)
+- lucide-react (ikony)
+- motion (animacje)
+- Vercel (hosting)
+
+## Zasada nr 1: Przeczytaj dokumentację zanim napiszesz kod
+Przed jakimkolwiek zadaniem przeczytaj:
+1. `Cloude Docs/naszawies-package/README.md`
+2. `Cloude Docs/naszawies-package/PROJECT.md`
+3. `Cloude Docs/naszawies-package/ROADMAP.md` — ustal w jakiej fazie jesteśmy
+4. `Cloude Docs/naszawies-package/docs/ROLES.md` — uprawnienia
+5. `Cloude Docs/naszawies-package/database/SCHEMA.md` — schemat bazy
+6. Konkretny plik dla zadania (np. `docs/FEATURES.md`)
+
+## Zasada nr 2: Polski język (cały projekt — tylko to repo)
+- Interfejs użytkownika: wyłącznie polski z diakrytykami (ą, ć, ę, ł, ń, ó, ś, ź, ż). Unikaj angielskich szablonów typu „click here”.
+- Komunikaty błędów i sukcesu (API, formularze, toast): po polsku, konkretnie, z sugestią co zrobić dalej.
+- Komentarze w kodzie, JSDoc, treść commitów i PR: po polsku.
+- **Nazewnictwo w naszym kodzie:** preferuj polskie nazwy dla logiki domenowej (funkcje, zmienne, komponenty), np. `pobierzListeOczekujacych` zamiast `getWaitlist` — o ile pozostaje czytelne i spójne z resztą pliku.
+- **Wyjątki bez tłumaczenia na siłę:** (1) API i typy narzucone przez Next.js, React, Supabase, Zod, npm; (2) nazwy kolumn i tabel w bazie — jak w `schema.sql` (`full_name`, `waitlist` itd.); (3) importy z paczek zewnętrznych.
+
+## Zasada nr 3: Bezpieczeństwo przede wszystkim
+- RLS włączone na każdej tabeli Supabase
+- Walidacja Zod na każdym formularzu (frontend + backend)
+- Nie ufaj danym wejściowym od użytkownika — zawsze waliduj
+- Service role key NIGDY nie trafia na klienta
+- HTTPS wszędzie (Vercel robi to automatycznie)
+- Rate limiting dla publicznych endpointów
+
+## Zasada nr 4: Mobile-first
+- Większość sołtysów używa telefonów
+- Min font size: 16px
+- Touch targets min 44x44px
+- Testuj na 320px, 375px, 768px
+- PWA-ready od początku
+
+## Zasada nr 5: Performance
+- Server Components default, Client Components tylko gdy interaktywne
+- Image optimization (next/image)
+- Loading states dla wszystkiego
+- Suspense boundaries
+- Lazy load dla ciężkich komponentów
+- Analytics: Plausible (nie Google Analytics)
+
+## Zasada nr 6: Dostępność
+- Semantyczny HTML (article, nav, header, main, footer)
+- aria-label gdy button ma tylko ikonę
+- alt text na wszystkich obrazkach
+- Kontrast WCAG AA minimum
+- Nawigacja klawiaturą
+
+## Zasada nr 7: Brand consistency
+- Paleta: zielony (#2d5a2d), złoty (#d4a017), krem (#f5f1e8)
+- Font display: Fraunces (serif)
+- Font body: Inter (sans-serif)
+- Ton: ciepły, prosty, z szacunkiem do tradycji
+- Bez anglicyzmów gdy się da
+
+## Zasada nr 8: Role i RLS
+Role: gość, mieszkaniec, soltys, wspoladmin, reprezentant_podmiotu, admin_platformy
+- Każde query sprawdza rolę
+- Helper functions: is_village_soltys(), is_village_resident(), is_platform_admin()
+- Tylko JEDEN sołtys per wieś aktywny
+
+## Zasada nr 9: Pisz w małych krokach
+- Jeden feature = jeden PR
+- Każdy commit: pojedyncza zmiana
+- Branch per feature (feature/rezerwacja-swietlicy)
+- Po każdym feature: test manualny + update dokumentacji
+
+## Zasada nr 10: Nie buduj Fali N+1 przed dostarczeniem Fali N
+Fala 0 → Fala 1 → Fala 2. Nie skacz. Ignoruj pomysły z późniejszych fal.
+
+## Nazwy tabel (PostgreSQL snake_case)
+- villages, users, user_village_roles, user_follows
+- posts, comments, halls, hall_inventory, hall_bookings
+- entities, entity_representatives, issues, pois
+- photos, photo_albums, notifications, moderation_reports, audit_log, waitlist
+
+## Nazwy URL (polskie)
+- /wies/[wojewodztwo]/[powiat]/[gmina]/[slug]
+- /rejestracja, /logowanie, /reset-hasla
+- /panel/soltys, /panel/mieszkaniec, /panel/admin
+- /polityka-prywatnosci, /regulamin, /kontakt, /o-nas
+
+## Anti-patterns (NIE rób tego)
+- Reklamy, śledzenie użytkowników, sprzedaż danych
+- Algorytm feedu (Facebook-style)
+- Gamifikacja (odznaki, poziomy, punkty)
+- Glass morphism / fioletowe gradienty
+- Zbyt wiele fontów (max 2)
+- localStorage dla wrażliwych danych
+- console.log w produkcji
+- Skipping RLS policies
+- Kombinowane boolean flags zamiast enumów
+
+## Checklist przed commitem
+- [ ] `npm run typecheck` przechodzi
+- [ ] `npm run lint` przechodzi
+- [ ] Testy przechodzą (jeśli są)
+- [ ] RLS policies działają
+- [ ] Tekst polski z diakrytykami
+- [ ] Mobile tested
+- [ ] Loading + error states
+
+## Komunikacja z właścicielem (nietechniczny, polski)
+- Wyjaśniaj prostym językiem
+- Unikaj żargonu
+- Pytaj przed dużymi decyzjami
+- Pokazuj rezultat, nie kod (chyba że prosi)
+- Odpowiadaj po polsku
