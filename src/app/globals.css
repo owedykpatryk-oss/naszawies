@@ -43,3 +43,33 @@
   text-decoration: underline;
   font-weight: 600;
 }
+
+/* Proza na stronach prawnych (bez @tailwindcss/typography) */
+.prose-custom {
+  max-width: 42rem;
+  margin-left: auto;
+  margin-right: auto;
+  line-height: 1.65;
+  color: #3d3d3d;
+}
+
+.prose-custom h2 {
+  margin-top: 2rem;
+  margin-bottom: 0.75rem;
+  font-family: var(--font-fraunces), ui-serif, Georgia, serif;
+}
+
+.prose-custom p,
+.prose-custom li {
+  margin-bottom: 0.75rem;
+}
+
+.prose-custom ul {
+  list-style: disc;
+  padding-left: 1.25rem;
+}
+
+.prose-custom a {
+  color: #2d5a2d;
+  text-decoration: underline;
+}

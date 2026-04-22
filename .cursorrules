@@ -84,6 +84,12 @@ Role: gość, mieszkaniec, soltys, wspoladmin, reprezentant_podmiotu, admin_plat
 ## Zasada nr 10: Nie buduj Fali N+1 przed dostarczeniem Fali N
 Fala 0 → Fala 1 → Fala 2. Nie skacz. Ignoruj pomysły z późniejszych fal.
 
+## Wielodostępność (wioska = tenant)
+- Jedna baza Supabase; **izolacja przez `village_id`** (nie osobny cluster na wieś).
+- Ogłoszenia, zebrań, świetlica, zgłoszenia — dane **spółki wsi**; RLS: `is_village_resident`, `is_village_soltys`.
+- **Targ lokalny**: posty `posts.type = 'targ_lokalny'` + `approved` — **jedyny** typ posta czytelny dla anonima globalnie (aplikacja i tak filtruje `village_id` na stronie wsi). Reszta typów tylko dla społeczności wsi.
+- Szczegóły: `docs/WIELODOSTEPNOSC_WIESI.md`.
+
 ## Nazwy tabel (PostgreSQL snake_case)
 - villages, users, user_village_roles, user_follows
 - posts, comments, halls, hall_inventory, hall_bookings

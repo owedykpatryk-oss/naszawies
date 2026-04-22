@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from "next";
 import { Fraunces, Inter } from "next/font/google";
 import Script from "next/script";
+import { BanerCiasteczek } from "@/components/baner-ciasteczek";
 import "../styles/landing.css";
 import "./globals.css";
 
@@ -81,6 +82,7 @@ export default function RootLayout({
           />
         ) : null}
         {children}
+        <BanerCiasteczek />
       </body>
     </html>
   );

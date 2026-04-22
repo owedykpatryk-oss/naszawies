@@ -8,13 +8,18 @@
     "start": "next start",
     "lint": "next lint",
     "typecheck": "tsc --noEmit",
-    "sync-landing": "node scripts/build-landing-assets.mjs"
+    "sync-landing": "node scripts/build-landing-assets.mjs",
+    "generuj-migracje-schema": "node scripts/generuj-migracje-schema-z-dokumentow.mjs",
+    "import-teryt": "node scripts/import-teryt.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.104.0",
+    "fast-xml-parser": "^5.7.1",
     "next": "14.2.28",
     "react": "^18",
     "react-dom": "^18",
+    "resend": "^6.12.2",
+    "slugify": "^1.6.9",
     "zod": "^4.3.6"
   },
   "devDependencies": {

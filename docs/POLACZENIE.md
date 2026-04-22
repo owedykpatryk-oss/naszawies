@@ -20,7 +20,12 @@ Ustawione przy tworzeniu projektu w CLI — **nie jest w repozytorium**. Jeśli 
 
 ### Pełny schemat z dokumentacji
 
-Kolejne tabele: uruchom SQL z `Cloude Docs/naszawies-package/database/schema.sql` i `rls-policies.sql` w **SQL Editor** (albo dodaj migracje i `db push`), gdy będziesz gotowy na MVP — obecna migracja to tylko **waitlist** na Fazę 0.
+W repozytorium jest migracja `supabase/migrations/20260423140000_schemat_i_rls_z_dokumentacji.sql` (schemat + RLS z pakietu dokumentów). Po `db push` masz m.in. **`villages`**, **`users`**, role wsi itd. Skrypt **`npm run import-teryt`** (pliki `TERC.xml` + `SIMC.xml` z GUS) wypełnia `villages` — wymaga **`SUPABASE_SERVICE_ROLE_KEY`** (lokalnie w `.env.local`, nigdy w repo).
+
+### Resend i powiadomienia
+
+- **`RESEND_API_KEY`**, **`RESEND_ZE_STRONY`** — wysyłka z `/api/kontakt`.
+- Opcjonalnie **`WAITLIST_POWIADOMIENIA_EMAIL`** — kopia e-maila przy nowym zapisie na listę (jeśli puste, powiadomienie jest pomijane).
 
 ---
 
@@ -43,22 +48,60 @@ git push -u origin master
 
 W `.env.local` / Vercel dodaj `NEXT_PUBLIC_PLAUSIBLE_DOMAIN=naszawies.pl` (bez `https://`). Wtedy w `layout.tsx` ładuje się skrypt Plausible. Konto załóż na [plausible.io](https://plausible.io).
 
-## Vercel — do zrobienia u Ciebie
+## Vercel + domena (żeby strona była online)
 
-CLI Vercel nie miał zapisanych poświadczeń.
+**Kolejność:** projekt na Vercel → zmienne środowiskowe → deploy → domeny w Vercel → **DNS u rejestratora** (u Ciebie: GoDaddy / `domaincontrol.com`). Supabase jest osobno: tylko **klucze w Vercel** + **URL-e w panelu Auth** (patrz punkt 6).
 
-1. `vercel login`
-2. W katalogu `naszawies`: `vercel link` (wybierz konto i utwórz projekt **naszawies** lub podłącz istniejący).
-3. W panelu Vercel → **Settings → Environment Variables** dodaj dla **Production** (i ewentualnie Preview):
+### 1. Vercel — CLI
 
-   - `NEXT_PUBLIC_SUPABASE_URL` = `https://qxvdjghfsrrxrivfahmn.supabase.co`
-   - `NEXT_PUBLIC_SUPABASE_ANON_KEY` = ten sam anon key co w `.env.local`
+```bash
+cd naszawies
+npx vercel login
+npx vercel link
+```
 
-4. Deploy: `vercel --prod` albo przez podpięcie repozytorium GitHub (automatyczne buildy przy pushu).
+### 2. Zmienne w Vercel (Production)
 
-### Domena naszawies.pl
+**Project → Settings → Environment Variables:**
 
-W Vercel → **Domains** dodaj `naszawies.pl` i `www.naszawies.pl`, ustaw rekordy DNS według kreatora Vercel (u rejestratora NASK).
+| Nazwa | Wartość |
+|--------|---------|
+| `NEXT_PUBLIC_SUPABASE_URL` | `https://qxvdjghfsrrxrivfahmn.supabase.co` |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Supabase → **Settings → API** → `anon` |
+| `RESEND_API_KEY`, `RESEND_ZE_STRONY` | z Resend (kontakt / opcjonalne maile waitlist) |
+| `KONTAKT_EMAIL_DOCELOWY`, `WAITLIST_POWIADOMIENIA_EMAIL` | opcjonalnie |
+| `NEXT_PUBLIC_PLAUSIBLE_DOMAIN` | opcjonalnie: `naszawies.pl` |
+
+`SUPABASE_SERVICE_ROLE_KEY` **nie** dawaj do zmiennych `NEXT_PUBLIC_*` (tylko backend / skrypty).
+
+### 3. Deploy
+
+`npx vercel --prod` albo podłączenie repozytorium GitHub w panelu Vercel (build przy każdym pushu).
+
+### 4. Domeny w Vercel
+
+**Settings → Domains:** dodaj `naszawies.pl` i `www.naszawies.pl`. Skopiuj z ekranu Vercel **dokładne** rekordy DNS (to obowiązuje przy wpisywaniu u rejestratora).
+
+### 5. DNS w GoDaddy (masz teraz Website Builder na `@`)
+
+Na panelu DNS widać rekord **A** dla **`@`** = **„WebsiteBuilder Site”** — żeby apex wskazywał na Vercel, **edytuj lub usuń** ten wpis i ustaw rekord **A** dla `@` na adres IP podany przez Vercel (w dokumentacji Vercel często podawany jest **`76.76.21.21`** dla domeny głównej; jeśli w Twoim projekcie Vercel pokazuje inny — użyj **ich** wartości).
+
+**`www`:** zamiast CNAME `www` → `naszawies.pl` ustaw zwykle CNAME **`www` → `cname.vercel-dns.com.`** (dokładna wartość z listy Vercel przy domenie).
+
+Rekordy **NS** (`ns07` / `ns08.domaincontrol.com`) zostaw bez zmian.
+
+### 6. Supabase — tylko URL (strona stoi na Vercel)
+
+Panel: **Authentication → URL Configuration** ([bezpośredni projekt](https://supabase.com/dashboard/project/qxvdjghfsrrxrivfahmn/auth/url-configuration)):
+
+- **Site URL:** `https://naszawies.pl` (lub `https://www.naszawies.pl`, jeśli to ma być główny adres)
+- **Redirect URLs:** np. `https://naszawies.pl/**`, `https://www.naszawies.pl/**`, `http://localhost:3000/**`
+
+Dzięki temu późniejsze logowanie (OAuth / link e-mail) nie będzie wracało na zły host.
+
+### 7. Test
+
+Działa adres `*.vercel.app` → potem `https://naszawies.pl` po propagacji DNS; w Vercel przy domenie status **Valid**.
 
 ---
 
@@ -85,3 +128,5 @@ Jeśli klucz **anon** lub **service_role** trafił do logów czatu / screenów �
 | Nowa migracja | `npx supabase@2.90.0 migration new nazwa` |
 | Wypchnięcie migracji na Supabase | `npx supabase@2.90.0 db push` |
 | Build lokalny | `npm run build` |
+| Import TERYT do `villages` | `npm run import-teryt -- --dry-run ścieżka/TERC.xml ścieżka/SIMC.xml` (bez zapisu) lub bez `--dry-run` + `SUPABASE_SERVICE_ROLE_KEY` |
+| Złożenie migracji schematu z dokumentów | `npm run generuj-migracje-schema` |

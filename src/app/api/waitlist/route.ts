@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
+import { wyslijPrzezResend } from "@/lib/email/wyslij-przez-resend";
+import { escapeHtml } from "@/lib/tekst/escape-html";
 import { createPublicSupabaseClient } from "@/lib/supabase/public-client";
 
 const trescZapytania = z
@@ -96,6 +98,22 @@ export async function POST(request: Request) {
       { error: "Nie udało się zapisać. Spróbuj ponownie za chwilę." },
       { status: 500 }
     );
+  }
+
+  const powiadomienieDo = process.env.WAITLIST_POWIADOMIENIA_EMAIL;
+  if (powiadomienieDo) {
+    void wyslijPrzezResend({
+      do: powiadomienieDo,
+      temat: `[naszawies] Nowy zapis na listę: ${dane.email}`,
+      trescHtml: `<p><strong>Rola:</strong> ${dane.role}</p>
+        <p><strong>Imię:</strong> ${escapeHtml(dane.fullName)}</p>
+        <p><strong>Wieś:</strong> ${escapeHtml(dane.villageName)}</p>
+        <p><strong>Gmina:</strong> ${escapeHtml(dane.commune)}</p>
+        <p><strong>IP:</strong> ${escapeHtml(adresIp ?? "—")}</p>`,
+      odpowiedzDo: dane.email,
+    }).then((w) => {
+      if (!w.ok) console.warn("[waitlist] Resend:", w.blad);
+    });
   }
 
   return NextResponse.json({ ok: true });

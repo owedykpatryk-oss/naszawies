@@ -1,11 +1,14 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { KontaktFormularz } from "./kontakt-formularz";
 
 export const metadata: Metadata = {
   title: "Kontakt",
+  description:
+    "Adresy e-mail naszawies.pl oraz formularz kontaktowy. RODO, moderacja, DSA.",
 };
 
-export default function ContactPage() {
+export default function KontaktPage() {
   return (
     <main className="mx-auto max-w-2xl px-5 py-16 text-stone-800">
       <p className="mb-6 text-sm text-stone-500">
@@ -43,6 +46,13 @@ export default function ContactPage() {
           </a>
         </li>
       </ul>
+      <p className="mt-6 text-sm text-stone-600">
+        Formularz wymaga skonfigurowania Resend (
+        <code className="rounded bg-stone-100 px-1">RESEND_API_KEY</code>,{" "}
+        <code className="rounded bg-stone-100 px-1">RESEND_ZE_STRONY</code>) — patrz{" "}
+        <code className="rounded bg-stone-100 px-1">.env.example</code>.
+      </p>
+      <KontaktFormularz />
     </main>
   );
 }
