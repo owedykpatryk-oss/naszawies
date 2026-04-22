@@ -113,7 +113,16 @@ Bez tego formularz kontaktowy na produkcji może zwracać błąd serwera.
 | Waitlist | Zapis z formularza na stronie — w Supabase **Table Editor → waitlist** nowy wiersz. |
 | Kontakt | Tylko po Resend + redeploy — wysłanie wiadomości bez błędu w konsoli sieciowej. |
 
-**Podgląd w panelu Vercel pokazuje `404: NOT_FOUND`, a deploy jest „Ready”?** Otwórz stronę w **nowej karcie** (przycisk **Visit**) — podgląd w iframe bywa blokowany przez nagłówki bezpieczeństwa. W repozytorium nagłówek `X-Frame-Options: SAMEORIGIN` został zastąpiony przez `Content-Security-Policy: frame-ancestors … https://vercel.com`, żeby panel mógł osadzać podgląd.
+**Podgląd w panelu Vercel pokazuje `404: NOT_FOUND`, a deploy jest „Ready”?**
+
+1. **Najczęstsza przyczyna — zła gałąź Production**  
+   Repo używa **`master`**, a Vercel domyślnie często ustawia produkcję na **`main`**. Wtedy każdy push na `master` to tylko **Preview**, a adres **`https://naszawies.vercel.app`** (produkcja) **nie ma wdrożenia** → platforma zwraca `404` + `X-Vercel-Error: NOT_FOUND` (tekst `text/plain`, nie HTML Nexta).  
+   **Naprawa:** Vercel → **Settings → Git** → **Production Branch** → ustaw **`master`** → **Save** → **Deployments** → **⋯** przy ostatnim deployu z `master` → **Promote to Production** (albo pusty commit / Redeploy po zmianie gałęzi).
+
+2. **Podgląd w iframe** — nadal może być dziwny; sprawdź zawsze **Visit** w nowej karcie na `https://naszawies.vercel.app`.
+
+3. **Ochrona wdrożeń (401 na długim URL `…-git-master-…`)**  
+   **Settings → Deployment Protection** — podgląd z zewnątrz (curl / incognito) może dawać **401**; zalogowany użytkownik Vercel widzi stronę. Na produkcję (`*.vercel.app` główny) zwykle nie blokuje — po naprawie gałęzi sprawdź ponownie.
 
 ### Krok 8 — GitHub Actions (opcjonalnie)
 
