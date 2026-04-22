@@ -2,6 +2,38 @@
 
 Stan na setup z asystenta (kwiecień 2026):
 
+## Jak to się łączy (big picture)
+
+| Element | Rola |
+|---------|------|
+| **GoDaddy (DNS)** | Mówi światu: domena `naszawies.pl` / `www` → **Vercel** (rekordy A / CNAME z panelu Vercel). |
+| **Vercel** | Hostuje **stronę** (Next.js), buduje z **GitHuba**, trzyma **zmienne** (`NEXT_PUBLIC_SUPABASE_*`, Resend…). |
+| **Supabase** | **Baza + Auth** pod adresem `https://…supabase.co` — strona **nie** leży na Supabase; łączysz ją tylko **kluczami** w Vercel. |
+| **Resend** | Wysyłka e-maili z formularza — osobny serwis; klucze w Vercel. |
+
+Przepływ użytkownika: przeglądarka → **DNS** → **Vercel** → HTML/JS → przy waitlist/kontakt wywołanie **API na Vercelu** → ten sam deploy woła **Supabase** (klucz anon) lub **Resend**.
+
+---
+
+## Checklista: od repozytorium do działającej domeny
+
+Wykonaj **po kolei** (numery mają znaczenie).
+
+1. **GitHub** — kod w repozytorium (np. `owedykpatryk-oss/naszawies`), gałąź z której buduje Vercel (np. `master`).
+2. **Vercel** — **Add New… → Project** → Import z GitHuba → wybierz `naszawies`, **Root Directory** = katalog z `package.json` (zwykle root repo). Zapisz.
+3. **Vercel → Settings → Environment Variables** — dodaj co najmniej `NEXT_PUBLIC_SUPABASE_URL` i `NEXT_PUBLIC_SUPABASE_ANON_KEY` (wartości z Supabase → Settings → API), zakres **Production** (i Preview, jeśli chcesz). Zrób **Redeploy**, żeby pierwszy build miał zmienne.
+4. **Deploy** — upewnij się, że build jest zielony; adres `https://…vercel.app` otwiera stronę.
+5. **Vercel → Settings → Domains** — dodaj `naszawies.pl` i `www.naszawies.pl`. Zapisz **dokładnie** to, co Vercel podaje (IP A, CNAME www, ewentualnie TXT weryfikacyjny).
+6. **GoDaddy → DNS** — usuń / zmień rekord **A** dla `@` z „Website Builder” na **IP z Vercel** (często `76.76.21.21` — jeśli Vercel poda inny, użyj ich). **CNAME** `www` → wartość z Vercel (np. `cname.vercel-dns.com`). NS zostaw.
+7. Poczekaj na propagację DNS (od minut do kilku godzin). W Vercel przy domenie ma być **Valid** (certyfikat SSL).
+8. **Supabase → Authentication → URL Configuration** — **Site URL** = `https://naszawies.pl` (lub główny adres z www), **Redirect URLs** = `https://naszawies.pl/**`, `https://www.naszawies.pl/**`, `http://localhost:3000/**`.
+9. **Opcjonalnie Resend** — domena `naszawies.pl` w Resend (SPF/DKIM wg ich kreatora); w Vercel popraw `RESEND_ZE_STRONY` na np. `Kontakt <kontakt@naszawies.pl>` po weryfikacji.
+10. **Test** — waitlist z produkcji, `/api/kontakt` (jeśli brak Resend, kontakt może zwrócić 503).
+
+Szczegóły kroków 2–7 i Supabase: sekcje poniżej (**GitHub**, **Vercel + domena**). CI GitHub Actions: sekcja **GitHub Actions**.
+
+---
+
 ## Supabase — zrobione lokalnie
 
 - Utworzono projekt **`naszawies-pl`** (region **eu-central-1**), ref: **`qxvdjghfsrrxrivfahmn`**.
