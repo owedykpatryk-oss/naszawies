@@ -99,6 +99,9 @@ Propagacja: od kilku minut do kilku godzin. W Vercel → **Domains** status zmie
    - `https://naszawies.pl/**`
    - `https://www.naszawies.pl/**`
    - `http://localhost:3000/**`
+   - **Ważne po wdrożeniu Auth:** pełne ścieżki wymiany kodu z e-maila (PKCE):  
+     `https://naszawies.pl/auth/potwierdz` oraz `https://www.naszawies.pl/auth/potwierdz` oraz  
+     `http://localhost:3000/auth/potwierdz` (lokalnie).
 
 4. Zapisz (**Save**).
 

@@ -13,6 +13,7 @@
     "import-teryt": "node scripts/import-teryt.mjs"
   },
   "dependencies": {
+    "@supabase/ssr": "^0.6.1",
     "@supabase/supabase-js": "^2.104.0",
     "fast-xml-parser": "^5.7.1",
     "next": "14.2.28",
