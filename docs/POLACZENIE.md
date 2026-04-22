@@ -105,6 +105,33 @@ Propagacja: od kilku minut do kilku godzin. W Vercel → **Domains** status zmie
 
 4. Zapisz (**Save**).
 
+### Logowanie Google i GitHub (OAuth)
+
+W aplikacji są przyciski na `/logowanie` i `/rejestracja`. W **Supabase** musisz włączyć dostawców i dodać klucze OAuth.
+
+#### Google
+
+1. [Google Cloud Console](https://console.cloud.google.com/) → projekt (lub nowy) → **APIs & Services** → **Credentials** → **Create Credentials** → **OAuth client ID** → typ **Web application**.
+2. **Authorized redirect URIs** — dodaj dokładnie (podmień ref na swój z **Settings → API** w Supabase):
+
+   `https://qxvdjghfsrrxrivfahmn.supabase.co/auth/v1/callback`
+
+3. Skopiuj **Client ID** i **Client Secret**.
+4. Supabase → **Authentication** → **Providers** → **Google** → włącz, wklej ID i sekret → **Save**.
+
+#### GitHub
+
+1. GitHub → **Settings** (konto lub organizacja) → **Developer settings** → **OAuth Apps** → **New OAuth App**.
+2. **Authorization callback URL** (to samo co u Google):
+
+   `https://qxvdjghfsrrxrivfahmn.supabase.co/auth/v1/callback`
+
+3. **Homepage URL:** `https://naszawies.pl` (lub strona projektu).
+4. Skopiuj **Client ID** i wygeneruj **Client secrets**.
+5. Supabase → **Authentication** → **Providers** → **GitHub** → włącz, wklej wartości → **Save**.
+
+Po zapisaniu odśwież `/logowanie` i sprawdź przyciski (pierwsze logowanie utworzy konto w `auth.users` i wiersz w `public.users` dzięki triggerowi).
+
 ### Krok 6 — Resend (opcjonalnie, żeby działał `/kontakt`)
 
 Bez tego formularz kontaktowy na produkcji może zwracać błąd serwera.

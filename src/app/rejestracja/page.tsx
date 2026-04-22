@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { pobierzPochodzeniePubliczne } from "@/lib/zadanie/pochodzenie-publiczne";
+import { LogowanieProwiderzy } from "../logowanie/logowanie-prowiderzy";
 import { RejestracjaFormularz } from "./rejestracja-formularz";
 
 export const metadata: Metadata = {
@@ -20,9 +21,11 @@ export default function RejestracjaPage() {
       </p>
       <h1 className="font-serif text-3xl text-green-950">Rejestracja</h1>
       <p className="mt-2 text-sm text-stone-600">
-        Pierwszy krok konta (e-mail + hasło). Wybór roli we wsi i weryfikacja sołtysa — w kolejnych
-        krokach roadmapy.
+        Konto przez Google / GitHub od razu działa. Rejestracja e-mailem wymaga potwierdzenia
+        skrzynki. Wybór roli we wsi — w kolejnych krokach roadmapy.
       </p>
+      <LogowanieProwiderzy pochodzeniePubliczne={pochodzenie} nastepnaSciezka="/panel" />
+      <p className="mt-8 text-center text-sm text-stone-500">lub zarejestruj się e-mailem</p>
       <RejestracjaFormularz pochodzeniePubliczne={pochodzenie} />
     </main>
   );

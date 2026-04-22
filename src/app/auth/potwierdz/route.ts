@@ -1,15 +1,15 @@
 import type { CookieOptions } from "@supabase/ssr";
 import { createServerClient } from "@supabase/ssr";
+import { cookies } from "next/headers";
+import { NextResponse } from "next/server";
 
 type CiasteczkaDoUstawienia = {
   name: string;
   value: string;
   options: CookieOptions;
 }[];
-import { cookies } from "next/headers";
-import { NextResponse } from "next/server";
 
-/** Wymiana `?code=` z linku e-mail (Supabase Auth PKCE) na sesję w ciasteczkach. */
+/** Wymiana `?code=` (e-mail PKCE lub OAuth) na sesję w ciasteczkach. */
 export async function GET(request: Request) {
   const adres = new URL(request.url);
   const kod = adres.searchParams.get("code");
@@ -42,5 +42,5 @@ export async function GET(request: Request) {
     }
   }
 
-  return NextResponse.redirect(new URL("/logowanie?blad=potwierdz-email", adres.origin));
+  return NextResponse.redirect(new URL("/logowanie?blad=sesja-zewnetrzna", adres.origin));
 }

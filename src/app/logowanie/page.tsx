@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { pobierzPochodzeniePubliczne } from "@/lib/zadanie/pochodzenie-publiczne";
 import { LogowanieFormularz } from "./logowanie-formularz";
+import { LogowanieProwiderzy } from "./logowanie-prowiderzy";
 
 export const metadata: Metadata = {
   title: "Logowanie",
@@ -17,6 +19,7 @@ type Props = {
 };
 
 export default function LogowaniePage({ searchParams }: Props) {
+  const pochodzenie = pobierzPochodzeniePubliczne();
   const nastepnyParam = searchParams.next;
   const nastepna =
     typeof nastepnyParam === "string" ? bezpiecznaSciezkaNastepna(nastepnyParam) : "/panel";
@@ -32,9 +35,12 @@ export default function LogowaniePage({ searchParams }: Props) {
       </p>
       <h1 className="font-serif text-3xl text-green-950">Logowanie</h1>
       <p className="mt-2 text-sm text-stone-600">
-        Konto z e-mailem i hasłem. Po zalogowaniu przejdziesz do panelu (lub do strony wskazanej w
-        linku).
+        Zaloguj się przez Google lub GitHub, albo użyj e-maila i hasła. Po zalogowaniu przejdziesz
+        do panelu (albo do adresu z parametru{" "}
+        <code className="rounded bg-stone-100 px-1 text-xs">next</code>).
       </p>
+      <LogowanieProwiderzy pochodzeniePubliczne={pochodzenie} nastepnaSciezka={nastepna} />
+      <p className="mt-8 text-center text-sm text-stone-500">lub adres e-mail</p>
       <LogowanieFormularz nastepnaSciezka={nastepna} kodBledu={kodBledu} />
     </main>
   );

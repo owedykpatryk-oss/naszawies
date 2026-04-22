@@ -12,6 +12,7 @@ type Props = {
 
 const OPISY_BLEDOW: Record<string, string> = {
   "potwierdz-email": "Link potwierdzający wygasł lub jest nieprawidłowy. Spróbuj zalogować się lub zarejestrować ponownie.",
+  "sesja-zewnetrzna": "Nie udało się dokończyć logowania (Google / GitHub). Spróbuj ponownie.",
   konfiguracja: "Brak konfiguracji Supabase po stronie serwera.",
 };
 
