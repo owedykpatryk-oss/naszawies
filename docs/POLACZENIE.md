@@ -113,6 +113,8 @@ Bez tego formularz kontaktowy na produkcji może zwracać błąd serwera.
 | Waitlist | Zapis z formularza na stronie — w Supabase **Table Editor → waitlist** nowy wiersz. |
 | Kontakt | Tylko po Resend + redeploy — wysłanie wiadomości bez błędu w konsoli sieciowej. |
 
+**Podgląd w panelu Vercel pokazuje `404: NOT_FOUND`, a deploy jest „Ready”?** Otwórz stronę w **nowej karcie** (przycisk **Visit**) — podgląd w iframe bywa blokowany przez nagłówki bezpieczeństwa. W repozytorium nagłówek `X-Frame-Options: SAMEORIGIN` został zastąpiony przez `Content-Security-Policy: frame-ancestors … https://vercel.com`, żeby panel mógł osadzać podgląd.
+
 ### Krok 8 — GitHub Actions (opcjonalnie)
 
 W repo GitHub: **Settings → Secrets and variables → Actions** — dodaj `NEXT_PUBLIC_SUPABASE_URL` i `NEXT_PUBLIC_SUPABASE_ANON_KEY` (jak w Vercel), żeby workflow CI przechodził przy pushu.
