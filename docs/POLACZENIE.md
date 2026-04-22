@@ -29,18 +29,35 @@ W repozytorium jest migracja `supabase/migrations/20260423140000_schemat_i_rls_z
 
 ---
 
-## GitHub — do zrobienia u Ciebie
+## GitHub — wymagane przed importem w Vercel
 
-CLI `gh` nie był zalogowany na tym komputerze.
+**Dlaczego na liście „Import Git Repository” nie ma `naszawies`?** Kod był tylko na dysku — **nie było** `git remote` ani repozytorium na GitHubie. Vercel pokazuje wyłącznie repozytoria, które **już istnieją** na podłączonym koncie GitHub (`owedykpatryk-oss` itd.).
 
-1. Zaloguj się: `gh auth login`
-2. Utwórz repo i wypchnij kod (z katalogu `naszawies`):
+Na tym komputerze zrobiono już **lokalny commit** (`master`). Zostało u Ciebie: utworzyć puste repo na GitHubie i **pierwszy push**.
+
+### Opcja A — przeglądarka
+
+1. GitHub → **New repository** → nazwa np. `naszawies` (prywatne/publiczne wg potrzeby), **bez** README (pusty start).
+2. W katalogu `naszawies` w terminalu (ścieżka jak u Ciebie, np. `E:\Naszawies.pl\naszawies`):
 
 ```bash
-git remote add origin https://github.com/TWOJ_LOGIN/naszawies.git
-# albo: gh repo create naszawies --private --source=. --remote=origin --push
+git remote add origin https://github.com/owedykpatryk-oss/naszawies.git
 git push -u origin master
 ```
+
+(adres `origin` skopiuj z GitHuba po utworzeniu repozytorium — przycisk „…or push an existing repository”)
+
+### Opcja B — GitHub CLI
+
+```bash
+gh auth login
+cd naszawies
+gh repo create naszawies --private --source=. --remote=origin --push
+```
+
+### Vercel nadal nie widzi nowego repo?
+
+GitHub → **Settings** (Twoje konto lub organizacja) → **Applications** → **Installed GitHub Apps** → **Vercel** → **Configure** → **Repository access** → włącz **All repositories** albo wybierz **`naszawies`**. Potem odśwież stronę importu w Vercel.
 
 ---
 
