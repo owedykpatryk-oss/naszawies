@@ -144,13 +144,32 @@
     const submitBtn = form.querySelector(".form-submit");
     if (!submitBtn) return;
 
-    const inputs = form.querySelectorAll("input[required]");
-    if (inputs.length < 4) return;
+    const poleImie = form.querySelector('[name="imie_nazwisko"]');
+    const poleEmail = form.querySelector('[name="email"]');
+    const poleWies = form.querySelector('[name="nazwa_wsi"]');
+    const poleGmina = form.querySelector('[name="gmina"]');
+    const poleZgoda = form.querySelector("#waitlist-zgoda");
+    const poleBottrap = form.querySelector('[name="bottrap"]');
 
-    const fullName = inputs[0].value.trim();
-    const email = inputs[1].value.trim();
-    const villageName = inputs[2].value.trim();
-    const commune = inputs[3].value.trim();
+    if (!poleImie || !poleEmail || !poleWies || !poleGmina || !poleZgoda) {
+      return;
+    }
+
+    const fullName = poleImie.value.trim();
+    const email = poleEmail.value.trim();
+    const villageName = poleWies.value.trim();
+    const commune = poleGmina.value.trim();
+    const bottrap = poleBottrap ? String(poleBottrap.value || "") : "";
+
+    if (!poleZgoda.checked) {
+      submitBtn.textContent = "Zaznacz zgodę na przetwarzanie danych";
+      submitBtn.style.background = "#b22222";
+      setTimeout(function () {
+        submitBtn.textContent = "Chcę być pierwszy →";
+        submitBtn.style.background = "var(--green-dark)";
+      }, 3500);
+      return;
+    }
 
     const activeTab = document.querySelector(".form-tab.active");
     const role =
@@ -172,6 +191,8 @@
           villageName,
           commune,
           role,
+          rodoZaakceptowane: true,
+          bottrap: bottrap,
         }),
       });
       let data = {};

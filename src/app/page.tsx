@@ -10,7 +10,9 @@ export default function Home() {
 
   return (
     <>
-      <div dangerouslySetInnerHTML={{ __html: html }} />
+      <main id="strona-glowna" aria-label="Strona główna naszawies.pl">
+        <div dangerouslySetInnerHTML={{ __html: html }} />
+      </main>
       <Script src="/landing-app.js" strategy="afterInteractive" />
     </>
   );

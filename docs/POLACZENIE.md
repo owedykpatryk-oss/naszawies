@@ -39,6 +39,10 @@ git push -u origin master
 
 ---
 
+## Plausible (opcjonalnie)
+
+W `.env.local` / Vercel dodaj `NEXT_PUBLIC_PLAUSIBLE_DOMAIN=naszawies.pl` (bez `https://`). Wtedy w `layout.tsx` ładuje się skrypt Plausible. Konto załóż na [plausible.io](https://plausible.io).
+
 ## Vercel — do zrobienia u Ciebie
 
 CLI Vercel nie miał zapisanych poświadczeń.
