@@ -63,9 +63,15 @@ Założenie: masz konto **Vercel**, repo **`owedykpatryk-oss/naszawies`** na Git
 7. Kliknij **Deploy** i poczekaj na zielony build.
 8. Otwórz wygenerowany adres **`https://nazwa-projektu.vercel.app`** — strona główna ma się załadować.
 
+### Gdzie to jest w panelu Vercel (nawigacja)
+
+- **Domena własna** (`naszawies.pl`): u góry projektu wybierz **Settings** (nie „Deployments”) → w **lewym** menu **Domains**.
+- **Gałąź produkcyjna** (`master` vs `main`): **Settings** → **Git** → **Production Branch**.
+- **Zmienne Supabase / Resend**: **Settings** → **Environment Variables**.
+
 ### Krok 3 — Vercel: domena `naszawies.pl`
 
-1. W projekcie Vercel: **Settings** → **Domains**.
+1. W projekcie **naszawies** kliknij **Settings** (obok Deployments, Analytics itd.) → **Domains** (lewa kolumna).
 2. W polu dodawania wpisz **`naszawies.pl`** → **Add** (potwierdź, jeśli pyta o przekierowanie www — możesz włączyć przekierowanie `www` ↔ apex według preferencji).
 3. Dodaj też **`www.naszawies.pl`** (jeśli nie dodało się automatycznie).
 4. Dla każdej domeni Vercel pokaże **instrukcję DNS** — zrób zrzut ekranu lub zapisz:
