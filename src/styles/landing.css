@@ -100,7 +100,14 @@
     padding: 0 0.1em;
   }
   .hero-lead { font-size: 1.2rem; color: var(--text-muted); margin-bottom: 2.5rem; max-width: 520px; line-height: 1.55; }
-  .hero-ctas { display: flex; gap: 1rem; flex-wrap: wrap; margin-bottom: 2.5rem; }
+  .hero-ctas { display: flex; gap: 1rem; flex-wrap: wrap; margin-bottom: 0.75rem; }
+  .hero-note {
+    font-size: 0.95rem;
+    color: var(--text-muted);
+    margin: 0 0 2.5rem;
+    max-width: 520px;
+    line-height: 1.5;
+  }
   .hero-meta { display: flex; gap: 2rem; padding-top: 2rem; border-top: 1px solid rgba(45, 90, 45, 0.12); }
   .meta-item .meta-value { font-family: var(--font-fraunces), ui-serif, Georgia, serif, serif; font-size: 2rem; font-weight: 500; color: var(--green-dark); line-height: 1; display: block; margin-bottom: 0.25rem; }
   .meta-item .meta-label { font-size: 0.85rem; color: var(--text-muted); }
@@ -300,7 +307,7 @@
     .hero-visual { max-width: 380px; margin: 0 auto; }
     .steps, .features-grid, .roles-grid { grid-template-columns: 1fr; }
     .footer-grid { grid-template-columns: 1fr 1fr; gap: 2rem; }
-    .nav-links a:not(.nav-cta) { display: none; }
+    .nav-links a:not(.nav-cta):not(.nav-auth) { display: none; }
     .hero-meta { flex-wrap: wrap; gap: 1.5rem; }
     section { padding: 4rem 0; }
     .hero { padding: 3rem 0 5rem; }

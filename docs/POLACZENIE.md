@@ -102,6 +102,8 @@ Propagacja: od kilku minut do kilku godzin. W Vercel → **Domains** status zmie
    - **Ważne po wdrożeniu Auth:** pełne ścieżki wymiany kodu z e-maila (PKCE):  
      `https://naszawies.pl/auth/potwierdz` oraz `https://www.naszawies.pl/auth/potwierdz` oraz  
      `http://localhost:3000/auth/potwierdz` (lokalnie).
+   - **Reset hasła:** w aplikacji `redirectTo` wskazuje na `/auth/potwierdz?next=…/auth/ustaw-haslo` — wystarczy wildcard `/**`; jeśli Supabase wymaga jawnych adresów, dopisz też  
+     `https://naszawies.pl/auth/ustaw-haslo`, `https://www.naszawies.pl/auth/ustaw-haslo`, `http://localhost:3000/auth/ustaw-haslo`.
 
 4. Zapisz (**Save**).
 

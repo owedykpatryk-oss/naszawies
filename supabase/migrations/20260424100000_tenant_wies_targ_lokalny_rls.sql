@@ -2,20 +2,7 @@
 -- Ogłoszenia, zebrań, świetlica (rezerwacje) — społeczność wsi (RLS jak wcześniej).
 -- Targ lokalny — typ `targ_lokalny`: widoczny dla każdego (w tym anon), żeby „wszyscy co wejdą” na stronę wsi mogli zobaczyć oferty.
 -- Usuwa globalne wyciekanie postów `is_public` oraz komentarzy do wewnętrznych treści.
-
-DO $$
-BEGIN
-  IF NOT EXISTS (
-    SELECT 1
-    FROM pg_enum e
-    JOIN pg_type t ON e.enumtypid = t.oid
-    WHERE t.typname = 'post_type'
-      AND e.enumlabel = 'targ_lokalny'
-  ) THEN
-    ALTER TYPE post_type ADD VALUE 'targ_lokalny';
-  END IF;
-END
-$$;
+-- Wartość enum `targ_lokalny`: migracja 20260423200000_post_type_add_targ_lokalny.sql
 
 COMMENT ON TABLE posts IS
   'Treści wsi: tenant = village_id. Typ targ_lokalny — jedyny post widoczny globalnie (katalog ofert); pozostałe typy tylko dla mieszkańców/sołtysa/autora.';

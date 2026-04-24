@@ -1,6 +1,6 @@
 <nav>
   <div class="container nav-inner">
-    <a href="#" class="logo">
+    <a href="/" class="logo">
       <div class="logo-mark">
         <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
           <path d="M3 20V11L12 4L21 11V20H14V14H10V20H3Z" fill="#f5f1e8" stroke="#d4a017" stroke-width="1.2"/>
@@ -14,6 +14,8 @@
       <a href="#swietlica">Świetlica</a>
       <a href="#funkcje">Funkcje</a>
       <a href="#faq">Pytania</a>
+      <a href="/logowanie" class="nav-auth">Logowanie</a>
+      <a href="/rejestracja" class="nav-auth">Rejestracja</a>
       <a href="#zapisz" class="nav-cta">Dołącz</a>
     </div>
   </div>
@@ -23,13 +25,15 @@
   <div class="container">
     <div class="hero-grid">
       <div class="hero-text">
-        <div class="hero-eyebrow">Platforma w budowie · Dołącz do pionierów</div>
+        <div class="hero-eyebrow">Konto i panel już działają · Pilot pierwszych 50 wsi</div>
         <h1>Cyfrowy dom dla <em>naszej wsi</em>.</h1>
-        <p class="hero-lead">Bezpłatna platforma dla sołtysów i mieszkańców. Rezerwuj świetlicę, planuj układ stołów, ogłaszaj wydarzenia, łącz wieś — wszystko w jednym miejscu. Bez reklam, bez opłat, bez haczyków.</p>
+        <p class="hero-lead">Bezpłatna platforma dla sołtysów i mieszkańców. Załóż konto, zaloguj się do panelu — rezerwacja świetlicy, plan sali, dokumenty i kolejne funkcje są dostępne od razu (wg uprawnień). Bez reklam, bez opłat, bez haczyków.</p>
         <div class="hero-ctas">
-          <a href="#zapisz" class="btn btn-primary">Jestem sołtysem →</a>
-          <a href="#swietlica" class="btn btn-secondary">Zobacz jak to działa</a>
+          <a href="/rejestracja" class="btn btn-primary">Załóż konto</a>
+          <a href="/logowanie" class="btn btn-secondary">Logowanie</a>
+          <a href="#zapisz" class="btn btn-secondary">Zapisz wieś na listę</a>
         </div>
+        <p class="hero-note">Listę zostawiasz opcjonalnie — dla chętnych na priorytetowe wdrożenie i wsparcie przy starcie.</p>
         <div class="hero-meta">
           <div class="meta-item"><span class="meta-value">40 437</span><span class="meta-label">sołectw w Polsce</span></div>
           <div class="meta-item"><span class="meta-value">0 zł</span><span class="meta-label">na zawsze dla wsi</span></div>
@@ -332,7 +336,7 @@
       <div class="faq-item"><div class="faq-question">Jak mieszkańcy dowiedzą się że platforma istnieje?<span class="faq-toggle"></span></div><div class="faq-answer"><div class="faq-answer-inner">Wysyłamy Ci gotowy do wydrukowania plakat z QR kodem prowadzącym do strony Twojej wsi. Wieszasz go na tablicy ogłoszeń obok świetlicy albo przy kościele. Mieszkańcy skanują telefonem i od razu widzą co się dzieje we wsi.</div></div></div>
       <div class="faq-item"><div class="faq-question">Co z danymi osobowymi i RODO?<span class="faq-toggle"></span></div><div class="faq-answer"><div class="faq-answer-inner">Zbieramy minimum danych — imię, email, wieś. Dane są przechowywane w Polsce, zgodnie z RODO. Nie udostępniamy ich nikomu, nie sprzedajemy, nie używamy do reklam. Możesz w każdej chwili pobrać wszystkie swoje dane albo zażądać ich usunięcia.</div></div></div>
       <div class="faq-item"><div class="faq-question">Nie jestem techniczny. Poradzę sobie?<span class="faq-toggle"></span></div><div class="faq-answer"><div class="faq-answer-inner">Tak. Platforma jest zaprojektowana dla sołtysów 50+, nie dla programistów. Jeśli potrafisz wysłać SMS i założyć konto na Facebooku, poradzisz sobie tutaj. Pomagamy przy pierwszym logowaniu — możesz zadzwonić, napisać email, a nawet poprosić o spotkanie online z instruktorem. Za darmo.</div></div></div>
-      <div class="faq-item"><div class="faq-question">Kiedy platforma ruszy?<span class="faq-toggle"></span></div><div class="faq-answer"><div class="faq-answer-inner">Pracujemy nad wersją pilotażową z pierwszymi 50 wsiami. Jeśli zostawisz email, powiadomimy Cię gdy Twoja wieś będzie mogła dołączyć. Pionierzy dostają priorytet w konfiguracji i osobiste wsparcie przy wdrożeniu.</div></div></div>
+      <div class="faq-item"><div class="faq-question">Jak zacząć korzystać z platformy?<span class="faq-toggle"></span></div><div class="faq-answer"><div class="faq-answer-inner"><strong>Już teraz:</strong> zarejestruj się i zaloguj — panel mieszkańca i sołtysa jest czynny; funkcje (np. świetlica, rezerwacje) widzisz po przypisaniu roli we wsi. <strong>Lista „pierwszych 50 wsi”</strong> to dodatkowo priorytet przy konfiguracji, plakat z QR i wsparcie przy wdrożeniu — nie musisz na nią czekać, żeby mieć konto.</div></div></div>
     </div>
   </div>
 </section>
@@ -342,7 +346,7 @@
     <div class="signup-grid">
       <div class="signup-text">
         <h2>Bądź wśród <em>pierwszych 50 wsi</em>.</h2>
-        <p>Zostaw email, a powiadomimy Cię gdy platforma ruszy. Pionierzy dostają priorytet, osobiste wsparcie przy starcie i ciepłe miejsce na mapie polskiej cyfrowej wsi.</p>
+        <p><a href="/rejestracja">Załóż konto</a> lub <a href="/logowanie">zaloguj się</a> — to działa od razu. Poniżej możesz dodatkowo zostawić dane wsi: pionierzy dostają priorytet, osobiste wsparcie przy starcie i plakat z QR.</p>
         <ul class="signup-perks">
           <li>Pierwszeństwo w aktywacji konta sołtysa</li>
           <li>30-minutowe wdrożenie online osobiście</li>
@@ -371,7 +375,7 @@
             </label>
           </div>
           <button type="submit" class="form-submit">Chcę być pierwszy →</button>
-          <div class="form-note">Nie będziemy spamować. Jeden email gdy platforma będzie gotowa.</div>
+          <div class="form-note">Bez spamu — tylko ważne informacje o wdrożeniu i nowościach. Konto zakładasz osobno: <a href="/rejestracja">rejestracja</a> · <a href="/logowanie">logowanie</a>.</div>
         </form>
       </div>
     </div>
@@ -382,7 +386,7 @@
   <div class="container">
     <div class="footer-grid">
       <div class="footer-brand">
-        <a href="#" class="logo">
+        <a href="/" class="logo">
           <div class="logo-mark">
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
               <path d="M3 20V11L12 4L21 11V20H14V14H10V20H3Z" fill="#f5f1e8" stroke="#d4a017" stroke-width="1.2"/>
@@ -396,6 +400,9 @@
       <div class="footer-col">
         <h4>Platforma</h4>
         <ul>
+          <li><a href="/logowanie">Logowanie</a></li>
+          <li><a href="/rejestracja">Rejestracja</a></li>
+          <li><a href="/panel">Panel</a></li>
           <li><a href="#jak">Jak to działa</a></li>
           <li><a href="#swietlica">Świetlica</a></li>
           <li><a href="#funkcje">Funkcje</a></li>

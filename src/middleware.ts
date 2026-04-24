@@ -15,6 +15,7 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next({ request });
   }
 
+  /** Przekazywanie `request` + ponowne tworzenie odpowiedzi przy `setAll` — wymagane do zapisu odświeżonej sesji Supabase (PKCE / OAuth). */
   let odpowiedz = NextResponse.next({ request });
 
   const supabase = createServerClient(url, anonKey, {

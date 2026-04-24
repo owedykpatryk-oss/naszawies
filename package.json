@@ -10,12 +10,19 @@
     "typecheck": "tsc --noEmit",
     "sync-landing": "node scripts/build-landing-assets.mjs",
     "generuj-migracje-schema": "node scripts/generuj-migracje-schema-z-dokumentow.mjs",
-    "import-teryt": "node scripts/import-teryt.mjs"
+    "import-teryt": "node scripts/import-teryt.mjs",
+    "import-teryt-powiat": "node scripts/import-teryt-powiat.mjs",
+    "r2:buckets": "node scripts/r2-buckets.mjs",
+    "r2:s3-ping": "node scripts/r2-s3-ping.mjs",
+    "db:apply-sql": "node scripts/zastosuj-migracje-sql.mjs"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.1036.0",
+    "@aws-sdk/s3-request-presigner": "^3.1036.0",
     "@supabase/ssr": "^0.6.1",
     "@supabase/supabase-js": "^2.104.0",
     "fast-xml-parser": "^5.7.1",
+    "html2pdf.js": "^0.14.0",
     "next": "14.2.28",
     "react": "^18",
     "react-dom": "^18",
@@ -29,6 +36,7 @@
     "@types/react-dom": "^18",
     "eslint": "^8",
     "eslint-config-next": "^14.2.28",
+    "pg": "^8.14.1",
     "postcss": "^8",
     "tailwindcss": "^3.4.1",
     "typescript": "^5"
