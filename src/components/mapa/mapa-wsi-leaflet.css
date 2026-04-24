@@ -12,6 +12,22 @@
   border: 2px solid #f5f1e8;
 }
 
+@media (prefers-reduced-motion: no-preference) {
+  .naszawies-marker-wrap {
+    animation: mapaMarkerPulse 3.2s ease-in-out infinite;
+  }
+
+  @keyframes mapaMarkerPulse {
+    0%,
+    100% {
+      box-shadow: 0 4px 14px rgba(45, 90, 45, 0.35);
+    }
+    50% {
+      box-shadow: 0 4px 22px rgba(45, 90, 45, 0.55), 0 0 0 4px rgba(212, 160, 23, 0.12);
+    }
+  }
+}
+
 .naszawies-marker-wrap svg {
   display: block;
 }
@@ -39,6 +55,13 @@
 .leaflet-popup-content {
   margin: 12px 14px;
   min-width: 200px;
+}
+
+.mapa-wsi-popup-meta {
+  font-size: 0.78rem;
+  color: #44403c;
+  margin: 0 0 0.4rem;
+  line-height: 1.4;
 }
 
 .mapa-wsi-popup h3 {

@@ -1,6 +1,10 @@
 /**
- * Generowanie PDF po stronie klienta (html2pdf.js).
+ * Generowanie PDF po stronie klienta (html2pdf.js + html2canvas).
  * Wywołuj wyłącznie z handlerów w przeglądarce (np. onClick).
+ *
+ * Uwagi (pusta strona w PDF): klon z kontenera `overflow: auto` bywa rasteryzowany
+ * jako pusty — unikaj overflow na elemencie z `id`; po wstawieniu do DOM czekamy
+ * na layout (requestAnimationFrame) i ustawiamy jawne wymiary + `overflow: visible`.
  */
 
 export function bezpiecznaNazwaPlikuPdf(nazwa: string): string {
@@ -15,6 +19,14 @@ type WynikPdf = { ok: true } | { ok: false; komunikat: string };
 /**
  * Renderuje klon węzła (bez elementów .no-print), generuje PDF i usuwa klon.
  */
+function czekajNaMalowanie(): Promise<void> {
+  return new Promise((resolve) => {
+    requestAnimationFrame(() => {
+      requestAnimationFrame(() => resolve());
+    });
+  });
+}
+
 export async function pobierzPdfZElementuHtml(
   zrodlo: HTMLElement,
   opcje: { nazwaPliku: string }
@@ -29,14 +41,29 @@ export async function pobierzPdfZElementuHtml(
   });
   klon.removeAttribute("id");
 
+  const rect = zrodlo.getBoundingClientRect();
+  const szer = Math.ceil(Math.max(rect.width || 0, zrodlo.scrollWidth || 0, 320));
+  const wys = Math.ceil(Math.max(rect.height || 0, zrodlo.scrollHeight || 0, 120));
+  klon.style.cssText = [
+    "box-sizing:border-box",
+    "overflow:visible",
+    "max-width:none",
+    `width:${szer}px`,
+    `min-height:${wys}px`,
+    "background:#ffffff",
+    "color:#1c1917",
+    "-webkit-print-color-adjust:exact",
+    "print-color-adjust:exact",
+  ].join(";");
+
   const wrap = document.createElement("div");
   wrap.setAttribute("data-naszawies-pdf-export", "");
-  const szer = Math.min(820, Math.max(280, Math.round(zrodlo.getBoundingClientRect().width || zrodlo.scrollWidth || 794)));
   wrap.style.cssText = [
     "position:fixed",
     "left:0",
     "top:0",
     `width:${szer}px`,
+    `min-height:${wys}px`,
     "max-width:100vw",
     "z-index:2147483646",
     "background:#ffffff",
@@ -47,10 +74,13 @@ export async function pobierzPdfZElementuHtml(
 
   wrap.appendChild(klon);
   document.body.appendChild(wrap);
+  void wrap.offsetHeight;
+  await czekajNaMalowanie();
 
   try {
     const html2pdf = (await import("html2pdf.js")).default;
-    const scale = Math.min(2, Math.max(1, Math.round((typeof window !== "undefined" ? window.devicePixelRatio : 1) * 1.25)));
+    const dpr = typeof window !== "undefined" ? window.devicePixelRatio || 1 : 1;
+    const scale = Math.min(1.75, Math.max(1, Math.round(dpr * 100) / 100));
 
     await html2pdf()
       .from(wrap)
@@ -63,7 +93,9 @@ export async function pobierzPdfZElementuHtml(
           useCORS: true,
           logging: false,
           backgroundColor: "#ffffff",
-          windowWidth: szer,
+          scrollX: 0,
+          scrollY: 0,
+          allowTaint: false,
         },
         jsPDF: { unit: "mm", format: "a4", orientation: "portrait" },
       })

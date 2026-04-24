@@ -10,7 +10,7 @@ function stylDruku(): string {
   return `<style>
     .doc-soltys { font-family: ui-serif, Georgia, "Times New Roman", serif; color: #1c1917; line-height: 1.45; max-width: 720px; margin: 0 auto; }
     .doc-soltys h1 { font-size: 1.35rem; margin: 0 0 0.6rem; text-align: center; border-bottom: 2px solid #14532d; padding-bottom: 0.5rem; }
-    .doc-soltys .pas-nadtytul { font-size: 0.72rem; color: #44403c; text-align: center; margin: 0 0 0.75rem; padding: 0.45rem 0.65rem; background: linear-gradient(180deg,#f0fdf4 0%,#f5f5f4 100%); border: 1px solid #d6d3d1; border-radius: 6px; line-height: 1.35; }
+    .doc-soltys .pas-nadtytul { font-size: 0.72rem; color: #44403c; text-align: center; margin: 0 0 0.75rem; padding: 0.45rem 0.65rem; background: #ecfdf5; border: 1px solid #d6d3d1; border-radius: 6px; line-height: 1.35; }
     .doc-soltys .pas-nadtytul .nr-ref { font-family: ui-monospace, monospace; font-weight: 600; color: #14532d; letter-spacing: 0.03em; }
     .doc-soltys .meta { font-size: 0.8rem; color: #57534e; text-align: center; margin: 0 0 0.35rem; }
     .doc-soltys .meta:last-of-type { margin-bottom: 1.1rem; }
@@ -77,8 +77,34 @@ export const PRESETY_DOKUMENTOW_SOLTYSA: PresetDokumentu[] = [
       { id: "wies", etykieta: "Nazwa sołectwa / wsi", typ: "text", placeholder: "np. Wola", domyslna: "" },
       { id: "gmina", etykieta: "Gmina", typ: "text", placeholder: "np. gmina X" },
       { id: "data_godzina", etykieta: "Data i godzina zebrania", typ: "text", placeholder: "np. 15 marca 2026 r., godz. 18:00" },
-      { id: "miejsce", etykieta: "Miejsce zebrania", typ: "text", placeholder: "Świetlica wiejska / remiza OSP" },
-      { id: "porzadek", etykieta: "Porządek obrad (skrót)", typ: "textarea", wiersze: 5, placeholder: "1. Otwarcie…\n2. Sprawy…" },
+      {
+        id: "miejsce",
+        etykieta: "Miejsce zebrania",
+        typ: "text",
+        placeholder: "Świetlica wiejska / remiza OSP",
+        szybkieWstawki: [
+          { etykieta: "Świetlica", wartosc: "Świetlica wiejska" },
+          { etykieta: "OSP", wartosc: "Remiza OSP" },
+        ],
+      },
+      {
+        id: "porzadek",
+        etykieta: "Porządek obrad (skrót)",
+        typ: "textarea",
+        wiersze: 5,
+        placeholder: "1. Otwarcie…\n2. Sprawy…",
+        szybkieWstawki: [
+          {
+            etykieta: "3 punkty",
+            wartosc: "1. Otwarcie zebrania.\n2. Sprawy różne.\n3. Zamknięcie.",
+          },
+          {
+            etykieta: "Z funduszem sołeckim",
+            wartosc:
+              "1. Otwarcie zebrania.\n2. Informacja o funduszu sołeckim i wnioskach.\n3. Dyskusja i głosowanie.\n4. Sprawy różne.\n5. Zamknięcie.",
+          },
+        ],
+      },
       { id: "podpis", etykieta: "Zaprasza (funkcja / imię i nazwisko)", typ: "text", placeholder: "Sołtys …" },
     ],
     budujHtml: (w, meta) =>
@@ -100,8 +126,29 @@ export const PRESETY_DOKUMENTOW_SOLTYSA: PresetDokumentu[] = [
       { id: "data", etykieta: "Data zebrania", typ: "date" },
       { id: "przewodniczacy", etykieta: "Przewodniczący zebrania", typ: "text" },
       { id: "sekretarz", etykieta: "Protokolant", typ: "text" },
-      { id: "frekwencja", etykieta: "Frekwencja (np. liczba osób / mandaty)", typ: "text" },
-      { id: "uchwaly", etykieta: "Treść uchwał / decyzji", typ: "textarea", wiersze: 8, placeholder: "Uchwała nr … w sprawie …" },
+      {
+        id: "frekwencja",
+        etykieta: "Frekwencja (np. liczba osób / mandaty)",
+        typ: "text",
+        placeholder: "np. 23 osoby uprawnione; mandaty: 2",
+        szybkieWstawki: [
+          { etykieta: "Szablon", wartosc: "Obecnych uprawnionych do głosowania: … osób; mandaty pełnomocnictw: …" },
+        ],
+      },
+      {
+        id: "uchwaly",
+        etykieta: "Treść uchwał / decyzji",
+        typ: "textarea",
+        wiersze: 8,
+        placeholder: "Uchwała nr … w sprawie …",
+        szybkieWstawki: [
+          {
+            etykieta: "Uchwała formalna",
+            wartosc:
+              "Uchwała Nr …/2026 z dnia … w sprawie przyjęcia protokołu z zebrania wiejskiego.\n\n§ 1. Przyjmuje się protokół z zebrania z dnia …\n§ 2. Uchwała wchodzi w życie z dniem podjęcia.",
+          },
+        ],
+      },
     ],
     budujHtml: (w, meta) =>
       otoczenie("PROTOKÓŁ ZEBRANIA WIEJSKIEGO", meta, `
@@ -175,10 +222,41 @@ export const PRESETY_DOKUMENTOW_SOLTYSA: PresetDokumentu[] = [
     pola: [
       { id: "wnioskodawca", etykieta: "Wnioskodawca (np. sołectwo / KGW)", typ: "text" },
       { id: "gmina", etykieta: "Gmina", typ: "text" },
-      { id: "kwota", etykieta: "Wnioskowana kwota (PLN)", typ: "text" },
-      { id: "nazwa_zadania", etykieta: "Nazwa zadania", typ: "text" },
-      { id: "uzasadnienie", etykieta: "Uzasadnienie i opis", typ: "textarea", wiersze: 8 },
-      { id: "harmonogram", etykieta: "Termin realizacji / harmonogram", typ: "textarea", wiersze: 4 },
+      { id: "kwota", etykieta: "Wnioskowana kwota (PLN)", typ: "text", placeholder: "np. 5 000,00" },
+      { id: "nazwa_zadania", etykieta: "Nazwa zadania", typ: "text", placeholder: "np. remont podłogi w świetlicy" },
+      {
+        id: "uzasadnienie",
+        etykieta: "Uzasadnienie i opis",
+        typ: "textarea",
+        wiersze: 8,
+        placeholder: "Potrzeby mieszkańców, zgodność z uchwałą o FS…",
+        szybkieWstawki: [
+          {
+            etykieta: "Szablon krótki",
+            wartosc:
+              "Zadanie odpowiada potrzebom mieszkańców i wynika z wykazu zadań przyjętego w trybie uchwały o funduszu sołeckim. Wnioskowana kwota zostanie rozliczona zgodnie z przepisami i uchwałą gminy.",
+          },
+          {
+            etykieta: "Załączniki",
+            wartosc:
+              "Załączniki: kosztorys uproszczony, zdjęcia przed realizacją (do uzupełnienia), oświadczenie o niezaleganiu z ZUS (jeśli wymagane).",
+          },
+        ],
+      },
+      {
+        id: "harmonogram",
+        etykieta: "Termin realizacji / harmonogram",
+        typ: "textarea",
+        wiersze: 4,
+        placeholder: "np. realizacja: maj–wrzesień…",
+        szybkieWstawki: [
+          {
+            etykieta: "Sezon letni",
+            wartosc:
+              "Realizacja: maj–wrzesień bieżącego roku.\nOdbiór techniczny i rozliczenie kosztów: do 31 października bieżącego roku.",
+          },
+        ],
+      },
     ],
     budujHtml: (w, meta) =>
       otoczenie("Wniosek o sfinansowanie zadania z funduszu sołeckiego", meta, `
@@ -200,7 +278,20 @@ export const PRESETY_DOKUMENTOW_SOLTYSA: PresetDokumentu[] = [
       { id: "termin_od", etykieta: "Składanie wniosków od", typ: "text" },
       { id: "termin_do", etykieta: "Składanie wniosków do", typ: "text" },
       { id: "miejsce", etykieta: "Miejsce składania", typ: "text", placeholder: "sołtys / skrzynka …" },
-      { id: "dodatkowe", etykieta: "Dodatkowe informacje", typ: "textarea", wiersze: 4 },
+      {
+        id: "dodatkowe",
+        etykieta: "Dodatkowe informacje",
+        typ: "textarea",
+        wiersze: 4,
+        placeholder: "Wzór wniosku, godziny przyjmowania…",
+        szybkieWstawki: [
+          {
+            etykieta: "Wzór + BIP",
+            wartosc:
+              "Wzór wniosku dostępny jest w Biuletynie Informacji Publicznej gminy oraz u sołtysa. Wypełnione wnioski z załącznikami należy składać w godzinach … (do uzupełnienia).",
+          },
+        ],
+      },
     ],
     budujHtml: (w, meta) =>
       otoczenie("Zawiadomienie", meta, `
@@ -235,8 +326,21 @@ export const PRESETY_DOKUMENTOW_SOLTYSA: PresetDokumentu[] = [
     pola: [
       { id: "adresat", etykieta: "Adresat (pełna nazwa jednostki)", typ: "textarea", wiersze: 2 },
       { id: "z_naglowka", etykieta: "Znak sprawy (z nagłówka sołectwa)", typ: "text", placeholder: "np. SW.1/2026" },
-      { id: "dotyczy", etykieta: "Dotyczy", typ: "text" },
-      { id: "tresc", etykieta: "Treść pisma", typ: "textarea", wiersze: 12 },
+      { id: "dotyczy", etykieta: "Dotyczy", typ: "text", placeholder: "np. wniosek o dofinansowanie …" },
+      {
+        id: "tresc",
+        etykieta: "Treść pisma",
+        typ: "textarea",
+        wiersze: 12,
+        placeholder: "Szanowni Państwo, …",
+        szybkieWstawki: [
+          {
+            etykieta: "Wstęp + prośba",
+            wartosc:
+              "W związku z prowadzoną sprawą zwracam się z prośbą o:\n1) …\n2) …\n\nJednocześnie informuję, że w razie potrzeby jestem do dyspozycji w celu ustaleń telefonicznych lub osobistego spotkania.",
+          },
+        ],
+      },
       { id: "podpis", etykieta: "Podpis (funkcja, imię i nazwisko)", typ: "text", placeholder: "Sołtys …" },
     ],
     budujHtml: (w, meta) =>

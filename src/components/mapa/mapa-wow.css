@@ -1,0 +1,47 @@
+/* Delikatny „filmowy” blur przy wejściu mapy — wyłączony przy prefers-reduced-motion */
+
+@media (prefers-reduced-motion: no-preference) {
+  .mapa-wsi-map-shell {
+    animation: mapaShellWejscie 0.9s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+  }
+
+  @keyframes mapaShellWejscie {
+    from {
+      opacity: 0;
+      transform: scale(0.985) translateY(8px);
+      filter: blur(2px);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1) translateY(0);
+      filter: blur(0);
+    }
+  }
+
+  .mapa-wsi-legenda-wow {
+    animation: mapaLegendaWejscie 0.55s ease-out 0.25s backwards;
+  }
+
+  @keyframes mapaLegendaWejscie {
+    from {
+      opacity: 0;
+      transform: translateY(-6px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+
+  .mapa-wsi-podpowiedz-wow {
+    animation: mapaLegendaWejscie 0.5s ease-out 0.45s backwards;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mapa-wsi-map-shell,
+  .mapa-wsi-legenda-wow,
+  .mapa-wsi-podpowiedz-wow {
+    animation: none;
+  }
+}

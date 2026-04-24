@@ -39,7 +39,9 @@ export function SzukajKatalog() {
       }
       ustawWyniki(d.wyniki ?? []);
       if ((d.wyniki ?? []).length === 0) {
-        ustawBlad("Brak wyników — uruchom import TERYT albo spróbuj innej nazwy.");
+        ustawBlad(
+          "Brak wyników — uruchom import TERYT, sprawdź pisownię albo wpisz gminę, powiat lub fragment kodu SIMC."
+        );
       }
     } catch {
       ustawBlad("Brak połączenia z serwerem.");
@@ -62,7 +64,7 @@ export function SzukajKatalog() {
           id="szukaj-fraza"
           value={fraza}
           onChange={(e) => ustawFraze(e.target.value)}
-          placeholder="np. Arcelin, Łąka…"
+          placeholder="np. Studzienki, Kcynia, nakielski, 0088390…"
           className="min-h-[48px] flex-1 rounded-lg border border-stone-300 px-4 py-3 text-stone-900 outline-none ring-green-800 focus:ring-2"
           autoComplete="off"
         />
@@ -93,6 +95,12 @@ export function SzukajKatalog() {
               </Link>
               <p className="text-sm text-stone-600">
                 {w.gmina}, {w.powiat} · {w.wojewodztwo}
+                {w.terytId ? (
+                  <>
+                    {" "}
+                    · SIMC <span className="font-mono text-xs">{w.terytId}</span>
+                  </>
+                ) : null}
               </p>
             </li>
           ))}

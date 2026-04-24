@@ -190,6 +190,9 @@ export function StudzienkiProjektSwietlicy({
                     świetlicy wiejskiej
                   </span>
                 </h1>
+                <p className="mt-3 text-xs font-medium uppercase tracking-wide text-emerald-200/90 sm:text-[13px]">
+                  Sołectwo {nazwaWsi} · sołtys: Tadeusz Owedyk
+                </p>
                 <p className="mt-4 max-w-2xl text-sm leading-relaxed text-emerald-50/95 sm:text-base">
                   Przegląd rysunków: układ parteru z metrażami, elewacje z materiałami oraz skrót legendy kolorystycznej
                   — przygotowane tak, żeby mieszkańcom było łatwiej „wejść” w inwestycję zanim powstanie budynek.

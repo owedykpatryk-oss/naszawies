@@ -17,8 +17,9 @@ export default function SzukajPage() {
       </p>
       <h1 className="font-serif text-3xl text-green-950">Szukaj wsi</h1>
       <p className="mt-2 text-sm leading-relaxed text-stone-600">
-        Katalog z bazy <code className="rounded bg-stone-100 px-1 text-xs">villages</code> (po
-        imporcie SIMC/TERYT). Wpisz fragment nazwy miejscowości.
+        Katalog z bazy <code className="rounded bg-stone-100 px-1 text-xs">villages</code> (SIMC/TERYT). Szukaj po{" "}
+        <strong>nazwie</strong>, <strong>gminie</strong>, <strong>powiecie</strong>,{" "}
+        <strong>województwie</strong>, <strong>kodzie SIMC</strong> lub fragmencie <strong>slug</strong> w URL.
       </p>
       <SzukajKatalog />
     </main>

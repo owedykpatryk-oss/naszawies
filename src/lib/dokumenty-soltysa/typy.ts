@@ -1,3 +1,9 @@
+export type SzybkaWstawkaPola = {
+  etykieta: string;
+  /** Tekst wstawiany do pola (zastąpi lub dopisze — wg przycisku w UI). */
+  wartosc: string;
+};
+
 export type PolePresetu = {
   id: string;
   etykieta: string;
@@ -7,6 +13,8 @@ export type PolePresetu = {
   placeholder?: string;
   wiersze?: number;
   podpowiedz?: string;
+  /** Krótkie gotowce tylko dla tego pola (przyciski pod polem). */
+  szybkieWstawki?: SzybkaWstawkaPola[];
 };
 
 export type PresetDokumentu = {
