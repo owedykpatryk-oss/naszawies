@@ -23,6 +23,50 @@ export type StrefaRzutuStudzienki = {
 
 export const STREFA_SALI_GLOWNEJ_ID = "1.6";
 
+/** Szkic stołów w sali 1.6 — współrzędne jak `rect` całej bitmapy (0–100%), ten sam układ co na rzucie PNG. */
+export type StolWSkaliRzutu = {
+  id: string;
+  typ: "prostokatny" | "okragly";
+  x: number;
+  y: number;
+  miejsca: number;
+  szer: number;
+  wys: number;
+};
+
+/**
+ * Początkowy układ stołów w obrębie sali 1.6 (kolumna + grupa okrągłych) — spójny z interaktywnym rzutem
+ * i z planem w edytorze sołtysa (`planSaliStudzienkiPoczatkowy`).
+ */
+export const UKLAD_STOLOW_W_SALI_STUDZIENKI: readonly StolWSkaliRzutu[] = [
+  { id: "a", typ: "prostokatny", x: 45, y: 24, miejsca: 6, szer: 12, wys: 4.5 },
+  { id: "b", typ: "prostokatny", x: 45, y: 36, miejsca: 6, szer: 12, wys: 4.5 },
+  { id: "c", typ: "prostokatny", x: 45, y: 48, miejsca: 6, szer: 12, wys: 4.5 },
+  { id: "d", typ: "okragly", x: 58, y: 34, miejsca: 8, szer: 7, wys: 7 },
+  { id: "e", typ: "okragly", x: 58, y: 48, miejsca: 8, szer: 7, wys: 7 },
+  { id: "f", typ: "okragly", x: 58, y: 62, miejsca: 8, szer: 7, wys: 7 },
+];
+
+const ZAOKR2 = (n: number) => Math.round(n * 100) / 100;
+
+/**
+ * Mapowanie z układu pełnej bitmapy rzutu na skalę edytora planu sali (viewBox 100×70, cała płaszczyzna = tylko sala).
+ */
+export function wspRzutuDoSkaliPlanuSali(
+  sala: ProstokatProc,
+  x: number,
+  y: number,
+  szer: number,
+  wys: number
+): { x: number; y: number; szer: number; wys: number } {
+  return {
+    x: ZAOKR2(((x - sala.x) / sala.w) * 100),
+    y: ZAOKR2(((y - sala.y) / sala.h) * 70),
+    szer: ZAOKR2((szer / sala.w) * 100),
+    wys: ZAOKR2((wys / sala.h) * 70),
+  };
+}
+
 /**
  * Topologia wg opisu rysunku (04/2024): sala zajmuje prawą część bryły; kuchnia + gosp. u góry po lewej;
  * WC męski między kuchnią a salą; WC damski / niepełnosprawność na dole po lewej; wiatrołap z wejściem u dołu.

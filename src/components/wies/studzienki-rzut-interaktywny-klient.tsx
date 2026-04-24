@@ -5,6 +5,7 @@ import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react"
 import {
   STREFA_SALI_GLOWNEJ_ID,
   STREFY_RZUTU_STUDZIENKI,
+  UKLAD_STOLOW_W_SALI_STUDZIENKI,
   ZNACZNIKI_RZUTU_STUDZIENKI,
   znajdzStrefe,
   type ProstokatProc,
@@ -24,16 +25,6 @@ type StolProsty = {
   szer: number;
   wys: number;
 };
-
-/** Startowy układ stołów — w obrębie sali 1.6 (współrzędne jak w `STREFY_RZUTU` dla 1.6). */
-const UKLADY_START: StolProsty[] = [
-  { id: "a", typ: "prostokatny", x: 45, y: 24, miejsca: 6, szer: 12, wys: 4.5 },
-  { id: "b", typ: "prostokatny", x: 45, y: 36, miejsca: 6, szer: 12, wys: 4.5 },
-  { id: "c", typ: "prostokatny", x: 45, y: 48, miejsca: 6, szer: 12, wys: 4.5 },
-  { id: "d", typ: "okragly", x: 58, y: 34, miejsca: 8, szer: 7, wys: 7 },
-  { id: "e", typ: "okragly", x: 58, y: 48, miejsca: 8, szer: 7, wys: 7 },
-  { id: "f", typ: "okragly", x: 58, y: 62, miejsca: 8, szer: 7, wys: 7 },
-];
 
 function klamruj(n: number, a: number, b: number): number {
   return Math.min(b, Math.max(a, n));
@@ -77,7 +68,9 @@ export function StudzienkiRzutInteraktywny() {
   const [pokazZnaczniki, ustawPokazZnaczniki] = useState(true);
   const [trybStolow, ustawTrybStolow] = useState(false);
   const [wybrana, ustawWybrana] = useState<string | null>(null);
-  const [stoly, ustawStoly] = useState<StolProsty[]>(() => UKLADY_START.map((t) => ({ ...t, id: `${idPref}-${t.id}` })));
+  const [stoly, ustawStoly] = useState<StolProsty[]>(() =>
+    UKLAD_STOLOW_W_SALI_STUDZIENKI.map((t) => ({ ...t, id: `${idPref}-${t.id}` }))
+  );
   const [wlecze, ustawWlecze] = useState<{ id: string; offX: number; offY: number } | null>(null);
   const [najechana, ustawNajechana] = useState<string | null>(null);
   const wleczePrzestRef = useRef<typeof wlecze>(null);
@@ -223,7 +216,11 @@ export function StudzienkiRzutInteraktywny() {
                 </button>
                 <button
                   type="button"
-                  onClick={() => ustawStoly(przesunWszystkieStart(UKLADY_START.map((t) => ({ ...t, id: `${idPref}-${t.id}` }))))}
+                  onClick={() =>
+                    ustawStoly(
+                      przesunWszystkieStart(UKLAD_STOLOW_W_SALI_STUDZIENKI.map((t) => ({ ...t, id: `${idPref}-${t.id}` })))
+                    )
+                  }
                   className="min-h-[44px] rounded-2xl border border-stone-200/90 bg-white px-3.5 py-2 text-sm font-medium text-stone-700 shadow-sm transition hover:border-emerald-300/60 hover:bg-stone-50/90 sm:min-h-0"
                 >
                   Start

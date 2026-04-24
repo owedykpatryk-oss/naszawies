@@ -27,7 +27,7 @@ export default async function LayoutWitryny({ children }: { children: React.Reac
   }
 
   return (
-    <div className="min-h-screen bg-stone-50 text-stone-900">
+    <div className="min-h-screen min-w-0 overflow-x-hidden bg-stone-50 text-stone-900">
       <NaglowekStrony linkiPrawe={linkiPrawe} />
       {children}
     </div>

@@ -3,7 +3,9 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { DokumentacjaZniszczenRezerwacji } from "@/components/swietlica/dokumentacja-zniszczen-rezerwacji";
 import { PrzyciskZakonczRezerwacjeSwietlicy } from "@/components/swietlica/przycisk-zakoncz-rezerwacje-swietlicy";
+import { pobierzVillageIdsRoliPaneluSoltysaDlaUzytkownikaCache } from "@/lib/panel/rola-panelu-soltysa";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
+import { SoltysRezerwacjeKalendarzEksport } from "./soltys-rezerwacje-kalendarz-eksport";
 import { SoltysRezerwacjeKlient, type WierszRezerwacji } from "./soltys-rezerwacje-klient";
 
 export const metadata: Metadata = {
@@ -19,14 +21,7 @@ export default async function SoltysRezerwacjePage() {
     redirect("/logowanie?next=/panel/soltys/rezerwacje");
   }
 
-  const { data: mojeWsi } = await supabase
-    .from("user_village_roles")
-    .select("village_id")
-    .eq("user_id", user.id)
-    .eq("status", "active")
-    .in("role", ["soltys", "wspoladmin"]);
-
-  const villageIds = (mojeWsi ?? []).map((m) => m.village_id).filter(Boolean);
+  const villageIds = await pobierzVillageIdsRoliPaneluSoltysaDlaUzytkownikaCache(user.id);
 
   type WpisSali = { id: string; name: string; village_id: string };
   let sale: WpisSali[] = [];
@@ -69,7 +64,71 @@ export default async function SoltysRezerwacjePage() {
     surowe = (data ?? []) as RawRez[];
   }
 
-  const userIds = Array.from(new Set(surowe.map((r) => r.booked_by).filter(Boolean) as string[]));
+  type RawKalendarz = {
+    id: string;
+    hall_id: string;
+    start_at: string;
+    end_at: string;
+    event_type: string;
+    event_title: string | null;
+    contact_phone: string | null;
+    status: string;
+    booked_by: string | null;
+  };
+
+  type RawEksport = {
+    id: string;
+    hall_id: string;
+    start_at: string;
+    end_at: string;
+    event_type: string;
+    event_title: string | null;
+    expected_guests: number;
+    contact_phone: string | null;
+    status: string;
+    created_at: string;
+    booked_by: string | null;
+  };
+
+  let kalendarzSurowe: RawKalendarz[] = [];
+  let eksportSurowe: RawEksport[] = [];
+  if (hallIds.length > 0) {
+    const teraz = new Date();
+    const wPrzod = new Date(teraz.getTime() + 30 * 24 * 60 * 60 * 1000);
+    const { data: dKal } = await supabase
+      .from("hall_bookings")
+      .select(
+        "id, hall_id, start_at, end_at, event_type, event_title, contact_phone, status, booked_by"
+      )
+      .in("hall_id", hallIds)
+      .in("status", ["pending", "approved"])
+      .gt("end_at", teraz.toISOString())
+      .lt("start_at", wPrzod.toISOString())
+      .order("start_at", { ascending: true });
+    kalendarzSurowe = (dKal ?? []) as RawKalendarz[];
+
+    const wstecz = new Date(Date.now() - 90 * 24 * 60 * 60 * 1000);
+    const { data: dEks } = await supabase
+      .from("hall_bookings")
+      .select(
+        "id, hall_id, start_at, end_at, event_type, event_title, expected_guests, contact_phone, status, created_at, booked_by"
+      )
+      .in("hall_id", hallIds)
+      .gte("start_at", wstecz.toISOString())
+      .order("start_at", { ascending: false })
+      .limit(500);
+    eksportSurowe = (dEks ?? []) as RawEksport[];
+  }
+
+  const userIds = Array.from(
+    new Set(
+      [
+        ...surowe.map((r) => r.booked_by),
+        ...kalendarzSurowe.map((r) => r.booked_by),
+        ...eksportSurowe.map((r) => r.booked_by),
+      ].filter(Boolean) as string[]
+    )
+  );
   const mapaUzytkownikow: Record<string, string> = {};
   if (userIds.length > 0) {
     const { data: users } = await supabase.from("users").select("id, display_name").in("id", userIds);
@@ -91,6 +150,39 @@ export default async function SoltysRezerwacjePage() {
     has_alcohol: r.has_alcohol,
     contact_phone: r.contact_phone,
     created_at: r.created_at,
+  }));
+
+  const wierszeKalendarz = kalendarzSurowe
+    .filter(
+      (r): r is RawKalendarz & { status: "pending" | "approved" } =>
+        r.status === "pending" || r.status === "approved"
+    )
+    .map((r) => ({
+      id: r.id,
+      hall_id: r.hall_id,
+      sala_nazwa: nazwaSali[r.hall_id] ?? "Sala",
+      status: r.status,
+      start_at: r.start_at,
+      end_at: r.end_at,
+      event_type: r.event_type,
+      event_title: r.event_title,
+      contact_phone: r.contact_phone,
+      mieszkaniec: r.booked_by ? mapaUzytkownikow[r.booked_by] ?? r.booked_by.slice(0, 8) : "—",
+    }));
+
+  const wierszeEksport = eksportSurowe.map((r) => ({
+    id: r.id,
+    hall_id: r.hall_id,
+    sala_nazwa: nazwaSali[r.hall_id] ?? "Sala",
+    status: r.status,
+    start_at: r.start_at,
+    end_at: r.end_at,
+    event_type: r.event_type,
+    event_title: r.event_title,
+    expected_guests: r.expected_guests,
+    contact_phone: r.contact_phone,
+    created_at: r.created_at,
+    mieszkaniec: r.booked_by ? mapaUzytkownikow[r.booked_by] ?? r.booked_by.slice(0, 8) : "—",
   }));
 
   type RawArchiwum = {
@@ -147,6 +239,7 @@ export default async function SoltysRezerwacjePage() {
       ) : (
         <>
           <SoltysRezerwacjeKlient wiersze={wiersze} />
+          <SoltysRezerwacjeKalendarzEksport kalendarz={wierszeKalendarz} eksport={wierszeEksport} />
           <section className="mt-14">
             <h2 className="font-serif text-xl text-green-950">Zatwierdzone i zakończone — dokumentacja po wydarzeniu</h2>
             <p className="mt-2 text-sm text-stone-600">

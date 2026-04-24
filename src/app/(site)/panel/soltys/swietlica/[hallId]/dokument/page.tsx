@@ -4,6 +4,7 @@ import { notFound, redirect } from "next/navigation";
 import { DokumentWynajmuWidok } from "@/components/swietlica/dokument-wynajmu-widok";
 import { NawigacjaSali } from "@/components/swietlica/nawigacja-sali";
 import { pobierzDaneDokumentuWynajmu } from "@/lib/swietlica/pobierz-dane-dokumentu-wynajmu";
+import { czyUzytkownikJestSoltysemDlaSali } from "@/lib/panel/rola-panelu-soltysa";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
 
 type Props = { params: { hallId: string } };
@@ -22,6 +23,11 @@ export default async function DokumentWynajmuSoltysPage({ params }: Props) {
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) redirect(`/logowanie?next=/panel/soltys/swietlica/${hallId}/dokument`);
+
+  const wolno = await czyUzytkownikJestSoltysemDlaSali(supabase, user.id, hallId);
+  if (!wolno) {
+    notFound();
+  }
 
   const dane = await pobierzDaneDokumentuWynajmu(hallId);
   if (!dane) notFound();

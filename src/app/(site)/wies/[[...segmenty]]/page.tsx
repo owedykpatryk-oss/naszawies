@@ -138,7 +138,7 @@ export default async function WiesCatchAllPage({ params }: Props) {
     }
     const sciezka = sciezkaProfiluWsi(wies);
     return (
-      <main className="mx-auto max-w-5xl px-5 py-16 text-stone-800">
+      <main className="mx-auto min-w-0 max-w-5xl px-4 py-12 text-stone-800 sm:px-5 sm:py-16">
         <StudzienkiProjektSwietlicy sciezkaWsi={sciezka} nazwaWsi={wies.name} />
       </main>
     );

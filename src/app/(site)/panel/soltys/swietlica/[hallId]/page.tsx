@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
+import { czyUzytkownikJestSoltysemDlaSali } from "@/lib/panel/rola-panelu-soltysa";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
 import { NawigacjaSali } from "@/components/swietlica/nawigacja-sali";
 import { PlanSaliEdytor } from "@/components/swietlica/plan-sali-edytor";
@@ -34,12 +35,17 @@ export default async function SoltysSwietlicaHallPage({ params }: Props) {
   const { data: sala, error: salaErr } = await supabase
     .from("halls")
     .select(
-      "id, name, description, address, max_capacity, village_id, layout_data, rules_text, deposit, price_resident, price_external, villages(id, name, playground_rules_text)"
+      "id, name, description, address, max_capacity, village_id, layout_data, rules_text, deposit, price_resident, price_external, contact_phone, contact_email, caretaker_name, villages(id, name, playground_rules_text)"
     )
     .eq("id", hallId)
     .maybeSingle();
 
   if (salaErr || !sala) {
+    notFound();
+  }
+
+  const wolno = await czyUzytkownikJestSoltysemDlaSali(supabase, user.id, hallId);
+  if (!wolno) {
     notFound();
   }
 
@@ -81,6 +87,31 @@ export default async function SoltysSwietlicaHallPage({ params }: Props) {
         <p className="mt-3 text-sm leading-relaxed text-stone-700">{sala.description}</p>
       ) : null}
 
+      {sala.contact_phone || sala.contact_email || sala.caretaker_name ? (
+        <div className="mt-5 rounded-xl border border-stone-200 bg-stone-50/80 p-4 text-sm text-stone-800 shadow-sm">
+          <h2 className="text-xs font-bold uppercase tracking-widest text-stone-500">Kontakt do sali (dla wynajmujących)</h2>
+          <ul className="mt-2 space-y-1.5">
+            {sala.caretaker_name ? <li>Opiekun / opiekunka: {sala.caretaker_name}</li> : null}
+            {sala.contact_phone ? (
+              <li>
+                Telefon:{" "}
+                <a href={`tel:${sala.contact_phone.replace(/\s/g, "")}`} className="text-green-800 underline">
+                  {sala.contact_phone}
+                </a>
+              </li>
+            ) : null}
+            {sala.contact_email ? (
+              <li>
+                E-mail:{" "}
+                <a href={`mailto:${sala.contact_email}`} className="text-green-800 underline">
+                  {sala.contact_email}
+                </a>
+              </li>
+            ) : null}
+          </ul>
+        </div>
+      ) : null}
+
       <RegulaminSaliKlient
         hallId={hallId}
         rulesTextPoczatek={sala.rules_text}
@@ -97,7 +128,7 @@ export default async function SoltysSwietlicaHallPage({ params }: Props) {
         />
       ) : null}
 
-      <PlanSaliEdytor hallId={hallId} poczatkowyPlan={plan} />
+      <PlanSaliEdytor hallId={hallId} poczatkowyPlan={plan} pojemnoscSali={sala.max_capacity} />
 
       <AsortymentSwietlicyKlient hallId={hallId} nazwaSali={sala.name} pozycje={pozycje} />
     </main>

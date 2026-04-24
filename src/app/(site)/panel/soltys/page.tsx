@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { pobierzVillageIdsRoliPaneluSoltysaDlaUzytkownikaCache } from "@/lib/panel/rola-panelu-soltysa";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
 import { sciezkaProfiluWsi } from "@/lib/wies/sciezka-publiczna";
 import {
@@ -22,14 +23,7 @@ export default async function SoltysPage() {
     redirect("/logowanie?next=/panel/soltys");
   }
 
-  const { data: mojeWsi } = await supabase
-    .from("user_village_roles")
-    .select("village_id")
-    .eq("user_id", user.id)
-    .eq("status", "active")
-    .in("role", ["soltys", "wspoladmin"]);
-
-  const villageIds = (mojeWsi ?? []).map((m) => m.village_id).filter(Boolean);
+  const villageIds = await pobierzVillageIdsRoliPaneluSoltysaDlaUzytkownikaCache(user.id);
 
   const nazwyWsi: Record<string, string> = {};
   const hrefWsi: Record<string, string> = {};

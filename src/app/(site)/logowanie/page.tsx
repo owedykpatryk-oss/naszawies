@@ -43,25 +43,35 @@ export default async function LogowaniePage({ searchParams }: Props) {
   }
 
   return (
-    <main className="mx-auto max-w-md px-5 py-16 text-stone-800">
+    <main className="mx-auto min-w-0 max-w-md px-4 py-12 text-stone-800 sm:px-5 sm:py-16">
       <p className="mb-6 text-sm text-stone-500">
-        <Link href="/" className="text-green-800 underline">
+        <Link href="/" className="font-medium text-green-900 underline decoration-emerald-800/30 underline-offset-2 hover:decoration-emerald-800">
           ← Strona główna
         </Link>
       </p>
-      <h1 className="font-serif text-3xl text-green-950">Logowanie</h1>
-      <p className="mt-2 text-sm text-stone-600">
-        Zaloguj się przez Google lub GitHub, albo użyj e-maila i hasła. Po zalogowaniu przejdziesz
-        do panelu (albo do adresu z parametru{" "}
-        <code className="rounded bg-stone-100 px-1 text-xs">next</code>).
-      </p>
-      <LogowanieProwiderzy pochodzeniePubliczne={pochodzenie} nastepnaSciezka={nastepna} />
-      <p className="mt-8 text-center text-sm text-stone-500">lub adres e-mail</p>
-      <LogowanieFormularz
-        nastepnaSciezka={nastepna}
-        kodBledu={kodBledu}
-        szczegolBledu={szczegolBledu}
-      />
+      <div className="relative overflow-hidden rounded-3xl border border-stone-200/80 bg-gradient-to-b from-white to-stone-50/90 p-6 shadow-[0_20px_50px_-20px_rgba(21,60,40,0.18)] ring-1 ring-stone-900/[0.04] sm:p-8">
+        <div
+          className="pointer-events-none absolute -right-20 -top-20 h-56 w-56 rounded-full bg-emerald-500/10 blur-3xl"
+          aria-hidden
+        />
+        <h1 className="relative font-serif text-3xl tracking-tight text-green-950 sm:text-[2rem]">Logowanie</h1>
+        <p className="relative mt-2 text-sm leading-relaxed text-stone-600">
+          Zaloguj się przez Google lub GitHub, albo użyj e-maila i hasła. Po zalogowaniu przejdziesz
+          do panelu (albo do adresu z parametru{" "}
+          <code className="rounded-md bg-stone-100/90 px-1.5 py-0.5 font-mono text-xs text-stone-800">next</code>).
+        </p>
+        <div className="relative mt-6">
+          <LogowanieProwiderzy pochodzeniePubliczne={pochodzenie} nastepnaSciezka={nastepna} />
+        </div>
+        <p className="relative mt-8 text-center text-xs font-medium uppercase tracking-wider text-stone-500">
+          lub e-mail
+        </p>
+        <LogowanieFormularz
+          nastepnaSciezka={nastepna}
+          kodBledu={kodBledu}
+          szczegolBledu={szczegolBledu}
+        />
+      </div>
     </main>
   );
 }

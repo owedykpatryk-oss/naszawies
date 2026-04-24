@@ -117,7 +117,7 @@ export function StudzienkiProjektSwietlicy({
   nazwaWsi: string;
 }) {
   return (
-    <div className="relative text-stone-800">
+    <div className="relative min-w-0 overflow-x-hidden text-stone-800">
       {/* Tło „bloku technicznego” */}
       <div
         className="pointer-events-none fixed inset-0 -z-10 opacity-[0.45]"
@@ -271,13 +271,13 @@ export function StudzienkiProjektSwietlicy({
                   Metraże jak w tabeli na rysunku — podkreślono salę jako główną przestrzeń spotkań.
                 </p>
               </div>
-              <div className="mt-8 overflow-hidden rounded-xl border border-stone-200 bg-white shadow-[0_8px_30px_-12px_rgba(0,0,0,0.12)]">
-                <table className="w-full text-left text-sm">
-                  <thead className="border-b border-stone-200 bg-gradient-to-r from-stone-100 to-stone-50 text-xs uppercase tracking-wide text-stone-600">
+              <div className="mt-8 max-w-full overflow-x-auto rounded-xl border border-stone-200 bg-white shadow-[0_8px_30px_-12px_rgba(0,0,0,0.12)] [-webkit-overflow-scrolling:touch] [scrollbar-width:thin]">
+                <table className="w-full min-w-[17rem] text-left text-sm">
+                  <thead className="border-b border-stone-200 bg-gradient-to-r from-stone-100 to-stone-50 text-[10px] uppercase tracking-wide text-stone-600 sm:text-xs">
                     <tr>
-                      <th className="px-4 py-3.5 font-semibold">Lp.</th>
-                      <th className="px-4 py-3.5 font-semibold">Pomieszczenie</th>
-                      <th className="px-4 py-3.5 text-right font-semibold">Powierzchnia</th>
+                      <th className="px-2 py-2.5 font-semibold sm:px-4 sm:py-3.5">Lp.</th>
+                      <th className="px-2 py-2.5 font-semibold sm:px-4 sm:py-3.5">Pomieszczenie</th>
+                      <th className="px-2 py-2.5 text-right font-semibold sm:px-4 sm:py-3.5">Powierzchnia</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-stone-100">
@@ -286,22 +286,24 @@ export function StudzienkiProjektSwietlicy({
                         key={r.lp}
                         className={`border-l-4 ${r.akcent} ${r.lp === "1.6" ? "bg-green-50/70 hover:bg-green-50" : r.lp === "1.4b" ? "bg-orange-50/40 hover:bg-stone-50/80" : "hover:bg-stone-50/80"}`}
                       >
-                        <td className="whitespace-nowrap px-4 py-3 font-mono text-xs text-stone-500">{r.lp}</td>
+                        <td className="whitespace-nowrap px-2 py-2.5 font-mono text-xs text-stone-500 sm:px-4 sm:py-3">
+                          {r.lp}
+                        </td>
                         <td
-                          className={`px-4 py-3 ${r.lp === "1.6" ? "font-semibold text-green-950" : "text-stone-800"}`}
+                          className={`min-w-0 break-words px-2 py-2.5 sm:px-4 sm:py-3 ${r.lp === "1.6" ? "font-semibold text-green-950" : "text-stone-800"}`}
                         >
                           {r.nazwa}
                         </td>
-                        <td className="whitespace-nowrap px-4 py-3 text-right font-medium tabular-nums text-stone-900">
+                        <td className="whitespace-nowrap px-2 py-2.5 text-right text-xs font-medium tabular-nums text-stone-900 sm:px-4 sm:py-3 sm:text-sm">
                           {r.powierzchnia}
                         </td>
                       </tr>
                     ))}
                     <tr className="border-t-2 border-green-800/20 bg-gradient-to-r from-green-100/90 to-emerald-50/80 font-bold text-green-950">
-                      <td className="px-4 py-4" colSpan={2}>
+                      <td className="px-2 py-3 sm:px-4 sm:py-4" colSpan={2}>
                         Razem
                       </td>
-                      <td className="px-4 py-4 text-right tabular-nums">114,17 m²</td>
+                      <td className="px-2 py-3 text-right tabular-nums sm:px-4 sm:py-4">114,17 m²</td>
                     </tr>
                   </tbody>
                 </table>

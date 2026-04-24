@@ -9,6 +9,7 @@ import {
   MAX_ZNAKOW_OPISU_PO_WYDARZENIU,
 } from "@/lib/swietlica/limity-dokumentacji-zniszczen";
 import { usunObiektR2 } from "@/lib/cloudflare/r2-s3-klient";
+import { pobierzVillageIdsRoliPaneluSoltysa } from "@/lib/panel/rola-panelu-soltysa";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
 
 const uuid = z.string().uuid();
@@ -126,11 +127,30 @@ export async function zlozRezerwacjeSwietlicy(
   }
 
   const p = parsed.data;
+  const startIso = start.toISOString();
+  const endIso = end.toISOString();
+  const { data: kolid, error: kE } = await supabase
+    .from("hall_bookings")
+    .select("id")
+    .eq("hall_id", p.hallId)
+    .eq("status", "approved")
+    .lt("start_at", endIso)
+    .gt("end_at", startIso)
+    .limit(1);
+
+  if (kE) {
+    console.error("[zlozRezerwacjeSwietlicy] kolid", kE.message);
+    return { blad: "Nie udało się sprawdzić wolnych terminów — spróbuj ponownie." };
+  }
+  if (kolid && kolid.length > 0) {
+    return { blad: "W tym przedziale jest już zatwierdzona rezerwację — wybierz inne godziny lub dzień." };
+  }
+
   const { error } = await supabase.from("hall_bookings").insert({
     hall_id: p.hallId,
     booked_by: user.id,
-    start_at: start.toISOString(),
-    end_at: end.toISOString(),
+    start_at: startIso,
+    end_at: endIso,
     event_type: p.eventType,
     event_title: p.eventTitle?.length ? p.eventTitle : null,
     expected_guests: p.expectedGuests,
@@ -179,15 +199,8 @@ async function pobierzRezerwacjeDoDokumentacjiZniszczen(
   const jestWynajmujacym = b.booked_by === userId;
   let jestSoltysem = false;
   if (!jestWynajmujacym) {
-    const { data: rola } = await supabase
-      .from("user_village_roles")
-      .select("id")
-      .eq("user_id", userId)
-      .eq("village_id", wiesId)
-      .eq("status", "active")
-      .in("role", ["soltys", "wspoladmin"])
-      .maybeSingle();
-    jestSoltysem = rola != null;
+    const villageIds = await pobierzVillageIdsRoliPaneluSoltysa(supabase, userId);
+    jestSoltysem = villageIds.includes(wiesId);
   }
 
   if (!jestWynajmujacym && !jestSoltysem) {

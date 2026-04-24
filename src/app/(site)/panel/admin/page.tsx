@@ -52,27 +52,29 @@ export default async function AdminPage() {
       ) : null}
 
       {!brakDostepu && (wpisy?.length ?? 0) ? (
-        <div className="mt-8 overflow-x-auto rounded-xl border border-stone-200 bg-white shadow-sm">
-          <table className="min-w-full text-left text-sm">
+        <div className="mt-8 max-w-full overflow-x-auto rounded-xl border border-stone-200 bg-white shadow-sm [-webkit-overflow-scrolling:touch] [scrollbar-width:thin]">
+          <table className="min-w-[32rem] text-left text-sm sm:min-w-full">
             <thead className="border-b border-stone-200 bg-stone-50 text-xs uppercase text-stone-600">
               <tr>
-                <th className="px-3 py-2">Data</th>
-                <th className="px-3 py-2">E-mail</th>
-                <th className="px-3 py-2">Imię</th>
-                <th className="px-3 py-2">Wieś</th>
-                <th className="px-3 py-2">Rola</th>
+                <th className="px-2 py-2 sm:px-3">Data</th>
+                <th className="px-2 py-2 sm:px-3">E-mail</th>
+                <th className="px-2 py-2 sm:px-3">Imię</th>
+                <th className="px-2 py-2 sm:px-3">Wieś</th>
+                <th className="px-2 py-2 sm:px-3">Rola</th>
               </tr>
             </thead>
             <tbody className="divide-y divide-stone-100">
               {(wpisy ?? []).map((w) => (
                 <tr key={w.id}>
-                  <td className="whitespace-nowrap px-3 py-2 text-stone-600">
+                  <td className="whitespace-nowrap px-2 py-2 text-stone-600 sm:px-3">
                     {new Date(w.created_at).toLocaleDateString("pl-PL")}
                   </td>
-                  <td className="px-3 py-2 font-mono text-xs">{w.email}</td>
-                  <td className="px-3 py-2">{w.full_name ?? "—"}</td>
-                  <td className="px-3 py-2">{w.village_name ?? "—"}</td>
-                  <td className="px-3 py-2">{w.role ?? "—"}</td>
+                  <td className="max-w-[10rem] break-all px-2 py-2 font-mono text-xs sm:max-w-none sm:break-normal sm:px-3">
+                    {w.email}
+                  </td>
+                  <td className="px-2 py-2 sm:px-3">{w.full_name ?? "—"}</td>
+                  <td className="max-w-[8rem] break-words px-2 py-2 sm:max-w-none sm:px-3">{w.village_name ?? "—"}</td>
+                  <td className="whitespace-nowrap px-2 py-2 sm:px-3">{w.role ?? "—"}</td>
                 </tr>
               ))}
             </tbody>

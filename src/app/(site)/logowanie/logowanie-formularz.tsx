@@ -55,7 +55,7 @@ export function LogowanieFormularz({ nastepnaSciezka, kodBledu, szczegolBledu }:
 
   return (
     <form
-      className="mt-8 space-y-4 rounded-2xl border border-stone-200 bg-white p-6 shadow-sm"
+      className="mt-4 space-y-4 rounded-2xl border border-stone-200/80 bg-stone-50/50 p-5 ring-1 ring-stone-900/[0.03] sm:mt-6 sm:p-6"
       onSubmit={onSubmit}
     >
       {blad ? (
@@ -73,7 +73,7 @@ export function LogowanieFormularz({ nastepnaSciezka, kodBledu, szczegolBledu }:
           type="email"
           required
           autoComplete="email"
-          className="w-full rounded-lg border border-stone-300 px-3 py-2 text-stone-900 outline-none ring-green-800 focus:ring-2"
+          className="min-h-[44px] w-full rounded-xl border border-stone-300 px-3 py-2.5 text-stone-900 outline-none transition focus:border-emerald-600 focus:ring-2 focus:ring-emerald-800/30"
         />
       </div>
       <div>
@@ -87,22 +87,22 @@ export function LogowanieFormularz({ nastepnaSciezka, kodBledu, szczegolBledu }:
           required
           autoComplete="current-password"
           minLength={6}
-          className="w-full rounded-lg border border-stone-300 px-3 py-2 text-stone-900 outline-none ring-green-800 focus:ring-2"
+          className="min-h-[44px] w-full rounded-xl border border-stone-300 px-3 py-2.5 text-stone-900 outline-none transition focus:border-emerald-600 focus:ring-2 focus:ring-emerald-800/30"
         />
       </div>
       <button
         type="submit"
         disabled={laduje}
-        className="w-full rounded-lg bg-green-800 px-4 py-2.5 font-medium text-white transition hover:bg-green-900 disabled:opacity-60"
+        className="w-full min-h-[44px] rounded-xl bg-gradient-to-b from-green-800 to-green-900 px-4 py-2.5 font-medium text-white shadow-md transition hover:from-green-900 hover:to-green-950 disabled:opacity-60"
       >
         {laduje ? "Logowanie…" : "Zaloguj się"}
       </button>
       <p className="text-center text-sm text-stone-600">
-        <Link href="/rejestracja" className="text-green-800 underline">
+        <Link href="/rejestracja" className="font-medium text-green-900 underline decoration-emerald-800/30 underline-offset-2 hover:decoration-emerald-800">
           Załóż konto
         </Link>
         {" · "}
-        <Link href="/reset-hasla" className="text-green-800 underline">
+        <Link href="/reset-hasla" className="font-medium text-green-900 underline decoration-emerald-800/30 underline-offset-2 hover:decoration-emerald-800">
           Nie pamiętasz hasła?
         </Link>
       </p>

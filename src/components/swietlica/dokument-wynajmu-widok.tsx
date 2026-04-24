@@ -24,11 +24,13 @@ function Sekcja({
 }) {
   return (
     <section className="mt-10 scroll-mt-4 print:mt-8">
-      <div className="flex items-baseline gap-3 border-b border-green-900/20 pb-2">
-        <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-green-900 text-sm font-bold text-white print:bg-green-950">
+      <div className="flex min-w-0 items-baseline gap-2 border-b border-green-900/20 pb-2 sm:gap-3">
+        <span className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full bg-green-900 text-xs font-bold text-white print:bg-green-950 sm:h-8 sm:w-8 sm:text-sm">
           {nr}
         </span>
-        <h2 className="font-serif text-xl font-normal tracking-tight text-green-950 print:text-lg">{tytul}</h2>
+        <h2 className="min-w-0 break-words font-serif text-lg font-normal tracking-tight text-green-950 sm:text-xl print:text-lg">
+          {tytul}
+        </h2>
       </div>
       <div className="mt-4">{dzieci}</div>
     </section>
@@ -70,13 +72,13 @@ export function DokumentWynajmuWidok({ dane }: Props) {
       />
       <div
         id="dokument-wynajmu-root"
-        className="relative mx-auto max-w-4xl overflow-hidden rounded-2xl border border-stone-200/90 bg-white shadow-[0_4px_6px_-1px_rgba(0,0,0,0.06),0_20px_50px_-15px_rgba(21,60,40,0.18)] print:shadow-none print:border-0"
+        className="relative mx-auto max-w-4xl min-w-0 overflow-x-auto overflow-y-visible rounded-2xl border border-stone-200/90 bg-white shadow-[0_4px_6px_-1px_rgba(0,0,0,0.06),0_20px_50px_-15px_rgba(21,60,40,0.18)] print:overflow-visible print:shadow-none print:border-0"
       >
         <div
           className="pointer-events-none absolute inset-x-0 top-0 h-1.5 bg-gradient-to-r from-green-900 via-emerald-700 to-green-800 print:h-1"
           aria-hidden
         />
-        <div className="p-6 sm:p-10 print:p-0">
+        <div className="min-w-0 p-4 sm:p-10 print:p-0">
           <div className="no-print mb-8">
             <PrzyciskDrukuDokumentu
               elementId="dokument-wynajmu-root"
@@ -86,9 +88,9 @@ export function DokumentWynajmuWidok({ dane }: Props) {
 
           <header className="border-b-2 border-green-900/85 pb-6">
             <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-start">
-              <div>
+              <div className="min-w-0">
                 <p className="font-serif text-2xl font-semibold tracking-tight text-green-950">naszawies.pl</p>
-                <h1 className="mt-2 max-w-2xl font-serif text-2xl font-normal leading-tight tracking-tight text-green-950 sm:text-[1.65rem]">
+                <h1 className="mt-2 break-words font-serif text-xl font-normal leading-tight tracking-tight text-green-950 sm:max-w-2xl sm:text-2xl sm:text-[1.65rem]">
                   Załącznik informacyjny do wynajmu świetlicy
                 </h1>
                 <p className="mt-3 max-w-prose text-sm leading-relaxed text-stone-600">
@@ -96,9 +98,11 @@ export function DokumentWynajmuWidok({ dane }: Props) {
                   cywilnoprawnej — strony mogą sporządzić odrębną umowę najmu lub regulamin wydarzenia.
                 </p>
               </div>
-              <div className="shrink-0 rounded-xl border border-green-200 bg-gradient-to-br from-green-50 to-emerald-50/80 px-4 py-3 text-right shadow-sm print:border-stone-300 print:bg-white">
+              <div className="w-full shrink-0 rounded-xl border border-green-200 bg-gradient-to-br from-green-50 to-emerald-50/80 px-3 py-3 text-right shadow-sm sm:w-auto sm:px-4 print:border-stone-300 print:bg-white">
                 <p className="text-[10px] font-bold uppercase tracking-widest text-green-800/80">Nr ref.</p>
-                <p className="mt-1 font-mono text-sm font-semibold text-green-950">{escapeHtml(dane.numerReferencyjny)}</p>
+                <p className="mt-1 break-all font-mono text-sm font-semibold text-green-950 sm:break-normal">
+                  {escapeHtml(dane.numerReferencyjny)}
+                </p>
               </div>
             </div>
 
@@ -212,20 +216,32 @@ export function DokumentWynajmuWidok({ dane }: Props) {
             tytul="Opłaty i kaucja"
             dzieci={
               <>
-                <div className="overflow-hidden rounded-xl border border-stone-200">
-                  <table className="w-full border-collapse text-sm">
+                <div className="max-w-full overflow-x-auto rounded-xl border border-stone-200 [-webkit-overflow-scrolling:touch] [scrollbar-width:thin]">
+                  <table className="w-full min-w-[16rem] table-fixed border-collapse text-sm sm:min-w-0 sm:table-auto">
                     <tbody>
                       <tr className="border-b border-stone-100 bg-stone-50/80">
-                        <th className="w-2/5 py-3 pl-4 pr-3 text-left font-semibold text-stone-800">Kaucja</th>
-                        <td className="py-3 pr-4 font-medium tabular-nums text-stone-900">{pln(dane.kaucjaPln)}</td>
+                        <th className="w-[38%] max-w-[11rem] break-words py-2.5 pl-3 pr-2 text-left text-xs font-semibold text-stone-800 sm:w-2/5 sm:max-w-none sm:py-3 sm:pl-4 sm:pr-3 sm:text-sm">
+                          Kaucja
+                        </th>
+                        <td className="py-2.5 pr-3 font-medium tabular-nums text-stone-900 sm:py-3 sm:pr-4">
+                          {pln(dane.kaucjaPln)}
+                        </td>
                       </tr>
                       <tr className="border-b border-stone-100">
-                        <th className="py-3 pl-4 pr-3 text-left font-semibold text-stone-800">Stawka — mieszkaniec</th>
-                        <td className="py-3 pr-4 font-medium tabular-nums text-stone-900">{pln(dane.cenaMieszkaniec)}</td>
+                        <th className="break-words py-2.5 pl-3 pr-2 text-left text-xs font-semibold text-stone-800 sm:py-3 sm:pl-4 sm:pr-3 sm:text-sm">
+                          Stawka — mieszkaniec
+                        </th>
+                        <td className="py-2.5 pr-3 font-medium tabular-nums text-stone-900 sm:py-3 sm:pr-4">
+                          {pln(dane.cenaMieszkaniec)}
+                        </td>
                       </tr>
                       <tr className="bg-green-50/40">
-                        <th className="py-3 pl-4 pr-3 text-left font-semibold text-stone-800">Stawka — osoby spoza wsi</th>
-                        <td className="py-3 pr-4 font-medium tabular-nums text-stone-900">{pln(dane.cenaObcy)}</td>
+                        <th className="break-words py-2.5 pl-3 pr-2 text-left text-xs font-semibold text-stone-800 sm:py-3 sm:pl-4 sm:pr-3 sm:text-sm">
+                          Stawka — osoby spoza wsi
+                        </th>
+                        <td className="py-2.5 pr-3 font-medium tabular-nums text-stone-900 sm:py-3 sm:pr-4">
+                          {pln(dane.cenaObcy)}
+                        </td>
                       </tr>
                     </tbody>
                   </table>
@@ -274,23 +290,33 @@ export function DokumentWynajmuWidok({ dane }: Props) {
               dane.asortyment.length === 0 ? (
                 <p className="text-sm text-stone-600">Brak pozycji w katalogu wyposażenia.</p>
               ) : (
-                <div className="overflow-x-auto rounded-xl border border-stone-200">
-                  <table className="min-w-full border-collapse text-sm">
+                <div className="max-w-full overflow-x-auto rounded-xl border border-stone-200 [-webkit-overflow-scrolling:touch] [scrollbar-width:thin]">
+                  <table className="w-full min-w-[32rem] border-collapse text-sm">
                     <thead>
                       <tr className="border-b-2 border-green-900/25 bg-green-950/[0.06] text-left text-stone-800">
-                        <th className="w-16 py-3 pl-3 pr-2 text-xs font-bold uppercase tracking-wide">Zdj.</th>
-                        <th className="py-3 pr-2 text-xs font-bold uppercase tracking-wide">Kategoria</th>
-                        <th className="py-3 pr-2 text-xs font-bold uppercase tracking-wide">Nazwa</th>
-                        <th className="py-3 pr-2 text-xs font-bold uppercase tracking-wide">Ilość</th>
-                        <th className="py-3 pr-3 text-xs font-bold uppercase tracking-wide">Uwagi</th>
+                        <th className="w-14 py-2.5 pl-2 pr-1 text-[10px] font-bold uppercase tracking-wide sm:w-16 sm:py-3 sm:pl-3 sm:pr-2 sm:text-xs">
+                          Zdj.
+                        </th>
+                        <th className="py-2.5 pr-1 text-[10px] font-bold uppercase tracking-wide sm:py-3 sm:pr-2 sm:text-xs">
+                          Kategoria
+                        </th>
+                        <th className="py-2.5 pr-1 text-[10px] font-bold uppercase tracking-wide sm:py-3 sm:pr-2 sm:text-xs">
+                          Nazwa
+                        </th>
+                        <th className="py-2.5 pr-1 text-[10px] font-bold uppercase tracking-wide sm:py-3 sm:pr-2 sm:text-xs">
+                          Ilość
+                        </th>
+                        <th className="min-w-[7rem] py-2.5 pr-2 text-[10px] font-bold uppercase tracking-wide sm:py-3 sm:pr-3 sm:text-xs">
+                          Uwagi
+                        </th>
                       </tr>
                     </thead>
                     <tbody>
                       {dane.asortyment.map((w, i) => (
                         <tr key={i} className="border-b border-stone-100 odd:bg-white even:bg-stone-50/50">
-                          <td className="py-2.5 pl-3 pr-2 align-top">
+                          <td className="py-2.5 pl-2 pr-1 align-top sm:pl-3 sm:pr-2">
                             {w.image_url ? (
-                              <div className="h-12 w-12 overflow-hidden rounded-lg border border-stone-200 bg-stone-50">
+                              <div className="h-10 w-10 overflow-hidden rounded-lg border border-stone-200 bg-stone-50 sm:h-12 sm:w-12">
                                 {/* eslint-disable-next-line @next/next/no-img-element */}
                                 <img src={w.image_url} alt="" className="h-full w-full object-cover" />
                               </div>
@@ -298,10 +324,14 @@ export function DokumentWynajmuWidok({ dane }: Props) {
                               <span className="text-stone-400">—</span>
                             )}
                           </td>
-                          <td className="py-2.5 pr-2 align-top text-stone-700">{escapeHtml(w.kategoria)}</td>
-                          <td className="py-2.5 pr-2 align-top font-medium text-stone-900">{escapeHtml(w.nazwa)}</td>
-                          <td className="py-2.5 pr-2 align-top tabular-nums">{w.ilosc}</td>
-                          <td className="py-2.5 pr-3 align-top text-stone-600">
+                          <td className="max-w-[5rem] break-words py-2.5 pr-1 align-top text-xs text-stone-700 sm:max-w-none sm:pr-2 sm:text-sm">
+                            {escapeHtml(w.kategoria)}
+                          </td>
+                          <td className="max-w-[6rem] break-words py-2.5 pr-1 align-top text-xs font-medium text-stone-900 sm:max-w-none sm:pr-2 sm:text-sm">
+                            {escapeHtml(w.nazwa)}
+                          </td>
+                          <td className="whitespace-nowrap py-2.5 pr-1 align-top tabular-nums sm:pr-2">{w.ilosc}</td>
+                          <td className="min-w-0 max-w-[10rem] break-words py-2.5 pr-2 align-top text-xs text-stone-600 sm:max-w-none sm:pr-3 sm:text-sm">
                             {w.opis ? <span className="whitespace-pre-wrap">{escapeHtml(w.opis)}</span> : "—"}
                           </td>
                         </tr>

@@ -62,15 +62,7 @@ export const schemaPlanSali = z.object({
 
 export type PlanSaliParsed = z.infer<typeof schemaPlanSali>;
 
-export function parsujPlanZJsonb(raw: unknown): PlanSaliJson {
-  if (raw == null || typeof raw !== "object") {
-    return pustyPlanSali();
-  }
-  const wynik = schemaPlanSali.safeParse(raw);
-  if (!wynik.success) {
-    return pustyPlanSali();
-  }
-  const p = wynik.data;
+function mapZodDoPlanSali(p: z.infer<typeof schemaPlanSali>): PlanSaliJson {
   return {
     wersja: 1,
     szerokosc_sali_m: p.szerokosc_sali_m ?? null,
@@ -89,4 +81,44 @@ export function parsujPlanZJsonb(raw: unknown): PlanSaliJson {
       dl_cm: e.dl_cm ?? undefined,
     })),
   };
+}
+
+export function parsujPlanZJsonb(raw: unknown): PlanSaliJson {
+  if (raw == null || typeof raw !== "object") {
+    return pustyPlanSali();
+  }
+  const wynik = schemaPlanSali.safeParse(raw);
+  if (!wynik.success) {
+    return pustyPlanSali();
+  }
+  return mapZodDoPlanSali(wynik.data);
+}
+
+/**
+ * Do importu pliku w edytorze: zwraca czytelny błąd zamiast cichego pustego planu.
+ */
+export function sprobujSparsowacPlanSali(
+  raw: unknown
+): { ok: true; plan: PlanSaliJson } | { ok: false; blad: string } {
+  if (raw == null || typeof raw !== "object") {
+    return { ok: false, blad: "Oczekiwany obiekt JSON (plan sali)." };
+  }
+  const wynik = schemaPlanSali.safeParse(raw);
+  if (!wynik.success) {
+    const opis = wynik.error.issues
+      .slice(0, 6)
+      .map((i) => `${i.path.length ? i.path.join(".") : "plan"}: ${i.message}`)
+      .join(" · ");
+    return { ok: false, blad: opis || "Nie udało się odczytać planu." };
+  }
+  return { ok: true, plan: mapZodDoPlanSali(wynik.data) };
+}
+
+/** Głęboka kopia planu (historia cofania, presety) — nieniszcząca referencji z props. */
+export function klonPlanuSali(p: PlanSaliJson): PlanSaliJson {
+  return structuredClone(p);
+}
+
+export function sumaMiejscWPlanie(plan: PlanSaliJson): number {
+  return plan.elementy.reduce((s, e) => s + (e.miejsca ?? 0), 0);
 }

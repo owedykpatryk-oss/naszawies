@@ -347,9 +347,40 @@ export async function zatwierdzRezerwacjeSwietlicy(bookingId: string): Promise<W
     return { blad: "Zaloguj się." };
   }
 
-  const { data: wiersz } = await supabase.from("hall_bookings").select("hall_id").eq("id", id.data).maybeSingle();
+  const { data: b, error: readE } = await supabase
+    .from("hall_bookings")
+    .select("id, hall_id, start_at, end_at, status, booked_by, halls!inner(village_id)")
+    .eq("id", id.data)
+    .maybeSingle();
 
-  const { error } = await supabase
+  if (readE || !b) {
+    return { blad: "Nie znaleziono rezerwacji." };
+  }
+  if (b.status !== "pending") {
+    return { blad: "Wniosek jest już rozpatrzony." };
+  }
+
+  const { data: kolid, error: kE } = await supabase
+    .from("hall_bookings")
+    .select("id")
+    .eq("hall_id", b.hall_id)
+    .neq("id", id.data)
+    .in("status", ["approved", "pending"])
+    .lt("start_at", b.end_at)
+    .gt("end_at", b.start_at)
+    .limit(1);
+
+  if (kE) {
+    console.error("[zatwierdzRezerwacjeSwietlicy] kolid", kE.message);
+    return { blad: "Nie udało się zweryfikować kolidni terminów (spróbuj ponownie)." };
+  }
+  if (kolid && kolid.length > 0) {
+    return {
+      blad: "Nie można zatwierdzić: ten przedział kolid z inną rezerwacją w tej sali (zatwierdzoną lub czekającą). Odrzuć zdublowany wniosek lub ustal inny termin.",
+    };
+  }
+
+  const { data: poAkt, error } = await supabase
     .from("hall_bookings")
     .update({
       status: "approved",
@@ -357,18 +388,41 @@ export async function zatwierdzRezerwacjeSwietlicy(bookingId: string): Promise<W
       approved_at: new Date().toISOString(),
     })
     .eq("id", id.data)
-    .eq("status", "pending");
+    .eq("status", "pending")
+    .select("id");
 
   if (error) {
     console.error("[zatwierdzRezerwacjeSwietlicy]", error.message);
     return { blad: "Nie udało się zatwierdzić (sprawdź uprawnienia sołtysa)." };
   }
+  if (!poAkt?.length) {
+    return { blad: "Wniosek został w międzyczasie rozpatrzony — odśwież stronę." };
+  }
+
+  const halls = b.halls as { village_id: string } | { village_id: string }[] | null;
+  const wiesId = Array.isArray(halls) ? halls[0]?.village_id : halls?.village_id;
+  if (b.booked_by && wiesId) {
+    const tStart = new Date(b.start_at).toLocaleString("pl-PL", { dateStyle: "short", timeStyle: "short" });
+    const tKoniec = new Date(b.end_at).toLocaleString("pl-PL", { dateStyle: "short", timeStyle: "short" });
+    const { error: notifErr } = await supabase.from("notifications").insert({
+      user_id: b.booked_by,
+      type: "hall_booking_approved",
+      title: "Zatwierdzono rezerwację sali",
+      body: `Termin: ${tStart} – ${tKoniec}. Zobacz status przy swojej rezerwacji w panelu mieszkańca.`,
+      link_url: "/panel/mieszkaniec/swietlica",
+      related_id: wiesId,
+      related_type: "village",
+      channel: "in_app",
+    });
+    if (notifErr) {
+      console.warn("[zatwierdzRezerwacjeSwietlicy] powiadomienie:", notifErr.message);
+    }
+  }
 
   revalidatePath("/panel/soltys/rezerwacje");
   revalidatePath("/panel/mieszkaniec/swietlica");
-  if (wiersz?.hall_id) {
-    revalidatePath(`/panel/mieszkaniec/swietlica/${wiersz.hall_id}`);
-  }
+  revalidatePath("/panel/powiadomienia");
+  revalidatePath(`/panel/mieszkaniec/swietlica/${b.hall_id}`);
   return { ok: true };
 }
 

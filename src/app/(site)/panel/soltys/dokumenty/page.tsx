@@ -3,6 +3,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { GeneratorDokumentowSoltysaKlient } from "@/components/soltys/generator-dokumentow-klient";
 import { PRESETY_DOKUMENTOW_SOLTYSA } from "@/lib/dokumenty-soltysa/presety";
+import { pobierzVillageIdsRoliPaneluSoltysaDlaUzytkownikaCache } from "@/lib/panel/rola-panelu-soltysa";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
 
 export const metadata: Metadata = {
@@ -18,17 +19,44 @@ export default async function SoltysDokumentyPage() {
     redirect("/logowanie?next=/panel/soltys/dokumenty");
   }
 
-  const { data: mojeWsi } = await supabase
-    .from("user_village_roles")
-    .select("village_id")
-    .eq("user_id", user.id)
-    .eq("status", "active")
-    .in("role", ["soltys", "wspoladmin"]);
+  const villageIds = await pobierzVillageIdsRoliPaneluSoltysaDlaUzytkownikaCache(user.id);
 
-  const villageIds = (mojeWsi ?? []).map((m) => m.village_id).filter(Boolean);
+  if (villageIds.length === 0) {
+    return (
+      <main>
+        <p className="mb-4 text-sm text-stone-500">
+          <Link href="/panel/soltys" className="text-green-800 underline">
+            ← Panel sołtysa
+          </Link>
+        </p>
+        <h1 className="font-serif text-3xl text-green-950">Generator dokumentów</h1>
+        <div className="mt-6 max-w-xl rounded-xl border border-amber-200 bg-amber-50 p-5 text-sm text-amber-950">
+          <p className="font-medium">Brak uprawnień do generatora</p>
+          <p className="mt-2 leading-relaxed">
+            Szablony i eksport PDF są dostępne tylko dla użytkowników z{" "}
+            <strong>aktywną rolą sołtysa albo współadministratora wsi</strong> (zgodnie z uprawnieniami w
+            systemie). Zalogowanie bez tej roli — tak jak konto mieszkańca —{" "}
+            <strong>nie wystarcza</strong>.
+          </p>
+          <p className="mt-3 leading-relaxed">
+            Jeśli prowadzisz sołectwo: po nadaniu roli sołtysa wróć tutaj z{" "}
+            <Link href="/panel/soltys" className="text-green-900 underline">
+              panelu sołtysa
+            </Link>
+            . W innych przypadkach skorzystaj z{" "}
+            <Link href="/panel/mieszkaniec" className="text-green-900 underline">
+              panelu mieszkańca
+            </Link>{" "}
+            (wniosek o akceptację we wsi).
+          </p>
+        </div>
+      </main>
+    );
+  }
+
   let domyslnaWies = "";
   let domyslnaGmina = "";
-  if (villageIds.length > 0) {
+  {
     const { data: v } = await supabase
       .from("villages")
       .select("name, commune")
@@ -61,13 +89,6 @@ export default async function SoltysDokumentyPage() {
         resztę, sprawdź podgląd — przycisk „Pobierz PDF” zapisuje plik (także na telefonie); „Drukuj / PDF z systemu”
         korzysta z okna drukowania przeglądarki.
       </p>
-
-      {villageIds.length === 0 ? (
-        <p className="mt-8 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-950">
-          Nie masz aktywnej roli sołtysa — generator jest dostępny po przypisaniu roli. Szablony nadal możesz
-          przeglądać; pola „wies” / „gmina” uzupełnisz ręcznie.
-        </p>
-      ) : null}
 
       <div className="mt-10">
         <GeneratorDokumentowSoltysaKlient

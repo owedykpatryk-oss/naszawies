@@ -10,6 +10,10 @@ import { czyPelnaKonfiguracjaR2S3 } from "@/lib/cloudflare/r2-env";
 import { wgrajBuforDoR2 } from "@/lib/cloudflare/r2-s3-klient";
 import { zbudujPublicznyUrlObiektuR2 } from "@/lib/cloudflare/r2-url-pomoc";
 import { usunObiektR2JesliUrlNasz } from "@/lib/storage/usun-plik-r2-po-url";
+import {
+  czyUzytkownikJestSoltysemDlaSali,
+  pobierzVillageIdsRoliPaneluSoltysa,
+} from "@/lib/panel/rola-panelu-soltysa";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
 
 const uuid = z.string().uuid();
@@ -22,22 +26,12 @@ function czySerwerMozeWgrywacNaR2(): boolean {
   return zbudujPublicznyUrlObiektuR2(R2_BUCKET_AVATARS, "test") != null;
 }
 
-async function czySoltysLubWspoladminSwietlicy(
+function czySoltysLubWspoladminSwietlicy(
   supabase: ReturnType<typeof utworzKlientaSupabaseSerwer>,
   userId: string,
   hallId: string
 ): Promise<boolean> {
-  const { data: hall, error } = await supabase.from("halls").select("village_id").eq("id", hallId).maybeSingle();
-  if (error || !hall?.village_id) return false;
-  const { data: rola } = await supabase
-    .from("user_village_roles")
-    .select("id")
-    .eq("user_id", userId)
-    .eq("village_id", hall.village_id)
-    .eq("status", "active")
-    .in("role", ["soltys", "wspoladmin"])
-    .maybeSingle();
-  return rola != null;
+  return czyUzytkownikJestSoltysemDlaSali(supabase, userId, hallId);
 }
 
 type WierszRezerwacjiZniszczenia = { hall_id: string; urls: string[] };
@@ -64,15 +58,8 @@ async function pobierzRezerwacjeDoDokumentacjiZniszczen(
   const jestWynajmujacym = b.booked_by === userId;
   let jestSoltysem = false;
   if (!jestWynajmujacym) {
-    const { data: rola } = await supabase
-      .from("user_village_roles")
-      .select("id")
-      .eq("user_id", userId)
-      .eq("village_id", wiesId)
-      .eq("status", "active")
-      .in("role", ["soltys", "wspoladmin"])
-      .maybeSingle();
-    jestSoltysem = rola != null;
+    const villageIds = await pobierzVillageIdsRoliPaneluSoltysa(supabase, userId);
+    jestSoltysem = villageIds.includes(wiesId);
   }
 
   if (!jestWynajmujacym && !jestSoltysem) {

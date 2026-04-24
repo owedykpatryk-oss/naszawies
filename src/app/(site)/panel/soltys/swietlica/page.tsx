@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { pobierzVillageIdsRoliPaneluSoltysaDlaUzytkownikaCache } from "@/lib/panel/rola-panelu-soltysa";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
-import { pojedynczaWies } from "@/lib/supabase/wies-z-zapytania";
 
 export const metadata: Metadata = {
   title: "Świetlica (sołtys)",
@@ -17,22 +17,13 @@ export default async function SoltysSwietlicaPage() {
     redirect("/logowanie?next=/panel/soltys/swietlica");
   }
 
-  const { data: mojeWsi } = await supabase
-    .from("user_village_roles")
-    .select("village_id, villages(name)")
-    .eq("user_id", user.id)
-    .eq("status", "active")
-    .in("role", ["soltys", "wspoladmin"]);
-
-  const wiersze = (mojeWsi ?? []) as {
-    village_id: string;
-    villages: unknown;
-  }[];
-  const villageIds = wiersze.map((r) => r.village_id).filter(Boolean);
+  const villageIds = await pobierzVillageIdsRoliPaneluSoltysaDlaUzytkownikaCache(user.id);
   const nazwy: Record<string, string> = {};
-  for (const r of wiersze) {
-    const v = pojedynczaWies<{ name: string }>(r.villages);
-    nazwy[r.village_id] = v?.name ?? "Wieś";
+  if (villageIds.length > 0) {
+    const { data: wierszeWsi } = await supabase.from("villages").select("id, name").in("id", villageIds);
+    for (const w of wierszeWsi ?? []) {
+      nazwy[w.id] = w.name ?? "Wieś";
+    }
   }
 
   type WpisSali = {
