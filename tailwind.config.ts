@@ -49,6 +49,19 @@ const config: Config = {
             transform: "translateY(0) scale(1)",
           },
         },
+        /** Interaktywny rzut świetlicy Studzienki */
+        studzRzutEnter: {
+          "0%": { opacity: "0", transform: "translateY(18px) scale(0.985)" },
+          "100%": { opacity: "1", transform: "translateY(0) scale(1)" },
+        },
+        studzRzutGlow: {
+          "0%, 100%": { opacity: "0.55" },
+          "50%": { opacity: "1" },
+        },
+        studzRzutShimmer: {
+          "0%": { backgroundPosition: "0% 50%" },
+          "100%": { backgroundPosition: "200% 50%" },
+        },
       },
       animation: {
         "mapa-reveal": "mapaReveal 0.8s cubic-bezier(0.22, 1, 0.36, 1) both",
@@ -58,6 +71,9 @@ const config: Config = {
         "mapa-float": "mapaFloat 5s ease-in-out infinite",
         "mapa-glow": "mapaGlow 5s ease-in-out infinite",
         "mapa-card-lift": "mapaCardLift 0.9s cubic-bezier(0.22, 1, 0.36, 1) both",
+        "studz-rzut-enter": "studzRzutEnter 0.9s cubic-bezier(0.22, 1, 0.36, 1) both",
+        "studz-rzut-glow": "studzRzutGlow 4.5s ease-in-out infinite",
+        "studz-rzut-shimmer": "studzRzutShimmer 3.5s ease-in-out infinite",
       },
     },
   },

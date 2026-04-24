@@ -1,12 +1,14 @@
 import Image from "next/image";
 import Link from "next/link";
 import { StudzienkiProjektNarzedziaKlient } from "./studzienki-projekt-narzedzia-klient";
+import { StudzienkiRzutInteraktywny } from "./studzienki-rzut-interaktywny-klient";
 
 const POMIESZCZENIA = [
   { lp: "1.1", nazwa: "Wiatrołap", powierzchnia: "5,76 m²", akcent: "border-l-amber-400" },
   { lp: "1.2", nazwa: "WC damski + dla osób z niepełnosprawnością", powierzchnia: "5,15 m²", akcent: "border-l-sky-400" },
   { lp: "1.3", nazwa: "WC męski", powierzchnia: "4,18 m²", akcent: "border-l-sky-400" },
   { lp: "1.4", nazwa: "Zaplecze kuchni", powierzchnia: "17,20 m²", akcent: "border-l-orange-400" },
+  { lp: "1.4b", nazwa: "Spiżarnia / zaplecze (wg rysunku przy kuchni)", powierzchnia: "3,00 m²", akcent: "border-l-orange-300" },
   { lp: "1.5", nazwa: "Pomieszczenie gospodarcze", powierzchnia: "6,30 m²", akcent: "border-l-stone-400" },
   { lp: "1.6", nazwa: "Sala (główna)", powierzchnia: "72,58 m²", akcent: "border-l-green-600" },
 ] as const;
@@ -206,7 +208,7 @@ export function StudzienkiProjektSwietlicy({
             <dl className="relative mt-10 grid gap-3 sm:grid-cols-3">
               <div className="rounded-xl border border-white/20 bg-white/[0.08] px-4 py-4 shadow-inner shadow-black/20 backdrop-blur-md transition hover:border-white/30 hover:bg-white/[0.11]">
                 <dt className="text-[11px] font-semibold uppercase tracking-wider text-emerald-200/90">Powierzchnia użytkowa</dt>
-                <dd className="mt-1 font-serif text-3xl tabular-nums tracking-tight">111,17 m²</dd>
+                <dd className="mt-1 font-serif text-3xl tabular-nums tracking-tight">114,17 m²</dd>
               </div>
               <div className="rounded-xl border border-white/20 bg-white/[0.08] px-4 py-4 shadow-inner shadow-black/20 backdrop-blur-md transition hover:border-white/30 hover:bg-white/[0.11]">
                 <dt className="text-[11px] font-semibold uppercase tracking-wider text-emerald-200/90">Sala główna</dt>
@@ -243,7 +245,10 @@ export function StudzienkiProjektSwietlicy({
                 <div>
                   <h2 className="font-serif text-2xl text-green-950 sm:text-3xl">Rzut parteru</h2>
                   <p className="mt-2 max-w-prose text-sm leading-relaxed text-stone-600">
-                    Komunikacja, sala, kuchnia i strefa sanitarna — w tym wiatrołap z myślą o dostępności.
+                    Poniżej: to samo zdjęcie rzutu z półprzezroczystymi strefami pomieszczeń. Włącz
+                    <strong> planowanie stołów w sali głównej</strong> (przeciąganie) — orientacyjnie, względem
+                    rysunku, nie w skali 1:1. Strefy możesz dopasować do rysunku, edytując tablicę
+                    w pliku <code className="rounded bg-stone-100 px-1 text-[11px]">studzienki-rzut-dane.ts</code>.
                   </p>
                 </div>
                 <span className="hidden rounded-md border border-stone-200 bg-stone-50 px-2 py-1 font-mono text-[10px] text-stone-500 sm:inline-block">
@@ -251,16 +256,10 @@ export function StudzienkiProjektSwietlicy({
                 </span>
               </div>
               <figure className="mt-8">
-                <RysunekRamka
-                  src="/wies/studzienki/rzut-parteru.png"
-                  alt="Rzut parteru projektowanej świetlicy wiejskiej w Studzienkach — zestawienie pomieszczeń i wymiary"
-                  priority
-                  aspectClass="aspect-[4/3] min-h-[220px] sm:min-h-[320px]"
-                  sizes="(max-width: 1024px) 100vw, min(896px, 70vw)"
-                  plikPng="/wies/studzienki/rzut-parteru.png"
-                />
+                <StudzienkiRzutInteraktywny />
                 <figcaption className="mt-3 text-center text-xs text-stone-500">
-                  Źródło: materiały projektowe przekazane do serwisu (rzut parteru).
+                  Źródło: materiały projektowe przekazane do serwisu (rzut parteru) — interakcja to warstwa
+                  poglądowa, nie odbija dokładnie linii rysunku (dopasuj współrzędne stref, jeśli trzeba).
                 </figcaption>
               </figure>
             </section>
@@ -285,7 +284,7 @@ export function StudzienkiProjektSwietlicy({
                     {POMIESZCZENIA.map((r) => (
                       <tr
                         key={r.lp}
-                        className={`border-l-4 ${r.akcent} ${r.lp === "1.6" ? "bg-green-50/70 hover:bg-green-50" : "hover:bg-stone-50/80"}`}
+                        className={`border-l-4 ${r.akcent} ${r.lp === "1.6" ? "bg-green-50/70 hover:bg-green-50" : r.lp === "1.4b" ? "bg-orange-50/40 hover:bg-stone-50/80" : "hover:bg-stone-50/80"}`}
                       >
                         <td className="whitespace-nowrap px-4 py-3 font-mono text-xs text-stone-500">{r.lp}</td>
                         <td
@@ -302,7 +301,7 @@ export function StudzienkiProjektSwietlicy({
                       <td className="px-4 py-4" colSpan={2}>
                         Razem
                       </td>
-                      <td className="px-4 py-4 text-right tabular-nums">111,17 m²</td>
+                      <td className="px-4 py-4 text-right tabular-nums">114,17 m²</td>
                     </tr>
                   </tbody>
                 </table>
