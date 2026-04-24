@@ -26,8 +26,14 @@ Wykonaj **po kolei** (numery mają znaczenie).
 5. **Vercel → Settings → Domains** — dodaj `naszawies.pl` i `www.naszawies.pl`. Zapisz **dokładnie** to, co Vercel podaje (IP A, CNAME www, ewentualnie TXT weryfikacyjny).
 6. **GoDaddy → DNS** — usuń / zmień rekord **A** dla `@` z „Website Builder” na **IP z Vercel** (często `76.76.21.21` — jeśli Vercel poda inny, użyj ich). **CNAME** `www` → wartość z Vercel (np. `cname.vercel-dns.com`). NS zostaw.
 7. Poczekaj na propagację DNS (od minut do kilku godzin). W Vercel przy domenie ma być **Valid** (certyfikat SSL).
-8. **Supabase → Authentication → URL Configuration** — **Site URL** = `https://naszawies.pl` (lub główny adres z www), **Redirect URLs** = `https://naszawies.pl/**`, `https://www.naszawies.pl/**`, `http://localhost:3000/**`.
-9. **Opcjonalnie Resend** — domena `naszawies.pl` w Resend (SPF/DKIM wg ich kreatora); w Vercel popraw `RESEND_ZE_STRONY` na np. `Kontakt <kontakt@naszawies.pl>` po weryfikacji.
+8. **Supabase → Authentication → URL Configuration** — **Site URL** = `https://naszawies.pl` (lub główny adres z www), **Redirect URLs** = `https://naszawies.pl/**`, `https://www.naszawies.pl/**`, `http://localhost:3000/**`, oraz na czas testów z **Preview** na Vercel: `https://*.vercel.app/**` (inaczej link z maila po rejestracji na preview może być odrzucony i sesja się nie utworzy).
+8b. **E-mail po rejestracji (potwierdzenie)** — wysyła go **Supabase Auth**, nie formularz kontaktowy (Resend). Jeśli nikt nie dostaje maila:
+   - **Supabase → Authentication → Providers → Email** — dostawca włączony; sprawdź, czy **„Confirm email”** jest zgodnie z oczekiwaniami (wyłączone = brak maila, logowanie od razu hasłem).
+   - **Authentication → Logs** — czy `signup` / wysyłka szablonu zakończyła się błędem lub limitem.
+   - **Vercel** — ustaw **`NEXT_PUBLIC_SITE_URL`** na ten sam kanoniczny adres co **Site URL** w Supabase (np. `https://naszawies.pl`), żeby w mailu był poprawny link do `/auth/potwierdz`.
+   - Skrzynka **Spam / Oferty**, literówka w adresie, opóźnienia kilkunastu minut.
+   - **Authentication → Users** — czy konto istnieje i ma status **Confirmed** (jeśli tak, użytkownik może się logować nawet bez otwarcia maila).
+9. **Opcjonalnie Resend** — domena `naszawies.pl` w Resend (SPF/DKIM wg ich kreatora); w Vercel popraw `RESEND_ZE_STRONY` na np. `Kontakt <kontakt@naszawies.pl>` po weryfikacji. (To **nie** zastępuje maili Supabase Auth — na własny SMTP dla Auth: Supabase → Project Settings → Auth → SMTP.)
 10. **Test** — waitlist z produkcji, `/api/kontakt` (jeśli brak Resend, kontakt może zwrócić 503).
 
 Szczegóły kroków 2–7 i Supabase: sekcje poniżej (**GitHub**, **Vercel + domena**). CI GitHub Actions: sekcja **GitHub Actions**.
