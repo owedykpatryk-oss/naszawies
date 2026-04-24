@@ -43,7 +43,7 @@ export default async function LogowaniePage({ searchParams }: Props) {
   }
 
   return (
-    <main className="mx-auto min-w-0 max-w-md px-4 py-12 text-stone-800 sm:px-5 sm:py-16">
+    <main className="mx-auto min-w-0 max-w-md py-12 text-stone-800 sm:py-16">
       <p className="mb-6 text-sm text-stone-500">
         <Link href="/" className="font-medium text-green-900 underline decoration-emerald-800/30 underline-offset-2 hover:decoration-emerald-800">
           ← Strona główna

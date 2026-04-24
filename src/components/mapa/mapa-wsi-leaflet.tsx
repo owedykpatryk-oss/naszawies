@@ -47,9 +47,29 @@ function escapeHtml(s: string): string {
 }
 
 function granicaJakoGeoJson(raw: unknown): GeoJsonObject | null {
-  if (!raw || typeof raw !== "object") return null;
-  const o = raw as { type?: string };
-  if (o.type === "Polygon" || o.type === "MultiPolygon") return raw as GeoJsonObject;
+  if (raw == null) return null;
+  if (typeof raw === "string") {
+    const t = raw.trim();
+    if (!t) return null;
+    try {
+      return granicaJakoGeoJson(JSON.parse(t) as unknown);
+    } catch {
+      return null;
+    }
+  }
+  if (typeof raw !== "object") return null;
+  const o = raw as { type?: string; features?: unknown[] };
+  if (o.type === "FeatureCollection" && Array.isArray(o.features) && o.features.length === 0) {
+    return null;
+  }
+  if (
+    o.type === "Polygon" ||
+    o.type === "MultiPolygon" ||
+    o.type === "Feature" ||
+    o.type === "FeatureCollection"
+  ) {
+    return raw as GeoJsonObject;
+  }
   return null;
 }
 

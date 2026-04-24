@@ -131,3 +131,22 @@
 .hero-note a:hover {
   color: var(--green-medium);
 }
+
+/* === Telefony: bezpieczne strefy, czytelność, iOS (zoom w polach) === */
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+#strona-glowna {
+  padding-left: env(safe-area-inset-left);
+  padding-right: env(safe-area-inset-right);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+@media (max-width: 480px) {
+  .signup .form-field input,
+  .signup .form-field textarea {
+    font-size: 1rem;
+  }
+}

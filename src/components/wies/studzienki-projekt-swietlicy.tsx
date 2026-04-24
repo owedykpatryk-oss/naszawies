@@ -8,7 +8,6 @@ const POMIESZCZENIA = [
   { lp: "1.2", nazwa: "WC damski + dla osób z niepełnosprawnością", powierzchnia: "5,15 m²", akcent: "border-l-sky-400" },
   { lp: "1.3", nazwa: "WC męski", powierzchnia: "4,18 m²", akcent: "border-l-sky-400" },
   { lp: "1.4", nazwa: "Zaplecze kuchni", powierzchnia: "17,20 m²", akcent: "border-l-orange-400" },
-  { lp: "1.4b", nazwa: "Spiżarnia / zaplecze (wg rysunku przy kuchni)", powierzchnia: "3,00 m²", akcent: "border-l-orange-300" },
   { lp: "1.5", nazwa: "Pomieszczenie gospodarcze", powierzchnia: "6,30 m²", akcent: "border-l-stone-400" },
   { lp: "1.6", nazwa: "Sala (główna)", powierzchnia: "72,58 m²", akcent: "border-l-green-600" },
 ] as const;
@@ -248,7 +247,8 @@ export function StudzienkiProjektSwietlicy({
                     Poniżej: to samo zdjęcie rzutu z półprzezroczystymi strefami pomieszczeń. Włącz
                     <strong> planowanie stołów w sali głównej</strong> (przeciąganie) — orientacyjnie, względem
                     rysunku, nie w skali 1:1. Strefy możesz dopasować do rysunku, edytując tablicę
-                    w pliku <code className="rounded bg-stone-100 px-1 text-[11px]">studzienki-rzut-dane.ts</code>.
+                    w plikach <code className="rounded bg-stone-100 px-1 text-[11px]">studzienki-rzut-metre.ts</code> /{" "}
+                    <code className="rounded bg-stone-100 px-1 text-[11px]">studzienki-rzut-dane.ts</code>.
                   </p>
                 </div>
                 <span className="hidden rounded-md border border-stone-200 bg-stone-50 px-2 py-1 font-mono text-[10px] text-stone-500 sm:inline-block">
@@ -284,7 +284,7 @@ export function StudzienkiProjektSwietlicy({
                     {POMIESZCZENIA.map((r) => (
                       <tr
                         key={r.lp}
-                        className={`border-l-4 ${r.akcent} ${r.lp === "1.6" ? "bg-green-50/70 hover:bg-green-50" : r.lp === "1.4b" ? "bg-orange-50/40 hover:bg-stone-50/80" : "hover:bg-stone-50/80"}`}
+                        className={`border-l-4 ${r.akcent} ${r.lp === "1.6" ? "bg-green-50/70 hover:bg-green-50" : "hover:bg-stone-50/80"}`}
                       >
                         <td className="whitespace-nowrap px-2 py-2.5 font-mono text-xs text-stone-500 sm:px-4 sm:py-3">
                           {r.lp}

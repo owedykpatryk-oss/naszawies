@@ -1,8 +1,13 @@
 /**
- * Przykładowy regulamin świetlicy — sołtys może wstawić jednym kliknięciem i dopasować do uchwały / zwyczajów wsi.
+ * Warianty przykładowych regulaminów świetlicy — wstaw z listy, potem uzupełnij w polu poniżej.
  * Nie stanowi porady prawnej.
  */
-export const REGULAMIN_SWIETLICY_SZABLON = `REGULAMIN KORZYSTANIA ZE ŚWIETLICY
+export const REGULAMIN_SWIETLICY_SZABLONY = [
+  {
+    id: "pelny",
+    etykieta: "Pełny (§1–5)",
+    opis: "Rezerwacje, opłaty, sprzątanie, bezpieczeństwo, odpowiedzialność — klasyka na większość przypadków.",
+    tresc: `REGULAMIN KORZYSTANIA ZE ŚWIETLICY
 (obowiązuje wszystkich użytkowników i wynajmujących)
 
 §1. POSTANOWIENIA OGÓLNE
@@ -31,4 +36,45 @@ export const REGULAMIN_SWIETLICY_SZABLON = `REGULAMIN KORZYSTANIA ZE ŚWIETLICY
 
 ……………………………….                ……………………………….
 (miejscowość, data)                    (podpis sołtysa / zarządcy)
-`;
+`,
+  },
+  {
+    id: "krotki",
+    etykieta: "Krótki",
+    opis: "Zwięzły, gdy w gminie jest osobna uchwała lub wystarczają podstawy z cennikiem w systemie.",
+    tresc: `REGULAMIN KORZYSTANIA ZE ŚWIETLICY
+(obowiązuje użytkowników wynajmujących i organizatorów wydarzeń)
+
+1. Rezerwacja i opłata — zgodnie z cennikiem w panelu wsi albo z uchwałą; kaucję wskazano przy zapisach.
+2. Użytkownik zostawia salę w stanie niegorszym niż w momencie rozpoczęcia; odpad segregować, wyposażenie przenieść we wskazane miejsce.
+3. Obowiązują przepisy ppoż., zakaz otwartego ognia bez zgody, przepisy o bezpiecznej obsłudze prądu i ograniczeniach w sprawie alkoholu — stosownie do uchwały gromady i prawa.
+4. Za umyślne zniszczenie mienia odpowiada wynajmujący na zasadach ogólnych. Skargi: sołtys.
+5. Regulamin wchodzi w życie z dniem ustalonym przez sołectwo (zebranie) albo z dniem wskazanym w uchwale / niniejszym zarządzeniu.
+
+……………………               ……………………
+(miejscowość, data)         (sołtys / zarządca)
+`,
+  },
+  {
+    id: "tylko-wynajem",
+    etykieta: "Skup na wynajmie płatnym",
+    opis: "Dla wydarzeć komercyjnych, imprez okolicznościowych — mocniej podkreśla wynajmującego i odpowiedzialność.",
+    tresc: `WARUNKI WYNAJMU SALI (ŚWIETLICY) NA WYDARZENIE
+(wynajmujący = osoba/organ, który dokonał rezerwacji w systemie albo w uzgodniony sposób)
+
+1. Czas, zakres, opłata, kaucja i warunki zwrotu kaucji — wynikają z cennika i danych rezerwacji w naszawies; ewentualna umowa dodatkowa pozostawia stron swobodę (nie jest wymagana przez serwis).
+2. Po zakończeniu: wyłączyć oświetlenie, zamknąć, oddać klucze; stan sali wraz z wyposażeniem własnym wynajmującego wyniesiony — porządek jak przy odbiorze.
+3. Szkody w mieniu sołectwa/gminy: naprawa w naturze albo wyrównanie kosztu na podstawie wyceny, po ustaleniu winy. Obiekt wolny od ingerencji w instalację, ściany, okna, bez montażu niszczącego, chyba że inaczej przewidziano w zapisach.
+4. Hałas, pora nocna, odpowiedzialność za uczestników, zgłoszenie wydarzenia: zgodnie z przepisami, uchwałami wsi (np. w sprawie głośności) i własną ostrożnością organizatora.
+5. Skarga lub spór: w pierwszej kolejności sołtys sołectwa, dalej właściwe organy (np. gmina, policja) według prawa.
+
+Wynajmujący/organizator oświadcza, że zapoznał się z warunkami i cennikiem w systemie.
+
+……………………                    ……………………
+(miejscowość, data)         (dla sołectwa: sołtys)
+`,
+  },
+] as const;
+
+/** Pierwsza pozycja z listy (kompatybilność wstecz). */
+export const REGULAMIN_SWIETLICY_SZABLON: string = REGULAMIN_SWIETLICY_SZABLONY[0]!.tresc;

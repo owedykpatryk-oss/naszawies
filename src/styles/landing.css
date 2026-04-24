@@ -265,7 +265,7 @@
   .faq-item.open .faq-toggle::before { color: var(--white); }
   .faq-answer { max-height: 0; overflow: hidden; transition: max-height 0.4s ease; }
   .faq-answer-inner { padding: 0 1.75rem 1.5rem; color: var(--text-muted); line-height: 1.65; }
-  .faq-item.open .faq-answer { max-height: 400px; }
+  .faq-item.open .faq-answer { max-height: min(90vh, 1200px); }
 
   /* SIGNUP */
   .signup { background: var(--white); padding: 7rem 0; }
@@ -304,19 +304,53 @@
 
   @media (max-width: 900px) {
     .hero-grid, .feature-showcase, .signup-grid { grid-template-columns: 1fr; gap: 3rem; }
-    .hero-visual { max-width: 380px; margin: 0 auto; }
+    .hero-visual { max-width: min(100%, 380px); margin: 0 auto; }
     .steps, .features-grid, .roles-grid { grid-template-columns: 1fr; }
     .footer-grid { grid-template-columns: 1fr 1fr; gap: 2rem; }
-    .nav-links a:not(.nav-cta):not(.nav-auth) { display: none; }
+    /* Nawigacja: wszystkie linki w jednym rzędzie z przewijaniem poziomym (telefony) */
+    .nav-inner {
+      flex-direction: column;
+      align-items: stretch;
+      gap: 0.65rem;
+    }
+    .nav-links {
+      display: flex;
+      flex-wrap: nowrap;
+      gap: 0.4rem;
+      width: 100%;
+      max-width: 100%;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      padding: 0.4rem 0 0.6rem;
+      margin: 0;
+      border-top: 1px solid rgba(45, 90, 45, 0.08);
+      scrollbar-width: thin;
+    }
+    .nav-links a {
+      flex-shrink: 0;
+      font-size: 0.78rem;
+      padding: 0.55rem 0.7rem;
+      white-space: nowrap;
+      min-height: 44px;
+      display: inline-flex;
+      align-items: center;
+      box-sizing: border-box;
+    }
     .hero-meta { flex-wrap: wrap; gap: 1.5rem; }
     section { padding: 4rem 0; }
     .hero { padding: 3rem 0 5rem; }
     .pricing-box { padding: 3rem 1.75rem; }
-    .container { padding: 0 1.25rem; }
+    .container { padding: 0 max(1rem, env(safe-area-inset-left)) 0 max(1rem, env(safe-area-inset-right)); }
     .table.rect-6 { width: 80px; height: 34px; }
     .table.round-8 { width: 56px; height: 56px; }
   }
   @media (max-width: 560px) {
     .footer-grid { grid-template-columns: 1fr; }
     .pricing-includes { grid-template-columns: 1fr; }
+    .hero-meta { flex-direction: column; gap: 1rem; align-items: flex-start; }
+    .price-amount { font-size: clamp(3.25rem, 18vw, 6rem); }
+    .floating-card { max-width: calc(100% - 1rem); }
+    .card-1, .card-2 { left: auto; right: auto; }
+    .card-1 { top: 6%; left: 0.5rem; }
+    .card-2 { bottom: 8%; right: 0.5rem; }
   }

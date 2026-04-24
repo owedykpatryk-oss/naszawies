@@ -17,7 +17,7 @@ export function NaglowekStrony({ linkiPrawe, className = "" }: Props) {
     <header
       className={`sticky top-0 z-50 border-b border-green-900/10 bg-[#f5f1e8]/90 backdrop-blur-md ${className}`}
     >
-      <div className="mx-auto flex min-w-0 max-w-6xl items-center justify-between gap-2 px-3 py-3 sm:gap-3 sm:px-5">
+      <div className="mx-auto flex min-w-0 max-w-6xl items-center justify-between gap-2 px-0 py-3 sm:gap-3 sm:px-0">
         <div className="min-w-0 shrink-0">
           <LogoNaszawies kompakt />
         </div>

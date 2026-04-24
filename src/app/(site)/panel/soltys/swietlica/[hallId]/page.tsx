@@ -112,6 +112,8 @@ export default async function SoltysSwietlicaHallPage({ params }: Props) {
         </div>
       ) : null}
 
+      <PlanSaliEdytor hallId={hallId} poczatkowyPlan={plan} pojemnoscSali={sala.max_capacity} />
+
       <RegulaminSaliKlient
         hallId={hallId}
         rulesTextPoczatek={sala.rules_text}
@@ -127,8 +129,6 @@ export default async function SoltysSwietlicaHallPage({ params }: Props) {
           regulaminPoczatek={wies.playground_rules_text}
         />
       ) : null}
-
-      <PlanSaliEdytor hallId={hallId} poczatkowyPlan={plan} pojemnoscSali={sala.max_capacity} />
 
       <AsortymentSwietlicyKlient hallId={hallId} nazwaSali={sala.name} pozycje={pozycje} />
     </main>

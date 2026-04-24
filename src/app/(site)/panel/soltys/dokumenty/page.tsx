@@ -85,7 +85,8 @@ export default async function SoltysDokumentyPage() {
       <h1 className="font-serif text-3xl text-green-950">Generator dokumentów</h1>
       <p className="mt-2 max-w-3xl text-sm text-stone-600">
         {PRESETY_DOKUMENTOW_SOLTYSA.length} gotowych szablonów (zebrania, fundusz sołecki, pisma do gminy, potwierdzenia
-        wpływu, świetlica, pełnomocnictwa, RODO i in.). Wieś, gmina i podpis mogą wypełnić się z panelu; uzupełnij
+        wpływu, świetlica, zawiadomienia o regulaminach, pełnomocnictwa, RODO i in.). Wieś, gmina i podpis mogą wypełnić się
+        z panelu; uzupełnij
         resztę, sprawdź podgląd — przycisk „Pobierz PDF” zapisuje plik (także na telefonie); „Drukuj / PDF z systemu”
         korzysta z okna drukowania przeglądarki.
       </p>

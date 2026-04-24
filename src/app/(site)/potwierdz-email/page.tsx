@@ -8,7 +8,7 @@ export const metadata: Metadata = {
 
 export default function PotwierdzEmailPage() {
   return (
-    <main className="mx-auto max-w-lg px-5 py-16 text-stone-800">
+    <main className="mx-auto min-w-0 max-w-lg py-16 text-stone-800">
       <p className="mb-6 text-sm text-stone-500">
         <Link href="/" className="text-green-800 underline">
           ← Strona główna

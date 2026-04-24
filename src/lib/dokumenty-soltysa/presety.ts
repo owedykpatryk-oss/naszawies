@@ -725,6 +725,41 @@ export const PRESETY_DOKUMENTOW_SOLTYSA: PresetDokumentu[] = [
         <p><strong>Pełnomocnik:</strong></p><div class="ramka"><p style="white-space:pre-wrap">${v(w, "pelnomocnik")}</p></div>
       `),
   },
+  {
+    id: "zawiadomienie-wprowadzenie-regulaminu",
+    kategoria: "Świetlica i majątek",
+    tytul: "Zawiadomienie o wprowadzeniu / zmianie regulaminu",
+    opis: "Szkic do tablicy ogłoszeń lub skrótu w BIP — dopracuj z prawnikiem w gminie.",
+    pola: [
+      { id: "wies", etykieta: "Nazwa sołectwa / wsi", typ: "text" },
+      { id: "gmina", etykieta: "Gmina", typ: "text" },
+      {
+        id: "obiekt",
+        etykieta: "Czego dotyczy regulamin",
+        typ: "text",
+        placeholder: "np. świetlica wiejska, plac zabaw, wypożyczenie sprzętu",
+      },
+      {
+        id: "podstawa",
+        etykieta: "Podstawa prawna (uchwała / zarządzenie / data głosowania)",
+        typ: "textarea",
+        wiersze: 3,
+        placeholder: "np. Uchwała Rady Gminy nr …, uchwała zebrania sołeckiego …",
+      },
+      { id: "publikacja", etykieta: "Gdzie można zapoznać się z pełnym tekstem", typ: "textarea", wiersze: 2 },
+      { id: "kontakt", etykieta: "Dane do pytań (np. sołtys, godziny)", typ: "text" },
+    ],
+    budujHtml: (w, meta) =>
+      otoczenie("Zawiadomienie o wprowadzeniu regulaminu", meta, `
+        <p>Sołectwo <strong>${v(w, "wies")}</strong>, <strong>gmina ${v(w, "gmina")}</strong>, zawiadamia, że w dniu wskazanym w odrębnej treści wprowadzono/zmieniono regulamin dotyczący: <strong>${v(w, "obiekt")}</strong>.</p>
+        <h2>Podstawa / podjęte rozstrzygnięcia</h2>
+        <div class="ramka"><p style="white-space:pre-wrap">${v(w, "podstawa")}</p></div>
+        <h2>Zapoznanie z treścią</h2>
+        <div class="ramka"><p style="white-space:pre-wrap">${v(w, "publikacja")}</p></div>
+        <p><strong>Pytania:</strong> ${v(w, "kontakt")}</p>
+        <p class="ramka">Treść pełną włącz w panelu wsi w naszawies i na tablicy informacyjnej — w razie wątpliwości skontaktuj się z urzędem gminy.</p>
+      `),
+  },
 ];
 
 /** Jedna linia pod tytułem dokumentu (druk / archiwum). */

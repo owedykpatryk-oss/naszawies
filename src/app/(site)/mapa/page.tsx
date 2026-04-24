@@ -8,8 +8,7 @@ import { sciezkaProfiluWsi } from "@/lib/wies/sciezka-publiczna";
 
 export const metadata: Metadata = {
   title: "Mapa wsi",
-  description:
-    "Interaktywna mapa aktywnych wiosek na naszawies.pl — znaczniki, granice (gdzie dostępne), publiczne oferty z targu lokalnego.",
+  description: "Mapa aktywnych profili wiosek na naszawies.pl — szybki podgląd lokalizacji i przejście do strony wsi.",
 };
 
 type WierszRpc = {
@@ -126,7 +125,7 @@ export default async function MapaPage() {
   const liczbaWsi = znaczniki.length;
 
   return (
-    <main className="relative min-h-screen overflow-hidden bg-stone-50 text-stone-800">
+    <main className="relative min-h-[100dvh] overflow-hidden bg-stone-50 text-stone-800">
       <div
         className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_120%_80%_at_50%_-20%,rgba(22,101,52,0.14),transparent_55%),radial-gradient(ellipse_70%_50%_at_100%_0%,rgba(180,83,9,0.08),transparent_45%)]"
         aria-hidden="true"
@@ -171,14 +170,6 @@ export default async function MapaPage() {
             className="mt-4 h-1 w-24 origin-left rounded-full bg-gradient-to-r from-green-700 via-emerald-500 to-amber-500 animate-mapa-hero-line motion-reduce:animate-none motion-reduce:scale-x-100 motion-reduce:opacity-100"
             aria-hidden="true"
           />
-          <p className="mt-5 max-w-3xl text-sm leading-relaxed text-stone-600 md:text-base">
-            Aktywne profile z GPS. Gdzie w bazie jest <strong>granica GeoJSON</strong>, zobaczysz ją na mapie;
-            pozostałe — znacznik w centrum (granice można importować do kolumny{" "}
-            <code className="rounded-md border border-stone-200 bg-white/80 px-1.5 py-0.5 font-mono text-xs text-stone-800 shadow-sm">
-              boundary_geojson
-            </code>
-            ). Licznik to <strong>publiczne oferty</strong> typu targ lokalny (widoczne dla każdego).
-          </p>
         </header>
 
         {bladZapytania ? (

@@ -104,8 +104,9 @@ export default async function SoltysPage() {
 
       {villageIds.length === 0 ? (
         <p className="mt-8 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-950">
-          Nie jesteś zapisany jako aktywny sołtys ani współadmin w żadnej wsi. Przypisanie roli sołtysa odbywa się
-          administracyjnie (np. migracja / panel gminy) — skontaktuj się z zespołem naszawies.pl.
+          Nie jesteś zapisany jako aktywny sołtys ani współadmin w żadnej wsi. Rola <strong>sołtysa</strong> w danej wsi
+          jest <strong>jednoosobowa</strong> (w bazie obowiązuje ograniczenie). Przypisania inicjują migracje
+          danych / zespół — skontaktuj się, jeśli to Twoja gmina, a w panelu widać tę informację w błędzie.
         </p>
       ) : null}
 

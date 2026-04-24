@@ -3,7 +3,7 @@
 import { FormEvent, useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { zapiszRegulaminPlacuZabawWsi } from "@/app/(site)/panel/soltys/akcje";
-import { REGULAMIN_PLACU_ZABAW_SZABLON } from "@/lib/swietlica/regulamin-plac-zabaw-szablon";
+import { REGULAMIN_PLACU_ZABAW_SZABLONY } from "@/lib/swietlica/regulamin-plac-zabaw-szablon";
 
 type Props = {
   villageId: string;
@@ -14,6 +14,7 @@ type Props = {
 export function RegulaminPlacuZabawKlient({ villageId, nazwaWsi, regulaminPoczatek }: Props) {
   const router = useRouter();
   const [tekst, ustawTekst] = useState(regulaminPoczatek ?? "");
+  const [wybranyWzor, ustawWybranyWzor] = useState<string>("");
   const [komunikat, ustawKomunikat] = useState<{ typ: "ok" | "blad"; t: string } | null>(null);
   const [oczekuje, startTransition] = useTransition();
 
@@ -60,21 +61,63 @@ export function RegulaminPlacuZabawKlient({ villageId, nazwaWsi, regulaminPoczat
           </p>
         ) : null}
 
-        <div className="flex flex-wrap gap-2">
-          <button
-            type="button"
-            className="rounded-lg border border-stone-300 bg-white px-3 py-1.5 text-sm text-stone-800 hover:bg-stone-50"
-            onClick={() => ustawTekst(REGULAMIN_PLACU_ZABAW_SZABLON)}
-          >
-            Wstaw przykładowy regulamin
-          </button>
-          <button
-            type="button"
-            className="rounded-lg border border-stone-200 px-3 py-1.5 text-sm text-stone-600 hover:bg-stone-50"
-            onClick={() => ustawTekst("")}
-          >
-            Wyczyść pole
-          </button>
+        <div className="space-y-2">
+          <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-end">
+            <div className="min-w-0 flex-1 sm:max-w-md">
+              <label htmlFor="pz-wzory" className="mb-1 block text-xs font-medium text-stone-600">
+                Wzorce treści (wstawia poniżej; potem edytuj wg uchwał i opisów producenta urządzeń)
+              </label>
+              <select
+                id="pz-wzory"
+                className="w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm text-stone-900"
+                value={wybranyWzor}
+                onChange={(e) => {
+                  const id = e.target.value;
+                  ustawWybranyWzor(id);
+                  const s = REGULAMIN_PLACU_ZABAW_SZABLONY.find((w) => w.id === id);
+                  if (s) ustawTekst(s.tresc);
+                }}
+              >
+                <option value="">Wybierz wzorzec, aby wstawić…</option>
+                {REGULAMIN_PLACU_ZABAW_SZABLONY.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.etykieta}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {REGULAMIN_PLACU_ZABAW_SZABLONY.map((s) => (
+                <button
+                  key={s.id}
+                  type="button"
+                  title={s.opis}
+                  className="rounded-lg border border-stone-300 bg-white px-3 py-1.5 text-sm text-stone-800 hover:bg-stone-50"
+                  onClick={() => {
+                    ustawWybranyWzor(s.id);
+                    ustawTekst(s.tresc);
+                  }}
+                >
+                  Wstaw: {s.etykieta}
+                </button>
+              ))}
+              <button
+                type="button"
+                className="rounded-lg border border-dashed border-stone-200 px-3 py-1.5 text-sm text-stone-600 hover:bg-stone-50"
+                onClick={() => {
+                  ustawTekst("");
+                  ustawWybranyWzor("");
+                }}
+              >
+                Wyczyść pole
+              </button>
+            </div>
+          </div>
+          {wybranyWzor ? (
+            <p className="text-xs text-stone-500">
+              {REGULAMIN_PLACU_ZABAW_SZABLONY.find((s) => s.id === wybranyWzor)?.opis}
+            </p>
+          ) : null}
         </div>
 
         <div>

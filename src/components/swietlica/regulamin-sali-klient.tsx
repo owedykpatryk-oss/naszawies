@@ -3,7 +3,7 @@
 import { FormEvent, useEffect, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { zapiszRegulaminIKaucjeSali } from "@/app/(site)/panel/soltys/akcje";
-import { REGULAMIN_SWIETLICY_SZABLON } from "@/lib/swietlica/regulamin-swietlica-szablon";
+import { REGULAMIN_SWIETLICY_SZABLONY } from "@/lib/swietlica/regulamin-swietlica-szablon";
 
 type Props = {
   hallId: string;
@@ -29,6 +29,7 @@ export function RegulaminSaliKlient({
 }: Props) {
   const router = useRouter();
   const [rulesText, ustawRulesText] = useState(rulesTextPoczatek ?? "");
+  const [wybranyWzor, ustawWybranyWzor] = useState<string>("");
   const [deposit, ustawDeposit] = useState(depositPoczatek != null ? String(depositPoczatek) : "");
   const [priceResident, ustawPriceResident] = useState(
     priceResidentPoczatek != null ? String(priceResidentPoczatek) : ""
@@ -92,14 +93,63 @@ export function RegulaminSaliKlient({
           </p>
         ) : null}
 
-        <div className="flex flex-wrap gap-2">
-          <button
-            type="button"
-            className="rounded-lg border border-stone-300 bg-stone-50 px-3 py-1.5 text-sm text-stone-800 hover:bg-stone-100"
-            onClick={() => ustawRulesText(REGULAMIN_SWIETLICY_SZABLON)}
-          >
-            Wstaw przykładowy regulamin świetlicy
-          </button>
+        <div className="space-y-2">
+          <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-end">
+            <div className="min-w-0 flex-1 sm:max-w-md">
+              <label htmlFor="rs-wzory" className="mb-1 block text-xs font-medium text-stone-600">
+                Wzorce treści (wstawia cały tekst poniżej — po wstawieniu możesz go dowolnie zmienić)
+              </label>
+              <select
+                id="rs-wzory"
+                className="w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm text-stone-900"
+                value={wybranyWzor}
+                onChange={(e) => {
+                  const id = e.target.value;
+                  ustawWybranyWzor(id);
+                  const s = REGULAMIN_SWIETLICY_SZABLONY.find((w) => w.id === id);
+                  if (s) ustawRulesText(s.tresc);
+                }}
+              >
+                <option value="">Wybierz wzorzec, aby wstawić…</option>
+                {REGULAMIN_SWIETLICY_SZABLONY.map((s) => (
+                  <option key={s.id} value={s.id}>
+                    {s.etykieta}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="flex flex-wrap gap-2">
+              {REGULAMIN_SWIETLICY_SZABLONY.map((s) => (
+                <button
+                  key={s.id}
+                  type="button"
+                  title={s.opis}
+                  className="rounded-lg border border-stone-300 bg-stone-50 px-3 py-1.5 text-sm text-stone-800 hover:bg-stone-100"
+                  onClick={() => {
+                    ustawWybranyWzor(s.id);
+                    ustawRulesText(s.tresc);
+                  }}
+                >
+                  Wstaw: {s.etykieta}
+                </button>
+              ))}
+              <button
+                type="button"
+                className="rounded-lg border border-dashed border-stone-300 px-3 py-1.5 text-sm text-stone-600 hover:bg-stone-50"
+                onClick={() => {
+                  ustawRulesText("");
+                  ustawWybranyWzor("");
+                }}
+              >
+                Wyczyść pole
+              </button>
+            </div>
+          </div>
+          {wybranyWzor ? (
+            <p className="text-xs text-stone-500">
+              {REGULAMIN_SWIETLICY_SZABLONY.find((s) => s.id === wybranyWzor)?.opis}
+            </p>
+          ) : null}
         </div>
 
         <div>

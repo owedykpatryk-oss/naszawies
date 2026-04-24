@@ -17,8 +17,8 @@ export default async function PanelLayout({ children }: { children: React.ReactN
   }
 
   return (
-    <div className="panel-tlo min-w-0 overflow-x-hidden">
-      <div className="mx-auto w-full min-w-0 max-w-3xl px-4 py-8 text-stone-800 sm:px-5 sm:py-10">
+    <div className="panel-tlo min-h-[100dvh] min-w-0 overflow-x-hidden">
+      <div className="mx-auto w-full min-w-0 max-w-3xl py-8 sm:py-10 text-stone-800">
         <div className="no-print">
           <PanelNawigacja pokazLinkSoltysa={pokazLinkSoltysa} />
         </div>

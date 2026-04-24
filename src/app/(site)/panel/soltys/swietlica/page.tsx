@@ -48,8 +48,9 @@ export default async function SoltysSwietlicaPage() {
     <main>
       <h1 className="font-serif text-3xl text-green-950">Świetlica i wyposażenie</h1>
       <p className="mt-2 text-sm text-stone-600">
-        Sale w Twoich sołectwach. Dla każdej sali możesz prowadzić listę sprzętu i rzeczy (magazyn,
-        piwnica, meble) — mieszkańcy zobaczą ją przy rezerwacji świetlicy.
+        Dla każdej sali ustawiasz m.in. <strong>plan układu stołów</strong> (rysunek w panelu) oraz listę wyposażenia
+        — mieszkańcy zobaczą to przy rezerwacji. Nie trzeba zgłaszać tego do administratora: robisz to sam w
+        zakładce sali.
       </p>
 
       {villageIds.length === 0 ? (
@@ -74,10 +75,10 @@ export default async function SoltysSwietlicaPage() {
               </p>
             </div>
             <Link
-              href={`/panel/soltys/swietlica/${h.id}`}
+              href={`/panel/soltys/swietlica/${h.id}#plan-sali-edytor`}
               className="shrink-0 rounded-lg bg-green-800 px-3 py-2 text-center text-sm font-medium text-white hover:bg-green-900"
             >
-              Asortyment i szczegóły
+              Otwórz salę
             </Link>
           </li>
         ))}

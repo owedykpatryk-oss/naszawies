@@ -38,8 +38,8 @@ export function PanelNawigacja({ pokazLinkSoltysa = true }: PanelNawigacjaProps)
               href={href}
               className={
                 aktywny
-                  ? "nawigacja-pill shrink-0 rounded-xl bg-gradient-to-b from-green-800 to-green-900 px-2.5 py-2 font-medium text-white shadow-sm ring-1 ring-green-950/20 sm:px-3.5"
-                  : "nawigacja-pill shrink-0 rounded-xl px-2.5 py-2 text-stone-700 transition hover:bg-white/90 hover:text-green-950 hover:shadow-sm sm:px-3.5"
+                  ? "nawigacja-pill flex min-h-[44px] shrink-0 items-center rounded-xl bg-gradient-to-b from-green-800 to-green-900 px-2.5 py-2 font-medium text-white shadow-sm ring-1 ring-green-950/20 sm:min-h-0 sm:px-3.5"
+                  : "nawigacja-pill flex min-h-[44px] shrink-0 items-center rounded-xl px-2.5 py-2 text-stone-700 transition hover:bg-white/90 hover:text-green-950 hover:shadow-sm sm:min-h-0 sm:px-3.5"
               }
             >
               {label}

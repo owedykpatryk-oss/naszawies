@@ -51,6 +51,8 @@
   margin-right: auto;
   line-height: 1.65;
   color: #3d3d3d;
+  padding-left: 0.25rem;
+  padding-right: 0.25rem;
 }
 
 .prose-custom h2 {

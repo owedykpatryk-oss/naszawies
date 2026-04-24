@@ -1,6 +1,15 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState, useTransition, type ChangeEvent } from "react";
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  useSyncExternalStore,
+  useTransition,
+  type ChangeEvent,
+} from "react";
 import type { ElementPlanuSali, PlanSaliJson, TypElementuPlanu } from "@/lib/swietlica/plan-sali";
 import { klonPlanuSali, sprobujSparsowacPlanSali, sumaMiejscWPlanie } from "@/lib/swietlica/plan-sali";
 import { generujBankiet2x4, generujKsztaltU, generujRzadOkraglych } from "@/lib/swietlica/plan-sali-presety";
@@ -33,6 +42,19 @@ function przyblizRozmiarStoluCm(
     szerCm: Math.round((szer / 100) * saliSzerM * 100),
     wysCm: Math.round((wys / 70) * saliDlM * 100),
   };
+}
+
+function useEkranMinLg(): boolean {
+  return useSyncExternalStore(
+    (onStoreChange) => {
+      if (typeof window === "undefined") return () => undefined;
+      const m = window.matchMedia("(min-width: 1024px)");
+      m.addEventListener("change", onStoreChange);
+      return () => m.removeEventListener("change", onStoreChange);
+    },
+    () => (typeof window !== "undefined" ? window.matchMedia("(min-width: 1024px)").matches : false),
+    () => false,
+  );
 }
 
 function nowyStol(typ: TypElementuPlanu): ElementPlanuSali {
@@ -91,9 +113,11 @@ export function PlanSaliEdytor({ hallId, poczatkowyPlan, pojemnoscSali = null }:
       }
     })()
   );
+  const gorneEdytoraRef = useRef<HTMLDivElement | null>(null);
 
   const [szablony, ustawSzablony] = useState<SzablonLokalny[]>([]);
   const [nazwaSzablonu, ustawNazwaSzablonu] = useState("");
+  const ekranLg = useEkranMinLg();
 
   const sumaMiejsc = useMemo(() => sumaMiejscWPlanie(plan), [plan]);
   const przekroczonaPojemnosc = pojemnoscSali != null && pojemnoscSali > 0 && sumaMiejsc > pojemnoscSali;
@@ -505,7 +529,10 @@ export function PlanSaliEdytor({ hallId, poczatkowyPlan, pojemnoscSali = null }:
   );
 
   return (
-    <section className="mt-6 max-w-full overflow-x-clip rounded-xl border border-stone-200/90 bg-gradient-to-b from-white to-stone-50/90 p-4 shadow-md ring-1 ring-stone-900/[0.04] print:max-w-full print:rounded-none print:border-0 print:shadow-none print:ring-0 sm:mt-10 sm:rounded-2xl sm:p-6">
+    <section
+      id="plan-sali-edytor"
+      className="scroll-mt-24 sm:scroll-mt-28 mt-6 max-w-full overflow-x-clip rounded-xl border border-stone-200/90 bg-gradient-to-b from-white to-stone-50/90 p-4 shadow-md ring-1 ring-stone-900/[0.04] print:max-w-full print:rounded-none print:border-0 print:shadow-none print:ring-0 sm:mt-10 sm:rounded-2xl sm:p-6 max-lg:pb-28"
+    >
       <div className="border-b border-emerald-900/10 pb-3 sm:pb-4 print:border-0 print:pb-0">
         <div className="flex flex-col gap-2 sm:flex-row sm:items-start sm:justify-between">
           <h2 className="font-serif text-lg leading-tight text-green-950 sm:text-2xl">Plan sali (układ stołów)</h2>
@@ -528,30 +555,30 @@ export function PlanSaliEdytor({ hallId, poczatkowyPlan, pojemnoscSali = null }:
             Suma miejsc w układzie: <strong>{sumaMiejsc}</strong> (przy braku pojemności w konfiguracji tylko informacyjnie).
           </p>
         )}
-        <p className="mt-2 text-sm leading-relaxed text-stone-600 sm:mt-1.5 print:hidden">
-          <span className="sm:hidden">
-            Przeciągaj stoły palcem, zaznacz element, doprecyzuj wymiary w panelu. Gotowce i <strong>zapisz plan</strong> — na
-            dole.{" "}
-          </span>
-          <span className="hidden sm:inline">
-            Przeciągaj elementy, użyj <strong>gotowców</strong>, pól w panelu. W <strong>cm</strong> — do dokumentu wynajmu. Poniżej:{" "}
-            <strong>Plik JSON</strong> (kopia zapasowa), skróty klawiaturowe.
-          </span>
-        </p>
+        <ol className="mt-3 list-inside list-decimal space-y-1.5 text-sm leading-relaxed text-stone-700 print:hidden sm:mt-2 sm:list-outside sm:pl-5">
+          <li>Pod rysunkiem wpisz <strong>wymiary sali w metrach</strong> (szerokość i długość) — pokażą się też w dokumentach.</li>
+          <li>
+            <strong>Przeciągaj</strong> stoły na planie, albo wybierz szybki układ (bankiet, rząd…) i dopasuj etykiety
+            / liczbę miejsc.
+          </li>
+          <li>
+            Na telefonie użyj dolnego paska: <strong>Zapisz plan</strong> (albo przycisku „Zapisz” na dużym ekranie) —
+            wtedy ten układ zobaczą mieszkańcy przy rezerwacji.
+          </li>
+        </ol>
         <details className="mt-3 max-w-2xl rounded-lg border border-stone-200/80 bg-stone-50/90 px-3 py-2.5 sm:mt-2 print:hidden" id="edytor-skroty-klaw">
           <summary className="cursor-pointer list-none text-sm font-medium text-stone-800 [&::-webkit-details-marker]:hidden">
-            <span className="text-green-900 underline decoration-green-900/30 underline-offset-2">Skróty klawiatury + telefon</span>
+            <span className="text-green-900 underline decoration-green-900/30 underline-offset-2">Więcej: kopia pliku, skróty klawiatury</span>
           </summary>
           <div className="mt-2.5 space-y-2 text-xs leading-relaxed text-stone-600 sm:text-sm">
             <p>
-              <strong className="text-stone-700">Klawiatura:</strong> Ctrl+Z / Y, Ctrl+C / V (kopia stołu), Ctrl+D, [ ] obrót
-              (Shift szybszy krok), strzałki przesuw, Del usuwa, Esc zdejmuje zaznaczenie.{" "}
-              <span className="sm:hidden">Sekcja </span>
-              <span className="font-medium">Plik JSON</span> — eksport i import.
+              <strong className="text-stone-700">Klawiatura:</strong> Ctrl+Z cofanie, strzałki przesuwanie wybranego
+              stołu, Del usuwa, <span className="font-mono">[</span> / <span className="font-mono">]</span> obrót. Sekcja
+              poniżej: eksport/ import planu pliku (JSON) — opcjonalna kopia na dysk.
             </p>
             <p>
-              <strong className="text-stone-700">Telefon:</strong> wszystko w panelu i gotowcach; przeciągnij, potem wypełnij
-              wymiary sali i zapisz — skróty Ctrl służą tylko z podłączoną klawiaturą.
+              <strong className="text-stone-700">Na telefonie</strong> przycisk <strong>Gotowce</strong> przewinie do
+              gotowych układów. Skróty Ctrl tylko z podłączoną klawiaturą.
             </p>
           </div>
         </details>
@@ -628,149 +655,8 @@ export function PlanSaliEdytor({ hallId, poczatkowyPlan, pojemnoscSali = null }:
           ) : null}
         </div>
 
-      <div className="mt-4 space-y-3 sm:mt-5 sm:space-y-4 print:hidden">
-        <div>
-          <p className="mb-1.5 text-[10px] font-bold uppercase tracking-widest text-stone-500 sm:sr-only">Dodaj element</p>
-          <div className="flex flex-wrap gap-2">
-            <button
-              type="button"
-              onClick={() => mutujZOstatnimStanie((p) => ({ ...p, elementy: [...p.elementy, nowyStol("stol_prostokatny")] }))}
-              className="min-h-11 touch-manipulation rounded-xl bg-green-800 px-3.5 py-2.5 text-xs font-medium text-white shadow-sm active:bg-green-950 sm:min-h-0 sm:py-2 sm:text-sm"
-            >
-              + Stół prost.
-            </button>
-            <button
-              type="button"
-              onClick={() => mutujZOstatnimStanie((p) => ({ ...p, elementy: [...p.elementy, nowyStol("stol_okragly")] }))}
-              className="min-h-11 touch-manipulation rounded-xl border border-stone-300 bg-white px-3.5 py-2.5 text-xs font-medium active:bg-stone-100 sm:min-h-0 sm:py-2 sm:text-sm"
-            >
-              + Stół okr.
-            </button>
-            <button
-              type="button"
-              onClick={() => mutujZOstatnimStanie((p) => ({ ...p, elementy: [...p.elementy, nowyStol("lawka")] }))}
-              className="min-h-11 touch-manipulation rounded-xl border border-stone-300 bg-white px-3.5 py-2.5 text-xs font-medium active:bg-stone-100 sm:min-h-0 sm:py-2 sm:text-sm"
-            >
-              + Ławka
-            </button>
-          </div>
-        </div>
-        <div>
-          <p className="mb-1.5 text-[10px] font-bold uppercase tracking-widest text-stone-500">Szybki układ</p>
-          <div className="flex flex-wrap gap-2">
-            <button
-              type="button"
-              onClick={() =>
-                window.confirm("Zastąpić wszystkie elementy planu układem bankietowym (2×4 stołów)?") &&
-                mutujZOstatnimStanie((p) => ({ ...p, elementy: generujBankiet2x4() }))
-              }
-              className="min-h-11 touch-manipulation rounded-xl border border-amber-200/90 bg-amber-50/90 px-3 py-2.5 text-xs font-medium text-amber-950 ring-1 ring-amber-900/10 active:bg-amber-100/90 sm:min-h-0 sm:py-2"
-            >
-              Bankiet 2×4
-            </button>
-            <button
-              type="button"
-              onClick={() =>
-                window.confirm("Zastąpić plan rzędem 6 okrągłych stołów?") &&
-                mutujZOstatnimStanie((p) => ({ ...p, elementy: generujRzadOkraglych(6) }))
-              }
-              className="min-h-11 touch-manipulation rounded-xl border border-amber-200/90 bg-amber-50/90 px-3 py-2.5 text-xs font-medium text-amber-950 ring-1 ring-amber-900/10 active:bg-amber-100/90 sm:min-h-0 sm:py-2"
-            >
-              Rząd ×6
-            </button>
-            <button
-              type="button"
-              onClick={() =>
-                window.confirm("Dodać szkic w kształcie U (3 bloki) — obecne elementy zostaną usunięte?") &&
-                mutujZOstatnimStanie((p) => ({ ...p, elementy: generujKsztaltU() }))
-              }
-              className="min-h-11 touch-manipulation rounded-xl border border-amber-200/90 bg-amber-50/90 px-3 py-2.5 text-xs font-medium text-amber-950 ring-1 ring-amber-900/10 active:bg-amber-100/90 sm:min-h-0 sm:py-2"
-            >
-              Szkic U
-            </button>
-          </div>
-        </div>
-        <div>
-          <p className="mb-1.5 text-[10px] font-bold uppercase tracking-widest text-stone-500 sm:mb-2">Edycja</p>
-          <div className="flex flex-col gap-2">
-            <div className="grid grid-cols-2 gap-2 min-[400px]:grid-cols-4 min-[400px]:gap-1.5 sm:flex sm:flex-wrap sm:items-center">
-              <button
-                type="button"
-                onClick={cofnij}
-                disabled={!cofnijDostepne}
-                className="min-h-11 touch-manipulation rounded-xl border border-stone-300 bg-white px-2 py-2.5 text-xs font-medium disabled:opacity-40 sm:min-h-0 sm:px-3 sm:py-2 sm:text-sm"
-                title="Skrót: Ctrl+Z"
-              >
-                Cofnij
-              </button>
-              <button
-                type="button"
-                onClick={ponow}
-                disabled={!ponowDostepne}
-                className="min-h-11 touch-manipulation rounded-xl border border-stone-300 bg-white px-2 py-2.5 text-xs font-medium disabled:opacity-40 sm:min-h-0 sm:px-3 sm:py-2 sm:text-sm"
-                title="Ctrl+Y lub Ctrl+Shift+Z"
-              >
-                Ponów
-              </button>
-              <button
-                type="button"
-                onClick={duplikujWybrany}
-                disabled={!wybrany}
-                className="min-h-11 touch-manipulation rounded-xl border border-stone-300 bg-white px-2 py-2.5 text-xs font-medium disabled:opacity-40 sm:min-h-0 sm:px-3 sm:py-2 sm:text-sm"
-              >
-                Duplikuj
-              </button>
-              <button
-                type="button"
-                onClick={usunWybrany}
-                disabled={!wybrany}
-                className="min-h-11 touch-manipulation rounded-xl border border-red-200/90 px-2 py-2.5 text-xs font-medium text-red-800 active:bg-red-50 disabled:opacity-40 sm:min-h-0 sm:px-3 sm:py-2 sm:text-sm"
-              >
-                Usuń
-              </button>
-            </div>
-            <button
-              type="button"
-              onClick={zapisz}
-              disabled={oczekuje}
-              className="min-h-12 w-full touch-manipulation rounded-xl bg-gradient-to-b from-stone-800 to-stone-900 px-4 py-3 text-sm font-semibold text-white shadow-sm active:from-stone-900 active:to-stone-950 disabled:opacity-60 sm:min-h-11 sm:max-w-xs sm:py-2.5 sm:font-medium"
-            >
-              {oczekuje ? "Zapisywanie…" : "Zapisz plan"}
-            </button>
-          </div>
-        </div>
-      </div>
-
-      <div className="mt-3 flex flex-col gap-2 border-t border-stone-200/80 pt-3 sm:mt-4 sm:flex-row sm:items-center sm:justify-between print:hidden">
-        <p className="text-[10px] font-bold uppercase tracking-widest text-stone-500">Plik JSON</p>
-        <div className="grid grid-cols-1 gap-2 sm:flex sm:flex-wrap sm:justify-end sm:gap-1.5">
-          <button
-            type="button"
-            onClick={eksportujJson}
-            className="min-h-11 w-full touch-manipulation rounded-xl border border-stone-300/90 bg-stone-50/90 px-3 py-2.5 text-xs font-medium text-stone-800 transition active:bg-stone-100 sm:min-h-0 sm:w-auto sm:py-2"
-          >
-            Pobierz (eksport)
-          </button>
-          <button
-            type="button"
-            onClick={otworzWybierzImport}
-            className="min-h-11 w-full touch-manipulation rounded-xl border border-stone-300/90 bg-stone-50/90 px-3 py-2.5 text-xs font-medium text-stone-800 transition active:bg-stone-100 sm:min-h-0 sm:w-auto sm:py-2"
-          >
-            Wczytaj (import)…
-          </button>
-          <button
-            type="button"
-            onClick={wklejElementZeSchowka}
-            disabled={!kopiaWSchowkuEdytora}
-            className="min-h-11 w-full touch-manipulation rounded-xl border border-emerald-200/90 bg-emerald-50/80 px-3 py-2.5 text-xs font-medium text-emerald-900 disabled:opacity-40 sm:min-h-0 sm:w-auto sm:py-2"
-            title="Działa po skopiowaniu stołu. Na klawiaturze: też Ctrl+V (poza polem tekstowym)."
-          >
-            Wklej kopię
-          </button>
-        </div>
-        <input ref={wejscieImportu} type="file" accept="application/json,.json" className="hidden" onChange={obsluzPlikImportu} aria-hidden />
-      </div>
-
+      <div className="flex flex-col print:block">
+        <div className="order-1 min-w-0 print:block lg:order-2">
       {komunikat ? (
         <p
           className={
@@ -1128,11 +1014,189 @@ export function PlanSaliEdytor({ hallId, poczatkowyPlan, pojemnoscSali = null }:
           )}
         </div>
       </div>
+        </div>
+
+        <div
+          ref={gorneEdytoraRef}
+          id="plan-sali-generator"
+          className="order-2 mt-4 min-w-0 print:hidden lg:order-1 lg:mt-0"
+        >
+      <div className="space-y-3 sm:mt-5 sm:space-y-4 print:hidden">
+        <div>
+          <p className="mb-1.5 text-[10px] font-bold uppercase tracking-widest text-stone-500 sm:sr-only">Dodaj element</p>
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() => mutujZOstatnimStanie((p) => ({ ...p, elementy: [...p.elementy, nowyStol("stol_prostokatny")] }))}
+              className="min-h-11 touch-manipulation rounded-xl bg-green-800 px-3.5 py-2.5 text-xs font-medium text-white shadow-sm active:bg-green-950 sm:min-h-0 sm:py-2 sm:text-sm"
+            >
+              + Stół prost.
+            </button>
+            <button
+              type="button"
+              onClick={() => mutujZOstatnimStanie((p) => ({ ...p, elementy: [...p.elementy, nowyStol("stol_okragly")] }))}
+              className="min-h-11 touch-manipulation rounded-xl border border-stone-300 bg-white px-3.5 py-2.5 text-xs font-medium active:bg-stone-100 sm:min-h-0 sm:py-2 sm:text-sm"
+            >
+              + Stół okr.
+            </button>
+            <button
+              type="button"
+              onClick={() => mutujZOstatnimStanie((p) => ({ ...p, elementy: [...p.elementy, nowyStol("lawka")] }))}
+              className="min-h-11 touch-manipulation rounded-xl border border-stone-300 bg-white px-3.5 py-2.5 text-xs font-medium active:bg-stone-100 sm:min-h-0 sm:py-2 sm:text-sm"
+            >
+              + Ławka
+            </button>
+          </div>
+        </div>
+        <div>
+          <p className="mb-1.5 text-[10px] font-bold uppercase tracking-widest text-stone-500">Szybki układ</p>
+          <div className="flex flex-wrap gap-2">
+            <button
+              type="button"
+              onClick={() =>
+                window.confirm("Zastąpić wszystkie elementy planu układem bankietowym (2×4 stołów)?") &&
+                mutujZOstatnimStanie((p) => ({ ...p, elementy: generujBankiet2x4() }))
+              }
+              className="min-h-11 touch-manipulation rounded-xl border border-amber-200/90 bg-amber-50/90 px-3 py-2.5 text-xs font-medium text-amber-950 ring-1 ring-amber-900/10 active:bg-amber-100/90 sm:min-h-0 sm:py-2"
+            >
+              Bankiet 2×4
+            </button>
+            <button
+              type="button"
+              onClick={() =>
+                window.confirm("Zastąpić plan rzędem 6 okrągłych stołów?") &&
+                mutujZOstatnimStanie((p) => ({ ...p, elementy: generujRzadOkraglych(6) }))
+              }
+              className="min-h-11 touch-manipulation rounded-xl border border-amber-200/90 bg-amber-50/90 px-3 py-2.5 text-xs font-medium text-amber-950 ring-1 ring-amber-900/10 active:bg-amber-100/90 sm:min-h-0 sm:py-2"
+            >
+              Rząd ×6
+            </button>
+            <button
+              type="button"
+              onClick={() =>
+                window.confirm("Dodać szkic w kształcie U (3 bloki) — obecne elementy zostaną usunięte?") &&
+                mutujZOstatnimStanie((p) => ({ ...p, elementy: generujKsztaltU() }))
+              }
+              className="min-h-11 touch-manipulation rounded-xl border border-amber-200/90 bg-amber-50/90 px-3 py-2.5 text-xs font-medium text-amber-950 ring-1 ring-amber-900/10 active:bg-amber-100/90 sm:min-h-0 sm:py-2"
+            >
+              Szkic U
+            </button>
+          </div>
+        </div>
+        <div>
+          <p className="mb-1.5 text-[10px] font-bold uppercase tracking-widest text-stone-500 sm:mb-2">Edycja</p>
+          <div className="flex flex-col gap-2">
+            <div className="grid grid-cols-2 gap-2 min-[400px]:grid-cols-4 min-[400px]:gap-1.5 sm:flex sm:flex-wrap sm:items-center">
+              <button
+                type="button"
+                onClick={cofnij}
+                disabled={!cofnijDostepne}
+                className="min-h-11 touch-manipulation rounded-xl border border-stone-300 bg-white px-2 py-2.5 text-xs font-medium disabled:opacity-40 sm:min-h-0 sm:px-3 sm:py-2 sm:text-sm"
+                title="Skrót: Ctrl+Z"
+              >
+                Cofnij
+              </button>
+              <button
+                type="button"
+                onClick={ponow}
+                disabled={!ponowDostepne}
+                className="min-h-11 touch-manipulation rounded-xl border border-stone-300 bg-white px-2 py-2.5 text-xs font-medium disabled:opacity-40 sm:min-h-0 sm:px-3 sm:py-2 sm:text-sm"
+                title="Ctrl+Y lub Ctrl+Shift+Z"
+              >
+                Ponów
+              </button>
+              <button
+                type="button"
+                onClick={duplikujWybrany}
+                disabled={!wybrany}
+                className="min-h-11 touch-manipulation rounded-xl border border-stone-300 bg-white px-2 py-2.5 text-xs font-medium disabled:opacity-40 sm:min-h-0 sm:px-3 sm:py-2 sm:text-sm"
+              >
+                Duplikuj
+              </button>
+              <button
+                type="button"
+                onClick={usunWybrany}
+                disabled={!wybrany}
+                className="min-h-11 touch-manipulation rounded-xl border border-red-200/90 px-2 py-2.5 text-xs font-medium text-red-800 active:bg-red-50 disabled:opacity-40 sm:min-h-0 sm:px-3 sm:py-2 sm:text-sm"
+              >
+                Usuń
+              </button>
+            </div>
+            <button
+              type="button"
+              onClick={zapisz}
+              disabled={oczekuje}
+              className="max-lg:hidden min-h-12 w-full touch-manipulation rounded-xl bg-gradient-to-b from-stone-800 to-stone-900 px-4 py-3 text-sm font-semibold text-white shadow-sm active:from-stone-900 active:to-stone-950 disabled:opacity-60 sm:min-h-11 sm:max-w-xs sm:py-2.5 sm:font-medium"
+            >
+              {oczekuje ? "Zapisywanie…" : "Zapisz plan"}
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div className="mt-3 flex flex-col gap-2 border-t border-stone-200/80 pt-3 sm:mt-4 sm:flex-row sm:items-center sm:justify-between print:hidden">
+        <p className="text-[10px] font-bold uppercase tracking-widest text-stone-500">Plik JSON</p>
+        <div className="grid grid-cols-1 gap-2 sm:flex sm:flex-wrap sm:justify-end sm:gap-1.5">
+          <button
+            type="button"
+            onClick={eksportujJson}
+            className="min-h-11 w-full touch-manipulation rounded-xl border border-stone-300/90 bg-stone-50/90 px-3 py-2.5 text-xs font-medium text-stone-800 transition active:bg-stone-100 sm:min-h-0 sm:w-auto sm:py-2"
+          >
+            Pobierz (eksport)
+          </button>
+          <button
+            type="button"
+            onClick={otworzWybierzImport}
+            className="min-h-11 w-full touch-manipulation rounded-xl border border-stone-300/90 bg-stone-50/90 px-3 py-2.5 text-xs font-medium text-stone-800 transition active:bg-stone-100 sm:min-h-0 sm:w-auto sm:py-2"
+          >
+            Wczytaj (import)…
+          </button>
+          <button
+            type="button"
+            onClick={wklejElementZeSchowka}
+            disabled={!kopiaWSchowkuEdytora}
+            className="min-h-11 w-full touch-manipulation rounded-xl border border-emerald-200/90 bg-emerald-50/80 px-3 py-2.5 text-xs font-medium text-emerald-900 disabled:opacity-40 sm:min-h-0 sm:w-auto sm:py-2"
+            title="Działa po skopiowaniu stołu. Na klawiaturze: też Ctrl+V (poza polem tekstowym)."
+          >
+            Wklej kopię
+          </button>
+        </div>
+        <input ref={wejscieImportu} type="file" accept="application/json,.json" className="hidden" onChange={obsluzPlikImportu} aria-hidden />
+      </div>
+        </div>
+      </div>
 
       <div className="mt-5 overflow-hidden rounded-xl border border-stone-200/90 bg-stone-100/50 p-3.5 print:hidden sm:p-4">
         <p className="text-xs font-bold uppercase tracking-widest text-stone-500">Podgląd (jak u mieszkańca)</p>
         <PlanSaliRysunek plan={plan} className="mt-3 h-auto max-h-48 w-full max-w-lg sm:max-h-64" />
       </div>
+
+      {!ekranLg ? (
+        <div
+          className="fixed bottom-0 left-0 right-0 z-30 border-t border-stone-200/80 bg-white/95 px-3 py-2 shadow-[0_-4px_20px_rgba(0,0,0,0.08)] backdrop-blur-sm print:hidden"
+          style={{ paddingBottom: "max(0.5rem, env(safe-area-inset-bottom, 0px))" }}
+        >
+          <div className="mx-auto flex max-w-lg gap-2">
+            <button
+              type="button"
+              onClick={zapisz}
+              disabled={oczekuje}
+              className="min-h-12 min-w-0 flex-1 touch-manipulation rounded-xl bg-gradient-to-b from-stone-800 to-stone-900 px-4 text-sm font-semibold text-white shadow-sm active:from-stone-900 active:to-stone-950 disabled:opacity-60"
+            >
+              {oczekuje ? "Zapisywanie…" : "Zapisz plan"}
+            </button>
+            <button
+              type="button"
+              onClick={() =>
+                gorneEdytoraRef.current?.scrollIntoView({ behavior: "smooth", block: "start" })
+              }
+              className="min-h-12 shrink-0 touch-manipulation rounded-xl border-2 border-emerald-800/30 bg-gradient-to-b from-emerald-600/95 to-emerald-800 px-3.5 text-sm font-semibold text-white shadow-md"
+            >
+              Gotowce
+            </button>
+          </div>
+        </div>
+      ) : null}
     </section>
   );
 }

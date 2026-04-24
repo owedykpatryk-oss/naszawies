@@ -54,7 +54,7 @@ export default async function WiesCatchAllPage({ params }: Props) {
 
   if (segmenty.length < 4) {
     return (
-      <main className="mx-auto max-w-2xl px-5 py-16 text-stone-800">
+      <main className="mx-auto min-w-0 max-w-2xl py-16 text-stone-800">
         <p className="mb-4">
           <Link href="/" className="text-green-800 underline">
             ← Strona główna
@@ -84,7 +84,7 @@ export default async function WiesCatchAllPage({ params }: Props) {
   const supabase = createPublicSupabaseClient();
   if (!supabase) {
     return (
-      <main className="mx-auto max-w-2xl px-5 py-16 text-stone-800">
+      <main className="mx-auto min-w-0 max-w-2xl py-16 text-stone-800">
         <p className="mb-4">
           <Link href="/" className="text-green-800 underline">
             ← Strona główna
@@ -117,7 +117,7 @@ export default async function WiesCatchAllPage({ params }: Props) {
     const posty = (postyRaw ?? []) as { id: string; title: string; type: string; created_at: string }[];
 
     return (
-      <main className="mx-auto max-w-2xl px-5 py-16 text-stone-800">
+      <main className="mx-auto min-w-0 max-w-2xl py-16 text-stone-800">
         <p className="mb-6 text-sm text-stone-500">
           <Link href="/" className="text-green-800 underline">
             ← Strona główna
@@ -138,7 +138,7 @@ export default async function WiesCatchAllPage({ params }: Props) {
     }
     const sciezka = sciezkaProfiluWsi(wies);
     return (
-      <main className="mx-auto min-w-0 max-w-5xl px-4 py-12 text-stone-800 sm:px-5 sm:py-16">
+      <main className="mx-auto min-w-0 max-w-5xl py-12 sm:py-16 text-stone-800">
         <StudzienkiProjektSwietlicy sciezkaWsi={sciezka} nazwaWsi={wies.name} />
       </main>
     );
@@ -163,7 +163,7 @@ export default async function WiesCatchAllPage({ params }: Props) {
     const sciezka = sciezkaProfiluWsi(wies);
 
     return (
-      <main className="mx-auto max-w-2xl px-5 py-16 text-stone-800">
+      <main className="mx-auto min-w-0 max-w-2xl py-16 text-stone-800">
         <WiesPostPubliczny
           tytul={post.title}
           typ={post.type}
@@ -178,7 +178,7 @@ export default async function WiesCatchAllPage({ params }: Props) {
 
   const podstrona = reszta.join(" / ");
   return (
-    <main className="mx-auto max-w-2xl px-5 py-16 text-stone-800">
+    <main className="mx-auto min-w-0 max-w-2xl py-16 text-stone-800">
       <p className="mb-4 text-sm text-stone-500">
         <Link href={sciezkaProfiluWsi(wies)} className="text-green-800 underline">
           ← {wies.name}

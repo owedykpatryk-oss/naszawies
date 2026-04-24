@@ -3,6 +3,8 @@
 import Image from "next/image";
 import { useCallback, useEffect, useId, useMemo, useRef, useState } from "react";
 import {
+  BRYLA_M,
+  PROSTOKAT_SALI_DLA_STOLOW_PROC,
   STREFA_SALI_GLOWNEJ_ID,
   STREFY_RZUTU_STUDZIENKI,
   UKLAD_STOLOW_W_SALI_STUDZIENKI,
@@ -60,10 +62,8 @@ export function StudzienkiRzutInteraktywny() {
   const idPref = useId();
   const svgUid = idPref.replace(/:/g, "");
   const svgRef = useRef<SVGSVGElement | null>(null);
-  const sala = useMemo(
-    () => znajdzStrefe(STREFA_SALI_GLOWNEJ_ID)?.rect ?? { x: 0, y: 0, w: 100, h: 100 },
-    []
-  );
+  /** Sali 1.6 w kształcie L: bbox 8,0 m + doł 7,05 m — ograniczenie stołów; główny prostokąt 8,00×6,60 m w `PROSTOKAT_SALI_GLOWNEJ_PROC`. */
+  const sala = useMemo(() => PROSTOKAT_SALI_DLA_STOLOW_PROC, []);
   const [pokazStrefy, ustawPokazStrefy] = useState(true);
   const [pokazZnaczniki, ustawPokazZnaczniki] = useState(true);
   const [trybStolow, ustawTrybStolow] = useState(false);
@@ -98,6 +98,15 @@ export function StudzienkiRzutInteraktywny() {
     e.stopPropagation();
     if (!svgRef.current) return;
     const w = wspDoSvg(e, svgRef.current);
+    /* Przeciągany stół rysuj nad pozostałymi (kolejność w <svg>). */
+    ustawStoly((list) => {
+      const idx = list.findIndex((s) => s.id === st.id);
+      if (idx < 0) return list;
+      if (idx === list.length - 1) return list;
+      const next = list.slice();
+      const [moved] = next.splice(idx, 1);
+      return moved ? [...next, moved] : list;
+    });
     ustawWlecze({ id: st.id, offX: w.x - st.x, offY: w.y - st.y });
   };
 
@@ -125,6 +134,17 @@ export function StudzienkiRzutInteraktywny() {
       window.removeEventListener("pointercancel", naKoniec);
     };
   }, [wlecze, ograniczWzgledemSali]);
+
+  useEffect(() => {
+    const naKlawisz = (e: KeyboardEvent) => {
+      if (e.key !== "Escape") return;
+      ustawWybrana(null);
+      ustawNajechana(null);
+      ustawWlecze(null);
+    };
+    window.addEventListener("keydown", naKlawisz);
+    return () => window.removeEventListener("keydown", naKlawisz);
+  }, []);
 
   const suma = sumaMiejsc(stoly);
 
@@ -192,8 +212,14 @@ export function StudzienkiRzutInteraktywny() {
         </div>
         <div className="space-y-3 border-b border-stone-200/60 bg-white/50 px-4 py-4 sm:px-5">
           <p className="text-xs leading-relaxed text-stone-600 sm:text-sm">
-            Warstwa <strong>SVG</strong> jest ręcznie zgrana z PNG (nie z CAD). W papierach liczy się{" "}
-            <strong>oryginał 1:100</strong> — poniżej budujesz tylko intuicję planu, nie wymiary prawne.
+            Prostokąty pomieszczeń pochodzą z <strong>wymiarów w metrach</strong> (tabela 1.1–1.6) przeliczonych na
+            tło PNG. W papierach liczy się <strong>oryginał 1:100</strong> i projekt budowlany; tu orientacja, nie
+            wymiary prawne w CAD.             <span className="whitespace-nowrap">Bryła modelu: {BRYLA_M.w} m × {BRYLA_M.h} m.</span>{" "}
+            <span className="sm:hidden">Dotknij pustego tła rysunku, by schować opis strefy.</span>
+            <span className="hidden sm:inline">
+              <kbd className="rounded border border-stone-300 bg-stone-100 px-1.5 py-0.5 font-mono text-[10px]">Esc</kbd>{" "}
+              — czyści wybór strefy albo kończy przeciąganie stołu.
+            </span>
           </p>
           <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
             <div className="flex flex-1 flex-wrap items-center gap-2 sm:gap-2.5">
@@ -202,15 +228,15 @@ export function StudzienkiRzutInteraktywny() {
               {pasekPilule("c", "Stoły w sali", "Przeciąganie", trybStolow, () => ustawTrybStolow((v) => !v))}
             </div>
             {trybStolow ? (
-              <div className="flex w-full flex-wrap items-center justify-end gap-2 sm:w-auto">
-                <div className="inline-flex min-h-[44px] sm:min-h-0 items-center justify-center gap-1.5 rounded-2xl border-2 border-emerald-200/80 bg-gradient-to-b from-amber-50/90 to-white px-3 py-1.5 text-sm font-serif tabular-nums text-emerald-950 shadow-inner shadow-emerald-900/5">
+              <div className="flex w-full min-w-0 max-w-full flex-nowrap items-center justify-end gap-1.5 overflow-x-auto scroll-pb-2 sm:w-auto sm:flex-wrap sm:overflow-visible [scrollbar-width:thin] [padding-bottom:env(safe-area-inset-bottom,0px)]">
+                <div className="inline-flex min-h-[44px] min-w-0 shrink-0 sm:min-h-0 items-center justify-center gap-1.5 rounded-2xl border-2 border-emerald-200/80 bg-gradient-to-b from-amber-50/90 to-white px-3 py-1.5 text-sm font-serif tabular-nums text-emerald-950 shadow-inner shadow-emerald-900/5">
                   <span className="text-lg font-bold tracking-tight">{suma}</span>
                   <span className="text-xs font-sans text-stone-500">miejsc</span>
                 </div>
                 <button
                   type="button"
                   onClick={() => ustawStoly((l) => [...l, ograniczWzgledemSali(nowyStolProsty(sala))])}
-                  className="min-h-[44px] rounded-2xl border-2 border-emerald-800/20 bg-gradient-to-b from-emerald-600 to-emerald-800 px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-emerald-900/25 transition hover:from-emerald-500 hover:to-emerald-700 active:scale-[0.98] sm:min-h-0"
+                  className="min-h-[44px] shrink-0 touch-manipulation rounded-2xl border-2 border-emerald-800/20 bg-gradient-to-b from-emerald-600 to-emerald-800 px-4 py-2 text-sm font-semibold text-white shadow-lg shadow-emerald-900/25 transition hover:from-emerald-500 hover:to-emerald-700 active:scale-[0.98] sm:min-h-0"
                 >
                   + stół
                 </button>
@@ -221,14 +247,14 @@ export function StudzienkiRzutInteraktywny() {
                       przesunWszystkieStart(UKLAD_STOLOW_W_SALI_STUDZIENKI.map((t) => ({ ...t, id: `${idPref}-${t.id}` })))
                     )
                   }
-                  className="min-h-[44px] rounded-2xl border border-stone-200/90 bg-white px-3.5 py-2 text-sm font-medium text-stone-700 shadow-sm transition hover:border-emerald-300/60 hover:bg-stone-50/90 sm:min-h-0"
+                  className="min-h-[44px] shrink-0 touch-manipulation rounded-2xl border border-stone-200/90 bg-white px-3.5 py-2 text-sm font-medium text-stone-700 shadow-sm transition hover:border-emerald-300/60 hover:bg-stone-50/90 sm:min-h-0"
                 >
                   Start
                 </button>
                 <button
                   type="button"
                   onClick={() => ustawStoly([])}
-                  className="min-h-[44px] rounded-2xl border border-stone-200/90 bg-stone-50/90 px-3.5 py-2 text-sm text-stone-600 transition hover:bg-stone-100 sm:min-h-0"
+                  className="min-h-[44px] shrink-0 touch-manipulation rounded-2xl border border-stone-200/90 bg-stone-50/90 px-3.5 py-2 text-sm text-stone-600 transition hover:bg-stone-100 sm:min-h-0"
                 >
                   Wyczyść
                 </button>
@@ -255,12 +281,28 @@ export function StudzienkiRzutInteraktywny() {
           />
           <svg
             ref={svgRef}
-            className="absolute left-0 top-0 h-full w-full touch-none"
+            className={`absolute left-0 top-0 h-full w-full touch-none ${wlecze ? "cursor-grabbing" : trybStolow ? "cursor-default" : ""}`}
             viewBox="0 0 100 100"
             preserveAspectRatio="none"
             role="img"
             aria-label="Interaktywna warstwa: pomieszczenia i stół w planie"
           >
+            {/* Klik w wolne pole (pod warstwą stref) — odpina wybór podświetlonej strefy */}
+            {pokazStrefy && !trybStolow ? (
+              <rect
+                x="0"
+                y="0"
+                width="100"
+                height="100"
+                fill="transparent"
+                className="cursor-default"
+                aria-hidden
+                onClick={() => {
+                  ustawWybrana(null);
+                  ustawNajechana(null);
+                }}
+              />
+            ) : null}
             <defs>
               <linearGradient id={`stol-grad-${svgUid}`} x1="0" y1="0" x2="0" y2="1">
                 <stop offset="0%" stopColor="#f0fdf4" />
@@ -301,7 +343,7 @@ export function StudzienkiRzutInteraktywny() {
                         y={z.rect.y}
                         width={z.rect.w}
                         height={z.rect.h}
-                        fill={z.id === STREFA_SALI_GLOWNEJ_ID ? "rgba(16,185,129,0.12)" : "rgba(120,113,108,0.06)"}
+                        fill={z.id === STREFA_SALI_GLOWNEJ_ID || z.id === "1.6L" ? "rgba(16,185,129,0.12)" : "rgba(120,113,108,0.06)"}
                         stroke={wyr ? z.kolor : "rgba(0,0,0,0.18)"}
                         strokeWidth={wyr ? 0.5 : 0.14}
                         opacity={wyr ? 1 : 0.88}
@@ -405,7 +447,7 @@ export function StudzienkiRzutInteraktywny() {
                     <g
                       key={st.id}
                       onPointerDown={(e) => naPointerStoluDown(e, st)}
-                      className="cursor-grab"
+                      className={`${wlecze?.id === st.id ? "cursor-grabbing" : "cursor-grab active:cursor-grabbing"}`}
                       style={{ touchAction: "none" as const }}
                     >
                       {st.typ === "okragly" ? (
@@ -455,7 +497,11 @@ export function StudzienkiRzutInteraktywny() {
         </div>
 
         {wybrana && !trybStolow && pokazStrefy ? (
-          <div className="border-t border-emerald-200/40 bg-gradient-to-r from-emerald-50/80 via-white to-teal-50/50 px-4 py-3.5 text-sm text-stone-800 sm:px-5">
+          <div
+            role="status"
+            aria-live="polite"
+            className="border-t border-emerald-200/40 bg-gradient-to-r from-emerald-50/80 via-white to-teal-50/50 px-4 py-3.5 text-sm text-stone-800 sm:px-5"
+          >
             {(() => {
               const z = znajdzStrefe(wybrana ?? "");
               if (!z) return null;
@@ -476,15 +522,22 @@ export function StudzienkiRzutInteraktywny() {
         {trybStolow ? (
           <p className="border-t border-amber-200/50 bg-gradient-to-b from-amber-50/90 to-amber-50/20 px-4 py-2.5 text-xs leading-relaxed text-amber-950/90 sm:px-5 sm:text-sm">
             Ćwiczenie aranżacyjne: stoły <strong>nie</strong> skalują się 1:1 w metrach. Wydarzenie weryfikuj w
-            rzeczywistej sali. Po uruchomieniu świetlicy w naszawies sołtys zapisze plan w panelu sali.
+            rzeczywistej sali. Po uruchomieniu świetlicy w naszawies sołtys zapisze plan w panelu sali. Chwytany stół
+            ląduje <strong>nad</strong> pozostałymi, żeby go nie zasłaniały sąsiednie.
           </p>
         ) : null}
 
         <div className="flex flex-col gap-3 border-t border-stone-200/60 bg-gradient-to-b from-stone-50/95 to-white/90 px-4 py-3 sm:flex-row sm:items-center sm:justify-between sm:px-5">
           <div className="flex flex-wrap items-center gap-x-4 gap-y-1.5 text-[10px] text-stone-500 sm:text-xs">
             <span className="font-semibold uppercase tracking-wider text-stone-600">Legenda</span>
+            <span className="inline-flex max-w-full items-baseline gap-1.5">
+              <span className="h-2.5 w-2.5 shrink-0 self-center rounded-sm bg-emerald-400/90 ring-1 ring-emerald-700/30" />
+              <span>
+                Sala <span className="font-mono text-stone-600">1.6</span> — dwa poligony (główna + doł L)
+              </span>
+            </span>
             <span className="inline-flex items-center gap-1.5">
-              <span className="h-2.5 w-2.5 rounded-sm bg-emerald-400/90 ring-1 ring-emerald-700/30" /> Pomieszczenie
+              <span className="h-2.5 w-2.5 rounded-sm bg-stone-400/90 ring-1 ring-stone-600/30" /> Inne pomieszczenia
             </span>
             <span className="inline-flex items-center gap-1.5">
               <span className="h-2.5 w-2.5 rounded-sm bg-sky-400/90 ring-1 ring-sky-700/30" /> Okno

@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { FormEvent, useState } from "react";
+import { czyPelneImieINazwisko } from "@/lib/rejestracja/validate-imie-soltysa";
 import { utworzKlientaSupabasePrzegladarka } from "@/lib/supabase/przegladarka";
 
 type Props = {
@@ -33,6 +34,12 @@ export function RejestracjaFormularz({ pochodzeniePubliczne }: Props) {
     }
     if (haslo.length < 8) {
       ustawBlad("Hasło powinno mieć co najmniej 8 znaków.");
+      return;
+    }
+    if (intencja === "soltys" && !czyPelneImieINazwisko(wyswietlanaNazwa)) {
+      ustawBlad(
+        "Jako osoba deklarująca sołtysa podaj pełne imię i nazwisko: co najmniej dwa wyrazy (np. Jan Kowalski), każde po min. 2 znaki — zgodnie z wymogiem: jeden aktywny sołtys na sołectwo, identyfikacja musi być czytelna."
+      );
       return;
     }
 
@@ -112,6 +119,10 @@ export function RejestracjaFormularz({ pochodzeniePubliczne }: Props) {
         <label htmlFor="reg-nazwa" className="mb-1 block text-sm font-medium text-stone-700">
           Wyświetlana nazwa
         </label>
+        <p className="mb-1.5 text-xs leading-relaxed text-stone-500">
+          Jeśli wybierzesz poniżej opcję <strong>sołtys</strong>, podaj <strong>pełne imię i nazwisko</strong> (dwa
+          słowa). W bazie obowiązuje: <strong>jeden aktywny sołtys na jedną wieś</strong> (unikalność techniczna).
+        </p>
         <input
           id="reg-nazwa"
           name="wyswietlana_nazwa"
@@ -119,9 +130,9 @@ export function RejestracjaFormularz({ pochodzeniePubliczne }: Props) {
           required
           minLength={2}
           maxLength={80}
-          autoComplete="nickname"
-          placeholder="np. Jan lub Sołtys Arcelin"
-          className="w-full rounded-lg border border-stone-300 px-3 py-2 text-stone-900 outline-none ring-green-800 focus:ring-2"
+          autoComplete="name"
+          placeholder="np. Jan Kowalski (dla sołtysa: pełne dane)"
+          className="w-full rounded-lg border border-stone-300 px-3 py-2 text-base text-stone-900 outline-none ring-green-800 focus:ring-2 sm:text-sm"
         />
       </div>
       <fieldset className="rounded-lg border border-stone-200 bg-stone-50/80 p-4">
@@ -129,8 +140,9 @@ export function RejestracjaFormularz({ pochodzeniePubliczne }: Props) {
           Kim jesteś / czego szukasz? <span className="font-normal text-stone-500">(opcjonalnie)</span>
         </legend>
         <p className="mb-3 text-xs leading-relaxed text-stone-600">
-          To nie aktywuje roli w wsi — tylko informacja przy koncie. Sołtys i tak musi przejść
-          weryfikację z zespołem serwisu.
+          To nie nadaje roli w wsi (to robi odrębny wniosek / migracja / zespół). Dla deklaracji <strong>sołtys</strong>{" "}
+          musisz wpisać wyżej <strong>imię i nazwisko</strong> — w każdym sołectwie może być tylko <strong>jeden</strong>{" "}
+          aktywny sołtys w systemie.
         </p>
         <div className="space-y-2 text-sm text-stone-800">
           <label className="flex cursor-pointer items-start gap-2">

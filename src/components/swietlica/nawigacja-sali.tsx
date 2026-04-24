@@ -12,7 +12,8 @@ export function NawigacjaSali({ hallId, rola }: Props) {
   const linki: { href: string; label: string }[] =
     rola === "soltys"
       ? [
-          { href: baza, label: "Wyposażenie i plan" },
+          { href: baza, label: "Przegląd sali" },
+          { href: `${baza}#plan-sali-edytor`, label: "Plan stołów" },
           { href: `${baza}/dokument`, label: "Dokument wynajmu" },
         ]
       : [
