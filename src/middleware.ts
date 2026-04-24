@@ -9,6 +9,10 @@ type CiasteczkaDoUstawienia = {
 }[];
 
 export async function middleware(request: NextRequest) {
+  if (request.nextUrl.pathname === "/favicon.ico") {
+    return NextResponse.rewrite(new URL("/icon", request.url));
+  }
+
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
   if (!url || !anonKey) {
@@ -50,6 +54,7 @@ export async function middleware(request: NextRequest) {
 
 export const config = {
   matcher: [
-    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|js|css|woff2?)$).*)",
+    /* favicon.ico: bez wykluczenia — rewrite na /icon zamiast domyślnej ikony Next/Vercel */
+    "/((?!_next/static|_next/image|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|js|css|woff2?)$).*)",
   ],
 };

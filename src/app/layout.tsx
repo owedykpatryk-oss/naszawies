@@ -48,7 +48,7 @@ export const metadata: Metadata = {
       "Bezpłatna platforma dla sołtysów i mieszkańców. Rezerwuj świetlicę, planuj układ stołów, łącz wieś.",
   },
   twitter: {
-    card: "summary",
+    card: "summary_large_image",
     title: "naszawies.pl — cyfrowy dom polskiej wsi",
     description:
       "Bezpłatna platforma dla sołtysów i mieszkańców. Bez reklam, bez opłat dla wsi.",
