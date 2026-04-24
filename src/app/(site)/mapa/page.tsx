@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { MapaWsiOsm } from "@/components/mapa/mapa-wsi-osm";
-import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
+import { createPublicSupabaseClient } from "@/lib/supabase/public-client";
 import { sciezkaProfiluWsi } from "@/lib/wies/sciezka-publiczna";
 
 export const metadata: Metadata = {
@@ -21,17 +21,24 @@ type Wiersz = {
 };
 
 export default async function MapaPage() {
-  const supabase = utworzKlientaSupabaseSerwer();
-  const { data, error } = await supabase
-    .from("villages")
-    .select("id, name, slug, voivodeship, county, commune, latitude, longitude")
-    .eq("is_active", true)
-    .not("latitude", "is", null)
-    .not("longitude", "is", null)
-    .order("name", { ascending: true })
-    .limit(400);
+  const supabase = createPublicSupabaseClient();
+  let wiersze: Wiersz[] = [];
+  let bladZapytania: string | null = null;
 
-  const wiersze = (data ?? []) as Wiersz[];
+  if (supabase) {
+    const { data, error } = await supabase
+      .from("villages")
+      .select("id, name, slug, voivodeship, county, commune, latitude, longitude")
+      .eq("is_active", true)
+      .not("latitude", "is", null)
+      .not("longitude", "is", null)
+      .order("name", { ascending: true })
+      .limit(400);
+    wiersze = (data ?? []) as Wiersz[];
+    if (error) bladZapytania = error.message;
+  } else {
+    bladZapytania = "Brak konfiguracji Supabase (NEXT_PUBLIC_SUPABASE_URL / ANON_KEY).";
+  }
   const punkty = wiersze
     .filter((w) => w.latitude != null && w.longitude != null)
     .map((w) => ({
@@ -65,20 +72,20 @@ export default async function MapaPage() {
         <code className="rounded bg-stone-100 px-1 text-xs">npm run import-teryt-powiat</code>.
       </p>
 
-      {error ? (
+      {bladZapytania ? (
         <p className="mt-8 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-800" role="alert">
-          Nie udało się pobrać danych ({error.message}).
+          Nie udało się pobrać danych ({bladZapytania}).
         </p>
       ) : null}
 
-      {!error && punkty.length === 0 ? (
+      {!bladZapytania && punkty.length === 0 ? (
         <p className="mt-8 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-950">
           Brak aktywnych wsi z wypełnioną szerokością i długością geograficzną. Po dodaniu wsi w bazie (np. migracja
           seed) współrzędne pozwolą pokazać mapę regionu.
         </p>
       ) : null}
 
-      {!error && punkty.length > 0 ? (
+      {!bladZapytania && punkty.length > 0 ? (
         <>
           <div className="mt-10">
             <MapaWsiOsm punkty={punkty} />

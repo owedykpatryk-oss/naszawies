@@ -5,7 +5,7 @@ import { z } from "zod";
 import { StudzienkiProjektSwietlicy } from "@/components/wies/studzienki-projekt-swietlicy";
 import { WiesPostPubliczny } from "@/components/wies/wies-post-publiczny";
 import { WiesProfilPubliczny } from "@/components/wies/wies-profil-publiczny";
-import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
+import { createPublicSupabaseClient } from "@/lib/supabase/public-client";
 import { sciezkaProfiluWsi } from "@/lib/wies/sciezka-publiczna";
 import { znajdzWiesPoSciezce } from "@/lib/wies/znajdz-wies-po-sciezce";
 
@@ -13,15 +13,16 @@ type Props = { params: { segmenty?: string[] } };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const s = params.segmenty ?? [];
+  const supabase = createPublicSupabaseClient();
   if (s.length === 4) {
-    const supabase = utworzKlientaSupabaseSerwer();
+    if (!supabase) return { title: "Profil wsi" };
     const wies = await znajdzWiesPoSciezce(supabase, s[0], s[1], s[2], s[3]);
     if (wies) {
       return { title: `${wies.name} — profil wsi`, description: wies.description?.slice(0, 160) ?? undefined };
     }
   }
   if (s.length === 5 && s[4] === "projekt-swietlicy") {
-    const supabase = utworzKlientaSupabaseSerwer();
+    if (!supabase) return { title: "Projekt świetlicy" };
     const wiesMeta = await znajdzWiesPoSciezce(supabase, s[0], s[1], s[2], s[3]);
     if (wiesMeta?.teryt_id === "0088390") {
       return {
@@ -34,7 +35,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
   if (s.length === 6 && s[4] === "ogloszenie") {
     const id = z.string().uuid().safeParse(s[5]);
     if (id.success) {
-      const supabase = utworzKlientaSupabaseSerwer();
+      if (!supabase) return { title: "Ogłoszenie" };
       const { data: post } = await supabase
         .from("posts")
         .select("title, village_id")
@@ -80,7 +81,25 @@ export default async function WiesCatchAllPage({ params }: Props) {
     notFound();
   }
 
-  const supabase = utworzKlientaSupabaseSerwer();
+  const supabase = createPublicSupabaseClient();
+  if (!supabase) {
+    return (
+      <main className="mx-auto max-w-2xl px-5 py-16 text-stone-800">
+        <p className="mb-4">
+          <Link href="/" className="text-green-800 underline">
+            ← Strona główna
+          </Link>
+        </p>
+        <h1 className="font-serif text-2xl text-green-950">Baza danych nieskonfigurowana</h1>
+        <p className="mt-2 text-sm text-stone-600">
+          Ustaw zmienne <code className="rounded bg-stone-100 px-1">NEXT_PUBLIC_SUPABASE_URL</code> oraz{" "}
+          <code className="rounded bg-stone-100 px-1">NEXT_PUBLIC_SUPABASE_ANON_KEY</code> (np. na Vercel w
+          ustawieniach projektu), potem wdróż ponownie.
+        </p>
+      </main>
+    );
+  }
+
   const wies = await znajdzWiesPoSciezce(supabase, woj, powiat, gmina, slug);
   if (!wies) {
     notFound();
