@@ -31,6 +31,9 @@ yarn-error.log*
 # vercel
 .vercel
 
+# lokalne eksporty GUS eTeryt (duże pliki, nie w repo)
+docs/Pliki/
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts

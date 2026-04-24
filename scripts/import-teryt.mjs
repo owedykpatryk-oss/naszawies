@@ -2,14 +2,18 @@
  * Import miejscowości z plików GUS TERYT (SIMC.xml + TERC.xml) do tabeli `villages`.
  * Wymaga: npm i @supabase/supabase-js (już w projekcie), fast-xml-parser, slugify.
  *
- * Użycie:
+ * Użycie (pełny katalog miejscowości w PL — zalecane pod wyszukiwarkę / wniosek sołtysa):
  *   node scripts/import-teryt.mjs ścieżka/TERC.xml ścieżka/SIMC.xml
  *   node scripts/import-teryt.mjs --dry-run ścieżka/TERC.xml ścieżka/SIMC.xml
+ *
+ * Węższy import (tylko wybrane kody rodzaju miejscowości RM w SIMC — mniejszy zbiór):
+ *   node scripts/import-teryt.mjs --zawez-do-rm ścieżka/TERC.xml ścieżka/SIMC.xml
  *
  * Zmienne środowiskowe (np. .env.local — wczytaj ręcznie lub `set` w PowerShell):
  *   SUPABASE_URL lub NEXT_PUBLIC_SUPABASE_URL
  *   SUPABASE_SERVICE_ROLE_KEY  (wymagane poza --dry-run)
  *
+ * Po imporcie: `is_active = false` do czasu uruchomienia wsi (np. aktywny sołtys w triggerze).
  * Dokumentacja: Cloude Docs/naszawies-package/scripts/teryt-import.md
  */
 
@@ -47,6 +51,7 @@ const COMMUNE_TYPES = {
   "9": "delegatura_w_miastach",
 };
 
+/** Tylko dla --zawez-do-rm: podzbiór kodów RM (SIMC) — kiedyś używany do mniejszego testu. */
 const RURAL_PLACE_TYPES = new Set(["01", "02", "03", "04", "07", "99"]);
 
 const parser = new XMLParser({
@@ -55,23 +60,44 @@ const parser = new XMLParser({
   textNodeName: "#text",
 });
 
+/**
+ * Dwa warianty XML z eTeryt: (1) wiersz z <col name="X">, (2) urzędowy — elementy <WOJ>, <SYM> itd. bez "col".
+ */
 function rowToObj(row) {
-  let cols = row?.col;
-  if (cols == null) return {};
-  if (!Array.isArray(cols)) cols = [cols];
+  if (row == null || typeof row !== "object") return {};
+  let cols = row.col;
+  if (cols != null) {
+    if (!Array.isArray(cols)) cols = [cols];
+    const acc = {};
+    for (const c of cols) {
+      const name = c["@_name"];
+      if (!name) continue;
+      let val = c["#text"];
+      if (val == null) val = "";
+      acc[name] = String(val).trim();
+    }
+    return acc;
+  }
   const acc = {};
-  for (const c of cols) {
-    const name = c["@_name"];
-    if (!name) continue;
-    let val = c["#text"];
-    if (val == null) val = "";
-    acc[name] = String(val).trim();
+  for (const k of Object.keys(row)) {
+    if (k === "col" || k.startsWith("@_")) continue;
+    const v = row[k];
+    if (v == null) {
+      acc[k] = "";
+    } else if (typeof v === "string") {
+      acc[k] = v.trim();
+    } else if (typeof v === "object" && v !== null && "#text" in v) {
+      acc[k] = String(v["#text"] ?? "").trim();
+    } else {
+      acc[k] = String(v).trim();
+    }
   }
   return acc;
 }
 
 function iterRows(parsed) {
-  const catalog = parsed?.teryt?.catalog ?? parsed?.catalog;
+  const catalog =
+    parsed?.teryt?.catalog ?? parsed?.SIMC?.catalog ?? parsed?.catalog;
   if (!catalog) return [];
   let rows = catalog.row;
   if (rows == null) return [];
@@ -113,13 +139,19 @@ async function buildCountiesMap(tercPath) {
   return counties;
 }
 
-async function importSIMC(simcPath, communes, counties, supabase, dryRun) {
+/**
+ * @param {boolean} zawezDoRm  true = tylko RURAL_PLACE_TYPES; false = wszystkie wiersze SIMC z przypisaną gminą
+ */
+async function importSIMC(simcPath, communes, counties, supabase, dryRun, zawezDoRm) {
   const data = await parseTerytXml(simcPath);
   const villages = [];
+  /** unikalność (woj, pow, gmina, slug-bazowy) — druga taka sama nazwa w tej samej gminie dostaje sufiks -SYM */
+  const licznikSlugowWGminie = new Map();
 
   for (const row of iterRows(data)) {
     const r = rowToObj(row);
-    if (!RURAL_PLACE_TYPES.has(r.RM)) continue;
+    if (zawezDoRm && !RURAL_PLACE_TYPES.has(r.RM)) continue;
+    if (!r.SYM || !r.NAZWA) continue;
 
     const communeKey = `${r.WOJ}-${r.POW}-${r.GMI}`;
     const countyKey = `${r.WOJ}-${r.POW}`;
@@ -127,12 +159,18 @@ async function importSIMC(simcPath, communes, counties, supabase, dryRun) {
     const county = counties.get(countyKey);
     const voivodeship = VOIVODESHIPS[r.WOJ];
 
-    if (!commune || !county || !voivodeship) continue;
+    if (!r.GMI || !commune || !county || !voivodeship) continue;
+
+    const baza = slugify(r.NAZWA, { lower: true, strict: true, locale: "pl" });
+    const klucz = `${communeKey}::${baza}`;
+    const nr = (licznikSlugowWGminie.get(klucz) ?? 0) + 1;
+    licznikSlugowWGminie.set(klucz, nr);
+    const slug = nr === 1 ? baza : `${baza}-${r.SYM}`;
 
     villages.push({
       teryt_id: r.SYM,
       name: r.NAZWA,
-      slug: slugify(r.NAZWA, { lower: true, strict: true, locale: "pl" }),
+      slug,
       voivodeship,
       county,
       commune: commune.name,
@@ -141,7 +179,8 @@ async function importSIMC(simcPath, communes, counties, supabase, dryRun) {
     });
   }
 
-  console.log(`Przygotowano ${villages.length} rekordów (wsie/osady wg SIMC).`);
+  const opis = zawezDoRm ? "zawężone do wybranych RM w SIMC" : "pełny SIMC (wszystkie rodzaje miejscowości z pliku)";
+  console.log(`Przygotowano ${villages.length} rekordów — ${opis}.`);
 
   if (dryRun) {
     console.log("[dry-run] Pomijam zapis do Supabase.");
@@ -168,13 +207,18 @@ async function importSIMC(simcPath, communes, counties, supabase, dryRun) {
 
 function usage() {
   console.log(`Użycie:
-  node scripts/import-teryt.mjs [--dry-run] <TERC.xml> <SIMC.xml>`);
+  node scripts/import-teryt.mjs [--dry-run] <TERC.xml> <SIMC.xml>
+    → pełny SIMC (nazwy miejscowości w całym kraju; zalecane pod wyszukiwarkę i wnioski)
+
+  node scripts/import-teryt.mjs [--dry-run] --zawez-do-rm <TERC.xml> <SIMC.xml>
+    → węższy podzbiór rodzajów RM (test / mniej rekordów)`);
 }
 
 async function main() {
   const argv = process.argv.slice(2);
   const dryRun = argv.includes("--dry-run");
-  const paths = argv.filter((a) => a !== "--dry-run");
+  const zawezDoRm = argv.includes("--zawez-do-rm");
+  const paths = argv.filter((a) => a !== "--dry-run" && a !== "--zawez-do-rm");
   if (paths.length !== 2) {
     usage();
     process.exit(1);
@@ -202,8 +246,12 @@ async function main() {
       ? createClient(supabaseUrl, serviceKey)
       : null;
 
-  console.log("Parsowanie SIMC…");
-  await importSIMC(simcPath, communes, counties, supabase, dryRun);
+  console.log(
+    zawezDoRm
+      ? "Parsowanie SIMC (tryb zawężony — wybrane kody RM)…"
+      : "Parsowanie SIMC (pełny rejestr miejscowości)…"
+  );
+  await importSIMC(simcPath, communes, counties, supabase, dryRun, zawezDoRm);
 }
 
 main().catch((e) => {

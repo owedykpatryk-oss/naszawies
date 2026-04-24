@@ -129,21 +129,20 @@ export async function zlozRezerwacjeSwietlicy(
   const p = parsed.data;
   const startIso = start.toISOString();
   const endIso = end.toISOString();
-  const { data: kolid, error: kE } = await supabase
-    .from("hall_bookings")
-    .select("id")
-    .eq("hall_id", p.hallId)
-    .eq("status", "approved")
-    .lt("start_at", endIso)
-    .gt("end_at", startIso)
-    .limit(1);
+  const { data: maKolizje, error: kE } = await supabase.rpc("hall_ma_kolizje_terminu", {
+    p_hall_id: p.hallId,
+    p_start: startIso,
+    p_end: endIso,
+  });
 
   if (kE) {
     console.error("[zlozRezerwacjeSwietlicy] kolid", kE.message);
     return { blad: "Nie udało się sprawdzić wolnych terminów — spróbuj ponownie." };
   }
-  if (kolid && kolid.length > 0) {
-    return { blad: "W tym przedziale jest już zatwierdzona rezerwację — wybierz inne godziny lub dzień." };
+  if (maKolizje === true) {
+    return {
+      blad: "W tym przedziale sala jest już wstępnie lub ostatecznie zarezerwowana — wybierz inne godziny lub dzień.",
+    };
   }
 
   const { error } = await supabase.from("hall_bookings").insert({

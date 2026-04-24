@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
+import { AdminNowaWiesKlient } from "./admin-nowa-wies-klient";
 
 export const metadata: Metadata = {
   title: "Admin",
@@ -33,8 +34,8 @@ export default async function AdminPage() {
     <main>
       <h1 className="font-serif text-3xl text-green-950">Administrator platformy</h1>
       <p className="mt-2 text-sm text-stone-600">
-        Dostęp do listy waitlist wg funkcji <code className="rounded bg-stone-100 px-1 text-xs">is_platform_admin()</code>{" "}
-        w Supabase (e-mail w migracji).
+        Tylko konta wskazane jako administrator platformy w Supabase (e-mail w migracji) widzą tę stronę i poniższe
+        narzędzia.
       </p>
 
       {brakDostepu ? (
@@ -81,6 +82,8 @@ export default async function AdminPage() {
           </table>
         </div>
       ) : null}
+
+      {!brakDostepu ? <AdminNowaWiesKlient /> : null}
 
       <p className="mt-10 text-sm text-stone-500">
         <Link href="/panel" className="text-green-800 underline">

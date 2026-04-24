@@ -9,7 +9,6 @@ type Wynik = {
   gmina: string;
   powiat: string;
   wojewodztwo: string;
-  terytId: string;
   sciezka: string;
 };
 
@@ -40,7 +39,7 @@ export function SzukajKatalog() {
       ustawWyniki(d.wyniki ?? []);
       if ((d.wyniki ?? []).length === 0) {
         ustawBlad(
-          "Brak wyników — uruchom import TERYT, sprawdź pisownię albo wpisz gminę, powiat lub fragment kodu SIMC."
+          "Nic nie znaleziono. Spróbuj innej frazy. Jeśli miejscowość jeszcze nie jest w serwisie, napisz do nas z formularza na stronie głównej (lista zainteresowanych) — dołożymy ją po weryfikacji danych z rejestru TERYT."
         );
       }
     } catch {
@@ -64,7 +63,7 @@ export function SzukajKatalog() {
           id="szukaj-fraza"
           value={fraza}
           onChange={(e) => ustawFraze(e.target.value)}
-          placeholder="np. Studzienki, Kcynia, nakielski, 0088390…"
+          placeholder="np. Studzienki, Kcynia, powiat nakielski, wielkopolskie…"
           className="min-h-[48px] flex-1 rounded-lg border border-stone-300 px-4 py-3 text-stone-900 outline-none ring-green-800 focus:ring-2"
           autoComplete="off"
         />
@@ -95,12 +94,6 @@ export function SzukajKatalog() {
               </Link>
               <p className="text-sm text-stone-600">
                 {w.gmina}, {w.powiat} · {w.wojewodztwo}
-                {w.terytId ? (
-                  <>
-                    {" "}
-                    · SIMC <span className="font-mono text-xs">{w.terytId}</span>
-                  </>
-                ) : null}
               </p>
             </li>
           ))}

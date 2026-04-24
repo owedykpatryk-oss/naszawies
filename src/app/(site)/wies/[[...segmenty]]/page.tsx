@@ -4,6 +4,7 @@ import { notFound } from "next/navigation";
 import { z } from "zod";
 import { StudzienkiProjektSwietlicy } from "@/components/wies/studzienki-projekt-swietlicy";
 import { WiesPostPubliczny } from "@/components/wies/wies-post-publiczny";
+import { pobierzKalendarzZajetosciDlaWsi } from "@/components/swietlica/kalendarz-zajetosci-publiczny";
 import { WiesProfilPubliczny } from "@/components/wies/wies-profil-publiczny";
 import { createPublicSupabaseClient } from "@/lib/supabase/public-client";
 import { sciezkaProfiluWsi } from "@/lib/wies/sciezka-publiczna";
@@ -60,17 +61,15 @@ export default async function WiesCatchAllPage({ params }: Props) {
             ← Strona główna
           </Link>
         </p>
-        <h1 className="font-serif text-2xl text-green-950">Niepełny adres wsi</h1>
+        <h1 className="font-serif text-2xl text-green-950">Niepełny adres strony wsi</h1>
         <p className="mt-2 text-stone-600">
-          Oczekiwany format:{" "}
-          <code className="rounded bg-stone-100 px-1 text-sm">/wies/województwo/powiat/gmina/slug</code>
+          Użyj pełnego linku do wsi (np. ze strony wyników wyszukiwania albo z paska przeglądarki, gdy już jesteś na
+          stronie sołectwa). Adres zawiera województwo, powiat, gminę i skróconą nazwę wsi.
         </p>
         <p className="mt-4 text-sm text-stone-600">
-          Wyszukaj miejscowość w{" "}
           <Link href="/szukaj" className="text-green-800 underline">
-            katalogu
+            Wyszukaj miejscowość
           </Link>
-          .
         </p>
       </main>
     );
@@ -116,6 +115,8 @@ export default async function WiesCatchAllPage({ params }: Props) {
 
     const posty = (postyRaw ?? []) as { id: string; title: string; type: string; created_at: string }[];
 
+    const kalendarz = wies.is_active ? await pobierzKalendarzZajetosciDlaWsi(supabase, wies.id) : [];
+
     return (
       <main className="mx-auto min-w-0 max-w-2xl py-16 text-stone-800">
         <p className="mb-6 text-sm text-stone-500">
@@ -127,7 +128,7 @@ export default async function WiesCatchAllPage({ params }: Props) {
             Mapa wsi
           </Link>
         </p>
-        <WiesProfilPubliczny wies={wies} posty={posty} />
+        <WiesProfilPubliczny wies={wies} posty={posty} kalendarzZajetosci={kalendarz} />
       </main>
     );
   }

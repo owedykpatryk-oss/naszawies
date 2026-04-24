@@ -4,7 +4,7 @@ import { SzukajKatalog } from "./szukaj-katalog";
 
 export const metadata: Metadata = {
   title: "Szukaj wsi",
-  description: "Wyszukiwarka miejscowości w katalogu TERYT (naszawies.pl).",
+  description: "Wyszukaj miejscowość po nazwie lub lokalizacji w serwisie naszawies.pl.",
 };
 
 export default function SzukajPage() {
@@ -17,9 +17,9 @@ export default function SzukajPage() {
       </p>
       <h1 className="font-serif text-3xl text-green-950">Szukaj wsi</h1>
       <p className="mt-2 text-sm leading-relaxed text-stone-600">
-        Katalog z bazy <code className="rounded bg-stone-100 px-1 text-xs">villages</code> (SIMC/TERYT). Szukaj po{" "}
-        <strong>nazwie</strong>, <strong>gminie</strong>, <strong>powiecie</strong>,{" "}
-        <strong>województwie</strong>, <strong>kodzie SIMC</strong> lub fragmencie <strong>slug</strong> w URL.
+        Wpisz <strong>nazwę wsi</strong> albo fragment <strong>gminy, powiatu czy województwa</strong> — pokażemy
+        miejscowości dostępne w serwisie. Możesz też wpisać <strong>fragment adresu strony wsi</strong> z
+        paska przeglądarki.
       </p>
       <SzukajKatalog />
     </main>

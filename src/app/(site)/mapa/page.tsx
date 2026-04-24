@@ -146,7 +146,7 @@ export default async function MapaPage() {
           </Link>
           {" · "}
           <Link href="/szukaj" className="rounded text-green-900 underline decoration-green-800/40 underline-offset-2 transition hover:decoration-green-800">
-            Szukaj wsi (TERYT)
+            Szukaj wsi
           </Link>
         </p>
 

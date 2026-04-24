@@ -229,7 +229,8 @@ export default async function SoltysRezerwacjePage() {
       <h1 className="font-serif text-3xl text-green-950">Rezerwacje świetlic</h1>
       <p className="mt-2 text-sm text-stone-600">
         Wnioski oczekujące na zatwierdzenie w Twoich sołectwach. Po zatwierdzeniu mieszkaniec zobaczy status przy
-        swojej sali.
+        swojej sali. Na publicznym kalendarzu i w panelu innych użytkowników widać tylko, że termin jest zajęty;{" "}
+        <strong>imię, telefon i tytuł wydarzenia widać wyłącznie w tym panelu (sołtys).</strong>
       </p>
 
       {villageIds.length === 0 ? (

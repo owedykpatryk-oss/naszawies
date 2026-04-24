@@ -7,6 +7,10 @@ import { PlanSaliRysunek } from "@/components/swietlica/plan-sali-rysunek";
 import { parsujPlanZJsonb } from "@/lib/swietlica/plan-sali";
 import { pojedynczaWies } from "@/lib/supabase/wies-z-zapytania";
 import { DokumentacjaZniszczenRezerwacji } from "@/components/swietlica/dokumentacja-zniszczen-rezerwacji";
+import {
+  KalendarzZajetosciDlaHaliSekcja,
+  pobierzKalendarzZajetosciDlaHali,
+} from "@/components/swietlica/kalendarz-zajetosci-publiczny";
 import { RezerwacjaSwietlicyFormularz } from "./rezerwacja-swietlicy-formularz";
 
 type PozycjaWyposazenia = {
@@ -88,6 +92,7 @@ export default async function MieszkaniecSwietlicaHallPage({ params }: Props) {
     .limit(15);
   const rezerwacje = (mojeRezerwacje ?? []) as WpisRezerwacji[];
   const plan = parsujPlanZJsonb(sala.layout_data);
+  const zajeteTerminy = await pobierzKalendarzZajetosciDlaHali(supabase, hallId);
 
   function dostepne(p: PozycjaWyposazenia) {
     return p.quantity_available ?? p.quantity;
@@ -128,6 +133,18 @@ export default async function MieszkaniecSwietlicaHallPage({ params }: Props) {
           </div>
         </section>
       ) : null}
+
+      <KalendarzZajetosciDlaHaliSekcja
+        wiersze={zajeteTerminy}
+        naglowekDod={
+          <p>
+            Dla wszystkich bez roli sołtysa: tylko to, czy przedział jest zajęty (w tym czeka na sołtysa), bez
+            wynajmującego. Imię i dane widać tylko w panelu sołtysa; w sekcji „Moje rezerwacje” widać wyłącznie
+            własne zgłoszenia.
+          </p>
+        }
+        pustyKomunikat="Brak wstępnych ani zatwierdzonych rezerwacji w kalendarzu (w tym widoku). Gdy będą, zobaczysz tylko przedział czasowy, bez cudzego imienia."
+      />
 
       {plan.elementy.length > 0 ? (
         <section className="mt-10 rounded-2xl border border-stone-200 bg-white p-5 shadow-sm">

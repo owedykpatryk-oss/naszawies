@@ -155,7 +155,7 @@ export function MapaWsiStrona({ znaczniki }: { znaczniki: ZnacznikWsi[] }) {
       <aside className="flex max-h-[min(42vh,380px)] shrink-0 flex-col border-b border-stone-200/80 bg-white/90 backdrop-blur-md lg:max-h-none lg:w-[min(100%,340px)] lg:border-b-0 lg:border-r lg:border-stone-200/60">
         <div className="border-b border-stone-100/90 p-4">
           <label htmlFor="mapa-szukaj" className="sr-only">
-            Szukaj wsi na mapie po nazwie, gminie, powiecie, województwie lub kodzie TERYT
+            Szukaj wsi po nazwie lub miejscu
           </label>
           <div className="flex gap-2">
             <input
@@ -163,7 +163,7 @@ export function MapaWsiStrona({ znaczniki }: { znaczniki: ZnacznikWsi[] }) {
               type="search"
               value={szukaj}
               onChange={(e) => setSzukaj(e.target.value)}
-              placeholder="Nazwa, gmina, powiat, województwo, TERYT…"
+              placeholder="Nazwa wsi, gmina, powiat, województwo…"
               autoComplete="off"
               className="min-w-0 flex-1 rounded-xl border border-stone-200/90 bg-white/90 px-3 py-2.5 text-sm text-stone-900 shadow-sm outline-none ring-green-800/20 transition-all duration-300 placeholder:text-stone-400 focus:border-green-600 focus:shadow-md focus:ring-2 focus:ring-green-700/25"
             />
@@ -178,9 +178,8 @@ export function MapaWsiStrona({ znaczniki }: { znaczniki: ZnacznikWsi[] }) {
             ) : null}
           </div>
           <p className="mt-2 text-xs text-stone-500">
-            Pokazano {odfiltrowane.length} z {znaczniki.length}. Filtr działa na nazwę, gminę, powiat, województwo i kod
-            TERYT (oraz ścieżkę URL). Link z parametrem{" "}
-            <code className="rounded bg-stone-100 px-1">?q=…</code> zapisuje wyszukiwanie w pasku adresu.
+            Wpisana fraza wybiera wsi z listy (nazwa, gmina, powiat, województwo, fragment adresu strony). Wyszukiwanie
+            widać też w adresie strony, żeby można było wysłać komuś link.
           </p>
           <div className="mt-3 flex flex-wrap items-center gap-2">
             {pozycjaUzytkownika ? (
@@ -238,14 +237,6 @@ export function MapaWsiStrona({ znaczniki }: { znaczniki: ZnacznikWsi[] }) {
                           frazaDoPodswietlenia,
                         )
                       : [z.commune, z.county, z.voivodeship].filter(Boolean).join(" · ") || "—"}
-                    {z.teryt_id ? (
-                      <>
-                        {" · "}
-                        {frazaDoPodswietlenia
-                          ? podswietlDopasowanie(`TERYT ${z.teryt_id}`, frazaDoPodswietlenia)
-                          : `TERYT ${z.teryt_id}`}
-                      </>
-                    ) : null}
                     {pozycjaUzytkownika ? (
                       <>
                         {" · "}
@@ -256,7 +247,7 @@ export function MapaWsiStrona({ znaczniki }: { znaczniki: ZnacznikWsi[] }) {
                     {z.public_offers_count > 0
                       ? `${z.public_offers_count} ofert targu · `
                       : "brak ofert targu · "}
-                    {z.boundary_geojson ? "granica" : "GPS"}
+                    {z.boundary_geojson ? "granica (GeoJSON)" : "obrys przybliżony"}
                   </span>
                 </Link>
               </div>
@@ -267,9 +258,9 @@ export function MapaWsiStrona({ znaczniki }: { znaczniki: ZnacznikWsi[] }) {
       <div className="min-h-[min(72dvh,560px)] flex-1 bg-gradient-to-br from-stone-100/80 via-emerald-50/20 to-stone-100/90 p-3 md:p-4">
         {odfiltrowane.length === 0 ? (
           <p className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-950">
-            Brak wsi pasujących do wyszukiwania. Wyczyść pole albo użyj{" "}
+            Brak wsi pasujących do wyszukiwania. Wyczyść pole albo spróbuj dłuższej wyszukiwarki na stronie{" "}
             <Link href="/szukaj" className="font-semibold text-green-900 underline">
-              szukajki TERYT
+              Szukaj wsi
             </Link>
             .
           </p>

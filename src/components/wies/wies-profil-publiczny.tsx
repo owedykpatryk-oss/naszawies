@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { KalendarzZajetosciWsiSekcja } from "@/components/swietlica/kalendarz-zajetosci-publiczny";
+import type { WierszKalendarzaPublicznego } from "@/components/swietlica/kalendarz-zajetosci-publiczny";
 import type { WiesPubliczna } from "@/lib/wies/znajdz-wies-po-sciezce";
 import { sciezkaProfiluWsi } from "@/lib/wies/sciezka-publiczna";
 
@@ -12,9 +14,11 @@ type WpisPostu = {
 export function WiesProfilPubliczny({
   wies,
   posty,
+  kalendarzZajetosci = [],
 }: {
   wies: WiesPubliczna;
   posty: WpisPostu[];
+  kalendarzZajetosci?: WierszKalendarzaPublicznego[];
 }) {
   const sciezka = sciezkaProfiluWsi(wies);
   const prefixOgloszenia = `${sciezka}/ogloszenie`;
@@ -99,6 +103,8 @@ export function WiesProfilPubliczny({
         )}
       </section>
 
+      {wies.is_active ? <KalendarzZajetosciWsiSekcja wies={{ name: wies.name }} wiersze={kalendarzZajetosci} /> : null}
+
       <section className="mt-10 rounded-xl border border-stone-200 bg-stone-50 px-4 py-4 text-sm text-stone-700">
         <p className="font-medium text-stone-900">Świetlica i rezerwacje</p>
         <p className="mt-2">
@@ -106,7 +112,8 @@ export function WiesProfilPubliczny({
           <Link href="/logowanie?next=/panel/mieszkaniec/swietlica" className="text-green-800 underline">
             panelu mieszkańca
           </Link>{" "}
-          (po akceptacji roli we wsi).
+          (po akceptacji roli we wsi). Kto zajął salę w danym terminie — tylko sołtys w panelu obiegu; powyżej
+          widać wyłącznie że przedział jest zajęty, bez danych osobowych.
         </p>
         {wies.teryt_id === "0088390" ? (
           <p className="mt-4 border-t border-stone-200 pt-4">

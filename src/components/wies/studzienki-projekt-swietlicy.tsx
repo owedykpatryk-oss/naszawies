@@ -334,7 +334,7 @@ export function StudzienkiProjektSwietlicy({
                     <span className="font-mono">590/7</span>).
                   </p>
                   <p className="mt-3 text-xs text-stone-500">
-                    Adres świetlicy w prowadzeniu rezerwacji: ul. Leśna 17 — korespondencja sołectwa: ul. Leśna 2.
+                    Pełne adresy do korespondencji i kanały kontaktowe do sołectwa publikuje urząd gminy (kcynia.pl, w tym BIP). W tym serwisie: rezerwacje po zalogowaniu — dane w panelu obiektu.
                   </p>
                 </div>
               </div>

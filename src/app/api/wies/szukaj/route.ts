@@ -32,14 +32,18 @@ export async function GET(request: Request) {
   }
 
   const fraza = sparsowane.data.q;
+  const wzor = `%${fraza.replace(/\\/g, "\\\\").replace(/%/g, "\\%").replace(/_/g, "\\_")}%`;
 
   const { data, error } = await supabase.rpc("szukaj_wsi_katalog", { p_fraza: fraza });
 
   let wiersze: WierszRpc[] = [];
   if (!error && data && Array.isArray(data)) {
     wiersze = data as WierszRpc[];
-  } else {
-    const wzor = `%${fraza.replace(/\\/g, "\\\\").replace(/%/g, "\\%").replace(/_/g, "\\_")}%`;
+  }
+  if (wiersze.length === 0) {
+    if (error) {
+      console.error("[api/wies/szukaj] szukaj_wsi_katalog:", error.message);
+    }
     const { data: fallback, error: err2 } = await supabase
       .from("villages")
       .select("id, name, slug, voivodeship, county, commune, commune_type, teryt_id")
@@ -47,10 +51,10 @@ export async function GET(request: Request) {
       .order("name", { ascending: true })
       .limit(30);
     if (err2) {
-      console.error("[api/wies/szukaj]", error?.message ?? "", err2.message);
+      console.error("[api/wies/szukaj] villages (fallback name):", err2.message);
       return NextResponse.json(
-        { blad: "Nie udało się przeszukać katalogu. Uruchom migracje (szukaj_wsi_katalog) lub sprawdź tabelę villages." },
-        { status: 500 }
+        { blad: "Nie udało się teraz wyszukać miejscowości. Spróbuj ponownie za chwilę." },
+        { status: 500 },
       );
     }
     wiersze = (fallback ?? []) as WierszRpc[];

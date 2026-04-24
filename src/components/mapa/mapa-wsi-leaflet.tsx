@@ -75,23 +75,40 @@ function granicaJakoGeoJson(raw: unknown): GeoJsonObject | null {
 
 function lokalizacjaPopup(z: ZnacznikWsi): string {
   const czesci = [z.commune, z.county, z.voivodeship].filter(Boolean);
-  const opis = czesci.length ? czesci.join(" · ") : "";
-  const simc = z.teryt_id ? `TERYT / SIMC: ${z.teryt_id}` : "";
-  if (opis && simc) return `${opis} · ${simc}`;
-  if (opis) return opis;
-  if (simc) return simc;
-  return "";
+  return czesci.length ? czesci.join(" · ") : "";
 }
 
-function htmlPopup(z: ZnacznikWsi, maGranice: boolean): string {
+type WariantGranicyWPopup = "geojson" | "pozor" | "punkt";
+
+const PANE_GRANICE = "naszawiesGranice";
+
+/** Kiedy w bazie nie ma `boundary_geojson` — okrąg ~zasięg, żeby było widać coś więcej niż samą pinezkę (nie jest to urzędowa granica). */
+function promienPrzyblizonyMetrow(z: ZnacznikWsi): number {
+  const p = z.population;
+  if (p != null && p > 0) {
+    return Math.min(4500, Math.max(700, 350 + Math.sqrt(p) * 45));
+  }
+  return 1400;
+}
+
+function ustawPaneWarstwicyGranicy(map: import("leaflet").Map) {
+  if (map.getPane(PANE_GRANICE)) return;
+  const pane = map.createPane(PANE_GRANICE);
+  pane.style.zIndex = "450";
+}
+
+function htmlPopup(z: ZnacznikWsi, wariant: WariantGranicyWPopup): string {
   const oferty = z.public_offers_count;
   const ofertyTxt =
     oferty === 0
       ? "Brak publicznych ofert na targu lokalnym."
       : `${oferty} publiczn${oferty === 1 ? "a oferta" : oferty < 5 ? "e oferty" : "ych ofert"} na targu lokalnym.`;
-  const granicaTxt = maGranice
-    ? "Granica sołectwa (GeoJSON w bazie)."
-    : "Punkt lokalizacji — granicę sołectwa można dodać w danych wsi (import SHP/GeoJSON).";
+  const granicaTxt =
+    wariant === "geojson"
+      ? "Granica sołectwa (dane w bazie jako rysunek wielokątny, WGS84)."
+      : wariant === "pozor"
+        ? "Przerywany obrys: przybliżenie terytorium (brak oficjalnej polilinii w bazie). Prawdziwą granicę można wgrać w GeoJSON m.in. z PRG / otwartych danych."
+        : "Lokalizacja: punkt GPS; brak wgranego obrysu wsi.";
   const meta = lokalizacjaPopup(z);
 
   return `
@@ -196,6 +213,7 @@ export const MapaWsiLeaflet = forwardRef<MapaWsiLeafletRef, { znaczniki: Znaczni
           scrollWheelZoom: false,
           attributionControl: true,
         });
+        ustawPaneWarstwicyGranicy(map);
 
         L.tileLayer("https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png", {
           attribution:
@@ -288,10 +306,14 @@ export const MapaWsiLeaflet = forwardRef<MapaWsiLeafletRef, { znaczniki: Znaczni
           <p className="font-semibold text-stone-800">Legenda</p>
           <ul className="mt-1 list-inside list-disc space-y-0.5 text-stone-600">
             <li>
-              <span className="font-medium text-[#2d5a2d]">Zielony obrys</span> — granica sołectwa
+              <span className="font-medium text-[#1d4d1d]">Ciągła zielona linia</span> — granica z bazy (GeoJSON)
             </li>
             <li>
-              <span className="font-medium text-[#5a9c3e]">Pinezka</span> — punkt GPS wsi
+              <span className="font-medium text-[#3d6b4a]">Przerywany obrys</span> — tylko przybliżenie, gdy w bazie nie
+              ma jeszcze wielokąta
+            </li>
+            <li>
+              <span className="font-medium text-[#5a9c3e]">Pinezka</span> — punkt odniesienia (GPS) wsi
             </li>
             <li>
               <span className="font-medium text-stone-800">Kółko z liczbą</span> — kilka wsi w obszarze
@@ -314,6 +336,7 @@ function syncWarstwy(
   bbox: [[number, number], [number, number]] | null,
 ) {
   const { map, cluster, boundaryGroup, markersById } = inst;
+  ustawPaneWarstwicyGranicy(map);
 
   (cluster as import("leaflet").LayerGroup).clearLayers();
   boundaryGroup.clearLayers();
@@ -321,28 +344,49 @@ function syncWarstwy(
 
   for (const z of znaczniki) {
     const gj = granicaJakoGeoJson(z.boundary_geojson);
-    let maGranice = false;
+    let wariant: WariantGranicyWPopup = "pozor";
+    let mamyPrawdziwaGranice = false;
     if (gj) {
       try {
         const warstwa = L.geoJSON(gj, {
+          pane: PANE_GRANICE,
           style: {
-            color: "#2d5a2d",
-            weight: 2,
-            fillColor: "#5a9c3e",
-            fillOpacity: 0.14,
-            opacity: 0.95,
+            color: "#1d4d1d",
+            weight: 3,
+            fillColor: "#3d7a2e",
+            fillOpacity: 0.13,
+            opacity: 1,
+            lineCap: "round",
+            lineJoin: "round",
           },
         });
-        warstwa.bindPopup(htmlPopup(z, true));
+        warstwa.bindPopup(htmlPopup(z, "geojson"));
         boundaryGroup.addLayer(warstwa);
-        maGranice = true;
+        mamyPrawdziwaGranice = true;
+        wariant = "geojson";
       } catch {
-        maGranice = false;
+        mamyPrawdziwaGranice = false;
       }
+    }
+    if (!mamyPrawdziwaGranice) {
+      const prom = promienPrzyblizonyMetrow(z);
+      const kolo = L.circle([z.lat, z.lon], {
+        radius: prom,
+        pane: PANE_GRANICE,
+        color: "#3d6b4a",
+        weight: 2,
+        opacity: 0.92,
+        dashArray: "10 7",
+        fillColor: "#5a9c3e",
+        fillOpacity: 0.07,
+      });
+      kolo.bindPopup(htmlPopup(z, "pozor"));
+      boundaryGroup.addLayer(kolo);
+      wariant = "pozor";
     }
 
     const marker = L.marker([z.lat, z.lon], { icon: ikona, title: z.name });
-    marker.bindPopup(htmlPopup(z, maGranice));
+    marker.bindPopup(htmlPopup(z, wariant));
     (cluster as import("leaflet").LayerGroup).addLayer(marker);
     markersById.set(z.id, marker);
   }

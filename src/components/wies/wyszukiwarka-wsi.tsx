@@ -45,7 +45,9 @@ export function WyszukiwarkaWsi({ etykietaAkcji, onAkcja, tekstPrzycisku }: Prop
       }
       ustawWyniki(d.wyniki ?? []);
       if ((d.wyniki ?? []).length === 0) {
-        ustawBlad("Brak wyników.");
+        ustawBlad(
+          "Brak wyników. Jeśli wyszukujesz miejscowość, której jeszcze nie ma w katalogu, daj znać przez formularz na stronie głównej — uzupełniamy listę po sprawdzeniu w rejestrze TERYT."
+        );
       }
     } catch {
       ustawBlad("Brak połączenia.");

@@ -2,6 +2,7 @@ import Link from "next/link";
 
 const podstrony = [
   { href: "/panel/soltys", label: "Przegląd" },
+  { href: "/panel/soltys/moja-wies", label: "Profil wsi" },
   { href: "/panel/soltys/rezerwacje", label: "Rezerwacje sal" },
   { href: "/panel/soltys/swietlica", label: "Świetlica i wyposażenie" },
   { href: "/panel/soltys/dokumenty", label: "Generator dokumentów" },

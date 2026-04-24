@@ -5,7 +5,9 @@ import { z } from "zod";
 import { R2_BUCKET_HALL_INVENTORY } from "@/lib/cloudflare/r2-bucket-znaczniki";
 import { wyciagnijBucketIKluczZUrlaR2 } from "@/lib/cloudflare/r2-url-pomoc";
 import { usunObiektR2JesliUrlNasz } from "@/lib/storage/usun-plik-r2-po-url";
+import { pobierzVillageIdsRoliPaneluSoltysa } from "@/lib/panel/rola-panelu-soltysa";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
+import { sciezkaProfiluWsi } from "@/lib/wies/sciezka-publiczna";
 import { schemaPlanSali, type PlanSaliJson } from "@/lib/swietlica/plan-sali";
 
 const uuid = z.string().uuid();
@@ -761,5 +763,85 @@ export async function odrzucPostSoltysa(postId: string, notatka: string): Promis
 
   revalidatePath("/panel/soltys");
   revalidatePath("/panel/powiadomienia");
+  return { ok: true };
+}
+
+const schemaProfilPublicznyWsi = z.object({
+  villageId: z.string().uuid(),
+  description: z.string().max(20000).optional().nullable(),
+  website: z.string().max(2000).optional().nullable(),
+  cover_image_url: z.string().max(2048).optional().nullable(),
+});
+
+function czyPustyLubUrlHttp(s: string | null | undefined) {
+  if (s == null || String(s).trim() === "") return { ok: true as const, val: null as string | null };
+  const t = String(s).trim();
+  try {
+    const u = new URL(t);
+    if (u.protocol !== "http:" && u.protocol !== "https:") {
+      return { ok: false as const, blad: "Adres musi zaczynać się od http:// lub https://." };
+    }
+  } catch {
+    return { ok: false as const, blad: "Nieprawidłowy adres URL." };
+  }
+  return { ok: true as const, val: t };
+}
+
+/**
+ * Sołtys (lub współadmin) uzupełnia publiczne informacje o wsi: opis, linki.
+ */
+export async function zapiszProfilPublicznyWsi(
+  dane: z.infer<typeof schemaProfilPublicznyWsi>
+): Promise<WynikProsty> {
+  const p = schemaProfilPublicznyWsi.safeParse(dane);
+  if (!p.success) {
+    return { blad: "Nieprawidłowe dane formularza." };
+  }
+  const supabase = utworzKlientaSupabaseSerwer();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) {
+    return { blad: "Zaloguj się." };
+  }
+  const vids = await pobierzVillageIdsRoliPaneluSoltysa(supabase, user.id);
+  if (!vids.includes(p.data.villageId)) {
+    return { blad: "Nie możesz edytować danych tej wsi." };
+  }
+  const www = czyPustyLubUrlHttp(p.data.website);
+  if (!www.ok) {
+    return { blad: www.blad };
+  }
+  const cover = czyPustyLubUrlHttp(p.data.cover_image_url);
+  if (!cover.ok) {
+    return { blad: cover.blad };
+  }
+  const opis =
+    p.data.description != null && p.data.description.trim().length > 0 ? p.data.description.trim() : null;
+
+  const { error } = await supabase
+    .from("villages")
+    .update({
+      description: opis,
+      website: www.val,
+      cover_image_url: cover.val,
+    })
+    .eq("id", p.data.villageId);
+
+  if (error) {
+    console.error("[zapiszProfilPublicznyWsi]", error.message);
+    return { blad: "Nie udało się zapisać danych (uprawnienia lub błąd bazy)." };
+  }
+
+  const { data: wiersz } = await supabase
+    .from("villages")
+    .select("voivodeship, county, commune, slug")
+    .eq("id", p.data.villageId)
+    .maybeSingle();
+  if (wiersz) {
+    revalidatePath(sciezkaProfiluWsi(wiersz));
+  }
+  revalidatePath("/panel/soltys/moja-wies");
+  revalidatePath("/mapa");
   return { ok: true };
 }
