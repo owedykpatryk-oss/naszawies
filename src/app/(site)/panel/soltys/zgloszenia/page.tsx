@@ -108,8 +108,8 @@ export default async function SoltysZgloszeniaPage() {
       <h1 className="font-serif text-3xl text-green-950">Zgłoszenia i usterki</h1>
       <p className="mt-3 max-w-2xl text-sm leading-relaxed text-stone-600">
         Widzisz <strong>z kim jest problem</strong> (imię z profilu), dane opisowe, zdjęcia i szybkie zaznaczenia. Na
-        publicznych ekranach tych danych nie ma — tylko Ty i zgłaszający widzą własny wątek w całości w ramach
-        RLS.
+        publicznych ekranach tych danych nie ma — tylko Ty i zgłaszający widzicie własny wątek w całości, zgodnie z
+        uprawnieniami w serwisie.
       </p>
       <SoltysZgloszeniaKlient wiersze={wiersze} />
       <p className="mt-8 text-sm text-stone-500">

@@ -66,8 +66,7 @@ export async function POST(request: Request) {
   if (!supabase) {
     return NextResponse.json(
       {
-        error:
-          "Zapis na listę będzie aktywny po podłączeniu bazy. Tymczasem napisz na kontakt@naszawies.pl.",
+        error: "Zapis na listę jest chwilowo niedostępny. Napisz na kontakt@naszawies.pl.",
       },
       { status: 503 }
     );

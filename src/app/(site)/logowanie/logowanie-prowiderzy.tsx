@@ -33,7 +33,7 @@ export function LogowanieProwiderzy({ pochodzeniePubliczne, nastepnaSciezka }: P
       if (error) {
         ustawBlad(
           error.message.includes("not enabled")
-            ? `Logowanie przez ${dostawca === "google" ? "Google" : "GitHub"} nie jest włączone w Supabase.`
+            ? `Logowanie przez ${dostawca === "google" ? "Google" : "GitHub"} nie jest w tej chwili dostępne w serwisie.`
             : error.message
         );
         ustawLaduje(null);

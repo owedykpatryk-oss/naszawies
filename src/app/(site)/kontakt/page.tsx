@@ -47,10 +47,7 @@ export default function KontaktPage() {
         </li>
       </ul>
       <p className="mt-6 text-sm text-stone-600">
-        Formularz wymaga skonfigurowania Resend (
-        <code className="rounded bg-stone-100 px-1">RESEND_API_KEY</code>,{" "}
-        <code className="rounded bg-stone-100 px-1">RESEND_ZE_STRONY</code>) — patrz{" "}
-        <code className="rounded bg-stone-100 px-1">.env.example</code>.
+        Formularz poniżej — gdy wysyłka z przeglądarki nie zadziała, napisz na jeden z adresów powyżej.
       </p>
       <KontaktFormularz />
     </main>

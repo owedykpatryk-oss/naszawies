@@ -57,9 +57,9 @@ export function AdminNowaWiesKlient() {
     <div className="mt-10 rounded-2xl border border-stone-200 bg-white p-5 shadow-sm">
       <h2 className="font-serif text-xl text-green-950">Nowa wieś w serwisie (sołtys)</h2>
       <p className="mt-2 text-sm text-stone-600">
-        Gdy miejscowości nie było w imporcie TERYT albo w seedzie, zrób jedną turę: wsi wpada do wyszukiwarki, a wskazane
-        konto dostaje aktywnego sołtysa. Sołtys musi <strong>już mieć konto</strong> (ten sam e-mail co w Supabase
-        Auth). Opis, linki i zdjęcie — potem w{" "}
+        Gdy miejscowości nie było w urzędowym katalogu, zrób jedną turę: wsi wpada do wyszukiwarki, a wskazane
+        konto dostaje aktywnego sołtysa. Sołtys musi <strong>już mieć konto</strong> (ten sam adres e-mail co po
+        rejestracji w serwisie). Opis, linki i zdjęcie — potem w{" "}
         <Link href="/panel/soltys/moja-wies" className="font-medium text-green-900 underline">
           panelu sołtysa → Profil wsi
         </Link>
@@ -78,7 +78,7 @@ export function AdminNowaWiesKlient() {
       <form onSubmit={wyslij} className="mt-4 space-y-3 text-sm">
         <div>
           <label className="font-medium" htmlFor="adm-teryt">
-            Identyfikator miejscowości (TERYT / SIMC, 7 znaków — z eTeryt)
+            Kod miejscowości (7 znaków, urzędowy identyfikator miejscowości)
           </label>
           <input
             id="adm-teryt"
@@ -97,7 +97,7 @@ export function AdminNowaWiesKlient() {
         </div>
         <div>
           <label className="font-medium" htmlFor="adm-woj">
-            Województwo (jako w bazie, małymi)
+            Województwo (slug w adresie strony, małymi literami)
           </label>
           <input
             id="adm-woj"

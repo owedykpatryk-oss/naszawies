@@ -60,7 +60,7 @@ export function AwatarUpload({ userId, aktualnyUrl }: Props) {
         if (uploadBlad) {
           ustawBlad(
             uploadBlad.message.includes("Bucket not found")
-              ? "Bucket „avatars” nie istnieje — uruchom migrację Supabase."
+              ? "Zapisywanie zdjęć jest chwilowo niedostępne. Spróbuj później lub skontaktuj się z obsługą serwisu."
               : uploadBlad.message
           );
           return;
@@ -141,9 +141,7 @@ export function AwatarUpload({ userId, aktualnyUrl }: Props) {
       ) : null}
       <p className="text-xs text-stone-500">
         JPEG, PNG lub WebP, do 2 MB.{" "}
-        {czyKlientUzywaMagazynuR2()
-          ? "Plik trafia do Cloudflare R2 (bucket „avatars”)."
-          : "Plik trafia do Supabase Storage (bucket „avatars”)."}
+        Plik jest przechowywany w bezpiecznej infrastrukturze serwisu.
       </p>
     </div>
   );

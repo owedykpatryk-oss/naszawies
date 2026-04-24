@@ -293,7 +293,7 @@ export async function ustawZdjecieWyposazeniaSwietlicy(
 
   const p = parsed.data;
   if (p.image_url != null && !czyUrlZdjeciaInwentarza(p.image_url, p.hallId, p.pozycjaId)) {
-    return { blad: "Adres zdjęcia musi pochodzić z magazynu plików (Supabase lub R2) dla tej pozycji." };
+    return { blad: "Adres zdjęcia musi pochodzić z zatwierdzonego wgrania w serwisie dla tej pozycji." };
   }
 
   const { data: istniejacy } = await supabase

@@ -2,7 +2,7 @@ import { PanelNawigacja } from "@/components/panel/panel-nawigacja";
 import { pobierzVillageIdsRoliPaneluSoltysaDlaUzytkownikaCache } from "@/lib/panel/rola-panelu-soltysa";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
 
-/** Wymaga sesji / zmiennych Supabase — nie prerenderuj statycznie na buildzie (np. Vercel bez pełnego env). */
+/** Wymaga sesji — brak prerendera statycznego, żeby hooki miały kontekst żądania. */
 export const dynamic = "force-dynamic";
 
 export default async function PanelLayout({ children }: { children: React.ReactNode }) {

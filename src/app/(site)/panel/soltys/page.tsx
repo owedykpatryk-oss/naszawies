@@ -99,14 +99,14 @@ export default async function SoltysPage() {
     <main>
       <h1 className="font-serif text-3xl text-green-950">Sołtys</h1>
       <p className="mt-2 text-sm text-stone-600">
-        Wnioski mieszkańców w Twoich wsiach oraz posty oczekujące na moderację (wg RLS).
+        Wnioski mieszkańców w Twoich wsiach oraz posty oczekujące na moderację.
       </p>
 
       {villageIds.length === 0 ? (
         <p className="mt-8 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-950">
           Nie jesteś zapisany jako aktywny sołtys ani współadmin w żadnej wsi. Rola <strong>sołtysa</strong> w danej wsi
-          jest <strong>jednoosobowa</strong> (w bazie obowiązuje ograniczenie). Przypisania inicjują migracje
-          danych / zespół — skontaktuj się, jeśli to Twoja gmina, a w panelu widać tę informację w błędzie.
+          jest <strong>jednoosobowa</strong>. Przypisania ustala zespół serwisu — skontaktuj się, jeśli to Twoja
+          miejscowość, a w panelu widzisz ten komunikat.
         </p>
       ) : null}
 
@@ -120,7 +120,7 @@ export default async function SoltysPage() {
       <section className="mt-12">
         <h2 className="font-serif text-xl text-green-950">Posty do moderacji</h2>
         <p className="mt-1 text-sm text-stone-600">
-          Zatwierdzone trafiają na publiczny profil wsi (wg RLS). Przy odrzuceniu autor dostaje krótką notatkę w
+          Zatwierdzone trafiają na publiczny profil wsi. Przy odrzuceniu autor dostaje krótką notatkę w
           powiadomieniu w aplikacji.
         </p>
         <div className="mt-4">

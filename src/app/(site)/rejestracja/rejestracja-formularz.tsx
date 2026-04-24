@@ -2,11 +2,13 @@
 
 import Link from "next/link";
 import { FormEvent, useState } from "react";
+import type { WpisWsi } from "@/components/wies/wyszukiwarka-wsi";
 import { czyPelneImieINazwisko } from "@/lib/rejestracja/validate-imie-soltysa";
 import { utworzKlientaSupabasePrzegladarka } from "@/lib/supabase/przegladarka";
+import { RejestracjaWyborWsi } from "./rejestracja-wybor-wsi";
 
 type Props = {
-  /** Pełny URL, np. https://naszawies.pl — do linku w e-mailu Supabase */
+  /** Publiczny adres strony (np. https://naszawies.pl) używany w linku z e-maila potwierdzającego. */
   pochodzeniePubliczne: string;
 };
 
@@ -14,6 +16,7 @@ export function RejestracjaFormularz({ pochodzeniePubliczne }: Props) {
   const [laduje, ustawLaduje] = useState(false);
   const [blad, ustawBlad] = useState("");
   const [sukces, ustawSukces] = useState(false);
+  const [wybranaWies, ustawWybranaWies] = useState<WpisWsi | null>(null);
 
   async function onSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -42,6 +45,10 @@ export function RejestracjaFormularz({ pochodzeniePubliczne }: Props) {
       );
       return;
     }
+    if ((intencja === "mieszkaniec" || intencja === "soltys") && !wybranaWies) {
+      ustawBlad("Dla wybranej roli wskaż miejscowość z katalogu (sekcja „Która miejscowość?”).");
+      return;
+    }
 
     ustawLaduje(true);
     try {
@@ -56,6 +63,11 @@ export function RejestracjaFormularz({ pochodzeniePubliczne }: Props) {
             display_name: wyswietlanaNazwa || email.split("@")[0] || "Użytkownik",
             /** Orientacyjnie: nie nadaje roli w bazie — tylko metadane konta (np. do triażu). */
             signup_intent: intencjaDoMetadanych,
+            signup_village_id: wybranaWies?.id ?? "",
+            signup_village_label: wybranaWies
+              ? `${wybranaWies.nazwa} · ${wybranaWies.gmina}, ${wybranaWies.powiat}, ${wybranaWies.wojewodztwo}`
+              : "",
+            signup_village_teryt: wybranaWies?.terytId ?? "",
           },
         },
       });
@@ -68,6 +80,7 @@ export function RejestracjaFormularz({ pochodzeniePubliczne }: Props) {
         return;
       }
       ustawSukces(true);
+      ustawWybranaWies(null);
       form.reset();
     } catch {
       ustawBlad("Nie udało się połączyć z serwerem.");
@@ -81,16 +94,15 @@ export function RejestracjaFormularz({ pochodzeniePubliczne }: Props) {
       <div className="mt-8 rounded-2xl border border-green-200 bg-green-50 p-6 text-center text-stone-800">
         <p className="font-medium text-green-900">Sprawdź skrzynkę e-mail</p>
         <p className="mt-2 text-sm leading-relaxed">
-          Jeśli w projekcie włączone jest potwierdzanie adresu, <strong>Supabase</strong> wysłał wiadomość z
-          linkiem (nadawca zwykle z domeny supabase.co) — sprawdź też folder <strong>spam</strong>. Po
-          kliknięciu linku zostaniesz przekierowany i zalogowany.
+          Wysłaliśmy wiadomość z linkiem potwierdzającym. Kliknij w link, aby dokończyć rejestrację. Jeśli nic
+          nie widać w skrzynce odbiorczej, zajrzyj do folderu z niechcianą pocztą (np. Oferty, Spam).
         </p>
         <p className="mt-3 text-sm leading-relaxed text-green-900/90">
-          Brak maila, a konto ma już status „potwierdzone” w panelu administratora? Spróbuj{" "}
+          Gdy konto jest już aktywne, możesz od razu{" "}
           <Link href="/logowanie" className="font-medium underline">
             zalogować się
           </Link>{" "}
-          tym samym hasłem — czasem potwierdzanie bywa wyłączone w ustawieniach Supabase.
+          tym samym hasłem.
         </p>
         <p className="mt-2 text-xs leading-relaxed text-green-900/80">
           Rolę we wsi (np. mieszkaniec) ustalisz w panelu po zalogowaniu — sołtys przez osobny proces
@@ -121,7 +133,8 @@ export function RejestracjaFormularz({ pochodzeniePubliczne }: Props) {
         </label>
         <p className="mb-1.5 text-xs leading-relaxed text-stone-500">
           Jeśli wybierzesz poniżej opcję <strong>sołtys</strong>, podaj <strong>pełne imię i nazwisko</strong> (dwa
-          słowa). W bazie obowiązuje: <strong>jeden aktywny sołtys na jedną wieś</strong> (unikalność techniczna).
+          słowa). W serwisie: <strong>jeden aktywny sołtys na jedną miejscowość</strong> (ustalone zasady
+          weryfikacji).
         </p>
         <input
           id="reg-nazwa"
@@ -140,9 +153,10 @@ export function RejestracjaFormularz({ pochodzeniePubliczne }: Props) {
           Kim jesteś / czego szukasz? <span className="font-normal text-stone-500">(opcjonalnie)</span>
         </legend>
         <p className="mb-3 text-xs leading-relaxed text-stone-600">
-          To nie nadaje roli w wsi (to robi odrębny wniosek / migracja / zespół). Dla deklaracji <strong>sołtys</strong>{" "}
+          To nie nadaje roli w wsi (to ustalimy w oddzielnym wniosku / po weryfikacji). Dla deklaracji <strong>sołtys</strong>{" "}
           musisz wpisać wyżej <strong>imię i nazwisko</strong> — w każdym sołectwie może być tylko <strong>jeden</strong>{" "}
-          aktywny sołtys w systemie.
+          aktywny sołtys. Jeśli wybierzesz <strong>mieszkaniec</strong> lub <strong>sołtys</strong>, wskaż też
+          miejscowość w sekcji poniżej.
         </p>
         <div className="space-y-2 text-sm text-stone-800">
           <label className="flex cursor-pointer items-start gap-2">
@@ -163,6 +177,7 @@ export function RejestracjaFormularz({ pochodzeniePubliczne }: Props) {
           </label>
         </div>
       </fieldset>
+      <RejestracjaWyborWsi wybrana={wybranaWies} onZmiana={ustawWybranaWies} />
       <div>
         <label htmlFor="reg-email" className="mb-1 block text-sm font-medium text-stone-700">
           E-mail

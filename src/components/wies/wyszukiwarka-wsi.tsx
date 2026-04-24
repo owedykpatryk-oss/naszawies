@@ -9,6 +9,8 @@ export type WpisWsi = {
   powiat: string;
   wojewodztwo: string;
   sciezka: string;
+  /** Kod TERYT — gdy zwróci `/api/wies/szukaj` */
+  terytId?: string;
 };
 
 type Props = {
@@ -46,7 +48,7 @@ export function WyszukiwarkaWsi({ etykietaAkcji, onAkcja, tekstPrzycisku }: Prop
       ustawWyniki(d.wyniki ?? []);
       if ((d.wyniki ?? []).length === 0) {
         ustawBlad(
-          "Brak wyników. Jeśli wyszukujesz miejscowość, której jeszcze nie ma w katalogu, daj znać przez formularz na stronie głównej — uzupełniamy listę po sprawdzeniu w rejestrze TERYT."
+          "Brak wyników. Jeśli wyszukujesz miejscowość, której jeszcze nie ma w katalogu, daj znać przez formularz na stronie głównej — uzupełniamy listę po weryfikacji w urzędowym wykazie miejscowości."
         );
       }
     } catch {

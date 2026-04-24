@@ -98,7 +98,7 @@ export function ZgloszeniaFormularzKlient({ wiesOpcje, uzytkownik }: Props) {
           if (uE) {
             ustawBlad(
               uE.message.includes("Bucket not found")
-                ? "Bucket zdjęć (village_issues) — uruchom migrację w Supabase."
+                ? "Dodawanie zdjęć jest chwilowo niedostępne. Spróbuj wysłać zgłoszenie bez zdjęcia lub skontaktuj się z obsługą serwisu."
                 : uE.message
             );
             return;

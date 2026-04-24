@@ -66,7 +66,7 @@ export function FotokronikaDodajKlient({ wies, albumy, uzytkownik }: Props) {
       if (uE) {
         ustawBlad(
           uE.message.includes("Bucket not found")
-            ? "Uruchom migrację fotokroniki (bucket village_photos)."
+            ? "Zapisywanie zdjęć jest chwilowo niedostępne. Spróbuj później lub skontaktuj się z obsługą serwisu."
             : uE.message
         );
         return;

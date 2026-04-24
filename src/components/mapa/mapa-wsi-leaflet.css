@@ -32,6 +32,21 @@
   display: block;
 }
 
+/* Punkty POI (kościół, szkoła, świetlica, sołtys…) — mniejsza pinezka, emoji + obrys */
+.naszawies-marker-poi-inner {
+  width: 34px;
+  height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: linear-gradient(145deg, #fffef8 0%, #f5f0e6 100%);
+  border: 2px solid;
+  font-size: 1rem;
+  line-height: 1;
+  box-shadow: 0 3px 10px rgba(0, 0, 0, 0.18);
+}
+
 .marker-cluster-small,
 .marker-cluster-medium,
 .marker-cluster-large {

@@ -39,7 +39,7 @@ export function SzukajKatalog() {
       ustawWyniki(d.wyniki ?? []);
       if ((d.wyniki ?? []).length === 0) {
         ustawBlad(
-          "Nic nie znaleziono. Spróbuj innej frazy. Jeśli miejscowość jeszcze nie jest w serwisie, napisz do nas z formularza na stronie głównej (lista zainteresowanych) — dołożymy ją po weryfikacji danych z rejestru TERYT."
+          "Nic nie znaleziono. Spróbuj innej frazy. Jeśli miejscowość jeszcze nie jest w serwisie, napisz do nas z formularza na stronie głównej (lista zainteresowanych) — dołożymy ją po weryfikacji w urzędowym wykazie miejscowości."
         );
       }
     } catch {

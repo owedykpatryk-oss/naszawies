@@ -41,13 +41,13 @@ export default async function PanelProfilPage() {
     <main>
       <h1 className="mb-2 font-serif text-3xl text-green-950">Mój profil</h1>
       <p className="mb-8 text-sm text-stone-600">
-        Dane z tabeli <code className="rounded bg-stone-100 px-1 text-xs">public.users</code> — widoczne dla innych zgodnie z polityką RLS (np. nazwa przy aktywnym koncie).
+        Te dane widać u innych użytkowników zgodnie z ustawieniami i polityką prywatności.
       </p>
 
       {!profil ? (
         <div className="mb-8 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950">
-          Nie znaleziono wiersza w <code className="text-xs">public.users</code> (np. konto sprzed triggera). Pierwszy zapis utworzy profil — wymagana jest migracja z polityką INSERT dla własnego{" "}
-          <code className="text-xs">id</code>.
+          Nie udało się wczytać profilu. Spróbuj odświeżyć stronę. Gdy problem się powtórzy, napisz na adres kontaktowy
+          serwisu.
         </div>
       ) : (
         <p className="mb-6 text-xs text-stone-500">

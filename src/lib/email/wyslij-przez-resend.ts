@@ -12,7 +12,7 @@ export async function wyslijPrzezResend(
   const klucz = process.env.RESEND_API_KEY;
   const z = process.env.RESEND_ZE_STRONY;
   if (!klucz || !z) {
-    return { ok: false, blad: "Brak RESEND_API_KEY lub RESEND_ZE_STRONY" };
+    return { ok: false, blad: "Wysyłka e-maili jest chwilowo niedostępna." };
   }
 
   const odbiorcy = Array.isArray(opcje.do) ? opcje.do : [opcje.do];

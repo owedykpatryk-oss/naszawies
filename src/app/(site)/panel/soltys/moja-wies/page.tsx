@@ -55,16 +55,14 @@ export default async function SoltysMojaWiesPage() {
       <h1 className="font-serif text-3xl text-green-950">Profil wsi</h1>
       <p className="mt-2 text-sm text-stone-600">
         Uzupełnij opis, linki i ewent. baner — widać to na publicznej stronie wsi. Nazwa, gmina i województwo pochodzą z
-        rejestru TERYT; zmiana identyfikatora miejscowości jest po stronie administratora platformy.
+        oficjalnego wykazu miejscowości; zmianę identyfikatora miejscowości ustala administrator platformy.
       </p>
       <p className="mt-2 text-sm text-amber-900/90">
-        Nie ma Twojej wsi w wyszukiwarce? <strong>Administrator</strong> może dodać ją w panelu (dane z TERYT, konto
-        sołtysa):{" "}
+        Nie ma Twojej wsi w wyszukiwarce? <strong>Administrator</strong> może dodać ją w panelu wraz z kontem sołtysa:{" "}
         <Link href="/panel/admin" className="font-medium text-green-900 underline">
           Panel administratora
         </Link>
-        . Możliwy jest też <strong>import całej listy miejscowości</strong> z plików GUS w projekcie (por. dokumentacja
-        w repozytorium).
+        .
       </p>
       <ProfilWsiSoltysKlient wies={wies} />
     </main>

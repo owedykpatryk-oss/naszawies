@@ -15,6 +15,7 @@ import {
 import {
   MapaWsiLeaflet,
   type MapaWsiLeafletRef,
+  type ZnacznikPoi,
   type ZnacznikWsi,
 } from "./mapa-wsi-leaflet";
 
@@ -66,7 +67,14 @@ function podswietlDopasowanie(tekst: string, frazaSurowa: string): ReactNode {
   }
 }
 
-export function MapaWsiStrona({ znaczniki }: { znaczniki: ZnacznikWsi[] }) {
+export function MapaWsiStrona({
+  znaczniki,
+  punktyPoi = [],
+}: {
+  znaczniki: ZnacznikWsi[];
+  /** Punkty z tabeli `pois` (kościół, szkoła, świetlica…) — dla wsi z listy. */
+  punktyPoi?: ZnacznikPoi[];
+}) {
   const searchParams = useSearchParams();
   const pathname = usePathname();
   const router = useRouter();
@@ -93,6 +101,11 @@ export function MapaWsiStrona({ znaczniki }: { znaczniki: ZnacznikWsi[] }) {
       return false;
     });
   }, [znaczniki, szukajOdroczone]);
+
+  const punktyPoiFiltrowane = useMemo(() => {
+    const idWsi = new Set(odfiltrowane.map((z) => z.id));
+    return punktyPoi.filter((p) => idWsi.has(p.villageId));
+  }, [punktyPoi, odfiltrowane]);
 
   const wierszeListy = useMemo(() => {
     if (!pozycjaUzytkownika) return odfiltrowane;
@@ -265,7 +278,7 @@ export function MapaWsiStrona({ znaczniki }: { znaczniki: ZnacznikWsi[] }) {
             .
           </p>
         ) : (
-          <MapaWsiLeaflet ref={mapRef} znaczniki={wierszeListy} />
+          <MapaWsiLeaflet ref={mapRef} znaczniki={wierszeListy} punktyPoi={punktyPoiFiltrowane} />
         )}
       </div>
     </div>

@@ -31,7 +31,7 @@ export async function wgrajBuforDoR2(
 ): Promise<{ ok: true } | { ok: false; blad: string }> {
   const client = utworzKlientaR2S3();
   if (!client) {
-    return { ok: false, blad: "Brak konfiguracji R2 (CLOUDFLARE_R2_* w .env)." };
+    return { ok: false, blad: "Zapisywanie plików jest chwilowo niedostępne. Spróbuj później." };
   }
   try {
     await client.send(

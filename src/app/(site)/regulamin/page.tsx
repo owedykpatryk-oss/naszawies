@@ -48,9 +48,8 @@ export default function RegulaminPage() {
           <h2 className="font-serif text-xl text-green-900">§ 3. Role i treści</h2>
           <p className="mt-2 leading-relaxed text-stone-700">
             Szczegółowy opis ról (gość, mieszkaniec, sołtys, reprezentant podmiotu, administrator) oraz zasady
-            publikacji treści znajdują się w{" "}
-            <code className="rounded bg-stone-100 px-1 text-xs">docs/ROLES.md</code> oraz{" "}
-            <code className="rounded bg-stone-100 px-1 text-xs">docs/MODERATION.md</code>.
+            publikacji treści ustalane są przez operatora serwisu i komunikowane w treściach serwisu oraz — w
+            potrzebie wyjaśnienia — na wniosek, drogą elektroniczną.
           </p>
         </section>
 

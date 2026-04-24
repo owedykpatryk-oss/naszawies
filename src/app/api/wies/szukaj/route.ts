@@ -28,7 +28,7 @@ export async function GET(request: Request) {
 
   const supabase = createPublicSupabaseClient();
   if (!supabase) {
-    return NextResponse.json({ blad: "Brak konfiguracji Supabase." }, { status: 503 });
+    return NextResponse.json({ blad: "Wyszukiwarka jest chwilowo niedostępna. Spróbuj za chwilę." }, { status: 503 });
   }
 
   const fraza = sparsowane.data.q;

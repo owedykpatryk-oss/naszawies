@@ -11,6 +11,7 @@ import {
   useMemo,
   useRef,
 } from "react";
+import { etykietaKategoriiPoi, emojiKategoriiPoi, kolorObramowaniaPoi } from "@/lib/mapa/kategorie-poi";
 import "./mapa-wsi-leaflet.css";
 import "./mapa-wow.css";
 
@@ -31,6 +32,19 @@ export type ZnacznikWsi = {
   county?: string;
   voivodeship?: string;
   teryt_id?: string;
+};
+
+/** Punkt z tabeli `pois` (kościół, szkoła, świetlica, sołtys…) — publiczne na mapie. */
+export type ZnacznikPoi = {
+  id: string;
+  villageId: string;
+  villageName: string;
+  sciezkaWsi: string;
+  category: string;
+  name: string;
+  description: string | null;
+  lat: number;
+  lon: number;
 };
 
 export type MapaWsiLeafletRef = {
@@ -122,8 +136,11 @@ function htmlPopup(z: ZnacznikWsi, wariant: WariantGranicyWPopup): string {
   `;
 }
 
-function bboxDlaZnacznikow(znaczniki: ZnacznikWsi[]): [[number, number], [number, number]] | null {
-  if (znaczniki.length === 0) return null;
+function bboxDlaPunktowMapy(
+  znaczniki: ZnacznikWsi[],
+  pois: ZnacznikPoi[],
+): [[number, number], [number, number]] | null {
+  if (znaczniki.length === 0 && pois.length === 0) return null;
   let minLat = 90;
   let maxLat = -90;
   let minLon = 180;
@@ -133,6 +150,12 @@ function bboxDlaZnacznikow(znaczniki: ZnacznikWsi[]): [[number, number], [number
     maxLat = Math.max(maxLat, z.lat);
     minLon = Math.min(minLon, z.lon);
     maxLon = Math.max(maxLon, z.lon);
+  }
+  for (const p of pois) {
+    minLat = Math.min(minLat, p.lat);
+    maxLat = Math.max(maxLat, p.lat);
+    minLon = Math.min(minLon, p.lon);
+    maxLon = Math.max(maxLon, p.lon);
   }
   const pad = 0.12;
   return [
@@ -166,15 +189,48 @@ function zbudujIkone(L: LeafletNs) {
   });
 }
 
-export const MapaWsiLeaflet = forwardRef<MapaWsiLeafletRef, { znaczniki: ZnacznikWsi[] }>(
-  function MapaWsiLeaflet({ znaczniki }, ref) {
+function zbudujIkonePoi(L: LeafletNs, z: ZnacznikPoi) {
+  const emoji = emojiKategoriiPoi(z.category);
+  const kolor = kolorObramowaniaPoi(z.category);
+  const html = `<div class="naszawies-marker-poi-inner" style="border-color:${kolor}">${escapeHtml(emoji)}</div>`;
+  return L.divIcon({
+    className: "naszawies-leaflet-divicon",
+    html,
+    iconSize: [36, 36],
+    iconAnchor: [18, 20],
+    popupAnchor: [0, -20],
+  });
+}
+
+function htmlPopupPoi(z: ZnacznikPoi): string {
+  const kat = etykietaKategoriiPoi(z.category);
+  const opis = z.description?.trim();
+  return `
+    <div class="mapa-wsi-popup">
+      <p class="mapa-wsi-popup-meta">${escapeHtml(kat)}${z.villageName ? ` · ${escapeHtml(z.villageName)}` : ""}</p>
+      <h3>${escapeHtml(z.name)}</h3>
+      ${opis ? `<p>${escapeHtml(opis)}</p>` : ""}
+      <a href="${z.sciezkaWsi.replace(/"/g, "")}">Strona wsi →</a>
+    </div>
+  `;
+}
+
+export const MapaWsiLeaflet = forwardRef<
+  MapaWsiLeafletRef,
+  { znaczniki: ZnacznikWsi[]; punktyPoi?: ZnacznikPoi[] }
+>(function MapaWsiLeaflet({ znaczniki, punktyPoi = [] }, ref) {
     const refMapa = useRef<HTMLDivElement>(null);
     const instancja = useRef<InstancjaLeaflet | null>(null);
     const leafletRef = useRef<LeafletNs | null>(null);
     const znacznikiRef = useRef(znaczniki);
     znacznikiRef.current = znaczniki;
+    const punktyPoiRef = useRef(punktyPoi);
+    punktyPoiRef.current = punktyPoi;
 
-    const bboxPoczatkowy = useMemo(() => bboxDlaZnacznikow(znaczniki), [znaczniki]);
+    const bboxPoczatkowy = useMemo(
+      () => bboxDlaPunktowMapy(znaczniki, punktyPoi),
+      [znaczniki, punktyPoi],
+    );
 
     useImperativeHandle(ref, () => ({
       pokazNaMapie(idWsi: string) {
@@ -261,8 +317,9 @@ export const MapaWsiLeaflet = forwardRef<MapaWsiLeafletRef, { znaczniki: Znaczni
         };
 
         const z0 = znacznikiRef.current;
-        const bb0 = bboxDlaZnacznikow(z0);
-        syncWarstwy(L, instancja.current, z0, ikona, bb0);
+        const p0 = punktyPoiRef.current;
+        const bb0 = bboxDlaPunktowMapy(z0, p0);
+        syncWarstwy(L, instancja.current, z0, p0, ikona, bb0);
       })();
 
       return () => {
@@ -287,8 +344,8 @@ export const MapaWsiLeaflet = forwardRef<MapaWsiLeafletRef, { znaczniki: Znaczni
       const L = leafletRef.current;
       if (!inst || !L || znaczniki.length === 0) return;
       const ikona = zbudujIkone(L);
-      syncWarstwy(L, inst, znaczniki, ikona, bboxPoczatkowy);
-    }, [znaczniki, bboxPoczatkowy]);
+      syncWarstwy(L, inst, znaczniki, punktyPoi, ikona, bboxPoczatkowy);
+    }, [znaczniki, punktyPoi, bboxPoczatkowy]);
 
     return (
       <div className="mapa-wsi-map-shell relative h-[min(72dvh,560px)] w-full min-h-[320px] md:h-[min(78dvh,640px)]">
@@ -300,7 +357,7 @@ export const MapaWsiLeaflet = forwardRef<MapaWsiLeafletRef, { znaczniki: Znaczni
           tabIndex={0}
         />
         <div
-          className="mapa-wsi-legenda-wow pointer-events-none absolute left-3 top-3 z-[400] max-w-[min(100%,240px)] rounded-xl border border-stone-200/80 bg-white/90 px-3 py-2.5 text-[11px] leading-snug text-stone-700 shadow-lg shadow-green-950/5 backdrop-blur-md"
+          className="mapa-wsi-legenda-wow pointer-events-none absolute left-3 top-3 z-[400] max-w-[min(100%,300px)] rounded-xl border border-stone-200/80 bg-white/90 px-3 py-2.5 text-[11px] leading-snug text-stone-700 shadow-lg shadow-green-950/5 backdrop-blur-md"
           aria-hidden="true"
         >
           <p className="font-semibold text-stone-800">Legenda</p>
@@ -313,10 +370,14 @@ export const MapaWsiLeaflet = forwardRef<MapaWsiLeafletRef, { znaczniki: Znaczni
               ma jeszcze wielokąta
             </li>
             <li>
-              <span className="font-medium text-[#5a9c3e]">Pinezka</span> — punkt odniesienia (GPS) wsi
+              <span className="font-medium text-[#5a9c3e]">Pinezka (chałupa)</span> — środek wsi (GPS w profilu)
             </li>
             <li>
-              <span className="font-medium text-stone-800">Kółko z liczbą</span> — kilka wsi w obszarze
+              <span className="font-medium text-stone-800">Kolorowa pinezka (emoji)</span> — miejsca w sołectwie: kościół,
+              szkoła, świetlica, OSP, sołtys… (dane w serwisie)
+            </li>
+            <li>
+              <span className="font-medium text-stone-800">Kółko z liczbą</span> — kilka punktów w obszarze
             </li>
           </ul>
         </div>
@@ -332,6 +393,7 @@ function syncWarstwy(
   L: LeafletNs,
   inst: InstancjaLeaflet,
   znaczniki: ZnacznikWsi[],
+  punktyPoi: ZnacznikPoi[],
   ikona: import("leaflet").DivIcon,
   bbox: [[number, number], [number, number]] | null,
 ) {
@@ -389,6 +451,12 @@ function syncWarstwy(
     marker.bindPopup(htmlPopup(z, wariant));
     (cluster as import("leaflet").LayerGroup).addLayer(marker);
     markersById.set(z.id, marker);
+  }
+
+  for (const p of punktyPoi) {
+    const pin = L.marker([p.lat, p.lon], { icon: zbudujIkonePoi(L, p), zIndexOffset: 450, title: p.name });
+    pin.bindPopup(htmlPopupPoi(p));
+    (cluster as import("leaflet").LayerGroup).addLayer(pin);
   }
 
   if (bbox) {

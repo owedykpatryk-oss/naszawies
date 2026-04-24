@@ -63,7 +63,7 @@ export function ZdjecieAsortymentu({ hallId, pozycjaId, imageUrl }: Props) {
         if (uploadBlad) {
           ustawBlad(
             uploadBlad.message.includes("Bucket not found")
-              ? "Bucket „hall_inventory” — uruchom migrację Supabase."
+              ? "Zapisywanie zdjęć jest chwilowo niedostępne. Spróbuj później."
               : uploadBlad.message
           );
           return;

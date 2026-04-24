@@ -66,10 +66,10 @@ export default function PolitykaPrywatnosciPage() {
         <section>
           <h2 className="font-serif text-xl text-green-900">3. Odbiorcy i procesorzy</h2>
           <p className="mt-2 leading-relaxed text-stone-700">
-            Dane mogą być powierzane podmiotom przetwarzającym w naszym imieniu:{" "}
-            <strong>Supabase</strong> (baza danych, hosting w UE), <strong>Vercel</strong> (hosting aplikacji),{" "}
-            <strong>Resend</strong> (e-mail transakcyjny) — na podstawie umów powierzenia (DPA). Nie sprzedajemy
-            danych i nie wykorzystujemy ich do reklam behawioralnych.
+            Dane mogą być powierzane podmiotom przetwarzającym w naszym imieniu: m.in.{" "}
+            <strong>hosting bazy danych</strong> (w UE), <strong>hosting aplikacji</strong> oraz{" "}
+            <strong>dostawca infrastruktury poczty elektronicznej</strong> (wiadomości transakcyjne) — na podstawie
+            umów powierzenia (DPA). Nie sprzedajemy danych i nie wykorzystujemy ich do reklam behawioralnych.
           </p>
         </section>
 

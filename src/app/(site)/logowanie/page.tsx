@@ -8,7 +8,7 @@ import { LogowanieProwiderzy } from "./logowanie-prowiderzy";
 
 export const metadata: Metadata = {
   title: "Logowanie",
-  description: "Logowanie do naszawies.pl — Supabase Auth.",
+  description: "Logowanie do naszawies.pl.",
 };
 
 function bezpiecznaSciezkaNastepna(n?: string) {

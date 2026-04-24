@@ -89,11 +89,9 @@ export default async function WiesCatchAllPage({ params }: Props) {
             ← Strona główna
           </Link>
         </p>
-        <h1 className="font-serif text-2xl text-green-950">Baza danych nieskonfigurowana</h1>
+        <h1 className="font-serif text-2xl text-green-950">Strona chwilowo niedostępna</h1>
         <p className="mt-2 text-sm text-stone-600">
-          Ustaw zmienne <code className="rounded bg-stone-100 px-1">NEXT_PUBLIC_SUPABASE_URL</code> oraz{" "}
-          <code className="rounded bg-stone-100 px-1">NEXT_PUBLIC_SUPABASE_ANON_KEY</code> (np. na Vercel w
-          ustawieniach projektu), potem wdróż ponownie.
+          Nie udało się załadować danych. Spróbuj ponownie za chwilę albo wróć na stronę główną.
         </p>
       </main>
     );

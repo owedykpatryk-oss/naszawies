@@ -2,13 +2,14 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
 import { MapaWsiStrona } from "@/components/mapa/mapa-wsi-strona";
-import type { ZnacznikWsi } from "@/components/mapa/mapa-wsi-leaflet";
+import type { ZnacznikPoi, ZnacznikWsi } from "@/components/mapa/mapa-wsi-leaflet";
 import { createPublicSupabaseClient } from "@/lib/supabase/public-client";
 import { sciezkaProfiluWsi } from "@/lib/wies/sciezka-publiczna";
 
 export const metadata: Metadata = {
   title: "Mapa wsi",
-  description: "Mapa aktywnych profili wiosek na naszawies.pl — szybki podgląd lokalizacji i przejście do strony wsi.",
+  description:
+    "Mapa wsi: granice sołectwa, punkt wsi oraz miejsca w miejscowości (m.in. kościół, szkoła, świetlica) — gdy sołectwo doda dane w serwisie.",
 };
 
 type WierszRpc = {
@@ -44,13 +45,50 @@ function etykietaLiczbyWsi(n: number): string {
   return `${n} wiosek na mapie`;
 }
 
+type WierszPoi = {
+  id: string;
+  village_id: string;
+  category: string;
+  name: string;
+  description: string | null;
+  latitude: string | number | null;
+  longitude: string | number | null;
+};
+
+function mapujPoiDlaMapy(
+  wiersze: WierszPoi[] | null,
+  wiesPoId: Map<string, { name: string; sciezka: string }>,
+): ZnacznikPoi[] {
+  if (!wiersze?.length) return [];
+  const out: ZnacznikPoi[] = [];
+  for (const r of wiersze) {
+    const w = wiesPoId.get(r.village_id);
+    if (!w) continue;
+    const lat = doLiczby(r.latitude);
+    const lon = doLiczby(r.longitude);
+    if (Number.isNaN(lat) || Number.isNaN(lon)) continue;
+    out.push({
+      id: r.id,
+      villageId: r.village_id,
+      villageName: w.name,
+      sciezkaWsi: w.sciezka,
+      category: r.category,
+      name: r.name,
+      description: r.description,
+      lat,
+      lon,
+    });
+  }
+  return out;
+}
+
 export default async function MapaPage() {
   const supabase = createPublicSupabaseClient();
   let znaczniki: ZnacznikWsi[] = [];
   let bladZapytania: string | null = null;
 
   if (!supabase) {
-    bladZapytania = "Brak konfiguracji Supabase (NEXT_PUBLIC_SUPABASE_URL / ANON_KEY).";
+    bladZapytania = "Mapa jest chwilowo niedostępna. Spróbuj ponownie później.";
   } else {
     const { data, error } = await supabase.rpc("mapa_wsi_znaczniki");
 
@@ -81,7 +119,7 @@ export default async function MapaPage() {
         return [z];
       });
     } else {
-      const opisRpc = error?.message ?? "Nie udało się wczytać mapy (sprawdź migracje: mapa_wsi_znaczniki).";
+      const opisRpc = error?.message ?? "Nie udało się wczytać mapy.";
       const { data: wiersze, error: err2 } = await supabase
         .from("villages")
         .select("id, name, slug, voivodeship, county, commune, teryt_id, latitude, longitude, population, boundary_geojson")
@@ -117,8 +155,21 @@ export default async function MapaPage() {
             teryt_id: (w as { teryt_id?: string }).teryt_id,
           };
         });
-        bladZapytania = error ? `${opisRpc} · Lista wsi bez liczników ofert (tryb awaryjny).` : null;
+        bladZapytania = error ? `${opisRpc} · Wyświetlono listę wsi w trybie ograniczonym (np. bez liczników ofert).` : null;
       }
+    }
+  }
+
+  let punktyPoi: ZnacznikPoi[] = [];
+  if (supabase && znaczniki.length > 0) {
+    const wiesPoId = new Map(znaczniki.map((z) => [z.id, { name: z.name, sciezka: z.sciezka } as const]));
+    const idsWsi = znaczniki.map((z) => z.id);
+    const { data: wierszePoi, error: errPoi } = await supabase
+      .from("pois")
+      .select("id, village_id, category, name, description, latitude, longitude")
+      .in("village_id", idsWsi);
+    if (!errPoi && wierszePoi) {
+      punktyPoi = mapujPoiDlaMapy(wierszePoi as WierszPoi[], wiesPoId);
     }
   }
 
@@ -170,6 +221,9 @@ export default async function MapaPage() {
             className="mt-4 h-1 w-24 origin-left rounded-full bg-gradient-to-r from-green-700 via-emerald-500 to-amber-500 animate-mapa-hero-line motion-reduce:animate-none motion-reduce:scale-x-100 motion-reduce:opacity-100"
             aria-hidden="true"
           />
+          <p className="mt-5 max-w-2xl text-sm leading-relaxed text-stone-600">
+            Przy każdej wsi: granica (jeśli wgrana), punkt odniesienia oraz <strong>oznaczenia w sołectwie</strong> — m.in. kościół, szkoła, świetlica, OSP, punkt kontaktowy sołtysa, gdy sołectwo wprowadzi je do serwisu.
+          </p>
         </header>
 
         {bladZapytania ? (
@@ -214,7 +268,7 @@ export default async function MapaPage() {
                 </div>
               }
             >
-              <MapaWsiStrona znaczniki={znaczniki} />
+              <MapaWsiStrona znaczniki={znaczniki} punktyPoi={punktyPoi} />
             </Suspense>
           </div>
         ) : null}

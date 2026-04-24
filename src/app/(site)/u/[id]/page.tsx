@@ -32,7 +32,7 @@ export default async function PublicznyProfilUzytkownika({ params }: Props) {
   if (!supabase) {
     return (
       <main className="mx-auto min-w-0 max-w-lg py-16 text-stone-700">
-        <p>Brak konfiguracji publicznej bazy.</p>
+        <p>Profil jest chwilowo niedostępny. Spróbuj ponownie później.</p>
       </main>
     );
   }

@@ -40,15 +40,6 @@ export default async function RejestracjaPage() {
         naszawies.pl przy roli sołtysa). Tutaj tylko zakładasz logowanie — bez wyboru „jestem
         sołtysem” w sensie prawnym.
       </p>
-      <aside className="mt-4 rounded-xl border border-amber-200/90 bg-amber-50/90 px-4 py-3 text-xs leading-relaxed text-amber-950">
-        <strong>Potwierdzenie e-mailem:</strong> wiadomość wysyła <strong>Supabase</strong> (nie skrzynka
-        „kontakt”). Sprawdź <strong>spam / Oferty</strong>. Jeśli nic nie przyszło po kilkunastu minutach,
-        administrator sprawdza w Supabase → Authentication → <strong>Users</strong> (czy konto jest) oraz
-        <strong> Logs</strong> — i czy w Vercel jest ustawione{" "}
-        <code className="rounded bg-white/80 px-1">NEXT_PUBLIC_SITE_URL</code> zgodne z domeną (patrz{" "}
-        <code className="rounded bg-white/80 px-1">docs/POLACZENIE.md</code>). Gdy w projekcie wyłączone
-        jest potwierdzanie e-maila — można od razu próbować <Link href="/logowanie" className="underline">logowania</Link>.
-      </aside>
       <LogowanieProwiderzy pochodzeniePubliczne={pochodzenie} nastepnaSciezka="/panel" />
       <p className="mt-8 text-center text-sm text-stone-500">lub zarejestruj się e-mailem</p>
       <RejestracjaFormularz pochodzeniePubliczne={pochodzenie} />

@@ -75,7 +75,7 @@ async function pobierzRezerwacjeDoDokumentacjiZniszczen(
  */
 export async function wgrajObrazDoMagazynuR2(formData: FormData): Promise<WynikWgrajR2> {
   if (!czySerwerMozeWgrywacNaR2()) {
-    return { blad: "Brak konfiguracji R2 (klucze S3 + publiczny adres NEXT_PUBLIC_R2_PUBLIC_BASE_URL / CLOUDFLARE_R2_PUBLIC_BASE_URL)." };
+    return { blad: "Zapisywanie plików jest chwilowo niedostępne. Spróbuj później." };
   }
 
   const supabase = utworzKlientaSupabaseSerwer();

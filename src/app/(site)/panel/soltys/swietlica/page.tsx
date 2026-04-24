@@ -86,8 +86,7 @@ export default async function SoltysSwietlicaPage() {
 
       {villageIds.length > 0 && sale.length === 0 ? (
         <p className="mt-8 text-sm text-stone-600">
-          Brak zdefiniowanych sal w bazie dla Twojej wsi. Sala może zostać dodana przez
-          administratora platformy lub migrację danych.
+          Brak zdefiniowanych sal w serwisie dla Twojej wsi. Salę może dodać administrator platformy.
         </p>
       ) : null}
 

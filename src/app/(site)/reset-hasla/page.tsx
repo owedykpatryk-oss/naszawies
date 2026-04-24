@@ -20,7 +20,7 @@ export default function ResetHaslaPage() {
       </p>
       <h1 className="font-serif text-3xl text-green-950">Reset hasła</h1>
       <p className="mt-2 text-sm text-stone-600">
-        Podaj adres e-mail konta — wyślemy link z instrukcją (Supabase Auth).
+        Podaj adres e-mail konta — wyślemy link z instrukcją do ustawienia nowego hasła.
       </p>
       <ResetHaslaFormularz pochodzeniePubliczne={pochodzenie} />
     </main>

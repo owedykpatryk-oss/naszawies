@@ -69,7 +69,9 @@ export async function adminUtworzWiesISoltysa(niesprawdzone: unknown): Promise<W
       return { blad: "Nie ma konta z tym e-mailem — sołtys musi najpierw założyć konto w serwisie." };
     }
     if (m.includes("już w bazie")) {
-      return { blad: "Ta miejscowość (ten kod) jest już w bazie. Możesz wyszukać ją w /szukaj i ewentualnie dodać sołtysa w Supabase / innym narzędziu." };
+      return {
+        blad: "Ta miejscowość (ten kod) jest już w serwisie. Wyszukaj ją w wyszukiwarce miejscowości i w razie potrzeby skontaktuj się z administratorem platformy.",
+      };
     }
     if (m.includes("duplicate key") || m.includes("unique")) {
       return { blad: "Konflikt unikalności (kod, albo ten sam sołtys) — sprawdź dane i TERYT." };

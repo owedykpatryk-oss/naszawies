@@ -34,21 +34,18 @@ export default async function AdminPage() {
     <main>
       <h1 className="font-serif text-3xl text-green-950">Administrator platformy</h1>
       <p className="mt-2 text-sm text-stone-600">
-        Tylko konta wskazane jako administrator platformy w Supabase (e-mail w migracji) widzą tę stronę i poniższe
-        narzędzia.
+        Tylko wskazane konta administratora platformy widzą tę stronę i poniższe narzędzia.
       </p>
 
       {brakDostepu ? (
         <p className="mt-8 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-950">
-          Brak uprawnień do odczytu waitlist — dodaj swój adres e-mail do listy adminów w migracji SQL lub skonfiguruj
-          RLS.
+          Brak uprawnień do tej listy. Skontaktuj się z administratorem serwisu.
         </p>
       ) : null}
 
       {!brakDostepu && (wpisy?.length ?? 0) === 0 ? (
         <p className="mt-8 text-sm text-stone-600">
-          Lista jest pusta — albo nikt się jeszcze nie zapisał, albo (przy braku roli admina w Supabase) RLS zwraca zero
-          wierszy.
+          Lista jest pusta albo konto nie ma jeszcze uprawnień do odczytu wpisów.
         </p>
       ) : null}
 

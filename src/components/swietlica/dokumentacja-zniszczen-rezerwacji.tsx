@@ -86,7 +86,7 @@ export function DokumentacjaZniszczenRezerwacji({
           if (uploadBlad) {
             ustawBlad(
               uploadBlad.message.includes("Bucket not found")
-                ? "Bucket „hall_booking_damage” — uruchom migrację Supabase."
+                ? "Wgrywanie plików jest chwilowo niedostępne. Spróbuj później."
                 : uploadBlad.message
             );
             return;
