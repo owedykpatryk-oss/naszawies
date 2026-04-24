@@ -77,7 +77,7 @@ export default async function SoltysFotokronikaPage() {
     });
   }
 
-  let albumy: AlbumWiersz[] = [];
+  const albumy: AlbumWiersz[] = [];
   const okladki: Record<string, string | null> = {};
   if (villageIds.length > 0) {
     const { data: alRows } = await supabase
