@@ -220,10 +220,32 @@ otp_expiry = 3600
 # admin_email = "admin@email.com"
 # sender_name = "Admin"
 
-# Uncomment to customize email template
-# [auth.email.template.invite]
-# subject = "You have been invited"
-# content_path = "./supabase/templates/invite.html"
+# Szablony Auth (HTML + marka naszawies.pl) — na hostingu Supabase skopiuj treść z plików do
+# Dashboard → Authentication → Email Templates (patrz docs/SZABLONY_MAILI_SUPABASE.md).
+
+[auth.email.template.confirmation]
+subject = "Potwierdź konto — naszawies.pl"
+content_path = "./templates/email/potwierdzenie.html"
+
+[auth.email.template.recovery]
+subject = "Zresetuj hasło — naszawies.pl"
+content_path = "./templates/email/odbuduj-haslo.html"
+
+[auth.email.template.magic_link]
+subject = "Link do logowania — naszawies.pl"
+content_path = "./templates/email/magic-link.html"
+
+[auth.email.template.email_change]
+subject = "Potwierdź zmianę e-mail — naszawies.pl"
+content_path = "./templates/email/zmiana-email.html"
+
+[auth.email.template.invite]
+subject = "Zaproszenie — naszawies.pl"
+content_path = "./templates/email/zaproszenie.html"
+
+[auth.email.template.reauthentication]
+subject = "Kod potwierdzenia — naszawies.pl"
+content_path = "./templates/email/potwierdz-dzialanie.html"
 
 # Uncomment to customize notification email template
 # [auth.email.notification.password_changed]

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
+import { htmlSzablonNaszawies, siteUrlDlaSzablonuEmail } from "@/lib/email/szablon-html-naszawies";
 import { wyslijPrzezResend } from "@/lib/email/wyslij-przez-resend";
 import { escapeHtml } from "@/lib/tekst/escape-html";
 
@@ -42,13 +43,18 @@ export async function POST(request: Request) {
   const docelowy =
     process.env.KONTAKT_EMAIL_DOCELOWY || "kontakt@naszawies.pl";
 
-  const html = `
+  const trescWewnetrzna = `
     <p><strong>Imię:</strong> ${escapeHtml(d.imie)}</p>
     <p><strong>E-mail:</strong> ${escapeHtml(d.email)}</p>
     <p><strong>Temat:</strong> ${escapeHtml(d.temat)}</p>
-    <hr/>
-    <pre style="white-space:pre-wrap;font-family:inherit">${escapeHtml(d.wiadomosc)}</pre>
+    <hr style="border:none;border-top:1px solid #ddd;margin:16px 0"/>
+    <pre style="white-space:pre-wrap;font-family:Arial,Helvetica,sans-serif;font-size:14px;margin:0">${escapeHtml(d.wiadomosc)}</pre>
   `;
+  const html = htmlSzablonNaszawies({
+    siteUrl: siteUrlDlaSzablonuEmail(),
+    naglowek: "Wiadomość z formularza kontaktowego",
+    trescHtml: trescWewnetrzna,
+  });
 
   const wynik = await wyslijPrzezResend({
     do: docelowy,

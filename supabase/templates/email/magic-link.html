@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+</head>
+<body style="margin:0;padding:0;background:#e8e4dc;font-family:Georgia,'Times New Roman',Times,serif;">
+<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background:#e8e4dc;padding:24px 12px;">
+<tr><td align="center">
+<table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width:560px;background:#f5f1e8;border-radius:12px;border:1px solid #d4cfc4;">
+<tr><td style="padding:24px 24px 18px 24px;border-bottom:1px solid #e5e0d6;">
+<table role="presentation" cellspacing="0" cellpadding="0"><tr>
+<td style="vertical-align:middle;padding-right:12px;">
+<a href="{{ .SiteURL }}" style="text-decoration:none;">
+<img src="{{ .SiteURL }}/email/znak-naszawies.svg" width="44" height="44" alt="" style="display:block;border-radius:50%;">
+</a>
+</td>
+<td style="vertical-align:middle;">
+<a href="{{ .SiteURL }}" style="text-decoration:none;font-size:21px;font-weight:600;line-height:1.2;">
+<span style="color:#2d5a2d">nasza</span><span style="color:#5a9c3e">wies</span><span style="color:#d4a017;font-weight:500">.pl</span>
+</a>
+</td>
+</tr></table>
+</td></tr>
+<tr><td style="padding:24px 24px 8px 24px;font-size:20px;font-weight:600;color:#2d5a2d;font-family:Arial,Helvetica,sans-serif;">
+Link do logowania
+</td></tr>
+<tr><td style="padding:8px 24px 8px 24px;font-size:15px;line-height:1.55;color:#3d3a33;font-family:Arial,Helvetica,sans-serif;">
+Kliknij poniżej, aby zalogować się do naszawies.pl bez hasła (magic link). Nie udostępniaj tego linku innym.
+</td></tr>
+<tr><td style="padding:20px 24px 8px 24px;font-family:Arial,Helvetica,sans-serif;">
+<table role="presentation" cellspacing="0" cellpadding="0"><tr>
+<td style="border-radius:8px;background:#2d5a2d;">
+<a href="{{ .ConfirmationURL }}" style="display:inline-block;padding:14px 26px;color:#f5f1e8;text-decoration:none;font-weight:600;font-size:16px;">
+Zaloguj się
+</a>
+</td>
+</tr></table>
+</td></tr>
+<tr><td style="padding:8px 24px 24px 24px;font-size:13px;line-height:1.5;color:#666;font-family:Arial,Helvetica,sans-serif;">
+<span style="word-break:break-all;color:#2d5a2d;">{{ .ConfirmationURL }}</span>
+</td></tr>
+<tr><td style="padding:16px 24px 22px;font-size:12px;line-height:1.45;color:#5c5850;background:#ebe6dc;border-top:1px solid #e0dbd2;">
+<p style="margin:0 0 6px 0;">Wiadomość wysłana automatycznie (Supabase Auth) w imieniu <a href="{{ .SiteURL }}" style="color:#2d5a2d;font-weight:600;">naszawies.pl</a>.</p>
+</td></tr>
+</table>
+</td></tr>
+</table>
+</body>
+</html>

@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
+import { htmlSzablonNaszawies, siteUrlDlaSzablonuEmail } from "@/lib/email/szablon-html-naszawies";
 import { wyslijPrzezResend } from "@/lib/email/wyslij-przez-resend";
 import { escapeHtml } from "@/lib/tekst/escape-html";
 import { createPublicSupabaseClient } from "@/lib/supabase/public-client";
@@ -102,14 +103,20 @@ export async function POST(request: Request) {
 
   const powiadomienieDo = process.env.WAITLIST_POWIADOMIENIA_EMAIL;
   if (powiadomienieDo) {
-    void wyslijPrzezResend({
-      do: powiadomienieDo,
-      temat: `[naszawies] Nowy zapis na listę: ${dane.email}`,
-      trescHtml: `<p><strong>Rola:</strong> ${dane.role}</p>
+    const trescWewnetrzna = `<p><strong>Rola:</strong> ${escapeHtml(dane.role)}</p>
+        <p><strong>E-mail:</strong> ${escapeHtml(dane.email)}</p>
         <p><strong>Imię:</strong> ${escapeHtml(dane.fullName)}</p>
         <p><strong>Wieś:</strong> ${escapeHtml(dane.villageName)}</p>
         <p><strong>Gmina:</strong> ${escapeHtml(dane.commune)}</p>
-        <p><strong>IP:</strong> ${escapeHtml(adresIp ?? "—")}</p>`,
+        <p><strong>IP:</strong> ${escapeHtml(adresIp ?? "—")}</p>`;
+    void wyslijPrzezResend({
+      do: powiadomienieDo,
+      temat: `[naszawies.pl] Nowy zapis na listę: ${dane.email}`,
+      trescHtml: htmlSzablonNaszawies({
+        siteUrl: siteUrlDlaSzablonuEmail(),
+        naglowek: "Nowy zapis na listę (landing)",
+        trescHtml: trescWewnetrzna,
+      }),
       odpowiedzDo: dane.email,
     }).then((w) => {
       if (!w.ok) console.warn("[waitlist] Resend:", w.blad);

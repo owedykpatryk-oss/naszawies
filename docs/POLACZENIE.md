@@ -27,7 +27,7 @@ Wykonaj **po kolei** (numery mają znaczenie).
 6. **GoDaddy → DNS** — usuń / zmień rekord **A** dla `@` z „Website Builder” na **IP z Vercel** (często `76.76.21.21` — jeśli Vercel poda inny, użyj ich). **CNAME** `www` → wartość z Vercel (np. `cname.vercel-dns.com`). NS zostaw.
 7. Poczekaj na propagację DNS (od minut do kilku godzin). W Vercel przy domenie ma być **Valid** (certyfikat SSL).
 8. **Supabase → Authentication → URL Configuration** — **Site URL** = `https://naszawies.pl` (lub główny adres z www), **Redirect URLs** = `https://naszawies.pl/**`, `https://www.naszawies.pl/**`, `http://localhost:3000/**`, oraz na czas testów z **Preview** na Vercel: `https://*.vercel.app/**` (inaczej link z maila po rejestracji na preview może być odrzucony i sesja się nie utworzy).
-8b. **E-mail po rejestracji (potwierdzenie)** — wysyła go **Supabase Auth**, nie formularz kontaktowy (Resend). Jeśli nikt nie dostaje maila:
+8b. **E-mail po rejestracji (potwierdzenie)** — wysyła go **Supabase Auth**, nie formularz kontaktowy (Resend). **Wygląd maili (logo naszawies.pl):** gotowe HTML w `supabase/templates/email/` — na hostingu wklej je w panelu (opis: `docs/SZABLONY_MAILI_SUPABASE.md`). Jeśli nikt nie dostaje maila:
    - **Supabase → Authentication → Providers → Email** — dostawca włączony; sprawdź, czy **„Confirm email”** jest zgodnie z oczekiwaniami (wyłączone = brak maila, logowanie od razu hasłem).
    - **Authentication → Logs** — czy `signup` / wysyłka szablonu zakończyła się błędem lub limitem.
    - **Vercel** — ustaw **`NEXT_PUBLIC_SITE_URL`** na ten sam kanoniczny adres co **Site URL** w Supabase (np. `https://naszawies.pl`), żeby w mailu był poprawny link do `/auth/potwierdz`.
