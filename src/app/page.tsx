@@ -1,6 +1,7 @@
 import fs from "node:fs";
 import path from "node:path";
 import Script from "next/script";
+import "../styles/landing-trasy.css";
 
 export default function Home() {
   const html = fs.readFileSync(

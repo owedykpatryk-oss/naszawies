@@ -72,6 +72,7 @@ const cssForNext = css
     "font-family: var(--font-fraunces), ui-serif, Georgia, serif"
   );
 fs.writeFileSync(path.join(root, "src", "styles", "landing.css"), cssForNext);
+// Po sync sprawdź landing: nawigacja „Katalog/Mapa”, blok hero-dwie-sciezki i stopka — mogą wymagać ręcznego scalenia z repo.
 fs.writeFileSync(path.join(root, "src", "content", "landing-body.html"), body);
 
 const ski = html.indexOf("<script>") + "<script>".length;

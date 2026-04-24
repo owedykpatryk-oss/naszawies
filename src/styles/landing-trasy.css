@@ -1,0 +1,133 @@
+/**
+ * Uzupełnienia landingu: wybór „katalog wsi” vs „panel”.
+ * Osobny plik — `npm run sync-landing` nadpisuje landing.css z Cloude Docs.
+ */
+
+@media (max-width: 900px) {
+  .nav-links a.nav-discover {
+    display: inline-flex !important;
+    align-items: center;
+  }
+}
+
+.hero-dwie-sciezki {
+  margin-bottom: 1.75rem;
+  max-width: 560px;
+}
+
+.hero-dwie-sciezki__intro {
+  font-size: 0.92rem;
+  font-weight: 600;
+  color: var(--green-dark);
+  margin-bottom: 0.85rem;
+  letter-spacing: 0.02em;
+}
+
+.hero-dwie-sciezki__grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+}
+
+@media (max-width: 640px) {
+  .hero-dwie-sciezki__grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.hero-sciezka {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  text-align: left;
+  padding: 1.15rem 1.25rem;
+  border-radius: 16px;
+  text-decoration: none;
+  color: inherit;
+  border: 1.5px solid rgba(45, 90, 45, 0.2);
+  background: rgba(255, 255, 255, 0.65);
+  box-shadow: var(--shadow-soft);
+  transition:
+    border-color 0.2s,
+    box-shadow 0.2s,
+    transform 0.2s;
+}
+
+.hero-sciezka:hover {
+  border-color: var(--green-medium);
+  box-shadow: var(--shadow-strong);
+  transform: translateY(-2px);
+}
+
+.hero-sciezka--panel {
+  border-color: rgba(45, 90, 45, 0.35);
+  background: linear-gradient(145deg, rgba(232, 240, 227, 0.95) 0%, rgba(255, 255, 255, 0.9) 100%);
+}
+
+.hero-sciezka__badge {
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--green-medium);
+  margin-bottom: 0.45rem;
+}
+
+.hero-sciezka__badge--panel {
+  color: var(--green-dark);
+}
+
+.hero-sciezka__tytul {
+  font-family: var(--font-fraunces), ui-serif, Georgia, serif;
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: var(--green-darkest);
+  margin-bottom: 0.35rem;
+  line-height: 1.25;
+}
+
+.hero-sciezka__opis {
+  font-size: 0.82rem;
+  color: var(--text-muted);
+  line-height: 1.45;
+  margin-bottom: 0.65rem;
+}
+
+.hero-sciezka__cta {
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: var(--green-dark);
+  margin-top: auto;
+}
+
+.hero-sciezka:hover .hero-sciezka__cta {
+  color: var(--green-medium);
+}
+
+.hero-dwie-sciezki__mapa {
+  margin-top: 0.85rem;
+  font-size: 0.88rem;
+  color: var(--text-muted);
+}
+
+.hero-dwie-sciezki__mapa a {
+  color: var(--green-dark);
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.hero-dwie-sciezki__mapa a:hover {
+  color: var(--green-medium);
+}
+
+.hero-note a {
+  color: var(--green-dark);
+  font-weight: 600;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.hero-note a:hover {
+  color: var(--green-medium);
+}
