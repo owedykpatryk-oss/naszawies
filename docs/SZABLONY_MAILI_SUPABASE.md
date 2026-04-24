@@ -13,18 +13,39 @@ Maile **logowania / rejestracji / resetu hasła** wysyła **Supabase Auth**, nie
 
 **Logo w mailu** ładuje się z Twojej strony: `{{ .SiteURL }}/email/znak-naszawies.svg` (plik `public/email/znak-naszawies.svg`). Dlatego w Supabase **Site URL** musi być publiczny adres produkcji (np. `https://naszawies.pl`), a deploy na Vercel musi zawierać ten plik w `public/`.
 
-## Produkcja (Supabase Cloud)
+## Produkcja — automatyczne wgranie (zalecane)
 
-1. Otwórz [Email Templates](https://supabase.com/dashboard/project/_/auth/templates) dla swojego projektu.
-2. Dla każdego typu wiadomości ustaw **Subject** zgodnie z `supabase/config.toml` (sekcje `[auth.email.template.*]` → `subject`) albo własny, spójny z marką.
-3. Wklej **całą** zawartość odpowiedniego pliku `.html` do pola treści (body) szablonu.
-4. Zapisz. Wyślij test (np. rejestracja na staging / drugi adres).
+Z katalogu `naszawies`:
+
+1. Utwórz **Personal Access Token** w [Account → Access Tokens](https://supabase.com/dashboard/account/tokens) (dostęp do organizacji z projektem).
+2. W pliku **`.env.local`** (nie commituj) dodaj linię:
+
+```env
+SUPABASE_ACCESS_TOKEN=twoj_token_z_panelu
+```
+
+3. Z katalogu projektu:
+
+```bash
+npm run wgraj:szablony-maili
+```
+
+Skrypt sam wczytuje `.env.local` (m.in. `NEXT_PUBLIC_SUPABASE_URL` → ref projektu).
+
+Podgląd bez zapisu: `node scripts/wgraj-szablony-maili-supabase.mjs --dry-run`
+
+Jednorazowo bez pliku: PowerShell `$env:SUPABASE_ACCESS_TOKEN="..."; npm run wgraj:szablony-maili`
+
+Skrypt: `scripts/wgraj-szablony-maili-supabase.mjs` — czyta pliki z `supabase/templates/email/` i robi `PATCH` na [Management API](https://supabase.com/docs/guides/auth/auth-email-templates) (`/v1/projects/{ref}/config/auth`).
+
+Jeśli API zwraca **403**, token lub rola w organizacji może nie mieć uprawnień do zmiany Auth — użyj konta z dostępem właściciela / wygeneruj token z odpowiednim scope albo wklej szablony ręcznie w panelu.
+
+## Produkcja (ręcznie w panelu)
+
+1. [Email Templates](https://supabase.com/dashboard/project/_/auth/templates)
+2. Dla każdego typu: **Subject** jak w `supabase/config.toml`, treść = cały plik `.html` z repozytorium.
 
 Lokalnie (`supabase start`) te same pliki ładują się z `config.toml` — podgląd w Inbucket (`http://127.0.0.1:54324`).
-
-## Management API (opcjonalnie)
-
-Możesz zsynchronizować szablony skryptem `curl` z tokenem z [Account → Access Tokens](https://supabase.com/dashboard/account/tokens). Klucze JSON to m.in. `mailer_templates_confirmation_content`, `mailer_subjects_confirmation` itd. — zob. [dokumentacja](https://supabase.com/docs/guides/auth/auth-email-templates).
 
 ## Własny SMTP + nadawca
 

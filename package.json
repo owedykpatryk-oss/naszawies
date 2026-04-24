@@ -14,6 +14,7 @@
     "import-teryt-powiat": "node scripts/import-teryt-powiat.mjs",
     "r2:buckets": "node scripts/r2-buckets.mjs",
     "r2:s3-ping": "node scripts/r2-s3-ping.mjs",
+    "wgraj:szablony-maili": "node scripts/wgraj-szablony-maili-supabase.mjs",
     "db:apply-sql": "node scripts/zastosuj-migracje-sql.mjs"
   },
   "dependencies": {

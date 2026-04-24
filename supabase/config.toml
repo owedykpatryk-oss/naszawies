@@ -220,8 +220,8 @@ otp_expiry = 3600
 # admin_email = "admin@email.com"
 # sender_name = "Admin"
 
-# Szablony Auth (HTML + marka naszawies.pl) — na hostingu Supabase skopiuj treść z plików do
-# Dashboard → Authentication → Email Templates (patrz docs/SZABLONY_MAILI_SUPABASE.md).
+# Szablony Auth (HTML + marka naszawies.pl). Na hosting: npm run wgraj:szablony-maili
+# (Management API) albo ręcznie w Dashboard → Authentication → Email Templates.
 
 [auth.email.template.confirmation]
 subject = "Potwierdź konto — naszawies.pl"
