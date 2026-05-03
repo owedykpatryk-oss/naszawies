@@ -53,7 +53,23 @@ type WierszPoi = {
   description: string | null;
   latitude: string | number | null;
   longitude: string | number | null;
+  source: string | null;
+  confidence: number | string | null;
+  verified_at: string | null;
+  is_local_override: boolean | null;
 };
+
+const KATEGORIE_WYMAGAJACE_WERYFIKACJI = new Set(["szkola", "kosciol"]);
+
+function czyPoiPubliczny(r: WierszPoi): boolean {
+  const kat = r.category.trim().toLowerCase();
+  if (!KATEGORIE_WYMAGAJACE_WERYFIKACJI.has(kat)) return true;
+  if (r.is_local_override === true) return true;
+  if (r.source === "manual" || r.source === "local_corrected" || r.source === "osm_manual") return true;
+  if (r.verified_at) return true;
+  const confidence = r.confidence != null ? Number(r.confidence) : 0;
+  return Number.isFinite(confidence) && confidence >= 0.8;
+}
 
 function mapujPoiDlaMapy(
   wiersze: WierszPoi[] | null,
@@ -62,6 +78,7 @@ function mapujPoiDlaMapy(
   if (!wiersze?.length) return [];
   const out: ZnacznikPoi[] = [];
   for (const r of wiersze) {
+    if (!czyPoiPubliczny(r)) continue;
     const w = wiesPoId.get(r.village_id);
     if (!w) continue;
     const lat = doLiczby(r.latitude);
@@ -166,7 +183,7 @@ export default async function MapaPage() {
     const idsWsi = znaczniki.map((z) => z.id);
     const { data: wierszePoi, error: errPoi } = await supabase
       .from("pois")
-      .select("id, village_id, category, name, description, latitude, longitude")
+      .select("id, village_id, category, name, description, latitude, longitude, source, confidence, verified_at, is_local_override")
       .in("village_id", idsWsi);
     if (!errPoi && wierszePoi) {
       punktyPoi = mapujPoiDlaMapy(wierszePoi as WierszPoi[], wiesPoId);
