@@ -114,7 +114,8 @@ function promienPrzyblizonyMetrow(z: ZnacznikWsi): number {
 function ustawPaneWarstwicyGranicy(map: import("leaflet").Map) {
   if (map.getPane(PANE_GRANICE)) return;
   const pane = map.createPane(PANE_GRANICE);
-  pane.style.zIndex = "450";
+  /** Nad kafelkami (200), pod pinezkami (markerPane 600) — granice czytelne, klik zostaje na znaczniku. */
+  pane.style.zIndex = "500";
 }
 
 function htmlPopup(z: ZnacznikWsi, wariant: WariantGranicyWPopup): string {
@@ -147,6 +148,44 @@ function htmlPopup(z: ZnacznikWsi, wariant: WariantGranicyWPopup): string {
   `;
 }
 
+/** Rozszerza bbox o wszystkie wierzchołki GeoJSON (Polygon / MultiPolygon / Feature / FeatureCollection). */
+function rozszerzBboxZOGeojson(gj: GeoJsonObject, visit: (lat: number, lon: number) => void) {
+  const walk = (node: unknown): void => {
+    if (!Array.isArray(node)) return;
+    if (
+      node.length >= 2 &&
+      typeof node[0] === "number" &&
+      typeof node[1] === "number" &&
+      !Array.isArray(node[0])
+    ) {
+      const lon = node[0] as number;
+      const lat = node[1] as number;
+      visit(lat, lon);
+      return;
+    }
+    for (const x of node) walk(x);
+  };
+  const o = gj as {
+    type?: string;
+    coordinates?: unknown;
+    geometry?: { coordinates?: unknown };
+    features?: { geometry?: { coordinates?: unknown } }[];
+  };
+  if (o.type === "Feature" && o.geometry?.coordinates) {
+    walk(o.geometry.coordinates);
+    return;
+  }
+  if (o.type === "FeatureCollection" && Array.isArray(o.features)) {
+    for (const f of o.features) {
+      if (f.geometry?.coordinates) walk(f.geometry.coordinates);
+    }
+    return;
+  }
+  if (o.type === "Polygon" || o.type === "MultiPolygon") {
+    walk(o.coordinates);
+  }
+}
+
 function bboxDlaPunktowMapy(
   znaczniki: ZnacznikWsi[],
   pois: ZnacznikPoi[],
@@ -156,17 +195,19 @@ function bboxDlaPunktowMapy(
   let maxLat = -90;
   let minLon = 180;
   let maxLon = -180;
+  const visit = (lat: number, lon: number) => {
+    minLat = Math.min(minLat, lat);
+    maxLat = Math.max(maxLat, lat);
+    minLon = Math.min(minLon, lon);
+    maxLon = Math.max(maxLon, lon);
+  };
   for (const z of znaczniki) {
-    minLat = Math.min(minLat, z.lat);
-    maxLat = Math.max(maxLat, z.lat);
-    minLon = Math.min(minLon, z.lon);
-    maxLon = Math.max(maxLon, z.lon);
+    visit(z.lat, z.lon);
+    const gj = granicaJakoGeoJson(z.boundary_geojson);
+    if (gj) rozszerzBboxZOGeojson(gj, visit);
   }
   for (const p of pois) {
-    minLat = Math.min(minLat, p.lat);
-    maxLat = Math.max(maxLat, p.lat);
-    minLon = Math.min(minLon, p.lon);
-    maxLon = Math.max(maxLon, p.lon);
+    visit(p.lat, p.lon);
   }
   const pad = 0.12;
   return [
@@ -499,11 +540,12 @@ function syncWarstwy(
       try {
         const warstwa = L.geoJSON(gj, {
           pane: PANE_GRANICE,
+          interactive: false,
           style: {
-            color: "#1d4d1d",
-            weight: 3,
-            fillColor: "#3d7a2e",
-            fillOpacity: 0.13,
+            color: "#0f3d12",
+            weight: 4,
+            fillColor: "#2d6a24",
+            fillOpacity: 0.2,
             opacity: 1,
             lineCap: "round",
             lineJoin: "round",
@@ -522,12 +564,13 @@ function syncWarstwy(
       const kolo = L.circle([z.lat, z.lon], {
         radius: prom,
         pane: PANE_GRANICE,
-        color: "#3d6b4a",
-        weight: 2,
-        opacity: 0.92,
-        dashArray: "10 7",
-        fillColor: "#5a9c3e",
-        fillOpacity: 0.07,
+        interactive: false,
+        color: "#1a4d28",
+        weight: 3,
+        opacity: 1,
+        dashArray: "12 8",
+        fillColor: "#3d7a2e",
+        fillOpacity: 0.1,
       });
       kolo.bindPopup(htmlPopup(z, "pozor"));
       boundaryGroup.addLayer(kolo);
@@ -547,7 +590,10 @@ function syncWarstwy(
   }
 
   if (bbox) {
-    map.fitBounds(bbox, { padding: [28, 28], maxZoom: 12, animate: false });
+    /** Przy jednej wsi sztywne maxZoom 12 zostawiało mapę za daleko — granica ledwo widoczna. */
+    const maxZoom =
+      znaczniki.length <= 1 ? 17 : znaczniki.length <= 4 ? 16 : znaczniki.length <= 12 ? 14 : znaczniki.length <= 40 ? 13 : 12;
+    map.fitBounds(bbox, { padding: [32, 32], maxZoom, animate: false });
   } else {
     map.setView([52.1, 19.3], 6);
   }
