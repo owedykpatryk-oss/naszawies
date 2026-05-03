@@ -634,6 +634,78 @@ export function zbudujSugestieKontekstowe(
     });
   }
 
+  const organizacje: SugestiaKontekstowa[] = [];
+  if (preset.id === "plan-pracy-kgw-roczny") {
+    if (maPole(preset, "nazwa_kgw")) {
+      organizacje.push({
+        id: "kgw-nazwa",
+        etykieta: "Nazwa KGW (szablon)",
+        wartosc: wies ? `KGW ${wies}` : "KGW [NAZWA KOŁA]",
+        poleDocelowe: "nazwa_kgw",
+      });
+    }
+    if (maPole(preset, "wies") && wies) {
+      organizacje.push({
+        id: "kgw-wies",
+        etykieta: "Wieś z profilu",
+        wartosc: wies,
+        poleDocelowe: "wies",
+      });
+    }
+    if (maPole(preset, "harmonogram")) {
+      organizacje.push({
+        id: "kgw-harmonogram",
+        etykieta: "Harmonogram: 4 kwartały",
+        wartosc:
+          "I kwartał: spotkanie planistyczne i warsztat kulinarny.\nII kwartał: wydarzenie rodzinne / piknik.\nIII kwartał: udział w dożynkach i promocja lokalnych produktów.\nIV kwartał: kiermasz świąteczny i podsumowanie działań.",
+        poleDocelowe: "harmonogram",
+        preferujDopisanie: true,
+      });
+    }
+  }
+
+  if (preset.id === "wniosek-kgw-mikrodotacja") {
+    if (maPole(preset, "kwota")) {
+      organizacje.push({
+        id: "kgw-kwota",
+        etykieta: "Kwota: 4 500 zł",
+        wartosc: "4 500,00 PLN",
+        poleDocelowe: "kwota",
+      });
+    }
+    if (maPole(preset, "rezultaty")) {
+      organizacje.push({
+        id: "kgw-rezultaty",
+        etykieta: "Rezultaty (gotowiec)",
+        wartosc:
+          "Co najmniej 4 działania otwarte dla mieszkańców, aktywizacja min. 40 uczestników, trwałe materiały i scenariusze działań do kolejnych edycji.",
+        poleDocelowe: "rezultaty",
+        preferujDopisanie: true,
+      });
+    }
+  }
+
+  if (preset.id === "komunikat-osp-bezpieczenstwo") {
+    if (maPole(preset, "zalecenia")) {
+      organizacje.push({
+        id: "osp-zalecenia",
+        etykieta: "Zalecenia: bezpieczeństwo",
+        wartosc:
+          "1) Nie zbliżaj się do strefy działań służb.\n2) Nie blokuj dróg dojazdowych i hydrantów.\n3) Zgłaszaj sytuacje zagrożenia pod numer 112.",
+        poleDocelowe: "zalecenia",
+        preferujDopisanie: true,
+      });
+    }
+  }
+
+  if (organizacje.length) {
+    grupy.push({
+      grupa: "KGW / OSP i organizacje",
+      opis: "Szybkie fragmenty pod dokumenty organizacyjne i komunikaty.",
+      sugestie: organizacje,
+    });
+  }
+
   return grupy.filter((g) => g.sugestie.length > 0);
 }
 

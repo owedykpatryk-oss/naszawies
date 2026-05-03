@@ -8,19 +8,48 @@ function v(r: Record<string, string>, key: string): string {
 
 function stylDruku(): string {
   return `<style>
-    .doc-soltys { font-family: ui-serif, Georgia, "Times New Roman", serif; color: #1c1917; line-height: 1.45; max-width: 720px; margin: 0 auto; }
-    .doc-soltys h1 { font-size: 1.35rem; margin: 0 0 0.6rem; text-align: center; border-bottom: 2px solid #14532d; padding-bottom: 0.5rem; }
-    .doc-soltys .pas-nadtytul { font-size: 0.72rem; color: #44403c; text-align: center; margin: 0 0 0.75rem; padding: 0.45rem 0.65rem; background: #ecfdf5; border: 1px solid #d6d3d1; border-radius: 6px; line-height: 1.35; }
-    .doc-soltys .pas-nadtytul .nr-ref { font-family: ui-monospace, monospace; font-weight: 600; color: #14532d; letter-spacing: 0.03em; }
+    .doc-soltys { --akcent: #14532d; --tlo-pasa: #ecfdf5; --ramka: #d6d3d1; --tlo-ramki: #fafaf9; position: relative; isolation: isolate; font-family: "Cambria", "Times New Roman", "Palatino Linotype", serif; color: #1c1917; line-height: 1.55; max-width: 740px; margin: 0 auto; letter-spacing: 0.005em; text-rendering: optimizeLegibility; }
+    .doc-soltys.doc-styl-elegancki { --akcent: #7c2d12; --tlo-pasa: #fff7ed; --ramka: #e7d8c9; --tlo-ramki: #fffaf4; font-family: "Palatino Linotype", "Book Antiqua", Garamond, serif; }
+    .doc-soltys.doc-styl-nowoczesny { --akcent: #1d4ed8; --tlo-pasa: #eff6ff; --ramka: #cbd5e1; --tlo-ramki: #f8fafc; font-family: "Inter", "Segoe UI", "Helvetica Neue", Arial, sans-serif; }
+    .doc-soltys[data-rozmiar="duzy"] { font-size: 1.06rem; line-height: 1.62; }
+    .doc-soltys[data-znak-wodny="subtelny"]::before {
+      content: "naszawies.pl";
+      position: absolute;
+      inset: 42% 0 auto 0;
+      text-align: center;
+      transform: rotate(-18deg);
+      font-size: 2.6rem;
+      font-weight: 700;
+      letter-spacing: 0.08em;
+      color: rgba(17, 94, 89, 0.06);
+      pointer-events: none;
+      z-index: -1;
+      user-select: none;
+      font-family: "Inter", "Segoe UI", Arial, sans-serif;
+    }
+    .doc-soltys h1 { font-size: 1.42rem; margin: 0 0 0.6rem; text-align: center; border-bottom: 2px solid var(--akcent); padding-bottom: 0.5rem; letter-spacing: 0.02em; }
+    .doc-soltys .pas-nadtytul { font-size: 0.72rem; color: #44403c; text-align: center; margin: 0 0 0.75rem; padding: 0.45rem 0.65rem; background: var(--tlo-pasa); border: 1px solid var(--ramka); border-radius: 6px; line-height: 1.35; }
+    .doc-soltys .pas-nadtytul .nr-ref { font-family: ui-monospace, monospace; font-weight: 600; color: var(--akcent); letter-spacing: 0.03em; }
     .doc-soltys .meta { font-size: 0.8rem; color: #57534e; text-align: center; margin: 0 0 0.35rem; }
     .doc-soltys .meta:last-of-type { margin-bottom: 1.1rem; }
-    .doc-soltys h2 { font-size: 1.05rem; margin: 1.25rem 0 0.5rem; }
-    .doc-soltys p { margin: 0.4rem 0; text-align: justify; }
+    .doc-soltys h2 { font-size: 1.06rem; margin: 1.25rem 0 0.55rem; color: #0f172a; border-left: 4px solid var(--akcent); padding-left: 0.55rem; }
+    .doc-soltys p { margin: 0.42rem 0; text-align: justify; hanging-punctuation: first; orphans: 3; widows: 3; }
     .doc-soltys .mono { font-family: ui-monospace, monospace; font-size: 0.85rem; }
     .doc-soltys .podpis { margin-top: 2.5rem; }
-    .doc-soltys .ramka { border: 1px solid #d6d3d1; padding: 0.75rem 1rem; margin: 0.75rem 0; border-radius: 4px; background: #fafaf9; }
+    .doc-soltys .podpisy-siatka { display: grid; gap: 1rem; align-items: start; margin-top: 2.4rem; }
+    .doc-soltys .podpisy-2 { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    .doc-soltys .podpisy-3 { grid-template-columns: repeat(3, minmax(0, 1fr)); }
+    .doc-soltys .podpis-kolumna p { margin: 0.15rem 0; text-align: center; font-size: 0.83rem; }
+    .doc-soltys .ramka { border: 1px solid var(--ramka); padding: 0.75rem 1rem; margin: 0.75rem 0; border-radius: 4px; background: var(--tlo-ramki); }
+    .doc-soltys ul, .doc-soltys ol { margin: 0.5rem 0 0.6rem 1.35rem; }
+    .doc-soltys li { margin: 0.2rem 0; }
     .doc-soltys .stopka-tech { font-size: 0.68rem; color: #a8a29e; text-align: center; margin-top: 1.75rem; padding-top: 0.5rem; border-top: 1px solid #e7e5e4; }
-    @media print { .no-print { display: none !important; } .doc-soltys { max-width: none; } @page { margin: 14mm; size: A4; } }
+    @media print {
+      .no-print { display: none !important; }
+      .doc-soltys { max-width: none; }
+      .doc-soltys .podpisy-siatka { break-inside: avoid; }
+      @page { margin: 14mm; size: A4; }
+    }
   </style>`;
 }
 
@@ -32,6 +61,10 @@ function otoczenie(
     numerReferencyjny?: string;
     kontekstSolectwa?: string;
     wygenerowalNazwa?: string;
+    stylWydruku?: "urzedowy" | "elegancki" | "nowoczesny";
+    rozmiarWydruku?: "standard" | "duzy";
+    znakWodny?: "brak" | "subtelny";
+    ukladPodpisow?: "jeden" | "dwa" | "trzy";
   },
   body: string
 ): string {
@@ -54,15 +87,32 @@ function otoczenie(
   const stopkaRef = nrRef
     ? `<p class="stopka-tech">Dokument z generatora naszawies.pl · ${e(nrRef)}</p>`
     : `<p class="stopka-tech">Dokument z generatora naszawies.pl</p>`;
+  const styl = meta.stylWydruku ?? "urzedowy";
+  const rozmiar = meta.rozmiarWydruku ?? "standard";
+  const znakWodny = meta.znakWodny ?? "subtelny";
+  const ukladPodpisow = meta.ukladPodpisow ?? "jeden";
+  const blokPodpisow =
+    ukladPodpisow === "jeden"
+      ? `<p class="podpis"><em>Miejscowość, data i podpis — uzupełnij odręcznie lub w edytorze po eksporcie do PDF.</em></p>`
+      : ukladPodpisow === "dwa"
+        ? `<div class="podpis podpisy-siatka podpisy-2">
+            <div class="podpis-kolumna"><p>....................................................</p><p><strong>Przewodniczący / Sołtys</strong></p></div>
+            <div class="podpis-kolumna"><p>....................................................</p><p><strong>Członek komisji / Zarządu</strong></p></div>
+          </div>`
+        : `<div class="podpis podpisy-siatka podpisy-3">
+            <div class="podpis-kolumna"><p>....................................................</p><p><strong>Przewodniczący / Sołtys</strong></p></div>
+            <div class="podpis-kolumna"><p>....................................................</p><p><strong>Członek komisji</strong></p></div>
+            <div class="podpis-kolumna"><p>....................................................</p><p><strong>Protokolant / Sekretarz</strong></p></div>
+          </div>`;
   return `${stylDruku()}
-<div class="doc-soltys">
+<div class="doc-soltys doc-styl-${e(styl)}" data-rozmiar="${e(rozmiar)}" data-znak-wodny="${e(znakWodny)}">
   ${pasNad}
   <h1>${e(tytul)}</h1>
   <p class="meta">Wygenerowano w naszawies.pl · ${e(meta.dataWygenerowania)}</p>
   ${kto}
   ${stan}
   ${body}
-  <p class="podpis"><em>Miejscowość, data i podpisy — uzupełnić odręcznie lub w edytorze tekstu po eksporcie do PDF.</em></p>
+  ${blokPodpisow}
   ${stopkaRef}
 </div>`;
 }
@@ -1012,6 +1062,84 @@ export const PRESETY_DOKUMENTOW_SOLTYSA: PresetDokumentu[] = [
         <p><strong>Cel wykorzystania:</strong> ${v(w, "cel")}</p>
         <p><strong>Uwagi:</strong> ${v(w, "uwagi")}</p>
         <p class="podpis">Potwierdzam odbiór —<br/><strong>${v(w, "podpis")}</strong></p>
+      `),
+  },
+  {
+    id: "plan-pracy-kgw-roczny",
+    kategoria: "KGW i organizacje",
+    tytul: "Plan pracy KGW na rok (szablon)",
+    opis: "Roczny plan działań, warsztatów, wyjazdów i odpowiedzialności.",
+    pola: [
+      { id: "nazwa_kgw", etykieta: "Nazwa KGW / organizacji", typ: "text", placeholder: "np. KGW Złote Kłosy" },
+      { id: "wies", etykieta: "Wieś / sołectwo", typ: "text" },
+      { id: "rok_plan", etykieta: "Rok planu", typ: "text", domyslna: String(new Date().getFullYear()) },
+      { id: "cele", etykieta: "Cele na rok", typ: "textarea", wiersze: 6 },
+      { id: "harmonogram", etykieta: "Harmonogram działań", typ: "textarea", wiersze: 10 },
+      { id: "budzet", etykieta: "Źródła finansowania i budżet", typ: "textarea", wiersze: 5 },
+      { id: "podpis", etykieta: "Podpis (przewodnicząca / zarząd)", typ: "text", placeholder: "Przewodnicząca KGW ..." },
+    ],
+    budujHtml: (w, meta) =>
+      otoczenie("Plan pracy KGW", meta, `
+        <p><strong>Organizacja:</strong> ${v(w, "nazwa_kgw")} · <strong>Wieś:</strong> ${v(w, "wies")} · <strong>Rok:</strong> ${v(w, "rok_plan")}</p>
+        <h2>Cele i priorytety</h2>
+        <div class="ramka"><p style="white-space:pre-wrap">${v(w, "cele")}</p></div>
+        <h2>Harmonogram</h2>
+        <div class="ramka"><p style="white-space:pre-wrap">${v(w, "harmonogram")}</p></div>
+        <h2>Budżet i źródła finansowania</h2>
+        <div class="ramka"><p style="white-space:pre-wrap">${v(w, "budzet")}</p></div>
+        <p class="podpis">Zatwierdzono przez zarząd —<br/><strong>${v(w, "podpis")}</strong></p>
+      `),
+  },
+  {
+    id: "wniosek-kgw-mikrodotacja",
+    kategoria: "KGW i organizacje",
+    tytul: "Wniosek KGW o mikrodotację / wsparcie wydarzenia",
+    opis: "Szkic pod nabory gminne i lokalne granty dla KGW.",
+    pola: [
+      { id: "adresat", etykieta: "Adresat naboru / grantodawca", typ: "textarea", wiersze: 2 },
+      { id: "nazwa_kgw", etykieta: "Nazwa KGW", typ: "text" },
+      { id: "wies", etykieta: "Wieś / sołectwo", typ: "text" },
+      { id: "tytul_projektu", etykieta: "Tytuł projektu", typ: "text", placeholder: "np. Tradycja i integracja pokoleń" },
+      { id: "kwota", etykieta: "Kwota wnioskowana", typ: "text", placeholder: "np. 4 500,00 PLN" },
+      { id: "opis", etykieta: "Opis projektu", typ: "textarea", wiersze: 8 },
+      { id: "rezultaty", etykieta: "Rezultaty i grupa odbiorców", typ: "textarea", wiersze: 5 },
+      { id: "podpis", etykieta: "Podpis", typ: "text", placeholder: "Przewodnicząca KGW ..." },
+    ],
+    budujHtml: (w, meta) =>
+      otoczenie("Wniosek KGW o dofinansowanie", meta, `
+        <p style="white-space:pre-wrap">${v(w, "adresat")}</p>
+        <p><strong>Wnioskodawca:</strong> ${v(w, "nazwa_kgw")} · <strong>Sołectwo:</strong> ${v(w, "wies")}</p>
+        <p><strong>Tytuł projektu:</strong> ${v(w, "tytul_projektu")} · <strong>Kwota:</strong> ${v(w, "kwota")}</p>
+        <h2>Opis projektu</h2>
+        <div class="ramka"><p style="white-space:pre-wrap">${v(w, "opis")}</p></div>
+        <h2>Rezultaty i odbiorcy</h2>
+        <div class="ramka"><p style="white-space:pre-wrap">${v(w, "rezultaty")}</p></div>
+        <p class="podpis">Z wyrazami szacunku —<br/><strong>${v(w, "podpis")}</strong></p>
+      `),
+  },
+  {
+    id: "komunikat-osp-bezpieczenstwo",
+    kategoria: "KGW i organizacje",
+    tytul: "Komunikat OSP / bezpieczeństwo mieszkańców",
+    opis: "Szybki komunikat dla mieszkańców o ćwiczeniach, utrudnieniach i zasadach bezpieczeństwa.",
+    pola: [
+      { id: "jednostka", etykieta: "Jednostka", typ: "text", placeholder: "np. OSP Studzienki" },
+      { id: "temat", etykieta: "Temat komunikatu", typ: "text", placeholder: "np. Ćwiczenia OSP i czasowe utrudnienia" },
+      { id: "data_miejsce", etykieta: "Data / miejsce", typ: "textarea", wiersze: 2 },
+      { id: "tresc", etykieta: "Treść komunikatu", typ: "textarea", wiersze: 7 },
+      { id: "zalecenia", etykieta: "Zalecenia dla mieszkańców", typ: "textarea", wiersze: 5 },
+      { id: "kontakt", etykieta: "Kontakt", typ: "text", placeholder: "np. OSP tel. ..., sołtys tel. ..." },
+    ],
+    budujHtml: (w, meta) =>
+      otoczenie("Komunikat bezpieczeństwa", meta, `
+        <p><strong>Jednostka:</strong> ${v(w, "jednostka")}</p>
+        <p style="text-align:center;font-size:1.05rem"><strong>${v(w, "temat")}</strong></p>
+        <p><strong>Data / miejsce:</strong><br/>${v(w, "data_miejsce")}</p>
+        <h2>Informacja</h2>
+        <div class="ramka"><p style="white-space:pre-wrap">${v(w, "tresc")}</p></div>
+        <h2>Zalecenia dla mieszkańców</h2>
+        <div class="ramka"><p style="white-space:pre-wrap">${v(w, "zalecenia")}</p></div>
+        <p><strong>Kontakt:</strong> ${v(w, "kontakt")}</p>
       `),
   },
 ];

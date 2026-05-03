@@ -14,6 +14,9 @@ import {
   SekcjaPrzewodnikSamorzadowy,
   type PrzewodnikSamorzadowyZapis,
 } from "@/components/wies/sekcja-przewodnik-samorzadowy";
+import { WiesLaczonyFeedAktualnosci } from "@/components/wies/wies-laczony-feed-aktualnosci";
+import { zbudujLaczonyFeedAktualnosci } from "@/lib/wies/zbuduj-laczony-feed-aktualnosci";
+import { WiesTransportWidget, type TransportOdjazdPubliczny } from "@/components/wies/wies-transport-widget";
 
 type WpisPostu = {
   id: string;
@@ -38,6 +41,10 @@ export function WiesProfilPubliczny({
   harmonogramTygodnia = [],
   dotacjeSkrot = [],
   przewodnikSamorzadowy = null,
+  transportStatus = null,
+  transportOdjazdy = [],
+  kontaktyUrzedowe = [],
+  kadencjeFunkcyjne = [],
 }: {
   wies: WiesPubliczna;
   posty: WpisPostu[];
@@ -112,9 +119,45 @@ export function WiesProfilPubliczny({
     application_deadline: string | null;
   }[];
   przewodnikSamorzadowy?: PrzewodnikSamorzadowyZapis | null;
+  transportStatus?: {
+    status_color: string;
+    status_label: string;
+    delayed_count: number;
+    cancelled_count: number;
+    fallback_mode: boolean;
+    updated_at: string;
+  } | null;
+  transportOdjazdy?: TransportOdjazdPubliczny[];
+  kontaktyUrzedowe?: {
+    id: string;
+    office_key: string;
+    role_label: string;
+    person_name: string;
+    organization_name: string | null;
+    contact_phone: string | null;
+    contact_email: string | null;
+    duty_hours_text: string | null;
+    note: string | null;
+    cta_label: string | null;
+    cta_url: string | null;
+    is_verified_by_soltys: boolean;
+    updated_at: string;
+  }[];
+  kadencjeFunkcyjne?: {
+    id: string;
+    office_key: string;
+    role_label: string;
+    person_name: string;
+    organization_name: string | null;
+    term_start: string;
+    term_end: string | null;
+    note: string | null;
+    is_current: boolean;
+  }[];
 }) {
   const sciezka = sciezkaProfiluWsi(wies);
   const prefixOgloszenia = `${sciezka}/ogloszenie`;
+  const laczonyFeed = zbudujLaczonyFeedAktualnosci(sciezka, posty, blog, historia, wiadomosci, wydarzenia, 14);
 
   return (
     <article>
@@ -170,6 +213,11 @@ export function WiesProfilPubliczny({
             </span>
           ) : null}
         </p>
+        {transportStatus && (transportStatus.status_color === "orange" || transportStatus.status_color === "red") ? (
+          <p className="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900">
+            Dziś utrudnienia w transporcie: {transportStatus.status_label}.
+          </p>
+        ) : null}
       </header>
 
       {wies.description ? (
@@ -180,6 +228,82 @@ export function WiesProfilPubliczny({
       ) : null}
 
       <SekcjaPrzewodnikSamorzadowy wies={wies} przewodnik={przewodnikSamorzadowy} />
+
+      <WiesLaczonyFeedAktualnosci wpisy={laczonyFeed} />
+
+      <WiesTransportWidget
+        sciezkaWsi={sciezka}
+        status={transportStatus}
+        odjazdy={transportOdjazdy}
+      />
+
+      <section className="mt-10">
+        <h2 className="font-serif text-xl text-green-950">Kontakt urzędowy i osoby funkcyjne</h2>
+        <p className="mt-1 text-sm text-stone-600">
+          Najważniejsze kontakty we wsi (sołtys, parafia, OSP, KGW) wraz z dyżurami, weryfikacją i historią kadencji.
+        </p>
+        {kontaktyUrzedowe.length === 0 ? (
+          <p className="mt-4 text-sm text-stone-500">Brak opublikowanych kontaktów urzędowych.</p>
+        ) : (
+          <div className="mt-4 grid gap-4 lg:grid-cols-2">
+            <ul className="space-y-3">
+              {kontaktyUrzedowe.map((k) => (
+                <li key={k.id} className="rounded-xl border border-stone-200 bg-white px-4 py-3 shadow-sm">
+                  <p className="text-xs text-sky-800">{k.role_label}</p>
+                  <p className="mt-1 font-medium text-stone-900">{k.person_name}</p>
+                  {k.organization_name ? <p className="text-xs text-stone-600">{k.organization_name}</p> : null}
+                  {k.duty_hours_text ? (
+                    <p className="mt-2 text-xs text-stone-600">
+                      <span className="font-medium">Dyżur:</span> {k.duty_hours_text}
+                    </p>
+                  ) : null}
+                  {k.contact_phone ? <p className="mt-1 text-xs text-stone-600">Tel. {k.contact_phone}</p> : null}
+                  {k.contact_email ? <p className="text-xs text-stone-600">E-mail: {k.contact_email}</p> : null}
+                  <p className="mt-2 text-xs text-stone-500">
+                    {k.is_verified_by_soltys ? "Zweryfikowany przez sołtysa" : "Niezweryfikowany"} · aktualizacja{" "}
+                    {new Date(k.updated_at).toLocaleDateString("pl-PL")}
+                  </p>
+                  {k.note ? <p className="mt-2 text-xs text-stone-700">{k.note}</p> : null}
+                  {k.cta_label && k.cta_url ? (
+                    <p className="mt-2">
+                      <a
+                        href={k.cta_url}
+                        className="text-sm font-medium text-green-800 underline"
+                        target={k.cta_url.startsWith("http") ? "_blank" : undefined}
+                        rel={k.cta_url.startsWith("http") ? "noopener noreferrer" : undefined}
+                      >
+                        {k.cta_label}
+                      </a>
+                    </p>
+                  ) : null}
+                </li>
+              ))}
+            </ul>
+            <div>
+              <h3 className="text-sm font-semibold uppercase tracking-wide text-stone-500">Kadencje i historia</h3>
+              {kadencjeFunkcyjne.length === 0 ? (
+                <p className="mt-3 text-sm text-stone-500">Brak wpisów historii kadencji.</p>
+              ) : (
+                <ul className="mt-3 space-y-2">
+                  {kadencjeFunkcyjne.map((k) => (
+                    <li key={k.id} className="rounded-lg border border-stone-200 bg-white px-3 py-2 text-sm">
+                      <p className="font-medium text-stone-900">
+                        {k.role_label}: {k.person_name}
+                      </p>
+                      <p className="mt-1 text-xs text-stone-600">
+                        {new Date(k.term_start).toLocaleDateString("pl-PL")} –{" "}
+                        {k.term_end ? new Date(k.term_end).toLocaleDateString("pl-PL") : "obecnie"}
+                        {k.is_current ? " · obecna kadencja" : ""}
+                      </p>
+                      {k.note ? <p className="mt-1 text-xs text-stone-700">{k.note}</p> : null}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          </div>
+        )}
+      </section>
 
       <section className="mt-10">
         <h2 className="font-serif text-xl text-green-950">Ogłoszenia i oferty</h2>
@@ -350,6 +474,7 @@ export function WiesProfilPubliczny({
           edytowalna={Boolean(mozeEdytowacListeZakupow)}
           pokazSzablony={Boolean(mozeEdytowacListeZakupow)}
           pokazDruk={listaZakupow.length > 0}
+          nazwaWsi={wies.name}
         />
       </section>
 
@@ -444,7 +569,9 @@ export function WiesProfilPubliczny({
               </ul>
             ) : null}
 
-            {rynek.length > 0 ? <MarketplaceListaKlient oferty={rynek} /> : null}
+            {rynek.length > 0 ? (
+              <MarketplaceListaKlient oferty={rynek} kotwicaZasadSwietlicy={`${sciezka}#swietlica-regulamin`} />
+            ) : null}
           </>
         )}
       </section>
@@ -460,7 +587,11 @@ export function WiesProfilPubliczny({
         ) : (
           <ul className="mt-4 space-y-3">
             {wiadomosci.map((w) => (
-              <li key={w.id} className="rounded-xl border border-stone-200 bg-white px-4 py-3 shadow-sm">
+              <li
+                key={w.id}
+                id={`wiadomosc-lokalna-${w.id}`}
+                className="rounded-xl border border-stone-200 bg-white px-4 py-3 shadow-sm"
+              >
                 <p className="font-medium text-stone-900">{w.title}</p>
                 {w.summary ? <p className="mt-1 text-sm text-stone-700">{w.summary}</p> : null}
                 <p className="mt-2 text-xs text-stone-500">
@@ -477,7 +608,10 @@ export function WiesProfilPubliczny({
 
       {wies.is_active ? <KalendarzZajetosciWsiSekcja wies={{ name: wies.name }} wiersze={kalendarzZajetosci} /> : null}
 
-      <section className="mt-10 rounded-xl border border-stone-200 bg-stone-50 px-4 py-4 text-sm text-stone-700">
+      <section
+        id="swietlica-regulamin"
+        className="mt-10 scroll-mt-8 rounded-xl border border-stone-200 bg-stone-50 px-4 py-4 text-sm text-stone-700"
+      >
         <p className="font-medium text-stone-900">Świetlica i rezerwacje</p>
         <p className="mt-2">
           Rezerwacja sali odbywa się w{" "}

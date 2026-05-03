@@ -9,13 +9,23 @@ export type WynikSyncRss = {
   bledy: string[];
 };
 
-async function powiadomSołtysowWsi(
+const MAX_RSS_ITEMS_NA_KANAL = 18;
+
+async function powiadomSołtysowWsiRssDigest(
   admin: SupabaseClient,
   villageId: string,
-  tytul: string,
-  tresc: string,
+  liczbaNowych: number,
   linkUrl: string,
 ) {
+  if (liczbaNowych < 1) return;
+  const tytul =
+    liczbaNowych === 1
+      ? "RSS: nowa pozycja do moderacji"
+      : `RSS: ${liczbaNowych} nowych pozycji do moderacji`;
+  const tresc =
+    liczbaNowych === 1
+      ? "Jeden wpis z kanału RSS czeka na akceptację w wiadomościach lokalnych (jedno powiadomienie na synchronizację)."
+      : `${liczbaNowych} wpisów z kanałów RSS czeka na akceptację — podsumowanie jednej synchronizacji (mniej szumu niż osobny alert na każdy wpis).`;
   const { data: roleRows, error } = await admin
     .from("user_village_roles")
     .select("user_id")
@@ -38,9 +48,9 @@ async function powiadomSołtysowWsi(
   if (!bladNotif && ids.length > 0) {
     void wyslijWebPushDoWieluOdbiorcow(admin, ids, {
       title: tytul,
-      body: tresc,
+      body: tresc.slice(0, 110) + (tresc.length > 110 ? "…" : ""),
       linkUrl,
-      tag: `local-news-rss-${villageId}`,
+      tag: `local-news-rss-digest-${villageId}`,
     }).catch((e) => console.warn("[web-push rss]", e));
   }
 }
@@ -65,7 +75,8 @@ export async function synchronizujKanalyRssDlaWsi(
 
   const teraz = new Date();
   const expiresAt = new Date(teraz.getTime() + 30 * 24 * 60 * 60 * 1000).toISOString();
-  const wsiZNovymiWpisami = new Set<string>();
+  /** Łączna liczba nowych wpisów RSS na wieś w tej jednej synchronizacji (jeden digest zamiast wielu alertów). */
+  const nowychNaWies = new Map<string, number>();
 
   for (const z of zrodla ?? []) {
     zrodlaPrzetworzone += 1;
@@ -80,7 +91,7 @@ export async function synchronizujKanalyRssDlaWsi(
         bledy.push(`${z.label}: ${lastErr}`);
       } else {
         const xml = await res.text();
-        const items = parseRss2Items(xml);
+        const items = parseRss2Items(xml).slice(0, MAX_RSS_ITEMS_NA_KANAL);
         for (const it of items) {
           const hash = sha256Hex(`${z.village_id}:${it.guid}`);
           const { error: insErr } = await admin.from("local_news_items").insert({
@@ -103,7 +114,7 @@ export async function synchronizujKanalyRssDlaWsi(
             }
           } else {
             noweWpisy += 1;
-            wsiZNovymiWpisami.add(z.village_id);
+            nowychNaWies.set(z.village_id, (nowychNaWies.get(z.village_id) ?? 0) + 1);
           }
         }
       }
@@ -121,14 +132,8 @@ export async function synchronizujKanalyRssDlaWsi(
       .eq("id", z.id);
   }
 
-  for (const vid of Array.from(wsiZNovymiWpisami)) {
-    await powiadomSołtysowWsi(
-      admin,
-      vid,
-      "Nowe wiadomości z RSS",
-      "Pojawiły się wpisy oczekujące na akceptację w module wiadomości lokalnych.",
-      "/panel/soltys/wiadomosci-lokalne",
-    );
+  for (const [vid, ile] of Array.from(nowychNaWies.entries())) {
+    await powiadomSołtysowWsiRssDigest(admin, vid, ile, "/panel/soltys/wiadomosci-lokalne");
   }
 
   return { zrodlaPrzetworzone, noweWpisy, bledy };

@@ -23,7 +23,7 @@ export function PowiadomieniaPushKlient() {
     ustawBlad("");
     ustawKomunikat("");
     if (!kluczPubliczny) {
-      ustawBlad("Brak konfiguracji VAPID po stronie serwera (NEXT_PUBLIC_VAPID_PUBLIC_KEY).");
+      ustawBlad("Powiadomienia push są chwilowo niedostępne. Spróbuj ponownie później.");
       return;
     }
     if (!("serviceWorker" in navigator) || !("PushManager" in window)) {
@@ -62,7 +62,9 @@ export function PowiadomieniaPushKlient() {
         ustawBlad(d.blad ?? "Zapis subskrypcji nie powiódł się.");
         return;
       }
-      ustawKomunikat("Powiadomienia push na tym urządzeniu są włączone. Możesz zamknąć kartę — serwis wyśle alert przy nowej treści (gdy dodamy wysyłkę).");
+      ustawKomunikat(
+        "Powiadomienia push na tym urządzeniu są włączone. Możesz zamknąć kartę — przy wybranych zdarzeniach dostaniesz alert w pasku powiadomień telefonu.",
+      );
     } catch {
       ustawBlad("Błąd rejestracji push — spróbuj ponownie albo użyj innej przeglądarki.");
     } finally {
@@ -107,14 +109,15 @@ export function PowiadomieniaPushKlient() {
         </li>
         <li>
           <strong>iPhone (Safari):</strong> ikona udostępniania →{" "}
-          <em className="not-italic font-medium">Dodaj do ekranu początkowego</em>. Web Push na iOS działa od wersji
-          systemu 16.4 dla stron dodanych do ekranu początkowego.
+          <em className="not-italic font-medium">Dodaj do ekranu początkowego</em> → uruchom naszawies z ikony (nie
+          zwykła karta Safari). Web Push na iOS wymaga co najmniej iOS 16.4; po dodaniu do ekranu początkowego włącz
+          powiadomienia poniżej — bez tego iOS zwykle nie pokaże pushy z przeglądarki.
         </li>
         {kluczPubliczny ? (
           <li>
-            Po włączeniu push serwer wysyła alert m.in. przy: akceptacji wniosku mieszkańca, zatwierdzeniu rezerwacji
-            świetlicy, nowych wpisach RSS do moderacji (sołtysi) oraz odrzuceniu posta — o ile hosting ma ustawiony
-            klucz prywatny VAPID.
+            Po włączeniu push możesz dostać alert m.in. przy akceptacji lub odrzuceniu wniosku mieszkańca,
+            zatwierdzeniu lub odrzuceniu rezerwacji świetlicy, podsumowaniu wpisów z RSS do moderacji (sołtysi) oraz
+            przy decyzji sołtysa o poście. Na skrzynkę e-mail może trafić osobna kopia, jeśli masz ją podaną w koncie.
           </li>
         ) : null}
       </ul>
@@ -139,10 +142,9 @@ export function PowiadomieniaPushKlient() {
           </button>
         </div>
       ) : (
-        <p className="mt-4 text-sm text-amber-900">
-          Administrator musi ustawić parę kluczy VAPID (<code className="rounded bg-white/80 px-1">npx web-push generate-vapid-keys</code>) w zmiennych{" "}
-          <code className="rounded bg-white/80 px-1">NEXT_PUBLIC_VAPID_PUBLIC_KEY</code> i{" "}
-          <code className="rounded bg-white/80 px-1">VAPID_PRIVATE_KEY</code> — wtedy przycisk włączenia push się pojawi.
+        <p className="mt-4 text-sm text-stone-600">
+          Powiadomienia w aplikacji powyżej działają zawsze. Alerty w przeglądarce na telefonie są opcjonalne — gdy
+          portal włączy ten kanał, tutaj pojawią się przyciski włączenia i wyłączenia.
         </p>
       )}
 

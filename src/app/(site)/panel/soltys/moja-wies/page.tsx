@@ -21,7 +21,7 @@ export default async function SoltysMojaWiesPage() {
   if (villageIds.length === 0) {
     return (
       <main>
-        <h1 className="font-serif text-3xl text-green-950">Profil wsi</h1>
+        <h1 className="tytul-sekcji-panelu">Profil wsi</h1>
         <p className="mt-2 text-sm text-stone-600">Nie masz jeszcze przypisanej wsi w roli sołtysa lub współadmina.</p>
         <p className="mt-4 text-sm text-stone-600">
           <Link href="/panel/soltys" className="text-green-800 underline">
@@ -34,7 +34,9 @@ export default async function SoltysMojaWiesPage() {
 
   const { data: wiersze } = await supabase
     .from("villages")
-    .select("id, name, voivodeship, county, commune, slug, description, website, cover_image_url")
+    .select(
+      "id, name, voivodeship, county, commune, slug, description, website, cover_image_url, latitude, longitude",
+    )
     .in("id", villageIds)
     .order("name", { ascending: true });
 
@@ -48,11 +50,13 @@ export default async function SoltysMojaWiesPage() {
     description: r.description,
     website: r.website,
     cover_image_url: r.cover_image_url,
+    latitude: r.latitude != null ? Number(r.latitude) : null,
+    longitude: r.longitude != null ? Number(r.longitude) : null,
   }));
 
   return (
     <main>
-      <h1 className="font-serif text-3xl text-green-950">Profil wsi</h1>
+      <h1 className="tytul-sekcji-panelu">Profil wsi</h1>
       <p className="mt-2 text-sm text-stone-600">
         Uzupełnij opis, linki i ewent. baner — widać to na publicznej stronie wsi. Nazwa, gmina i województwo pochodzą z
         oficjalnego wykazu miejscowości; zmianę identyfikatora miejscowości ustala administrator platformy.

@@ -6,6 +6,7 @@ import { R2_BUCKET_HALL_INVENTORY } from "@/lib/cloudflare/r2-bucket-znaczniki";
 import { wyciagnijBucketIKluczZUrlaR2 } from "@/lib/cloudflare/r2-url-pomoc";
 import { usunObiektR2JesliUrlNasz } from "@/lib/storage/usun-plik-r2-po-url";
 import { pobierzVillageIdsRoliPaneluSoltysa } from "@/lib/panel/rola-panelu-soltysa";
+import { zaplanujPowiadomienieEmail } from "@/lib/email/zaplanuj-powiadomienie-email";
 import { wyslijWebPushDlaUzytkownika } from "@/lib/pwa/wyslij-web-push";
 import { synchronizujKanalyRssDlaWsi } from "@/lib/rss/synchronizuj-kanaly-rss";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin-client";
@@ -87,6 +88,15 @@ export async function zatwierdzWniosekMieszkanca(rolaId: string): Promise<WynikP
       linkUrl: "/panel/mieszkaniec",
       tag: `role-approved-${wiersz.village_id}`,
     });
+    zaplanujPowiadomienieEmail(
+      wiersz.user_id,
+      "naszawies.pl — zaakceptowano wniosek mieszkańca",
+      "Witaj na portalu",
+      [
+        "Sołtys zaakceptował Twój wniosek o rolę mieszkańca we wsi.",
+        "Możesz korzystać z panelu mieszkańca: ogłoszenia, świetlica, lista zakupów i inne moduły przypisane do Twojej wsi.",
+      ],
+    );
   }
 
   revalidatePath("/panel/soltys");
@@ -109,16 +119,65 @@ export async function odrzucWniosekMieszkanca(rolaId: string): Promise<WynikPros
     return { blad: "Zaloguj się." };
   }
 
-  const { error } = await supabase
+  const { data: wierszWniosku, error: readW } = await supabase
+    .from("user_village_roles")
+    .select("user_id, village_id")
+    .eq("id", id.data)
+    .eq("status", "pending")
+    .eq("role", "mieszkaniec")
+    .maybeSingle();
+
+  if (readW || !wierszWniosku) {
+    return { blad: "Nie znaleziono oczekującego wniosku lub został już rozpatrzony." };
+  }
+
+  const { data: zaktualizowano, error } = await supabase
     .from("user_village_roles")
     .update({ status: "suspended" })
     .eq("id", id.data)
     .eq("status", "pending")
-    .eq("role", "mieszkaniec");
+    .eq("role", "mieszkaniec")
+    .select("id");
 
   if (error) {
     console.error("[odrzucWniosek]", error.message);
     return { blad: "Nie udało się odrzucić wniosku." };
+  }
+  if (!zaktualizowano?.length) {
+    return { blad: "Wniosek został już rozpatrzony — odśwież stronę." };
+  }
+
+  if (wierszWniosku.user_id) {
+    const { error: notifErr } = await supabase.from("notifications").insert({
+      user_id: wierszWniosku.user_id,
+      type: "role_rejected",
+      title: "Wniosek mieszkańca nie został zaakceptowany",
+      body: "Sołtys odrzucił wniosek o przystąpienie do społeczności wsi w portalu. W razie pytań skontaktuj się ze sołtysem poza portalem.",
+      link_url: "/panel/mieszkaniec",
+      related_id: wierszWniosku.village_id,
+      related_type: "village",
+      channel: "in_app",
+    });
+    if (notifErr) {
+      console.warn("[odrzucWniosek] powiadomienie:", notifErr.message);
+    } else {
+      zaplanujWebPushDlaUzytkownika(wierszWniosku.user_id, {
+        title: "Wniosek mieszkańca",
+        body: "Wniosek nie został zaakceptowany przez sołtysa.",
+        linkUrl: "/panel/mieszkaniec",
+        tag: `role-rejected-${wierszWniosku.village_id}`,
+      });
+      zaplanujPowiadomienieEmail(
+        wierszWniosku.user_id,
+        "naszawies.pl — wniosek mieszkańca",
+        "Informacja z portalu",
+        [
+          "Sołtys nie zaakceptował wniosku o rolę mieszkańca dla tej wsi w serwisie naszawies.pl.",
+          "Szczegóły możesz ustalić bezpośrednio ze sołtysem.",
+        ],
+      );
+    }
+    revalidatePath("/panel/powiadomienia");
   }
 
   revalidatePath("/panel/soltys");
@@ -567,6 +626,15 @@ export async function zatwierdzRezerwacjeSwietlicy(bookingId: string): Promise<W
         linkUrl: "/panel/mieszkaniec/swietlica",
         tag: `hall-booking-${b.hall_id}`,
       });
+      zaplanujPowiadomienieEmail(
+        b.booked_by,
+        "naszawies.pl — zatwierdzono rezerwację świetlicy",
+        "Rezerwacja sali",
+        [
+          `Sołtys zatwierdził Twój wniosek o salę. Termin: ${tStart} – ${tKoniec}.`,
+          "Szczegóły i dokumenty po wydarzeniu znajdziesz w panelu mieszkańca w sekcji Świetlica.",
+        ],
+      );
     }
   }
 
@@ -592,7 +660,18 @@ export async function odrzucRezerwacjeSwietlicy(bookingId: string, powod: string
     return { blad: "Zaloguj się." };
   }
 
-  const { data: wiersz } = await supabase.from("hall_bookings").select("hall_id").eq("id", id.data).maybeSingle();
+  const { data: b, error: readE } = await supabase
+    .from("hall_bookings")
+    .select("id, hall_id, start_at, end_at, status, booked_by, halls!inner(village_id)")
+    .eq("id", id.data)
+    .maybeSingle();
+
+  if (readE || !b) {
+    return { blad: "Nie znaleziono rezerwacji." };
+  }
+  if (b.status !== "pending") {
+    return { blad: "Wniosek jest już rozpatrzony." };
+  }
 
   const { error } = await supabase
     .from("hall_bookings")
@@ -608,10 +687,48 @@ export async function odrzucRezerwacjeSwietlicy(bookingId: string, powod: string
     return { blad: "Nie udało się odrzucić rezerwacji." };
   }
 
+  const halls = b.halls as { village_id: string } | { village_id: string }[] | null;
+  const wiesId = Array.isArray(halls) ? halls[0]?.village_id : halls?.village_id;
+  if (b.booked_by && wiesId) {
+    const tStart = new Date(b.start_at).toLocaleString("pl-PL", { dateStyle: "short", timeStyle: "short" });
+    const tKoniec = new Date(b.end_at).toLocaleString("pl-PL", { dateStyle: "short", timeStyle: "short" });
+    const { error: notifErr } = await supabase.from("notifications").insert({
+      user_id: b.booked_by,
+      type: "hall_booking_rejected",
+      title: "Odrzucono wniosek o rezerwację sali",
+      body: `Termin wniosku: ${tStart} – ${tKoniec}. Powód: ${powodOk.data}`,
+      link_url: "/panel/mieszkaniec/swietlica",
+      related_id: wiesId,
+      related_type: "village",
+      channel: "in_app",
+    });
+    if (notifErr) {
+      console.warn("[odrzucRezerwacjeSwietlicy] powiadomienie:", notifErr.message);
+    } else {
+      zaplanujWebPushDlaUzytkownika(b.booked_by, {
+        title: "Odrzucono rezerwację sali",
+        body: `Powód: ${powodOk.data.slice(0, 120)}${powodOk.data.length > 120 ? "…" : ""}`,
+        linkUrl: "/panel/mieszkaniec/swietlica",
+        tag: `hall-booking-rejected-${b.hall_id}`,
+      });
+      zaplanujPowiadomienieEmail(
+        b.booked_by,
+        "naszawies.pl — odrzucono rezerwację świetlicy",
+        "Rezerwacja sali",
+        [
+          `Sołtys odrzucił wniosek o salę. Proponowany termin: ${tStart} – ${tKoniec}.`,
+          `Powód: ${powodOk.data}`,
+          "Możesz złożyć nowy wniosek z innym terminem w panelu mieszkańca.",
+        ],
+      );
+    }
+  }
+
   revalidatePath("/panel/soltys/rezerwacje");
   revalidatePath("/panel/mieszkaniec/swietlica");
-  if (wiersz?.hall_id) {
-    revalidatePath(`/panel/mieszkaniec/swietlica/${wiersz.hall_id}`);
+  revalidatePath("/panel/powiadomienia");
+  if (b.hall_id) {
+    revalidatePath(`/panel/mieszkaniec/swietlica/${b.hall_id}`);
   }
   return { ok: true };
 }
@@ -818,11 +935,26 @@ export async function zatwierdzPostSoltysa(postId: string): Promise<WynikProsty>
 
   const { data: wiersz, error: readErr } = await supabase
     .from("posts")
-    .select("id, status")
+    .select(
+      "id, status, author_id, village_id, title, villages ( voivodeship, county, commune, slug )",
+    )
     .eq("id", id.data)
     .maybeSingle();
 
-  if (readErr || !wiersz || wiersz.status !== "pending") {
+  type WierszPostu = {
+    id: string;
+    status: string;
+    author_id: string | null;
+    village_id: string;
+    title: string;
+    villages:
+      | { voivodeship: string; county: string; commune: string; slug: string }
+      | { voivodeship: string; county: string; commune: string; slug: string }[]
+      | null;
+  };
+
+  const w = wiersz as WierszPostu | null;
+  if (readErr || !w || w.status !== "pending") {
     return { blad: "Nie znaleziono posta lub został już rozpatrzony." };
   }
 
@@ -843,7 +975,49 @@ export async function zatwierdzPostSoltysa(postId: string): Promise<WynikProsty>
     return { blad: "Nie udało się zatwierdzić (uprawnienia sołtysa?)." };
   }
 
+  const vRel = w.villages;
+  const v = Array.isArray(vRel) ? vRel[0] : vRel;
+
+  if (w.author_id) {
+    const { error: notifErr } = await supabase.from("notifications").insert({
+      user_id: w.author_id,
+      type: "post_approved",
+      title: "Post został opublikowany",
+      body: `„${w.title.slice(0, 120)}${w.title.length > 120 ? "…" : ""}” — treść jest widoczna na profilu wsi.`,
+      link_url: "/panel/mieszkaniec",
+      related_id: w.village_id,
+      related_type: "village",
+      channel: "in_app",
+    });
+    if (notifErr) {
+      console.warn("[zatwierdzPostSoltysa] powiadomienie:", notifErr.message);
+    } else {
+      zaplanujWebPushDlaUzytkownika(w.author_id, {
+        title: "Zaakceptowano Twój post",
+        body: w.title.slice(0, 110) + (w.title.length > 110 ? "…" : ""),
+        linkUrl: "/panel/mieszkaniec",
+        tag: `post-approved-${w.id}`,
+      });
+      zaplanujPowiadomienieEmail(
+        w.author_id,
+        "naszawies.pl — zaakceptowano post",
+        "Treść opublikowana",
+        [
+          `Sołtys zaakceptował Twój wpis: „${w.title}”.`,
+          v != null
+            ? `Zobacz na profilu wsi: ${sciezkaProfiluWsi(v)}/ogloszenie/${w.id}`
+            : "Zobacz profil wsi w serwisie naszawies.pl.",
+        ],
+      );
+    }
+  }
+
   revalidatePath("/panel/soltys");
+  revalidatePath("/panel/powiadomienia");
+  if (v != null) {
+    revalidatePath(sciezkaProfiluWsi(v));
+    revalidatePath(`${sciezkaProfiluWsi(v)}/ogloszenie/${w.id}`);
+  }
   return { ok: true };
 }
 
@@ -914,6 +1088,16 @@ export async function odrzucPostSoltysa(postId: string, notatka: string): Promis
         linkUrl: "/panel/mieszkaniec",
         tag: `post-rejected-${wiersz.id}`,
       });
+      zaplanujPowiadomienieEmail(
+        wiersz.author_id,
+        "naszawies.pl — post niezaakceptowany",
+        "Moderacja treści",
+        [
+          "Sołtys nie zaakceptował Twojego wpisu w module ogłoszeń.",
+          `Notatka: ${nt.data}`,
+          "Możesz przygotować poprawioną treść i wysłać ją ponownie zgodnie z zasadami wsi.",
+        ],
+      );
     }
   }
 
@@ -1400,7 +1584,22 @@ async function revalidateProfilWsiDlaWioski(
 
 const schemaOrganizacjaWsi = z.object({
   villageId: z.string().uuid(),
-  group_type: z.enum(["kgw", "sport", "taniec", "muzyka", "kolo", "inne"]),
+  group_type: z.enum([
+    "kgw",
+    "osp",
+    "parafia",
+    "rada_solecka",
+    "seniorzy",
+    "mlodziez",
+    "wolontariat",
+    "rolnicy",
+    "przedsiebiorcy",
+    "sport",
+    "taniec",
+    "muzyka",
+    "kolo",
+    "inne",
+  ]),
   name: z.string().trim().min(2).max(160),
   short_description: z.string().trim().max(800).nullable().optional(),
   contact_phone: z.string().trim().max(40).nullable().optional(),
@@ -1439,6 +1638,136 @@ export async function dodajOrganizacjeWsi(dane: z.infer<typeof schemaOrganizacja
     console.error("[dodajOrganizacjeWsi]", error.message);
     return { blad: "Nie udało się dodać organizacji." };
   }
+  await revalidateProfilWsiDlaWioski(supabase, parsed.data.villageId);
+  return { ok: true };
+}
+
+const schemaKontaktUrzedowy = z.object({
+  villageId: z.string().uuid(),
+  office_key: z.enum(["soltys", "parafia", "osp", "kgw", "inne"]),
+  role_label: z.string().trim().min(2).max(120),
+  person_name: z.string().trim().min(2).max(160),
+  organization_name: z.string().trim().max(200).nullable().optional(),
+  contact_phone: z.string().trim().max(40).nullable().optional(),
+  contact_email: z.string().trim().max(200).nullable().optional(),
+  duty_hours_text: z.string().trim().max(300).nullable().optional(),
+  note: z.string().trim().max(1200).nullable().optional(),
+  cta_label: z.string().trim().max(120).nullable().optional(),
+  cta_url: z.string().trim().max(2048).nullable().optional(),
+  display_order: z.coerce.number().int().min(0).max(1000).optional().default(100),
+});
+
+export async function dodajKontaktUrzedowyWsi(
+  dane: z.infer<typeof schemaKontaktUrzedowy>,
+): Promise<WynikProsty> {
+  const parsed = schemaKontaktUrzedowy.safeParse(dane);
+  if (!parsed.success) {
+    return { blad: "Sprawdź dane kontaktu urzędowego." };
+  }
+  const supabase = utworzKlientaSupabaseSerwer();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { blad: "Zaloguj się." };
+  if (!(await czyUzytkownikMozeZarzadzacWsia(supabase, user.id, parsed.data.villageId))) {
+    return { blad: "Brak uprawnień do tej wsi." };
+  }
+
+  const ctaUrl = parsed.data.cta_url?.trim() || null;
+  if (ctaUrl && !/^https?:\/\//i.test(ctaUrl) && !ctaUrl.startsWith("/")) {
+    return { blad: "CTA URL musi zaczynać się od https://, http:// lub /." };
+  }
+
+  const { error } = await supabase.from("village_official_contacts").insert({
+    village_id: parsed.data.villageId,
+    office_key: parsed.data.office_key,
+    role_label: parsed.data.role_label,
+    person_name: parsed.data.person_name,
+    organization_name: parsed.data.organization_name?.trim() || null,
+    contact_phone: parsed.data.contact_phone?.trim() || null,
+    contact_email: parsed.data.contact_email?.trim() || null,
+    duty_hours_text: parsed.data.duty_hours_text?.trim() || null,
+    note: parsed.data.note?.trim() || null,
+    cta_label: parsed.data.cta_label?.trim() || null,
+    cta_url: ctaUrl,
+    display_order: parsed.data.display_order,
+    is_verified_by_soltys: true,
+    verified_at: new Date().toISOString(),
+    verified_by: user.id,
+    is_active: true,
+    created_by: user.id,
+  });
+  if (error) {
+    console.error("[dodajKontaktUrzedowyWsi]", error.message);
+    return { blad: "Nie udało się dodać kontaktu urzędowego." };
+  }
+
+  await revalidateProfilWsiDlaWioski(supabase, parsed.data.villageId);
+  return { ok: true };
+}
+
+const schemaKadencjaFunkcyjna = z.object({
+  villageId: z.string().uuid(),
+  office_key: z.enum(["soltys", "parafia", "osp", "kgw", "inne"]),
+  role_label: z.string().trim().min(2).max(120),
+  person_name: z.string().trim().min(2).max(160),
+  organization_name: z.string().trim().max(200).nullable().optional(),
+  term_start: z.string().trim().min(8).max(20),
+  term_end: z.string().trim().max(20).nullable().optional(),
+  note: z.string().trim().max(1200).nullable().optional(),
+  is_current: z.boolean().optional().default(false),
+});
+
+export async function dodajKadencjeFunkcyjnaWsi(
+  dane: z.infer<typeof schemaKadencjaFunkcyjna>,
+): Promise<WynikProsty> {
+  const parsed = schemaKadencjaFunkcyjna.safeParse(dane);
+  if (!parsed.success) {
+    return { blad: "Sprawdź dane kadencji." };
+  }
+  const supabase = utworzKlientaSupabaseSerwer();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { blad: "Zaloguj się." };
+  if (!(await czyUzytkownikMozeZarzadzacWsia(supabase, user.id, parsed.data.villageId))) {
+    return { blad: "Brak uprawnień do tej wsi." };
+  }
+
+  const start = new Date(parsed.data.term_start);
+  if (Number.isNaN(start.getTime())) {
+    return { blad: "Niepoprawna data początku kadencji." };
+  }
+  const endRaw = parsed.data.term_end?.trim();
+  let endIso: string | null = null;
+  if (endRaw) {
+    const end = new Date(endRaw);
+    if (Number.isNaN(end.getTime())) {
+      return { blad: "Niepoprawna data końca kadencji." };
+    }
+    if (end < start) {
+      return { blad: "Data końca nie może być wcześniejsza niż początek." };
+    }
+    endIso = end.toISOString().slice(0, 10);
+  }
+
+  const { error } = await supabase.from("village_official_terms").insert({
+    village_id: parsed.data.villageId,
+    office_key: parsed.data.office_key,
+    role_label: parsed.data.role_label,
+    person_name: parsed.data.person_name,
+    organization_name: parsed.data.organization_name?.trim() || null,
+    term_start: start.toISOString().slice(0, 10),
+    term_end: endIso,
+    note: parsed.data.note?.trim() || null,
+    is_current: parsed.data.is_current,
+    created_by: user.id,
+  });
+  if (error) {
+    console.error("[dodajKadencjeFunkcyjnaWsi]", error.message);
+    return { blad: "Nie udało się zapisać kadencji." };
+  }
+
   await revalidateProfilWsiDlaWioski(supabase, parsed.data.villageId);
   return { ok: true };
 }

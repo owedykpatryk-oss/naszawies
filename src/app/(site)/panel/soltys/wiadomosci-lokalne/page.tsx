@@ -30,7 +30,7 @@ export default async function SoltysWiadomosciLokalnePage() {
             ← Panel sołtysa
           </Link>
         </p>
-        <h1 className="font-serif text-3xl text-green-950">Wiadomości lokalne</h1>
+        <h1 className="tytul-sekcji-panelu">Wiadomości lokalne</h1>
         <p className="mt-2 text-sm text-stone-600">Brak przypisanej wsi w roli sołtysa lub współadmina.</p>
       </main>
     );
@@ -59,7 +59,7 @@ export default async function SoltysWiadomosciLokalnePage() {
           Kanały RSS
         </Link>
       </p>
-      <h1 className="font-serif text-3xl text-green-950">Wiadomości lokalne — do zatwierdzenia</h1>
+      <h1 className="tytul-sekcji-panelu">Wiadomości lokalne — do zatwierdzenia</h1>
       <p className="mt-2 max-w-2xl text-sm text-stone-600">
         Wpisy z RSS i od mieszkańców pojawiają się tutaj przed publikacją na publicznym profilu wsi.
       </p>

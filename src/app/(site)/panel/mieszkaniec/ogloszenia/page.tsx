@@ -55,7 +55,7 @@ export default async function MieszkaniecOgloszeniaPage() {
 
   return (
     <main>
-      <h1 className="font-serif text-3xl text-green-950">Ogłoszenia</h1>
+      <h1 className="tytul-sekcji-panelu">Ogłoszenia</h1>
       <p className="mt-2 text-sm text-stone-600">
         Posty z wiosek, w których masz <strong>aktywną</strong> rolę mieszkańca.
       </p>

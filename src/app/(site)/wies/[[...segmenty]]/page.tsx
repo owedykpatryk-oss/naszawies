@@ -8,6 +8,7 @@ import { pobierzKalendarzZajetosciDlaWsi } from "@/components/swietlica/kalendar
 import { WiesProfilPubliczny } from "@/components/wies/wies-profil-publiczny";
 import type { PrzewodnikSamorzadowyZapis } from "@/components/wies/sekcja-przewodnik-samorzadowy";
 import { WiesSzukajTresci } from "@/components/wies/wies-szukaj-tresci";
+import { roleDlaUprawnienia } from "@/lib/panel/uprawnienia-wsi";
 import { createPublicSupabaseClient } from "@/lib/supabase/public-client";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
 import { sciezkaProfiluWsi } from "@/lib/wies/sciezka-publiczna";
@@ -181,6 +182,10 @@ export default async function WiesCatchAllPage({ params, searchParams }: Props) 
       { data: slotyRaw },
       { data: dotacjeSkrotRaw },
       { data: przewodnikRaw },
+      { data: transportStatusRaw },
+      { data: transportOdjazdyRaw },
+      { data: kontaktyUrzedoweRaw },
+      { data: kadencjeFunkcyjneRaw },
     ] = await Promise.all([
       supabaseSerwer.auth.getUser(),
       supabase
@@ -262,6 +267,35 @@ export default async function WiesCatchAllPage({ params, searchParams }: Props) 
         )
         .eq("village_id", wies.id)
         .maybeSingle(),
+      supabase
+        .from("village_transport_line_status")
+        .select("status_color, status_label, delayed_count, cancelled_count, fallback_mode, updated_at")
+        .eq("village_id", wies.id)
+        .maybeSingle(),
+      supabase
+        .from("transport_departures_cache")
+        .select(
+          "id, station_name, train_label, destination, platform, planned_at, realtime_at, delay_min, is_cancelled, status, fetched_at",
+        )
+        .eq("village_id", wies.id)
+        .gte("planned_at", new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString())
+        .order("planned_at", { ascending: true })
+        .limit(8),
+      supabase
+        .from("village_official_contacts")
+        .select(
+          "id, office_key, role_label, person_name, organization_name, contact_phone, contact_email, duty_hours_text, note, cta_label, cta_url, is_verified_by_soltys, updated_at",
+        )
+        .eq("village_id", wies.id)
+        .eq("is_active", true)
+        .order("display_order", { ascending: true })
+        .limit(20),
+      supabase
+        .from("village_official_terms")
+        .select("id, office_key, role_label, person_name, organization_name, term_start, term_end, note, is_current")
+        .eq("village_id", wies.id)
+        .order("term_start", { ascending: false })
+        .limit(24),
     ]);
 
     const userSesji = authRes.data.user;
@@ -273,7 +307,7 @@ export default async function WiesCatchAllPage({ params, searchParams }: Props) 
         .eq("user_id", userSesji.id)
         .eq("village_id", wies.id)
         .eq("status", "active")
-        .in("role", ["mieszkaniec", "soltys", "wspoladmin", "reprezentant_podmiotu"])
+        .in("role", [...roleDlaUprawnienia("dostep_podstawowy")])
         .maybeSingle();
       mozeEdytowacListeZakupow = !!uvr;
     }
@@ -357,6 +391,53 @@ export default async function WiesCatchAllPage({ params, searchParams }: Props) 
       application_deadline: string | null;
     }[];
     const przewodnikSamorzadowy = (przewodnikRaw as PrzewodnikSamorzadowyZapis | null) ?? null;
+    const transportStatus = (transportStatusRaw as {
+      status_color: string;
+      status_label: string;
+      delayed_count: number;
+      cancelled_count: number;
+      fallback_mode: boolean;
+      updated_at: string;
+    } | null) ?? null;
+    const transportOdjazdy = (transportOdjazdyRaw ?? []) as {
+      id: string;
+      station_name: string | null;
+      train_label: string;
+      destination: string | null;
+      platform: string | null;
+      planned_at: string;
+      realtime_at: string | null;
+      delay_min: number | null;
+      is_cancelled: boolean;
+      status: string | null;
+      fetched_at: string;
+    }[];
+    const kontaktyUrzedowe = (kontaktyUrzedoweRaw ?? []) as {
+      id: string;
+      office_key: string;
+      role_label: string;
+      person_name: string;
+      organization_name: string | null;
+      contact_phone: string | null;
+      contact_email: string | null;
+      duty_hours_text: string | null;
+      note: string | null;
+      cta_label: string | null;
+      cta_url: string | null;
+      is_verified_by_soltys: boolean;
+      updated_at: string;
+    }[];
+    const kadencjeFunkcyjne = (kadencjeFunkcyjneRaw ?? []) as {
+      id: string;
+      office_key: string;
+      role_label: string;
+      person_name: string;
+      organization_name: string | null;
+      term_start: string;
+      term_end: string | null;
+      note: string | null;
+      is_current: boolean;
+    }[];
 
     return (
       <main className="mx-auto min-w-0 max-w-2xl py-16 text-stone-800">
@@ -385,6 +466,10 @@ export default async function WiesCatchAllPage({ params, searchParams }: Props) 
           harmonogramTygodnia={harmonogramTygodnia}
           dotacjeSkrot={dotacjeSkrot}
           przewodnikSamorzadowy={przewodnikSamorzadowy}
+          transportStatus={transportStatus}
+          transportOdjazdy={transportOdjazdy}
+          kontaktyUrzedowe={kontaktyUrzedowe}
+          kadencjeFunkcyjne={kadencjeFunkcyjne}
         />
       </main>
     );

@@ -37,9 +37,8 @@ export default async function PowiadomieniaPage() {
       </p>
       <h1 className="font-serif text-3xl text-green-950">Powiadomienia</h1>
       <p className="mt-2 text-sm text-stone-600">
-        Wiadomości w aplikacji (tabela <code className="rounded bg-stone-100 px-1 text-xs">notifications</code>). Opcjonalnie
-        włącz <strong>powiadomienia push</strong> w przeglądarce — wtedy część zdarzeń trafia też na telefon (wymaga pary
-        kluczy VAPID na serwerze). Kanał e-mail — osobna integracja w przyszłej wersji.
+        Tutaj zbiera się skrzynka wiadomości z portalu. Możesz też włączyć powiadomienia w przeglądarce na telefonie —
+        sekcja niżej. Przy niektórych zdarzeniach możesz dodatkowo dostać e-mail, jeśli masz go ustawiony w koncie.
         {nieprzeczytane > 0 ? (
           <>
             {" "}

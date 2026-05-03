@@ -107,3 +107,12 @@
 .mapa-wsi-popup a:hover {
   color: #5a9c3e;
 }
+
+.mapa-wsi-popup-foot {
+  margin: 0.65rem 0 0;
+  line-height: 1.5;
+}
+
+.mapa-wsi-popup-foot a {
+  margin-top: 0;
+}

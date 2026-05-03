@@ -10,6 +10,7 @@ import {
 } from "@/lib/swietlica/limity-dokumentacji-zniszczen";
 import { usunObiektR2 } from "@/lib/cloudflare/r2-s3-klient";
 import { pobierzVillageIdsRoliPaneluSoltysa } from "@/lib/panel/rola-panelu-soltysa";
+import { roleDlaUprawnienia } from "@/lib/panel/uprawnienia-wsi";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
 import { SZABLONY_LISTY_ZAKUPOW } from "@/lib/zakupy/szablony-listy-zakupow";
 import { sciezkaProfiluWsi } from "@/lib/wies/sciezka-publiczna";
@@ -476,7 +477,7 @@ async function czyAktywnyUczestnikWsi(
     .eq("user_id", userId)
     .eq("village_id", villageId)
     .eq("status", "active")
-    .in("role", ["mieszkaniec", "soltys", "wspoladmin", "reprezentant_podmiotu"])
+    .in("role", [...roleDlaUprawnienia("dostep_podstawowy")])
     .maybeSingle();
   return !!data;
 }

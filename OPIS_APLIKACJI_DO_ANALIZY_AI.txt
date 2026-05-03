@@ -54,13 +54,15 @@ UWAGI WDROŻENIOWE
 - `mieszkaniec` — wniosek zwykle `pending` do akceptacji sołtysem.
 - `soltys`, `wspoladmin` — zarządzanie treściami wsi, moderacja, świetlica.
 - `reprezentant_podmiotu` — rozszerzenie katalogu podmiotów (wg migracji i RLS).
+- `kgw_przewodniczaca`, `osp_naczelnik`, `rada_solecka` — role organizacyjne (granularne scope pod moduły KGW/OSP/rady).
 
 3.2 Status roli (`user_village_roles.status`)
 - M.in. `pending`, `active`, `suspended` — wpływa na to, kto widzi i zapisuje dane (polityki RLS).
 
 3.3 Funkcje pomocnicze (SECURITY DEFINER / STABLE) — podstawa pod RLS
 - `is_village_soltys(village_uuid)` — aktywny sołtys lub współadmin danej wsi.
-- `is_village_resident(village_uuid)` — mieszkaniec, sołtys, współadmin lub reprezentant (aktywny).
+- `is_village_resident(village_uuid)` — mieszkaniec, role zarządcze i organizacyjne (aktywny).
+- `is_village_kgw_lead(village_uuid)`, `is_village_osp_lead(village_uuid)` — helpery pod polityki dedykowane KGW/OSP.
 - `is_platform_admin()` — ograniczona lista kont administracji platformy (treść w migracji — **do weryfikacji**
   przy produkcji: e-maile / UUID).
 
@@ -344,15 +346,18 @@ Ważniejsze strony (pliki `page.tsx`):
 --------------------------------------------------------------------------------
 17. ŚWIADOME LUKI / OBSZARY „NIE ROBI” ALBO CZĘŚCIOWO (DO ROADMAPY)
 --------------------------------------------------------------------------------
-- **E-mail z powiadomień in-app** — osobny kanał (poza wybranymi formularzami Resend); brak pełnej spójnej
-  „dostawy mailowej” przy każdym `notifications.insert`.
+- **E-mail z powiadomień in-app** — od 2026-05: wybrane zdarzenia (wniosek zaakceptowany/odrzucony, rezerwacja sali
+  zatwierdzona/odrzucona, post zaakceptowany/odrzucony) wyzwalają też `zaplanujPowiadomienieEmail` (Resend), o ile
+  skonfigurowano `RESEND_*`.
 - **Płatności / faktury / sklep** — marketplace jest ogłoszeniowy, bez płatności online w modelu.
 - **Pełny CMS prawny** — generator dokumentów to szablony techniczne, nie substytut doradztwa prawnego.
-- **Odrzucenie rezerwacji świetlicy** — sprawdź, czy wysyłane jest powiadomienie in-app + push do mieszkańca (ew.
-  dopisać symetrię względem zatwierdzenia).
-- **Zatwierdzenie posta** — można rozważyć powiadomienie autora (obecnie powiadomienie przy odrzuceniu).
-- **iOS Web Push** — wymaga dodania do ekranu początkowego; zachowanie zależy od wersji iOS/Safari.
-- **Retencja / backup** — polityki długoterminowe poza automatycznym purge powiadomień (do decyzji operacyjnej).
+- **Odrzucenie rezerwacji świetlicy** — in-app + Web Push + e-mail (symetria względem zatwierdzenia).
+- **Zatwierdzenie posta** — in-app + Web Push + e-mail do autora.
+- **RSS** — limit wpisów na kanał na sync + jeden digest powiadomień/push na wieś na przebieg synchronizacji.
+- **Profil wsi** — sekcja „Najnowsze na wsi” (łączony feed chronologiczny z kilku modułów).
+- **iOS Web Push** — w panelu powiadomień doprecyzowano: uruchomienie z ikony po dodaniu do ekranu początkowego.
+- **Retencja / backup** — nadal: `run_village_automation()` usuwa przeczytane powiadomienia starsze niż 180 dni;
+  dalsze polityki wg decyzji operacyjnej.
 
 --------------------------------------------------------------------------------
 18. PYTANIA POMOCNICZE DLA MODELU ANALITYCZNEGO

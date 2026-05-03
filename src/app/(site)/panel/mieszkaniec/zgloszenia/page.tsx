@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { roleDlaUprawnienia } from "@/lib/panel/uprawnienia-wsi";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
 import { pojedynczaWies } from "@/lib/supabase/wies-z-zapytania";
 import { etykietkiSzybkich, etykietaStanuZgloszenia, kategorieZgloszen } from "@/lib/zgloszenia/szybkie-etykiety";
@@ -9,13 +10,6 @@ import { ZgloszeniaFormularzKlient } from "./zgloszenia-formularz-klient";
 export const metadata: Metadata = {
   title: "Zgłoszenia",
 };
-
-const roleAktywneMieszkaniec = [
-  "mieszkaniec",
-  "soltys",
-  "wspoladmin",
-  "reprezentant_podmiotu",
-] as const;
 
 export default async function MieszkaniecZgloszeniaPage() {
   const supabase = utworzKlientaSupabaseSerwer();
@@ -31,7 +25,7 @@ export default async function MieszkaniecZgloszeniaPage() {
     .select("village_id, role, villages(name)")
     .eq("user_id", user.id)
     .eq("status", "active")
-    .in("role", [...roleAktywneMieszkaniec]);
+    .in("role", [...roleDlaUprawnienia("dostep_podstawowy")]);
 
   const wiesZMapy = new Map<string, string>();
   for (const r of roleRows ?? []) {
@@ -76,7 +70,7 @@ export default async function MieszkaniecZgloszeniaPage() {
           ← Panel mieszkańca
         </Link>
       </p>
-      <h1 className="font-serif text-3xl text-green-950">Zgłoszenia problemów</h1>
+      <h1 className="tytul-sekcji-panelu">Zgłoszenia problemów</h1>
       <p className="mt-3 max-w-2xl text-sm leading-relaxed text-stone-600">
         Opisz usterkę, dodaj szybkie zaznaczenia, opcjonalnie <strong>datę i godzinę zauważenia</strong> oraz do sześciu
         zdjęć. Sołtys widzi zgłoszenie w swoim panelu; Ty widzisz tylko status — szczegóły rozpatrywania po stronie

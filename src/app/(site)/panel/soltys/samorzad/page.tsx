@@ -26,7 +26,7 @@ export default async function SoltysSamorzadPage() {
             ← Panel sołtysa
           </Link>
         </p>
-        <h1 className="font-serif text-3xl text-green-950">Przewodnik samorządowy</h1>
+        <h1 className="tytul-sekcji-panelu">Przewodnik samorządowy</h1>
         <p className="mt-2 text-sm text-stone-600">Brak przypisanej wsi w roli sołtysa lub współadmina.</p>
       </main>
     );
@@ -50,7 +50,7 @@ export default async function SoltysSamorzadPage() {
           ← Panel sołtysa
         </Link>
       </p>
-      <h1 className="font-serif text-3xl text-green-950">Przewodnik: gmina, powiat, województwo</h1>
+      <h1 className="tytul-sekcji-panelu">Przewodnik: gmina, powiat, województwo</h1>
       <p className="mt-2 max-w-2xl text-sm text-stone-600">
         Uzupełnij kontakty i lokalne zasady — na profilu wsi mieszkańcy zobaczą je obok ogólnego skrótu kompetencji
         (nie zastępuje porady prawnej ani aktów urzędowych).

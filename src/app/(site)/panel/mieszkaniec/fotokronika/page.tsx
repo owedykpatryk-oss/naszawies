@@ -78,7 +78,7 @@ export default async function MieszkaniecFotokronikaPage() {
           ← Panel mieszkańca
         </Link>
       </p>
-      <h1 className="font-serif text-3xl text-green-950">Fotokronika</h1>
+      <h1 className="tytul-sekcji-panelu">Fotokronika</h1>
       <p className="mt-2 max-w-2xl text-sm text-stone-600">
         Wyślij zdjęcia do wsi (JPEG, PNG, WebP, do 5 MB). Trafiają do moderacji u sołtysa. Publiczna fotokronika:{" "}
         <Link href="/panel/soltys/fotokronika" className="text-green-800 underline">

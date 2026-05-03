@@ -128,7 +128,7 @@ export default async function MieszkaniecSwietlicaHallPage({ params }: Props) {
         </Link>
       </p>
       <NawigacjaSali hallId={hallId} rola="mieszkaniec" />
-      <h1 className="font-serif text-3xl text-green-950">{sala.name}</h1>
+      <h1 className="tytul-sekcji-panelu">{sala.name}</h1>
       <p className="mt-1 text-sm text-stone-600">
         {wies?.name ?? "Wieś"}
         {sala.max_capacity ? ` · do ${sala.max_capacity} osób` : ""}

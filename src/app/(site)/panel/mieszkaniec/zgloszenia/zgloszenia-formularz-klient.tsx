@@ -137,82 +137,78 @@ export function ZgloszeniaFormularzKlient({ wiesOpcje, uzytkownik }: Props) {
   return (
     <form
       onSubmit={onSubmit}
-      className="mt-6 space-y-4 rounded-2xl border border-stone-200 bg-white p-5 shadow-sm sm:p-6"
+      className="forms-premium mt-6 space-y-4 rounded-2xl border border-stone-200 bg-white p-5 shadow-sm sm:p-6"
     >
       {blad ? (
         <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-800" role="alert">
           {blad}
         </p>
       ) : null}
-      <div>
-        <label className="mb-1 block text-sm font-medium text-stone-700" htmlFor="zgl-wies">
-          Wieś
-        </label>
-        <select
-          id="zgl-wies"
-          name="village_id"
-          required
-          className="w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm"
-          defaultValue={wies}
-        >
-          {wiesOpcje.map((o) => (
-            <option key={o.id} value={o.id}>
-              {o.name}
-            </option>
-          ))}
-        </select>
+      <div className="rounded-lg border border-sky-200/80 bg-sky-50/50 p-3 text-xs text-stone-700">
+        <p className="font-semibold text-sky-900">Jak napisać dobre zgłoszenie</p>
+        <ul className="mt-1 list-disc space-y-1 pl-4">
+          <li>Tytuł: co i gdzie (np. uszkodzona lampa przy remizie).</li>
+          <li>Opis: od kiedy problem występuje i jak często się powtarza.</li>
+          <li>Dodaj 1-3 zdjęcia i orientacyjne miejsce — to przyspiesza decyzję.</li>
+        </ul>
       </div>
-      <div>
-        <label className="mb-1 block text-sm font-medium text-stone-700" htmlFor="zgl-kat">
-          Kategoria
-        </label>
-        <select id="zgl-kat" name="category" className="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm">
-          {kategorieZgloszen.map((k) => (
-            <option key={k.value} value={k.value}>
-              {k.label}
-            </option>
-          ))}
-        </select>
-      </div>
-      <div>
-        <label className="mb-1 block text-sm font-medium text-stone-700" htmlFor="zgl-tyt">
-          Tytuł
-        </label>
-        <input
-          id="zgl-tyt"
-          name="title"
-          required
-          minLength={3}
-          maxLength={200}
-          className="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
-          placeholder="np. Dziura przy skrzyżowaniu"
-        />
-      </div>
-      <div>
-        <label className="mb-1 block text-sm font-medium text-stone-700" htmlFor="zgl-opis">
-          Opis
-        </label>
-        <textarea
-          id="zgl-opis"
-          name="description"
-          required
-          minLength={10}
-          rows={4}
-          className="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
-          placeholder="Dokładnie: co, gdzie, od jak dawna, czy były interwencje"
-        />
-      </div>
-      <div>
-        <label className="mb-1 block text-sm font-medium text-stone-700" htmlFor="zgl-miejsce">
-          Miejsce (opcjonalnie)
-        </label>
-        <input
-          id="zgl-miejsce"
-          name="location_text"
-          maxLength={500}
-          className="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
-          placeholder="np. droga do lasu, za sklepem, nr lampy"
-        />
+      <div className="grid gap-3 sm:grid-cols-2">
+        <div>
+          <label className="mb-1 block" htmlFor="zgl-wies">
+            Wieś
+          </label>
+          <select id="zgl-wies" name="village_id" required defaultValue={wies}>
+            {wiesOpcje.map((o) => (
+              <option key={o.id} value={o.id}>
+                {o.name}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div>
+          <label className="mb-1 block" htmlFor="zgl-kat">
+            Kategoria
+          </label>
+          <select id="zgl-kat" name="category">
+            {kategorieZgloszen.map((k) => (
+              <option key={k.value} value={k.value}>
+                {k.label}
+              </option>
+            ))}
+          </select>
+        </div>
+        <div className="sm:col-span-2">
+          <label className="mb-1 block" htmlFor="zgl-tyt">
+            Tytuł
+          </label>
+          <input
+            id="zgl-tyt"
+            name="title"
+            required
+            minLength={3}
+            maxLength={200}
+            placeholder="np. Dziura przy skrzyżowaniu"
+          />
+        </div>
+        <div className="sm:col-span-2">
+          <label className="mb-1 block" htmlFor="zgl-opis">
+            Opis
+          </label>
+          <textarea
+            id="zgl-opis"
+            name="description"
+            required
+            minLength={10}
+            rows={4}
+            placeholder="Dokładnie: co, gdzie, od jak dawna, czy były interwencje"
+          />
+        </div>
+        <div className="sm:col-span-2">
+          <label className="mb-1 block" htmlFor="zgl-miejsce">
+            Miejsce (opcjonalnie)
+          </label>
+          <input id="zgl-miejsce" name="location_text" maxLength={500} placeholder="np. droga do lasu, za sklepem, nr lampy" />
+        </div>
       </div>
 
       <div className="space-y-2">
@@ -260,7 +256,7 @@ export function ZgloszeniaFormularzKlient({ wiesOpcje, uzytkownik }: Props) {
               type="datetime-local"
               value={terminWidmo}
               onChange={(e) => ustawTerminWidmo(e.target.value)}
-              className="w-full max-w-sm rounded border border-stone-300 bg-white px-2 py-1.5 text-sm"
+              className="w-full max-w-sm"
             />
             <p className="mt-1 text-xs text-stone-500">
               Inna niż «wysłano zgłoszenie» — pomaga sołtysowi ustalić sytuację. Możesz odznaczyć, jeśli daty nie znasz.

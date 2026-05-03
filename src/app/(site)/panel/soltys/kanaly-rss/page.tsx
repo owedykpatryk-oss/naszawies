@@ -26,7 +26,7 @@ export default async function SoltysKanalyRssPage() {
             ← Panel sołtysa
           </Link>
         </p>
-        <h1 className="font-serif text-3xl text-green-950">Kanały RSS</h1>
+        <h1 className="tytul-sekcji-panelu">Kanały RSS</h1>
         <p className="mt-2 text-sm text-stone-600">Brak przypisanej wsi w roli sołtysa lub współadmina.</p>
       </main>
     );
@@ -54,7 +54,7 @@ export default async function SoltysKanalyRssPage() {
           Wiadomości lokalne
         </Link>
       </p>
-      <h1 className="font-serif text-3xl text-green-950">Kanały RSS dla wsi</h1>
+      <h1 className="tytul-sekcji-panelu">Kanały RSS dla wsi</h1>
       <p className="mt-2 max-w-2xl text-sm text-stone-600">
         Podłącz oficjalne kanały informacyjne — system doda skróty jako wpisy do zatwierdzenia (bez duplikatów po
         identyfikatorze GUID z kanału).

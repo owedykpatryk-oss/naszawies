@@ -29,7 +29,7 @@ export default async function SoltysDokumentyPage() {
             ← Panel sołtysa
           </Link>
         </p>
-        <h1 className="font-serif text-3xl text-green-950">Generator dokumentów</h1>
+        <h1 className="tytul-sekcji-panelu">Generator dokumentów</h1>
         <div className="mt-6 max-w-xl rounded-xl border border-amber-200 bg-amber-50 p-5 text-sm text-amber-950">
           <p className="font-medium">Brak uprawnień do generatora</p>
           <p className="mt-2 leading-relaxed">
@@ -82,14 +82,15 @@ export default async function SoltysDokumentyPage() {
           ← Panel sołtysa
         </Link>
       </p>
-      <h1 className="font-serif text-3xl text-green-950">Generator dokumentów</h1>
+      <h1 className="tytul-sekcji-panelu">Generator dokumentów</h1>
       <p className="mt-2 max-w-3xl text-sm text-stone-600">
         {PRESETY_DOKUMENTOW_SOLTYSA.length} gotowych szablonów (zebrania, fundusz sołecki, fundraising i sponsorzy, pisma
-        do gminy, potwierdzenia wpływu, świetlica, zawiadomienia o regulaminach, pełnomocnictwa, RODO i in.). U góry
-        generatora: <strong>scenariusze 1‑klik</strong> oraz <strong>lejek sponsora</strong> (prośba → przypomnienie →
-        potwierdzenie wpływu → podziękowanie). Wieś, gmina i podpis mogą wypełnić się z panelu; uzupełnij resztę,
-        sprawdź podgląd — przycisk „Pobierz PDF” zapisuje plik (także na telefonie); „Drukuj / PDF z systemu” korzysta z
-        okna drukowania przeglądarki.
+        do gminy, świetlica, pełnomocnictwa, RODO, a także dokumenty dla <strong>KGW i OSP</strong>). U góry generatora:
+        <strong> scenariusze 1‑klik</strong> oraz <strong>lejek sponsora</strong> (prośba → przypomnienie → potwierdzenie
+        wpływu → podziękowanie). Dodatkowo możesz wybrać styl wydruku (urzędowy, elegancki, nowoczesny), rozmiar tekstu
+        oraz subtelny znak wodny. Wieś, gmina i podpis mogą wypełnić się z panelu; uzupełnij resztę, sprawdź podgląd —
+        przycisk „Pobierz PDF” zapisuje plik (także na telefonie), a „Drukuj / PDF z systemu” korzysta z okna drukowania
+        przeglądarki.
       </p>
 
       <div className="mt-10">

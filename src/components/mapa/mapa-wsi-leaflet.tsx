@@ -125,13 +125,18 @@ function htmlPopup(z: ZnacznikWsi, wariant: WariantGranicyWPopup): string {
         : "Lokalizacja: punkt GPS; brak wgranego obrysu wsi.";
   const meta = lokalizacjaPopup(z);
 
+  const osm = `https://www.openstreetmap.org/?mlat=${encodeURIComponent(String(z.lat))}&mlon=${encodeURIComponent(String(z.lon))}&zoom=15`;
   return `
     <div class="mapa-wsi-popup">
       <h3>${escapeHtml(z.name)}</h3>
       ${meta ? `<p class="mapa-wsi-popup-meta">${escapeHtml(meta)}</p>` : ""}
       <p>${escapeHtml(granicaTxt)}</p>
       <p>${escapeHtml(ofertyTxt)} Inne ogłoszenia i aktualności — po wejściu na stronę wsi (dla mieszkańców).</p>
-      <a href="${z.sciezka.replace(/"/g, "")}">Strona wsi →</a>
+      <p class="mapa-wsi-popup-foot">
+        <a href="${z.sciezka.replace(/"/g, "")}">Strona wsi →</a>
+        <span aria-hidden="true"> · </span>
+        <a href="${osm}" target="_blank" rel="noopener noreferrer">Okolica w OSM ↗</a>
+      </p>
     </div>
   `;
 }
@@ -205,12 +210,20 @@ function zbudujIkonePoi(L: LeafletNs, z: ZnacznikPoi) {
 function htmlPopupPoi(z: ZnacznikPoi): string {
   const kat = etykietaKategoriiPoi(z.category);
   const opis = z.description?.trim();
+  const osm = `https://www.openstreetmap.org/?mlat=${encodeURIComponent(String(z.lat))}&mlon=${encodeURIComponent(String(z.lon))}&zoom=17`;
+  const czyStacja = z.category.trim().toLowerCase() === "stacja_kolejowa";
+  const stacjaLink = `/transport/rozklad?stacja=${encodeURIComponent(z.name)}`;
   return `
     <div class="mapa-wsi-popup">
       <p class="mapa-wsi-popup-meta">${escapeHtml(kat)}${z.villageName ? ` · ${escapeHtml(z.villageName)}` : ""}</p>
       <h3>${escapeHtml(z.name)}</h3>
       ${opis ? `<p>${escapeHtml(opis)}</p>` : ""}
-      <a href="${z.sciezkaWsi.replace(/"/g, "")}">Strona wsi →</a>
+      <p class="mapa-wsi-popup-foot">
+        <a href="${z.sciezkaWsi.replace(/"/g, "")}">Strona wsi →</a>
+        <span aria-hidden="true"> · </span>
+        <a href="${osm}" target="_blank" rel="noopener noreferrer">Punkt w OSM ↗</a>
+        ${czyStacja ? `<span aria-hidden="true"> · </span><a href="${stacjaLink}">Rozkład stacji 🚆</a>` : ""}
+      </p>
     </div>
   `;
 }
@@ -374,7 +387,7 @@ export const MapaWsiLeaflet = forwardRef<
             </li>
             <li>
               <span className="font-medium text-stone-800">Kolorowa pinezka (emoji)</span> — miejsca w sołectwie: kościół,
-              szkoła, świetlica, OSP, sołtys… (dane w serwisie)
+              szkoła, świetlica, OSP, sklep, przystanek, stacja kolejowa… (dane w serwisie)
             </li>
             <li>
               <span className="font-medium text-stone-800">Kółko z liczbą</span> — kilka punktów w obszarze

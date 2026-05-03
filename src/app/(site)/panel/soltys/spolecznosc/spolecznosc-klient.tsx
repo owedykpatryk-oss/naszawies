@@ -1,8 +1,10 @@
 "use client";
 
-import { FormEvent, useMemo, useState, useTransition } from "react";
+import { FormEvent, useEffect, useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import {
+  dodajKadencjeFunkcyjnaWsi,
+  dodajKontaktUrzedowyWsi,
   dodajMarketplaceOferte,
   dodajOrganizacjeWsi,
   dodajProfilBlogeraWsi,
@@ -18,6 +20,13 @@ import {
   zapiszMarketplaceProfil,
 } from "../akcje";
 import { etykietaKategoriiDotacji, nazwaDniaTygodnia } from "@/lib/wies/teksty-dotacji";
+import {
+  domyslnyTypGrupyDlaTrybu,
+  filtrujGrupyDlaTrybu,
+  KOLEJNOSC_DZIALAN_TRYBU,
+  TRYBY_PRACY_OPCJE,
+  type TrybOrganizacji,
+} from "./tryby-pracy";
 
 export type WiesDoModeracjiSpolecznosci = {
   id: string;
@@ -28,6 +37,7 @@ export type GrupaOrganizacjiWiersz = {
   id: string;
   village_id: string;
   name: string;
+  group_type: string;
 };
 
 export type SlotHarmonogramuWiersz = {
@@ -46,28 +56,73 @@ export type ZrodloDotacjiWiersz = {
   category: string;
 };
 
+export type KontaktUrzedowyWiersz = {
+  id: string;
+  village_id: string;
+  office_key: string;
+  role_label: string;
+  person_name: string;
+  duty_hours_text: string | null;
+  is_verified_by_soltys: boolean;
+  updated_at: string;
+};
+
+export type KadencjaFunkcyjnaWiersz = {
+  id: string;
+  village_id: string;
+  office_key: string;
+  role_label: string;
+  person_name: string;
+  term_start: string;
+  term_end: string | null;
+  is_current: boolean;
+};
+
+type SekcjaPracy =
+  | "kontakt_urzedowy"
+  | "organizacje"
+  | "wydarzenia"
+  | "harmonogram"
+  | "dotacje"
+  | "bloger"
+  | "blog"
+  | "historia"
+  | "profil_uslug"
+  | "marketplace"
+  | "wiadomosci"
+  | "automatyzacje";
+
 export function SoltysSpolecznoscKlient({
   wsie,
   grupyOrganizacji = [],
   slotyHarmonogramu = [],
   zrodlaDotacji = [],
+  kontaktyUrzedowe = [],
+  kadencjeFunkcyjne = [],
+  domyslnyTryb = "ogolny",
 }: {
   wsie: WiesDoModeracjiSpolecznosci[];
   grupyOrganizacji?: GrupaOrganizacjiWiersz[];
   slotyHarmonogramu?: SlotHarmonogramuWiersz[];
   zrodlaDotacji?: ZrodloDotacjiWiersz[];
+  kontaktyUrzedowe?: KontaktUrzedowyWiersz[];
+  kadencjeFunkcyjne?: KadencjaFunkcyjnaWiersz[];
+  domyslnyTryb?: TrybOrganizacji;
 }) {
   const router = useRouter();
   const [villageId, setVillageId] = useState(wsie[0]?.id ?? "");
   const [czek, startT] = useTransition();
   const [komunikat, setKomunikat] = useState<string>("");
   const [blad, setBlad] = useState<string>("");
+  const [tryb, setTryb] = useState<TrybOrganizacji>(domyslnyTryb);
+  const [sekcjaAktywna, setSekcjaAktywna] = useState<SekcjaPracy>("organizacje");
+  const [groupTypeDraft, setGroupTypeDraft] = useState("kgw");
 
   const villageName = useMemo(() => wsie.find((w) => w.id === villageId)?.name ?? "Wybrana wieś", [wsie, villageId]);
 
   const grupyDlaWybranejWsi = useMemo(
-    () => grupyOrganizacji.filter((g) => g.village_id === villageId),
-    [grupyOrganizacji, villageId],
+    () => filtrujGrupyDlaTrybu(grupyOrganizacji, villageId, tryb),
+    [grupyOrganizacji, villageId, tryb],
   );
 
   const slotyDlaWybranejWsi = useMemo(
@@ -79,6 +134,111 @@ export function SoltysSpolecznoscKlient({
     () => zrodlaDotacji.filter((z) => z.village_id === villageId),
     [zrodlaDotacji, villageId],
   );
+  const kontaktyDlaWybranejWsi = useMemo(
+    () => kontaktyUrzedowe.filter((k) => k.village_id === villageId),
+    [kontaktyUrzedowe, villageId],
+  );
+  const kadencjeDlaWybranejWsi = useMemo(
+    () => kadencjeFunkcyjne.filter((k) => k.village_id === villageId),
+    [kadencjeFunkcyjne, villageId],
+  );
+
+  useEffect(() => {
+    setGroupTypeDraft(domyslnyTypGrupyDlaTrybu(tryb));
+    setSekcjaAktywna("organizacje");
+  }, [tryb]);
+
+  const sekcjePracy = useMemo<{ id: SekcjaPracy; label: string; badge?: string }[]>(
+    () => [
+      { id: "kontakt_urzedowy", label: "Kontakt urzędowy", badge: String(kontaktyDlaWybranejWsi.length) },
+      { id: "organizacje", label: "Organizacje", badge: String(grupyDlaWybranejWsi.length) },
+      { id: "wydarzenia", label: "Wydarzenia" },
+      { id: "harmonogram", label: "Plan tygodnia", badge: String(slotyDlaWybranejWsi.length) },
+      { id: "dotacje", label: "Dotacje", badge: String(dotacjeDlaWybranejWsi.length) },
+      { id: "bloger", label: "Autorzy" },
+      { id: "blog", label: "Blog" },
+      { id: "historia", label: "Historia" },
+      { id: "profil_uslug", label: "Profil usług" },
+      { id: "marketplace", label: "Marketplace" },
+      { id: "wiadomosci", label: "Wiadomości" },
+      { id: "automatyzacje", label: "Automatyzacje" },
+    ],
+    [dotacjeDlaWybranejWsi.length, grupyDlaWybranejWsi.length, kontaktyDlaWybranejWsi.length, slotyDlaWybranejWsi.length],
+  );
+
+  const wskaznikiSzybkie = useMemo(
+    () => [
+      { label: "Aktywne organizacje", value: grupyDlaWybranejWsi.length, tone: "text-fuchsia-950 bg-fuchsia-50 border-fuchsia-200" },
+      { label: "Stałe sloty tygodnia", value: slotyDlaWybranejWsi.length, tone: "text-teal-950 bg-teal-50 border-teal-200" },
+      { label: "Źródła dotacji", value: dotacjeDlaWybranejWsi.length, tone: "text-emerald-950 bg-emerald-50 border-emerald-200" },
+    ],
+    [dotacjeDlaWybranejWsi.length, grupyDlaWybranejWsi.length, slotyDlaWybranejWsi.length],
+  );
+
+  const sekcjaHint: Record<SekcjaPracy, string> = {
+    kontakt_urzedowy: "Kluczowe osoby funkcyjne, dyżury i szybkie CTA dla mieszkańców.",
+    organizacje: "Dodaj strukturę KGW/OSP i kontakty.",
+    wydarzenia: "Plan działań publicznych i wydarzeń.",
+    harmonogram: "Stały rytm tygodniowy dla grup.",
+    dotacje: "Baza możliwości finansowania inicjatyw.",
+    bloger: "Autorzy i kronikarze lokalnych treści.",
+    blog: "Aktualności dłuższej formy dla mieszkańców.",
+    historia: "Wpisy kronikarskie i pamięć miejscowości.",
+    profil_uslug: "Wizytówki usługodawców z terenu wsi.",
+    marketplace: "Szybkie, darmowe ogłoszenia społeczności.",
+    wiadomosci: "Krótki komunikat lokalny na profil wsi.",
+    automatyzacje: "Porządkowanie wygasłych wpisów i danych.",
+  };
+  const sekcjaTipy: Record<SekcjaPracy, string[]> = {
+    kontakt_urzedowy: [
+      "Uzupełnij role: sołtys, parafia, OSP, KGW — to pierwszy punkt kontaktu mieszkańców.",
+      "Wpisz godziny dyżuru i ustaw CTA (np. zgłoś sprawę do OSP).",
+    ],
+    organizacje: [
+      "W nazwie grupy dodaj skrót miejscowości (łatwiejsze wyszukiwanie).",
+      "Uzupełnij kontakt i harmonogram — to najczęściej sprawdzają mieszkańcy.",
+    ],
+    wydarzenia: [
+      "W tytule użyj formatu: co + kiedy (np. Trening OSP — wtorek 18:00).",
+      "W opisie dodaj godzinę zbiórki i miejsce startu.",
+    ],
+    harmonogram: [
+      "Wpisuj stałe aktywności; jednorazowe wydarzenia dodawaj w sekcji Wydarzenia.",
+      "Jeśli brak godziny końca, zostaw puste pole 'Do'.",
+    ],
+    dotacje: [
+      "Podawaj źródło i termin naboru — mieszkańcy szybciej zaufają wpisowi.",
+      "W podsumowaniu używaj prostego języka bez urzędowych skrótów.",
+    ],
+    bloger: [
+      "Dodaj 2-3 specjalizacje autora (łatwiej planować treści).",
+      "Krótki opis autora zwiększa czytelność bloga i historii.",
+    ],
+    blog: [
+      "Pierwszy akapit niech odpowiada: co się wydarzyło i dlaczego to ważne.",
+      "Dodaj 2-4 tagi, aby wpis dało się łatwo odszukać.",
+    ],
+    historia: [
+      "Wpis historii powinien mieć kontekst: data, miejsce, źródło.",
+      "Jeśli nie znasz dokładnej daty, użyj pola epoka/okres.",
+    ],
+    profil_uslug: [
+      "Kategoria usług + obszar działania to najważniejsze pola dla odbiorców.",
+      "Krótki opis zostawiaj konkretny: co robisz i dla kogo.",
+    ],
+    marketplace: [
+      "W tytule wpisz konkretny przedmiot/usługę i stan.",
+      "Przy cenie opcjonalnej użyj opisu w treści (np. do negocjacji).",
+    ],
+    wiadomosci: [
+      "Pierwsze zdanie: co, gdzie i do kiedy.",
+      "Przy komunikatach bezpieczeństwa użyj krótkich, punktowych zaleceń.",
+    ],
+    automatyzacje: [
+      "Uruchamiaj automatyzacje regularnie, np. raz na tydzień.",
+      "Przed uruchomieniem sprawdź, czy ważne wpisy mają aktualne terminy.",
+    ],
+  };
 
   function runAction(run: () => Promise<{ ok?: true; blad?: string }>, msg: string) {
     setBlad("");
@@ -198,6 +358,14 @@ export function SoltysSpolecznoscKlient({
           villageId,
           group_type: String(fd.get("group_type") ?? "inne") as
             | "kgw"
+            | "osp"
+            | "parafia"
+            | "rada_solecka"
+            | "seniorzy"
+            | "mlodziez"
+            | "wolontariat"
+            | "rolnicy"
+            | "przedsiebiorcy"
             | "sport"
             | "taniec"
             | "muzyka"
@@ -210,7 +378,50 @@ export function SoltysSpolecznoscKlient({
           meeting_place: String(fd.get("meeting_place") ?? "") || null,
           schedule_text: String(fd.get("schedule_text") ?? "") || null,
         }),
-      "Dodano organizację (KGW, klub, zespół…)."
+      "Dodano profil organizacji / instytucji."
+    );
+  }
+
+  function onDodajKontaktUrzedowy(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    const fd = new FormData(e.currentTarget);
+    runAction(
+      () =>
+        dodajKontaktUrzedowyWsi({
+          villageId,
+          office_key: String(fd.get("office_key") ?? "inne") as "soltys" | "parafia" | "osp" | "kgw" | "inne",
+          role_label: String(fd.get("role_label") ?? ""),
+          person_name: String(fd.get("person_name") ?? ""),
+          organization_name: String(fd.get("organization_name") ?? "") || null,
+          contact_phone: String(fd.get("contact_phone") ?? "") || null,
+          contact_email: String(fd.get("contact_email") ?? "") || null,
+          duty_hours_text: String(fd.get("duty_hours_text") ?? "") || null,
+          note: String(fd.get("note") ?? "") || null,
+          cta_label: String(fd.get("cta_label") ?? "") || null,
+          cta_url: String(fd.get("cta_url") ?? "") || null,
+          display_order: Number(fd.get("display_order") ?? 100),
+        }),
+      "Dodano kontakt urzędowy na profil wsi."
+    );
+  }
+
+  function onDodajKadencjeFunkcyjna(e: FormEvent<HTMLFormElement>) {
+    e.preventDefault();
+    const fd = new FormData(e.currentTarget);
+    runAction(
+      () =>
+        dodajKadencjeFunkcyjnaWsi({
+          villageId,
+          office_key: String(fd.get("office_key") ?? "inne") as "soltys" | "parafia" | "osp" | "kgw" | "inne",
+          role_label: String(fd.get("role_label") ?? ""),
+          person_name: String(fd.get("person_name") ?? ""),
+          organization_name: String(fd.get("organization_name") ?? "") || null,
+          term_start: String(fd.get("term_start") ?? ""),
+          term_end: String(fd.get("term_end") ?? "") || null,
+          note: String(fd.get("note") ?? "") || null,
+          is_current: Boolean(fd.get("is_current")),
+        }),
+      "Dodano wpis kadencji / historii funkcji."
     );
   }
 
@@ -305,7 +516,7 @@ export function SoltysSpolecznoscKlient({
   }
 
   return (
-    <section className="mt-6 space-y-8">
+    <section className="forms-premium mt-6 space-y-8">
       <div className="rounded-2xl border border-stone-200 bg-white p-4 shadow-sm">
         <label className="text-sm font-medium text-stone-800" htmlFor="wies-select">
           Aktywna wieś
@@ -323,28 +534,250 @@ export function SoltysSpolecznoscKlient({
           ))}
         </select>
         <p className="mt-2 text-xs text-stone-500">Wszystkie formularze poniżej zapisują dane dla: {villageName}.</p>
+        <div className="mt-3 rounded-xl border border-indigo-200/80 bg-indigo-50/40 p-3">
+          <p className="text-xs font-semibold uppercase tracking-wide text-indigo-900">Tryb pracy</p>
+          <p className="mt-1 text-xs text-stone-600">
+            Filtruje listy i podpowiada domyślny typ organizacji, żeby szybciej obsługiwać konkretne obszary.
+          </p>
+          <div className="mt-2 flex flex-wrap gap-2">
+            {TRYBY_PRACY_OPCJE.map((t) => (
+              <button
+                key={t.id}
+                type="button"
+                onClick={() => setTryb(t.id)}
+                className={`rounded-lg border px-3 py-1.5 text-xs font-medium transition ${
+                  tryb === t.id
+                    ? "border-indigo-600 bg-indigo-100 text-indigo-950"
+                    : "border-stone-300 bg-white text-stone-700 hover:bg-stone-50"
+                }`}
+              >
+                {t.label}
+              </button>
+            ))}
+          </div>
+        </div>
+        <div className="mt-3 rounded-xl border border-stone-200 bg-white p-3 text-xs text-stone-700">
+          <p className="font-semibold text-green-950">{KOLEJNOSC_DZIALAN_TRYBU[tryb].tytul}</p>
+          <ol className="mt-2 list-decimal space-y-1 pl-4">
+            {KOLEJNOSC_DZIALAN_TRYBU[tryb].kroki.map((krok) => (
+              <li key={krok}>{krok}</li>
+            ))}
+          </ol>
+        </div>
         {komunikat ? (
           <p className="mt-3 rounded border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-900">{komunikat}</p>
         ) : null}
         {blad ? <p className="mt-3 rounded border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-900">{blad}</p> : null}
       </div>
 
-      <form onSubmit={onDodajOrganizacje} className="rounded-2xl border border-rose-200/80 bg-gradient-to-br from-rose-50/40 to-white p-5 shadow-sm">
-        <h2 className="font-serif text-xl text-green-950">Koła, kluby i grupy (KGW, sport, taniec, muzyka)</h2>
+      <section className="grid gap-2 sm:grid-cols-3" aria-label="Szybkie wskaźniki">
+        {wskaznikiSzybkie.map((w) => (
+          <div key={w.label} className={`rounded-xl border px-3 py-2 shadow-sm ${w.tone}`}>
+            <p className="text-[11px] uppercase tracking-wide opacity-80">{w.label}</p>
+            <p className="mt-1 text-2xl font-semibold leading-none">{w.value}</p>
+          </div>
+        ))}
+      </section>
+
+      <nav className="sekcja-form-nav flex items-center gap-2" aria-label="Taby sekcji formularzy">
+        {sekcjePracy.map((sekcja) => (
+          <button
+            key={sekcja.id}
+            type="button"
+            onClick={() => setSekcjaAktywna(sekcja.id)}
+            className={`sekcja-form-nav-link flex items-center gap-1.5 ${
+              sekcjaAktywna === sekcja.id
+                ? "border-green-700 bg-green-50 text-green-950"
+                : ""
+            }`}
+          >
+            <span>{sekcja.label}</span>
+            {sekcja.badge != null ? (
+              <span className="rounded-full bg-stone-200 px-1.5 py-0.5 text-[10px] text-stone-700">
+                {sekcja.badge}
+              </span>
+            ) : null}
+          </button>
+        ))}
+      </nav>
+      <div className="rounded-lg border border-stone-200 bg-white px-3 py-2 text-xs text-stone-700">
+        <strong className="text-stone-900">Aktywna sekcja:</strong> {sekcjePracy.find((s) => s.id === sekcjaAktywna)?.label} —{" "}
+        {sekcjaHint[sekcjaAktywna]}
+      </div>
+      <aside className="rounded-xl border border-sky-200/80 bg-sky-50/50 p-3 text-xs text-stone-700">
+        <p className="font-semibold text-sky-900">Jak zrobić to najlepiej</p>
+        <ul className="mt-1 list-disc space-y-1 pl-4">
+          {sekcjaTipy[sekcjaAktywna].map((tip) => (
+            <li key={tip}>{tip}</li>
+          ))}
+        </ul>
+      </aside>
+      <div className="flex flex-wrap gap-2 text-xs">
+        {tryb === "kgw" ? (
+          <>
+            <button type="button" onClick={() => setSekcjaAktywna("organizacje")} className="sekcja-form-nav-link">
+              Start KGW: Organizacje
+            </button>
+            <button type="button" onClick={() => setSekcjaAktywna("harmonogram")} className="sekcja-form-nav-link">
+              Plan spotkań
+            </button>
+            <button type="button" onClick={() => setSekcjaAktywna("dotacje")} className="sekcja-form-nav-link">
+              Dotacje KGW
+            </button>
+          </>
+        ) : null}
+        {tryb === "osp" ? (
+          <>
+            <button type="button" onClick={() => setSekcjaAktywna("organizacje")} className="sekcja-form-nav-link">
+              Start OSP: Organizacje
+            </button>
+            <button type="button" onClick={() => setSekcjaAktywna("wydarzenia")} className="sekcja-form-nav-link">
+              Ćwiczenia / mecze
+            </button>
+            <button type="button" onClick={() => setSekcjaAktywna("wiadomosci")} className="sekcja-form-nav-link">
+              Komunikat bezpieczeństwa
+            </button>
+          </>
+        ) : null}
+      </div>
+
+      {sekcjaAktywna === "kontakt_urzedowy" ? (
+      <section className="scroll-mt-[10.5rem] rounded-2xl border border-sky-200/80 bg-gradient-to-br from-sky-50/40 to-white p-5 shadow-sm space-y-6">
+        <div>
+          <h2 className="font-serif text-xl text-green-950">Kontakt urzędowy i osoby funkcyjne</h2>
+          <p className="mt-1 text-sm text-stone-600">
+            Publiczna sekcja dla mieszkańców: sołtys, ksiądz/parafia, prezes OSP, przewodnicząca KGW, godziny dyżurów i szybkie akcje.
+          </p>
+        </div>
+        <form onSubmit={onDodajKontaktUrzedowy} className="grid gap-3 md:grid-cols-2">
+          <select name="office_key" className="rounded border border-stone-300 px-3 py-2 text-sm" required>
+            <option value="soltys">Sołtys</option>
+            <option value="parafia">Parafia / ksiądz</option>
+            <option value="osp">OSP</option>
+            <option value="kgw">KGW</option>
+            <option value="inne">Inna funkcja</option>
+          </select>
+          <input name="role_label" placeholder="Nazwa funkcji (np. Prezes OSP)" required className="rounded border border-stone-300 px-3 py-2 text-sm" />
+          <input name="person_name" placeholder="Imię i nazwisko" required className="rounded border border-stone-300 px-3 py-2 text-sm" />
+          <input name="organization_name" placeholder="Jednostka (opcjonalnie)" className="rounded border border-stone-300 px-3 py-2 text-sm" />
+          <input name="contact_phone" placeholder="Telefon" className="rounded border border-stone-300 px-3 py-2 text-sm" />
+          <input name="contact_email" placeholder="E-mail" className="rounded border border-stone-300 px-3 py-2 text-sm" />
+          <input name="duty_hours_text" placeholder="Godziny dyżuru (np. wt. 17:00–19:00)" className="rounded border border-stone-300 px-3 py-2 text-sm md:col-span-2" />
+          <textarea name="note" rows={2} placeholder="Notatka dla mieszkańców" className="rounded border border-stone-300 px-3 py-2 text-sm md:col-span-2" />
+          <input name="cta_label" placeholder="CTA (np. Zgłoś sprawę do OSP)" className="rounded border border-stone-300 px-3 py-2 text-sm" />
+          <input name="cta_url" placeholder="Link CTA (https://... lub /...)" className="rounded border border-stone-300 px-3 py-2 text-sm" />
+          <input name="display_order" type="number" min={0} max={1000} defaultValue={100} className="rounded border border-stone-300 px-3 py-2 text-sm md:col-span-2" />
+          <button disabled={czek || !villageId} className="rounded-lg bg-sky-800 px-4 py-2 text-sm text-white hover:bg-sky-900 disabled:opacity-60 md:col-span-2">
+            Dodaj kontakt urzędowy
+          </button>
+        </form>
+
+        <form onSubmit={onDodajKadencjeFunkcyjna} className="grid gap-3 border-t border-sky-100 pt-5 md:grid-cols-2">
+          <p className="text-sm font-medium text-stone-900 md:col-span-2">Kadencje i historia funkcji</p>
+          <select name="office_key" className="rounded border border-stone-300 px-3 py-2 text-sm" required>
+            <option value="soltys">Sołtys</option>
+            <option value="parafia">Parafia / ksiądz</option>
+            <option value="osp">OSP</option>
+            <option value="kgw">KGW</option>
+            <option value="inne">Inna funkcja</option>
+          </select>
+          <input name="role_label" placeholder="Nazwa funkcji" required className="rounded border border-stone-300 px-3 py-2 text-sm" />
+          <input name="person_name" placeholder="Imię i nazwisko" required className="rounded border border-stone-300 px-3 py-2 text-sm" />
+          <input name="organization_name" placeholder="Jednostka (opcjonalnie)" className="rounded border border-stone-300 px-3 py-2 text-sm" />
+          <label className="text-xs text-stone-600">
+            Od
+            <input name="term_start" type="date" required className="mt-1 w-full rounded border border-stone-300 px-3 py-2 text-sm" />
+          </label>
+          <label className="text-xs text-stone-600">
+            Do (opcjonalnie)
+            <input name="term_end" type="date" className="mt-1 w-full rounded border border-stone-300 px-3 py-2 text-sm" />
+          </label>
+          <textarea name="note" rows={2} placeholder="Notatka historyczna (opcjonalnie)" className="rounded border border-stone-300 px-3 py-2 text-sm md:col-span-2" />
+          <label className="inline-flex items-center gap-2 text-sm text-stone-700 md:col-span-2">
+            <input name="is_current" type="checkbox" />
+            To jest obecnie pełniona funkcja
+          </label>
+          <button disabled={czek || !villageId} className="rounded-lg bg-indigo-800 px-4 py-2 text-sm text-white hover:bg-indigo-900 disabled:opacity-60 md:col-span-2">
+            Dodaj kadencję
+          </button>
+        </form>
+
+        <div className="grid gap-4 md:grid-cols-2">
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wide text-stone-500">Aktualny kontakt urzędowy</p>
+            {kontaktyDlaWybranejWsi.length === 0 ? (
+              <p className="mt-2 text-sm text-stone-500">Brak kontaktów.</p>
+            ) : (
+              <ul className="mt-2 space-y-2">
+                {kontaktyDlaWybranejWsi.map((k) => (
+                  <li key={k.id} className="rounded border border-stone-200 bg-white px-3 py-2 text-sm">
+                    <p className="font-medium text-stone-900">{k.role_label}: {k.person_name}</p>
+                    <p className="mt-1 text-xs text-stone-600">
+                      {k.duty_hours_text ? `Dyżur: ${k.duty_hours_text} · ` : ""}
+                      {k.is_verified_by_soltys ? "zweryfikowany przez sołtysa" : "niezweryfikowany"} · aktualizacja: {new Date(k.updated_at).toLocaleDateString("pl-PL")}
+                    </p>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+          <div>
+            <p className="text-xs font-semibold uppercase tracking-wide text-stone-500">Historia kadencji</p>
+            {kadencjeDlaWybranejWsi.length === 0 ? (
+              <p className="mt-2 text-sm text-stone-500">Brak historii kadencji.</p>
+            ) : (
+              <ul className="mt-2 space-y-2">
+                {kadencjeDlaWybranejWsi.slice(0, 8).map((k) => (
+                  <li key={k.id} className="rounded border border-stone-200 bg-white px-3 py-2 text-sm">
+                    <p className="font-medium text-stone-900">{k.role_label}: {k.person_name}</p>
+                    <p className="mt-1 text-xs text-stone-600">
+                      {new Date(k.term_start).toLocaleDateString("pl-PL")} – {k.term_end ? new Date(k.term_end).toLocaleDateString("pl-PL") : "obecnie"}
+                      {k.is_current ? " · aktywna" : ""}
+                    </p>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </div>
+        </div>
+      </section>
+      ) : null}
+
+      {sekcjaAktywna === "organizacje" ? (
+      <form
+        id="sekcja-organizacje"
+        onSubmit={onDodajOrganizacje}
+        className="scroll-mt-[10.5rem] rounded-2xl border border-rose-200/80 bg-gradient-to-br from-rose-50/40 to-white p-5 shadow-sm transition-all duration-200"
+      >
+        <h2 className="font-serif text-xl text-green-950">Profile lokalne (OSP, KGW, parafia, rada sołecka, kluby)</h2>
         <p className="mt-1 text-sm text-stone-600">
-          Widoczne na publicznym profilu wsi — mieszkańcy zobaczą kontakt, miejsce spotkań i harmonogram (np. próby zespołu,
-          zebrań KGW).
+          Widoczne na publicznym profilu wsi — mieszkańcy zobaczą kontakt, miejsce spotkań i harmonogram (np. dyżury OSP,
+          zebrania KGW, godziny kancelarii parafialnej).
         </p>
         <div className="mt-4 grid gap-3 md:grid-cols-2">
-          <select name="group_type" className="rounded border border-stone-300 px-3 py-2 text-sm" required>
+          <select
+            name="group_type"
+            value={groupTypeDraft}
+            onChange={(e) => setGroupTypeDraft(e.target.value)}
+            className="rounded border border-stone-300 px-3 py-2 text-sm"
+            required
+          >
             <option value="kgw">Koło Gospodyń Wiejskich</option>
+            <option value="osp">OSP / straż pożarna</option>
+            <option value="parafia">Parafia / ksiądz</option>
+            <option value="rada_solecka">Rada sołecka</option>
+            <option value="seniorzy">Klub seniora</option>
+            <option value="mlodziez">Młodzież</option>
+            <option value="wolontariat">Wolontariat / pomoc sąsiedzka</option>
+            <option value="rolnicy">Koło rolników</option>
+            <option value="przedsiebiorcy">Lokalni przedsiębiorcy</option>
             <option value="sport">Klub / sport / OSP</option>
             <option value="taniec">Grupa taneczna</option>
             <option value="muzyka">Zespół / muzyka</option>
             <option value="kolo">Koło łowieckie / inne koło</option>
             <option value="inne">Inna organizacja</option>
           </select>
-          <input name="name" placeholder="Nazwa (np. KGW w …)" required className="rounded border border-stone-300 px-3 py-2 text-sm" />
+          <input name="name" placeholder="Nazwa (np. OSP ..., Parafia ..., KGW ...)" required className="rounded border border-stone-300 px-3 py-2 text-sm" />
           <input name="meeting_place" placeholder="Miejsce spotkań (świetlica, remiza…)" className="rounded border border-stone-300 px-3 py-2 text-sm md:col-span-2" />
           <textarea name="schedule_text" rows={2} placeholder="Terminy (np. wtorki 17:00, mecze w niedziele)" className="rounded border border-stone-300 px-3 py-2 text-sm md:col-span-2" />
           <input name="contact_phone" placeholder="Telefon" className="rounded border border-stone-300 px-3 py-2 text-sm" />
@@ -355,8 +788,14 @@ export function SoltysSpolecznoscKlient({
           Zapisz organizację
         </button>
       </form>
+      ) : null}
 
-      <form onSubmit={onDodajWydarzenie} className="rounded-2xl border border-indigo-200/80 bg-gradient-to-br from-indigo-50/50 to-white p-5 shadow-sm">
+      {sekcjaAktywna === "wydarzenia" ? (
+      <form
+        id="sekcja-wydarzenia"
+        onSubmit={onDodajWydarzenie}
+        className="scroll-mt-[10.5rem] rounded-2xl border border-indigo-200/80 bg-gradient-to-br from-indigo-50/50 to-white p-5 shadow-sm"
+      >
         <h2 className="font-serif text-xl text-green-950">Kalendarz: mecz, wyjazd, próba, festyn…</h2>
         <p className="mt-1 text-sm text-stone-600">
           Wpis trafia na profil wsi i na listę <strong>/wydarzenia</strong>. Możesz powiązać wydarzenie z organizacją lub
@@ -400,8 +839,14 @@ export function SoltysSpolecznoscKlient({
           Opublikuj wydarzenie
         </button>
       </form>
+      ) : null}
 
-      <form onSubmit={onDodajHarmonogram} className="rounded-2xl border border-teal-200/80 bg-gradient-to-br from-teal-50/40 to-white p-5 shadow-sm">
+      {sekcjaAktywna === "harmonogram" ? (
+      <form
+        id="sekcja-harmonogram"
+        onSubmit={onDodajHarmonogram}
+        className="scroll-mt-[10.5rem] rounded-2xl border border-teal-200/80 bg-gradient-to-br from-teal-50/40 to-white p-5 shadow-sm"
+      >
         <h2 className="font-serif text-xl text-green-950">Plan stałych zajęć (tydzień)</h2>
         <p className="mt-1 text-sm text-stone-600">
           Powtarzalne terminy (np. próba zespołu co wtorek). Jednorazowe imprezy dodawaj w kalendarzu wydarzeń powyżej.
@@ -461,8 +906,14 @@ export function SoltysSpolecznoscKlient({
           </ul>
         ) : null}
       </form>
+      ) : null}
 
-      <form onSubmit={onDodajDotacje} className="rounded-2xl border border-emerald-200/80 bg-gradient-to-br from-emerald-50/40 to-white p-5 shadow-sm">
+      {sekcjaAktywna === "dotacje" ? (
+      <form
+        id="sekcja-dotacje"
+        onSubmit={onDodajDotacje}
+        className="scroll-mt-[10.5rem] rounded-2xl border border-emerald-200/80 bg-gradient-to-br from-emerald-50/40 to-white p-5 shadow-sm"
+      >
         <h2 className="font-serif text-xl text-green-950">Źródła dofinansowania (informacyjnie)</h2>
         <p className="mt-1 text-sm text-stone-600">
           Skrót programu, link do naboru, orientacyjna kwota — bez obietnic prawnych. Pełna lista na profilu: /dotacje.
@@ -508,7 +959,9 @@ export function SoltysSpolecznoscKlient({
           </ul>
         ) : null}
       </form>
+      ) : null}
 
+      {sekcjaAktywna === "bloger" ? (
       <form onSubmit={onDodajBlogera} className="rounded-2xl border border-stone-200 bg-white p-5 shadow-sm">
         <h2 className="font-serif text-xl text-green-950">Profil blogera / kronikarza</h2>
         <div className="mt-4 grid gap-3 md:grid-cols-2">
@@ -521,7 +974,9 @@ export function SoltysSpolecznoscKlient({
           Zapisz profil blogera
         </button>
       </form>
+      ) : null}
 
+      {sekcjaAktywna === "blog" ? (
       <form onSubmit={onDodajBlog} className="rounded-2xl border border-stone-200 bg-white p-5 shadow-sm">
         <h2 className="font-serif text-xl text-green-950">Nowy wpis blogowy</h2>
         <div className="mt-4 grid gap-3">
@@ -536,7 +991,9 @@ export function SoltysSpolecznoscKlient({
           Opublikuj wpis blogowy
         </button>
       </form>
+      ) : null}
 
+      {sekcjaAktywna === "historia" ? (
       <form onSubmit={onDodajHistorie} className="rounded-2xl border border-stone-200 bg-white p-5 shadow-sm">
         <h2 className="font-serif text-xl text-green-950">Nowy wpis historii wsi</h2>
         <div className="mt-4 grid gap-3">
@@ -553,7 +1010,9 @@ export function SoltysSpolecznoscKlient({
           Opublikuj wpis historii
         </button>
       </form>
+      ) : null}
 
+      {sekcjaAktywna === "profil_uslug" ? (
       <form onSubmit={onZapiszProfilUslug} className="rounded-2xl border border-stone-200 bg-white p-5 shadow-sm">
         <h2 className="font-serif text-xl text-green-950">Profil usług lokalnych</h2>
         <div className="mt-4 grid gap-3 md:grid-cols-2">
@@ -570,8 +1029,14 @@ export function SoltysSpolecznoscKlient({
           Zapisz profil usług
         </button>
       </form>
+      ) : null}
 
-      <form onSubmit={onDodajOferte} className="rounded-2xl border border-stone-200 bg-white p-5 shadow-sm">
+      {sekcjaAktywna === "marketplace" ? (
+      <form
+        id="sekcja-marketplace"
+        onSubmit={onDodajOferte}
+        className="scroll-mt-[10.5rem] rounded-2xl border border-stone-200 bg-white p-5 shadow-sm"
+      >
         <h2 className="font-serif text-xl text-green-950">Darmowe ogłoszenie marketplace</h2>
         <div className="mt-4 grid gap-3 md:grid-cols-2">
           <select name="listing_type" className="rounded border border-stone-300 px-3 py-2 text-sm">
@@ -593,8 +1058,14 @@ export function SoltysSpolecznoscKlient({
           Opublikuj darmowe ogłoszenie
         </button>
       </form>
+      ) : null}
 
-      <form onSubmit={onDodajWiadomosc} className="rounded-2xl border border-stone-200 bg-white p-5 shadow-sm">
+      {sekcjaAktywna === "wiadomosci" ? (
+      <form
+        id="sekcja-wiadomosci"
+        onSubmit={onDodajWiadomosc}
+        className="scroll-mt-[10.5rem] rounded-2xl border border-stone-200 bg-white p-5 shadow-sm"
+      >
         <h2 className="font-serif text-xl text-green-950">Lokalna wiadomość (także automatyczna)</h2>
         <div className="mt-4 grid gap-3 md:grid-cols-2">
           <input name="title" placeholder="Tytuł wiadomości" required className="rounded border border-stone-300 px-3 py-2 text-sm md:col-span-2" />
@@ -613,7 +1084,9 @@ export function SoltysSpolecznoscKlient({
           Opublikuj wiadomość
         </button>
       </form>
+      ) : null}
 
+      {sekcjaAktywna === "automatyzacje" ? (
       <div className="rounded-2xl border border-stone-200 bg-stone-50 p-5">
         <h2 className="font-serif text-xl text-green-950">Automatyzacje porządkujące</h2>
         <p className="mt-2 text-sm text-stone-700">
@@ -629,6 +1102,7 @@ export function SoltysSpolecznoscKlient({
           Uruchom automatyzacje teraz
         </button>
       </div>
+      ) : null}
     </section>
   );
 }

@@ -9,7 +9,7 @@ import { sciezkaProfiluWsi } from "@/lib/wies/sciezka-publiczna";
 export const metadata: Metadata = {
   title: "Mapa wsi",
   description:
-    "Mapa wsi: granice sołectwa, punkt wsi oraz miejsca w miejscowości (m.in. kościół, szkoła, świetlica) — gdy sołectwo doda dane w serwisie.",
+    "Mapa wsi: granice sołectwa, punkt wsi oraz miejsca w miejscowości (m.in. kościół, szkoła, świetlica, stacja kolejowa) — gdy sołectwo doda dane w serwisie.",
 };
 
 type WierszRpc = {
@@ -222,7 +222,20 @@ export default async function MapaPage() {
             aria-hidden="true"
           />
           <p className="mt-5 max-w-2xl text-sm leading-relaxed text-stone-600">
-            Przy każdej wsi: granica (jeśli wgrana), punkt odniesienia oraz <strong>oznaczenia w sołectwie</strong> — m.in. kościół, szkoła, świetlica, OSP, punkt kontaktowy sołtysa, gdy sołectwo wprowadzi je do serwisu.
+            Przy każdej wsi: granica (jeśli wgrana), punkt odniesienia (GPS wsi w bazie) oraz <strong>oznaczenia w sołectwie</strong> — m.in. kościół, szkoła, świetlica, OSP, stacja kolejowa: dane w tabeli punktów mapy. Sołtys może w panelu{" "}
+            <Link href="/panel/soltys/moja-wies" className="font-medium text-green-900 underline decoration-green-800/35 underline-offset-2">
+              Profil wsi
+            </Link>{" "}
+            dopisać brakujące miejsca z{" "}
+            <a
+              href="https://www.openstreetmap.org/"
+              className="font-medium text-green-900 underline decoration-green-800/35 underline-offset-2"
+              target="_blank"
+              rel="noreferrer"
+            >
+              OpenStreetMap
+            </a>{" "}
+            (import pomocniczy — warto zweryfikować na miejscu).
           </p>
         </header>
 

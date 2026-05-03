@@ -2,6 +2,16 @@
 @tailwind components;
 @tailwind utilities;
 
+html {
+  -webkit-text-size-adjust: 100%;
+}
+
+body {
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
 /* Formularz waitlist (fragment HTML z landingu) */
 .waitlist-honeypot {
   position: absolute;
@@ -78,6 +88,44 @@
 
 /* Panel — spójne karty i fokus (dostępność) */
 @layer components {
+  .page-shell {
+    @apply mx-auto w-full min-w-0 max-w-7xl;
+  }
+  .panel-shell {
+    @apply mx-auto w-full min-w-0 max-w-6xl;
+  }
+  .tytul-sekcji-panelu {
+    @apply font-serif text-[clamp(1.35rem,2.4vw,1.95rem)] leading-tight text-green-950;
+  }
+  .siatka-kafli-responsywna {
+    @apply grid gap-3 sm:grid-cols-2 xl:grid-cols-3;
+  }
+  .form-control {
+    @apply min-h-[44px] rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm text-stone-900 shadow-sm outline-none transition placeholder:text-stone-400 focus:border-green-700 focus:ring-2 focus:ring-green-800/20;
+  }
+  .form-control--textarea {
+    @apply min-h-0 resize-y;
+  }
+  .sekcja-form-nav {
+    @apply no-print sticky top-[8.4rem] z-20 overflow-x-auto rounded-xl border border-stone-200/80 bg-white/95 px-2 py-2 text-xs shadow-sm backdrop-blur [-webkit-overflow-scrolling:touch] [scrollbar-width:thin];
+  }
+  .sekcja-form-nav-link {
+    @apply shrink-0 rounded-lg border border-stone-200 bg-stone-50 px-2.5 py-1.5 text-stone-700 transition hover:border-green-300 hover:bg-green-50 hover:text-green-950;
+  }
+  .forms-premium :is(input:not([type="checkbox"]), select, textarea) {
+    @apply form-control;
+    width: 100%;
+  }
+  .forms-premium textarea {
+    @apply form-control--textarea;
+  }
+  .forms-premium label {
+    @apply text-xs font-medium tracking-wide text-stone-600;
+  }
+  .forms-premium button[type="submit"] {
+    @apply w-full sm:w-auto;
+    min-height: 44px;
+  }
   .panel-karta {
     @apply rounded-2xl border border-stone-200/90 bg-white p-5 shadow-sm ring-1 ring-stone-900/[0.04] transition duration-200;
   }

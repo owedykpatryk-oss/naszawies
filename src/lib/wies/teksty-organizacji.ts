@@ -1,6 +1,14 @@
 /** Etykiety typów organizacji i wydarzeń — spójne UI publiczne i panel. */
 export const ETYKIETA_TYP_GRUPY: Record<string, string> = {
   kgw: "Koło Gospodyń Wiejskich",
+  osp: "OSP / straż pożarna",
+  parafia: "Parafia / duszpasterstwo",
+  rada_solecka: "Rada sołecka",
+  seniorzy: "Klub seniora",
+  mlodziez: "Młodzież / grupa młodzieżowa",
+  wolontariat: "Wolontariat / pomoc sąsiedzka",
+  rolnicy: "Koło rolników",
+  przedsiebiorcy: "Lokalni przedsiębiorcy",
   sport: "Klub / sport",
   taniec: "Grupa taneczna",
   muzyka: "Zespół / muzyka",

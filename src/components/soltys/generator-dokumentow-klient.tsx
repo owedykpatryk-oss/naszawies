@@ -29,6 +29,11 @@ type ScenariuszDokumentu = {
   uzupelnienia: Record<string, string>;
 };
 
+type StylDokumentu = "urzedowy" | "elegancki" | "nowoczesny";
+type RozmiarDokumentu = "standard" | "duzy";
+type ZnakWodnyDokumentu = "brak" | "subtelny";
+type UkladPodpisowDokumentu = "jeden" | "dwa" | "trzy";
+
 function polaScenariusza(pola: Record<string, string>): Record<string, string> {
   return pola;
 }
@@ -72,6 +77,11 @@ export function GeneratorDokumentowSoltysaKlient({
     wygenerujNumerReferencyjnySoltys(),
   );
   const [aktywnyKrokLejka, ustawAktywnyKrokLejka] = useState<number | null>(null);
+  const [stylDokumentu, ustawStylDokumentu] = useState<StylDokumentu>("urzedowy");
+  const [rozmiarDokumentu, ustawRozmiarDokumentu] = useState<RozmiarDokumentu>("standard");
+  const [znakWodnyDokumentu, ustawZnakWodnyDokumentu] = useState<ZnakWodnyDokumentu>("subtelny");
+  const [ukladPodpisow, ustawUkladPodpisow] = useState<UkladPodpisowDokumentu>("jeden");
+  const [aktywnieEdytowanePole, ustawAktywnieEdytowanePole] = useState<string>("");
 
   const opcjeDomyslne = useMemo(
     () => ({
@@ -160,6 +170,58 @@ export function GeneratorDokumentowSoltysaKlient({
           przedmiot: "Lista przekazanych materiałów / sprzętu / usług (ilość, stan, wartość orientacyjna).",
           uwagi: "Przekazanie zgodne z ustaleniami stron.",
           podpis,
+        }),
+      },
+      {
+        id: "wow-kgw-plan-roczny",
+        tytul: "KGW: plan roczny",
+        opis: "Gotowy układ działań, harmonogramu i budżetu dla koła gospodyń.",
+        presetId: "plan-pracy-kgw-roczny",
+        uzupelnienia: polaScenariusza({
+          nazwa_kgw: "KGW [NAZWA KOŁA]",
+          wies: nazwaWsi !== "Twojej wsi" ? nazwaWsi : "Sołectwo …",
+          rok_plan: String(new Date().getFullYear()),
+          cele:
+            "1) Integracja mieszkańców przez wydarzenia lokalne.\n2) Wzmocnienie współpracy międzypokoleniowej.\n3) Promocja tradycji kulinarnych i rękodzielniczych.",
+          harmonogram:
+            "I kwartał: warsztaty kulinarne.\nII kwartał: piknik rodzinny.\nIII kwartał: udział w dożynkach.\nIV kwartał: kiermasz świąteczny i podsumowanie.",
+          budzet:
+            "Składki członkowskie, wsparcie sponsorskie, mikrodotacje gminne i dochód z wydarzeń lokalnych.",
+          podpis: "Przewodnicząca KGW …",
+        }),
+      },
+      {
+        id: "wow-kgw-dotacja",
+        tytul: "KGW: wniosek o mikrodotację",
+        opis: "Start do naboru gminnego z gotowym opisem projektu i rezultatami.",
+        presetId: "wniosek-kgw-mikrodotacja",
+        uzupelnienia: polaScenariusza({
+          adresat: "Do [NAZWA PROGRAMU / GMINY / FUNDACJI]",
+          nazwa_kgw: "KGW [NAZWA KOŁA]",
+          wies: nazwaWsi !== "Twojej wsi" ? nazwaWsi : "Sołectwo …",
+          tytul_projektu: "Tradycja i integracja pokoleń",
+          kwota: "4 500,00 PLN",
+          opis:
+            "Projekt obejmuje cykl otwartych warsztatów i wydarzeń sąsiedzkich budujących integrację oraz aktywność mieszkańców.",
+          rezultaty:
+            "Min. 4 wydarzenia, wzrost udziału mieszkańców w działaniach społecznych, trwałe materiały i know-how dla kolejnych edycji.",
+          podpis: "Przewodnicząca KGW …",
+        }),
+      },
+      {
+        id: "wow-osp-komunikat",
+        tytul: "OSP: komunikat bezpieczeństwa",
+        opis: "Szybki szablon informacji dla mieszkańców o ćwiczeniach i zaleceniach.",
+        presetId: "komunikat-osp-bezpieczenstwo",
+        uzupelnienia: polaScenariusza({
+          jednostka: "OSP [NAZWA JEDNOSTKI]",
+          temat: "Ćwiczenia OSP i czasowe utrudnienia",
+          data_miejsce: "Data: …\nMiejsce: …",
+          tresc:
+            "W wyznaczonym czasie odbędą się ćwiczenia służb. Mogą wystąpić chwilowe utrudnienia w ruchu i wzmożony ruch pojazdów ratowniczych.",
+          zalecenia:
+            "Prosimy o zachowanie ostrożności, nieblokowanie dojazdów i stosowanie się do poleceń służb porządkowych.",
+          kontakt,
         }),
       },
     ];
@@ -349,8 +411,21 @@ export function GeneratorDokumentowSoltysaKlient({
       numerReferencyjny: numerReferencyjnySesji,
       kontekstSolectwa: kontekstSolectwaDlaMeta(domyslnaWies, domyslnaGmina),
       wygenerowalNazwa: domyslnySoltysNazwa.trim() || undefined,
+      stylWydruku: stylDokumentu,
+      rozmiarWydruku: rozmiarDokumentu,
+      znakWodny: znakWodnyDokumentu,
+      ukladPodpisow,
     };
-  }, [domyslnaWies, domyslnaGmina, domyslnySoltysNazwa, numerReferencyjnySesji]);
+  }, [
+    domyslnaWies,
+    domyslnaGmina,
+    domyslnySoltysNazwa,
+    numerReferencyjnySesji,
+    stylDokumentu,
+    rozmiarDokumentu,
+    znakWodnyDokumentu,
+    ukladPodpisow,
+  ]);
 
   const htmlPodglad = useMemo(() => {
     if (!preset) return "";
@@ -382,6 +457,27 @@ export function GeneratorDokumentowSoltysaKlient({
       return { ...prev, [poleId]: fragment };
     });
   }, []);
+
+  const poprawBrzmieniePola = useCallback(
+    (wariant: "formalny" | "konkretny" | "uprzejmy") => {
+      const poleId = aktywnieEdytowanePole;
+      if (!poleId) return;
+      ustawWartosci((prev) => {
+        const bazowy = (prev[poleId] ?? "").trim();
+        if (!bazowy) return prev;
+        let nowy = bazowy;
+        if (wariant === "formalny") {
+          nowy = `Niniejszym informuję, że ${bazowy.charAt(0).toLowerCase()}${bazowy.slice(1)}.`;
+        } else if (wariant === "konkretny") {
+          nowy = `Zakres działań:\n- ${bazowy.replace(/\n+/g, "\n- ")}`;
+        } else {
+          nowy = `${bazowy}\n\nW razie pytań pozostaję do dyspozycji i dziękuję za życzliwe rozpatrzenie sprawy.`;
+        }
+        return { ...prev, [poleId]: nowy };
+      });
+    },
+    [aktywnieEdytowanePole],
+  );
 
   const wartosciDlaSugestii = useMemo(
     () => ({
@@ -568,6 +664,135 @@ export function GeneratorDokumentowSoltysaKlient({
             </p>
           </div>
 
+          <div className="no-print rounded-xl border border-sky-200/80 bg-sky-50/40 p-3">
+            <p className="text-xs font-semibold uppercase tracking-wide text-sky-900">Styl dokumentu</p>
+            <p className="mt-1 text-xs text-stone-600">
+              Zmień wygląd podglądu i PDF bez zmiany treści: urzędowy, elegancki lub nowoczesny.
+            </p>
+            <div className="mt-2 flex flex-wrap gap-2">
+              {([
+                { id: "urzedowy", label: "Urzędowy" },
+                { id: "elegancki", label: "Elegancki" },
+                { id: "nowoczesny", label: "Nowoczesny" },
+              ] as { id: StylDokumentu; label: string }[]).map((s) => (
+                <button
+                  key={s.id}
+                  type="button"
+                  onClick={() => ustawStylDokumentu(s.id)}
+                  className={`rounded-lg border px-3 py-1.5 text-xs font-medium transition ${
+                    stylDokumentu === s.id
+                      ? "border-sky-600 bg-sky-100 text-sky-950"
+                      : "border-stone-300 bg-white text-stone-700 hover:bg-stone-50"
+                  }`}
+                >
+                  {s.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="no-print rounded-xl border border-fuchsia-200/80 bg-fuchsia-50/30 p-3">
+            <p className="text-xs font-semibold uppercase tracking-wide text-fuchsia-900">Wygląd wydruku i PDF</p>
+            <p className="mt-1 text-xs text-stone-600">
+              Dopracuj finalny wygląd pod prezentację dla gminy, sponsora lub zebrania.
+            </p>
+            <div className="mt-2 flex flex-wrap items-center gap-2">
+              <span className="text-[11px] font-medium text-stone-700">Rozmiar tekstu:</span>
+              {([
+                { id: "standard", label: "Standard" },
+                { id: "duzy", label: "Większy (czytelniejszy)" },
+              ] as { id: RozmiarDokumentu; label: string }[]).map((r) => (
+                <button
+                  key={r.id}
+                  type="button"
+                  onClick={() => ustawRozmiarDokumentu(r.id)}
+                  className={`rounded-lg border px-2.5 py-1 text-xs font-medium transition ${
+                    rozmiarDokumentu === r.id
+                      ? "border-fuchsia-600 bg-fuchsia-100 text-fuchsia-950"
+                      : "border-stone-300 bg-white text-stone-700 hover:bg-stone-50"
+                  }`}
+                >
+                  {r.label}
+                </button>
+              ))}
+            </div>
+            <div className="mt-2 flex flex-wrap items-center gap-2">
+              <span className="text-[11px] font-medium text-stone-700">Znak wodny:</span>
+              {([
+                { id: "subtelny", label: "Subtelny" },
+                { id: "brak", label: "Bez znaku" },
+              ] as { id: ZnakWodnyDokumentu; label: string }[]).map((z) => (
+                <button
+                  key={z.id}
+                  type="button"
+                  onClick={() => ustawZnakWodnyDokumentu(z.id)}
+                  className={`rounded-lg border px-2.5 py-1 text-xs font-medium transition ${
+                    znakWodnyDokumentu === z.id
+                      ? "border-fuchsia-600 bg-fuchsia-100 text-fuchsia-950"
+                      : "border-stone-300 bg-white text-stone-700 hover:bg-stone-50"
+                  }`}
+                >
+                  {z.label}
+                </button>
+              ))}
+            </div>
+            <div className="mt-2 flex flex-wrap items-center gap-2">
+              <span className="text-[11px] font-medium text-stone-700">Układ podpisów:</span>
+              {([
+                { id: "jeden", label: "1 podpis" },
+                { id: "dwa", label: "2 podpisy" },
+                { id: "trzy", label: "3 podpisy" },
+              ] as { id: UkladPodpisowDokumentu; label: string }[]).map((u) => (
+                <button
+                  key={u.id}
+                  type="button"
+                  onClick={() => ustawUkladPodpisow(u.id)}
+                  className={`rounded-lg border px-2.5 py-1 text-xs font-medium transition ${
+                    ukladPodpisow === u.id
+                      ? "border-fuchsia-600 bg-fuchsia-100 text-fuchsia-950"
+                      : "border-stone-300 bg-white text-stone-700 hover:bg-stone-50"
+                  }`}
+                >
+                  {u.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div className="no-print rounded-xl border border-amber-200/80 bg-amber-50/40 p-3">
+            <p className="text-xs font-semibold uppercase tracking-wide text-amber-900">Dopasowanie języka</p>
+            <p className="mt-1 text-xs text-stone-600">
+              Kliknij pole tekstowe (np. uzasadnienie), a potem wybierz szybkie dopracowanie stylu.
+            </p>
+            <div className="mt-2 flex flex-wrap gap-2">
+              <button
+                type="button"
+                onClick={() => poprawBrzmieniePola("formalny")}
+                className="rounded-lg border border-stone-300 bg-white px-3 py-1.5 text-xs text-stone-800 hover:bg-stone-50"
+              >
+                Bardziej formalnie
+              </button>
+              <button
+                type="button"
+                onClick={() => poprawBrzmieniePola("konkretny")}
+                className="rounded-lg border border-stone-300 bg-white px-3 py-1.5 text-xs text-stone-800 hover:bg-stone-50"
+              >
+                Bardziej konkretnie
+              </button>
+              <button
+                type="button"
+                onClick={() => poprawBrzmieniePola("uprzejmy")}
+                className="rounded-lg border border-stone-300 bg-white px-3 py-1.5 text-xs text-stone-800 hover:bg-stone-50"
+              >
+                Bardziej uprzejmie
+              </button>
+            </div>
+            <p className="mt-2 text-[11px] text-stone-500">
+              Aktywne pole:{" "}
+              <span className="font-mono text-stone-700">{aktywnieEdytowanePole || "— kliknij najpierw pole"}</span>
+            </p>
+          </div>
+
           {sugestieGrup.length > 0 ? (
             <div
               className="no-print rounded-xl border border-emerald-200/90 bg-gradient-to-br from-emerald-50/95 via-white to-teal-50/40 p-4 shadow-sm"
@@ -617,6 +842,7 @@ export function GeneratorDokumentowSoltysaKlient({
                     id={`pole-${pole.id}`}
                     value={wartosci[pole.id] ?? ""}
                     onChange={(e) => ustawWartosci((prev) => ({ ...prev, [pole.id]: e.target.value }))}
+                    onFocus={() => ustawAktywnieEdytowanePole(pole.id)}
                     rows={pole.wiersze ?? 4}
                     placeholder={pole.placeholder}
                     className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2.5 text-base sm:py-2 sm:text-sm"
@@ -627,6 +853,7 @@ export function GeneratorDokumentowSoltysaKlient({
                     type={pole.typ === "date" ? "date" : "text"}
                     value={wartosci[pole.id] ?? ""}
                     onChange={(e) => ustawWartosci((prev) => ({ ...prev, [pole.id]: e.target.value }))}
+                    onFocus={() => ustawAktywnieEdytowanePole(pole.id)}
                     placeholder={pole.placeholder}
                     className="mt-1 w-full min-h-[48px] rounded-lg border border-stone-300 px-3 py-2.5 text-base sm:min-h-0 sm:py-2 sm:text-sm"
                   />

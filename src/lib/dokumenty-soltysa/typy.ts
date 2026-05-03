@@ -35,6 +35,14 @@ export type PresetDokumentu = {
       kontekstSolectwa?: string;
       /** Imię i nazwisko z profilu naszawies.pl */
       wygenerowalNazwa?: string;
+      /** Motyw wizualny wydruku / PDF */
+      stylWydruku?: "urzedowy" | "elegancki" | "nowoczesny";
+      /** Czytelność dokumentu (większy tekst np. dla starszych mieszkańców). */
+      rozmiarWydruku?: "standard" | "duzy";
+      /** Subtelny znak wodny naszawies.pl */
+      znakWodny?: "brak" | "subtelny";
+      /** Układ bloku podpisów na końcu dokumentu. */
+      ukladPodpisow?: "jeden" | "dwa" | "trzy";
     }
   ) => string;
 };

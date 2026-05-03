@@ -47,8 +47,7 @@ export function MieszkaniecKlient() {
       <section className="rounded-2xl border border-stone-200 bg-white p-6 shadow-sm">
         <h2 className="font-serif text-xl text-green-950">Obserwuj wieś</h2>
         <p className="mt-1 text-sm text-stone-600">
-          Zapis na listę obserwowanych (<code className="rounded bg-stone-100 px-1 text-xs">user_follows</code>) —
-          podstawa pod powiadomienia e-mail / w aplikacji.
+          Dodaj wieś do obserwowanych, aby szybciej dostawać informacje i powiadomienia.
         </p>
         <div className="mt-4">
           <WyszukiwarkaWsi

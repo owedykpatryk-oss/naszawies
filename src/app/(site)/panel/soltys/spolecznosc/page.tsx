@@ -4,12 +4,17 @@ import { redirect } from "next/navigation";
 import { pobierzVillageIdsRoliPaneluSoltysaDlaUzytkownikaCache } from "@/lib/panel/rola-panelu-soltysa";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
 import { SoltysSpolecznoscKlient, type WiesDoModeracjiSpolecznosci } from "./spolecznosc-klient";
+import { type TrybOrganizacji } from "./tryby-pracy";
 
 export const metadata: Metadata = {
   title: "Społeczność i WOW (sołtys)",
 };
 
-export default async function SoltysSpolecznoscPage() {
+export default async function SoltysSpolecznoscPage({
+  searchParams,
+}: {
+  searchParams?: { tryb?: string };
+}) {
   const supabase = utworzKlientaSupabaseSerwer();
   const {
     data: { user },
@@ -21,7 +26,7 @@ export default async function SoltysSpolecznoscPage() {
   if (villageIds.length === 0) {
     return (
       <main>
-        <h1 className="font-serif text-3xl text-green-950">Społeczność i rozwój</h1>
+        <h1 className="tytul-sekcji-panelu">Społeczność i rozwój</h1>
         <p className="mt-2 text-sm text-stone-600">Nie masz jeszcze przypisanej wsi w roli sołtysa lub współadmina.</p>
         <p className="mt-4 text-sm text-stone-600">
           <Link href="/panel/soltys" className="text-green-800 underline">
@@ -37,11 +42,16 @@ export default async function SoltysSpolecznoscPage() {
 
   const { data: grupyRows } = await supabase
     .from("village_community_groups")
-    .select("id, village_id, name")
+    .select("id, village_id, name, group_type")
     .in("village_id", villageIds)
     .eq("is_active", true)
     .order("name");
-  const grupyOrganizacji = (grupyRows ?? []) as { id: string; village_id: string; name: string }[];
+  const grupyOrganizacji = (grupyRows ?? []) as {
+    id: string;
+    village_id: string;
+    name: string;
+    group_type: string;
+  }[];
 
   const { data: slotyRows } = await supabase
     .from("village_weekly_schedule_slots")
@@ -68,11 +78,57 @@ export default async function SoltysSpolecznoscPage() {
     .limit(120);
   const zrodlaDotacji = (dotRows ?? []) as { id: string; village_id: string; title: string; category: string }[];
 
+  const { data: kontaktyRows } = await supabase
+    .from("village_official_contacts")
+    .select("id, village_id, office_key, role_label, person_name, duty_hours_text, is_verified_by_soltys, updated_at")
+    .in("village_id", villageIds)
+    .eq("is_active", true)
+    .order("display_order", { ascending: true });
+  const kontaktyUrzedowe = (kontaktyRows ?? []) as {
+    id: string;
+    village_id: string;
+    office_key: string;
+    role_label: string;
+    person_name: string;
+    duty_hours_text: string | null;
+    is_verified_by_soltys: boolean;
+    updated_at: string;
+  }[];
+
+  const { data: kadencjeRows } = await supabase
+    .from("village_official_terms")
+    .select("id, village_id, office_key, role_label, person_name, term_start, term_end, is_current")
+    .in("village_id", villageIds)
+    .order("term_start", { ascending: false })
+    .limit(200);
+  const kadencjeFunkcyjne = (kadencjeRows ?? []) as {
+    id: string;
+    village_id: string;
+    office_key: string;
+    role_label: string;
+    person_name: string;
+    term_start: string;
+    term_end: string | null;
+    is_current: boolean;
+  }[];
+
+  const trybZUrl: TrybOrganizacji =
+    searchParams?.tryb === "kgw" || searchParams?.tryb === "osp" || searchParams?.tryb === "ogolny"
+      ? searchParams.tryb
+      : "ogolny";
+
   return (
     <main>
-      <h1 className="font-serif text-3xl text-green-950">Społeczność i rozwój</h1>
+      <h1 className="tytul-sekcji-panelu">Społeczność i rozwój</h1>
       <p className="mt-2 text-sm text-stone-600">
         Moduły WOW dla mieszkańców: blog lokalny, historia wsi, darmowy marketplace, lokalne wiadomości i automatyzacje.
+      </p>
+      <p className="mt-2 text-sm text-stone-600">
+        Potrzebujesz instrukcji? Zobacz{" "}
+        <Link href="/panel/soltys/pomoc" className="text-green-800 underline">
+          pomoc krok po kroku
+        </Link>
+        .
       </p>
       <div className="mt-6 rounded-xl border border-teal-200/90 bg-teal-50/50 p-4 text-sm text-teal-950">
         <p className="font-medium text-green-950">Checklista sołtysa (5 min.)</p>
@@ -101,6 +157,9 @@ export default async function SoltysSpolecznoscPage() {
         grupyOrganizacji={grupyOrganizacji}
         slotyHarmonogramu={slotyHarmonogramu}
         zrodlaDotacji={zrodlaDotacji}
+        kontaktyUrzedowe={kontaktyUrzedowe}
+        kadencjeFunkcyjne={kadencjeFunkcyjne}
+        domyslnyTryb={trybZUrl}
       />
     </main>
   );

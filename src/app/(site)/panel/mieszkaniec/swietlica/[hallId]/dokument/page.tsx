@@ -34,7 +34,7 @@ export default async function DokumentWynajmuMieszkaniecPage({ params }: Props) 
         </Link>
       </p>
       <NawigacjaSali hallId={hallId} rola="mieszkaniec" />
-      <h1 className="font-serif text-2xl text-green-950">Dokument informacyjny</h1>
+      <h1 className="tytul-sekcji-panelu">Dokument informacyjny</h1>
       <p className="mt-1 text-sm text-stone-600">
         Ten sam zestaw informacji co dla sołtysa: regulamin, kaucja, ceny, wyposażenie i plan stołów (jeśli został
         zapisany).

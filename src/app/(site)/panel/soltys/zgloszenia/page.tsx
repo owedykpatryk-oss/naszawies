@@ -28,7 +28,7 @@ export default async function SoltysZgloszeniaPage() {
             ← Panel sołtysa
           </Link>
         </p>
-        <h1 className="font-serif text-3xl text-green-950">Zgłoszenia i usterki</h1>
+        <h1 className="tytul-sekcji-panelu">Zgłoszenia i usterki</h1>
         <p className="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-950">
           Nie masz uprawnień do żadnej wsi w tej roli.
         </p>
@@ -105,7 +105,7 @@ export default async function SoltysZgloszeniaPage() {
           ← Panel sołtysa
         </Link>
       </p>
-      <h1 className="font-serif text-3xl text-green-950">Zgłoszenia i usterki</h1>
+      <h1 className="tytul-sekcji-panelu">Zgłoszenia i usterki</h1>
       <p className="mt-3 max-w-2xl text-sm leading-relaxed text-stone-600">
         Widzisz <strong>z kim jest problem</strong> (imię z profilu), dane opisowe, zdjęcia i szybkie zaznaczenia. Na
         publicznych ekranach tych danych nie ma — tylko Ty i zgłaszający widzicie własny wątek w całości, zgodnie z

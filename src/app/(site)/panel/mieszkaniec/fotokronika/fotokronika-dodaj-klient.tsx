@@ -100,7 +100,7 @@ export function FotokronikaDodajKlient({ wies, albumy, uzytkownik }: Props) {
   return (
     <form
       onSubmit={onSubmit}
-      className="mt-6 space-y-4 rounded-2xl border border-stone-200 bg-white p-5 shadow-sm sm:p-6"
+      className="forms-premium mt-6 space-y-4 rounded-2xl border border-stone-200 bg-white p-5 shadow-sm sm:p-6"
     >
       {blad ? (
         <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-800" role="alert">
@@ -113,15 +113,10 @@ export function FotokronikaDodajKlient({ wies, albumy, uzytkownik }: Props) {
         ustawień albumu i widoczności).
       </p>
       <div>
-        <label className="mb-1 block text-sm font-medium" htmlFor="foto-wies">
+        <label className="mb-1 block" htmlFor="foto-wies">
           Wieś
         </label>
-        <select
-          id="foto-wies"
-          value={vId}
-          onChange={(e) => ustawVId(e.target.value)}
-          className="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
-        >
+        <select id="foto-wies" value={vId} onChange={(e) => ustawVId(e.target.value)}>
           {wies.map((v) => (
             <option key={v.id} value={v.id}>
               {v.name}
@@ -130,10 +125,10 @@ export function FotokronikaDodajKlient({ wies, albumy, uzytkownik }: Props) {
         </select>
       </div>
       <div>
-        <label className="mb-1 block text-sm font-medium" htmlFor="foto-album">
+        <label className="mb-1 block" htmlFor="foto-album">
           Album (opcjonalnie)
         </label>
-        <select id="foto-album" name="album_id" className="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm">
+        <select id="foto-album" name="album_id">
           <option value="">— bez przypisania (sołtys może dodać do albumu później) —</option>
           {albumyFilt.map((a) => (
             <option key={a.id} value={a.id}>
@@ -159,26 +154,16 @@ export function FotokronikaDodajKlient({ wies, albumy, uzytkownik }: Props) {
         />
       </div>
       <div>
-        <label className="mb-1 block text-sm font-medium" htmlFor="foto-opis">
+        <label className="mb-1 block" htmlFor="foto-opis">
           Opis
         </label>
-        <input
-          id="foto-opis"
-          name="caption"
-          maxLength={2000}
-          className="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
-        />
+        <input id="foto-opis" name="caption" maxLength={2000} />
       </div>
       <div>
-        <label className="mb-1 block text-sm font-medium" htmlFor="foto-taken">
+        <label className="mb-1 block" htmlFor="foto-taken">
           Kiedy wykonano zdjęcie (opcjonalnie)
         </label>
-        <input
-          id="foto-taken"
-          name="taken_at"
-          type="datetime-local"
-          className="w-full max-w-sm rounded border border-stone-300 bg-white px-2 py-1.5 text-sm"
-        />
+        <input id="foto-taken" name="taken_at" type="datetime-local" className="w-full max-w-sm" />
       </div>
       <button
         type="submit"

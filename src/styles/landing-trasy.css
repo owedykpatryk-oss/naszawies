@@ -10,6 +10,79 @@
   }
 }
 
+/* === Dla kogo: szybkie wejście wg roli === */
+.audience {
+  padding: 2.2rem 0 0.8rem;
+}
+
+.audience-grid {
+  margin-top: 1.25rem;
+  display: grid;
+  gap: 1rem;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+@media (max-width: 980px) {
+  .audience-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.audience-card {
+  display: flex;
+  flex-direction: column;
+  min-height: 210px;
+  padding: 1.1rem 1.15rem;
+  border-radius: 16px;
+  border: 1.5px solid rgba(45, 90, 45, 0.16);
+  background: rgba(255, 255, 255, 0.78);
+  box-shadow: var(--shadow-soft);
+}
+
+.audience-card--accent {
+  border-color: rgba(45, 90, 45, 0.32);
+  background: linear-gradient(145deg, rgba(232, 240, 227, 0.95) 0%, rgba(255, 255, 255, 0.9) 100%);
+}
+
+.audience-card__badge {
+  font-size: 0.72rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--green-medium);
+}
+
+.audience-card h3 {
+  margin: 0.42rem 0 0.44rem;
+  font-family: var(--font-fraunces), ui-serif, Georgia, serif;
+  font-size: 1.08rem;
+  color: var(--green-darkest);
+}
+
+.audience-card p {
+  margin: 0;
+  font-size: 0.88rem;
+  line-height: 1.52;
+  color: var(--text-muted);
+}
+
+.audience-card__actions {
+  margin-top: auto;
+  padding-top: 0.8rem;
+}
+
+.audience-card__link {
+  font-size: 0.86rem;
+  font-weight: 650;
+  color: var(--green-dark);
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+.audience-card__link:hover {
+  color: var(--green-medium);
+}
+
 .hero-dwie-sciezki {
   margin-bottom: 1.75rem;
   max-width: 560px;

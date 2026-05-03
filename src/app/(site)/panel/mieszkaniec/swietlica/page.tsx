@@ -52,10 +52,9 @@ export default async function MieszkaniecSwietlicaPage() {
 
   return (
     <main>
-      <h1 className="font-serif text-3xl text-green-950">Świetlica</h1>
+      <h1 className="tytul-sekcji-panelu">Świetlica</h1>
       <p className="mt-2 text-sm text-stone-600">
-        Sale z katalogu <code className="rounded bg-stone-100 px-1 text-xs">halls</code> w Twoich wsiach (aktywny
-        mieszkaniec). Rezerwacje i dokument wynajmu — po wejściu w wybraną salę poniżej.
+        Sale dostępne w Twoich wsiach. Rezerwacje i dokument wynajmu znajdziesz po wejściu w wybraną salę poniżej.
       </p>
 
       {ids.length === 0 ? (

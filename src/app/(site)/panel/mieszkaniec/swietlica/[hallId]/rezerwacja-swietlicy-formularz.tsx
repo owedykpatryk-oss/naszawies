@@ -142,7 +142,7 @@ export function RezerwacjaSwietlicyFormularz({ hallId, maxGosci, inventory }: Pr
 
   return (
     <form
-      className="mt-4 space-y-4 rounded-2xl border border-stone-200 bg-white p-5 shadow-sm"
+      className="forms-premium mt-4 space-y-4 rounded-2xl border border-stone-200 bg-white p-5 shadow-sm"
       onSubmit={onSubmit}
     >
       {blad ? (
@@ -155,44 +155,50 @@ export function RezerwacjaSwietlicyFormularz({ hallId, maxGosci, inventory }: Pr
           {sukces}
         </p>
       ) : null}
+      <div className="rounded-lg border border-sky-200/80 bg-sky-50/50 p-3 text-xs text-stone-700">
+        <p className="font-semibold text-sky-900">Wniosek bez poprawek — checklista</p>
+        <ul className="mt-1 list-disc space-y-1 pl-4">
+          <li>Podaj realną liczbę gości (ułatwia dobór stołów i krzeseł).</li>
+          <li>Wybierz ustawienie sali zgodne z charakterem wydarzenia.</li>
+          <li>Zaznacz tylko faktycznie potrzebny asortyment.</li>
+        </ul>
+      </div>
 
-      <div className="grid gap-4 sm:grid-cols-2">
+      <nav className="sekcja-form-nav flex items-center gap-2" aria-label="Skróty sekcji rezerwacji">
+        <a href="#rs-sekcja-termin" className="sekcja-form-nav-link">
+          Termin
+        </a>
+        <a href="#rs-sekcja-ustawienia" className="sekcja-form-nav-link">
+          Ustawienia
+        </a>
+        <a href="#rs-sekcja-asortyment" className="sekcja-form-nav-link">
+          Asortyment
+        </a>
+        <a href="#rs-sekcja-zgody" className="sekcja-form-nav-link">
+          Zgody
+        </a>
+      </nav>
+
+      <div id="rs-sekcja-termin" className="scroll-mt-[10.5rem] grid gap-4 sm:grid-cols-2">
         <div>
-          <label htmlFor="rs-start" className="mb-1 block text-sm font-medium text-stone-700">
+          <label htmlFor="rs-start" className="mb-1 block">
             Od (data i godzina)
           </label>
-          <input
-            id="rs-start"
-            name="start_at"
-            type="datetime-local"
-            required
-            className="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm text-stone-900 outline-none ring-green-800 focus:ring-2"
-          />
+          <input id="rs-start" name="start_at" type="datetime-local" required />
         </div>
         <div>
-          <label htmlFor="rs-end" className="mb-1 block text-sm font-medium text-stone-700">
+          <label htmlFor="rs-end" className="mb-1 block">
             Do (data i godzina)
           </label>
-          <input
-            id="rs-end"
-            name="end_at"
-            type="datetime-local"
-            required
-            className="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm text-stone-900 outline-none ring-green-800 focus:ring-2"
-          />
+          <input id="rs-end" name="end_at" type="datetime-local" required />
         </div>
       </div>
 
-      <div>
-        <label htmlFor="rs-type" className="mb-1 block text-sm font-medium text-stone-700">
+      <div id="rs-sekcja-ustawienia" className="scroll-mt-[10.5rem]">
+        <label htmlFor="rs-type" className="mb-1 block">
           Typ wydarzenia
         </label>
-        <select
-          id="rs-type"
-          name="event_type"
-          className="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm text-stone-900 outline-none ring-green-800 focus:ring-2"
-          defaultValue="inne"
-        >
+        <select id="rs-type" name="event_type" defaultValue="inne">
           <option value="urodziny">Urodziny / impreza rodzinna</option>
           <option value="wesele">Wesele / przyjęcie</option>
           <option value="zebranie">Zebranie wiejskie</option>
@@ -202,14 +208,13 @@ export function RezerwacjaSwietlicyFormularz({ hallId, maxGosci, inventory }: Pr
       </div>
 
       <div>
-        <label htmlFor="rs-seating" className="mb-1 block text-sm font-medium text-stone-700">
+        <label htmlFor="rs-seating" className="mb-1 block">
           Preferowane ustawienie sali
         </label>
         <select
           id="rs-seating"
           name="seating_preset"
           onChange={(e) => setSeatingPresetInput(e.target.value as (typeof typyUstawienia)[number])}
-          className="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm text-stone-900 outline-none ring-green-800 focus:ring-2"
           defaultValue="auto_bankiet"
         >
           <option value="auto_bankiet">Auto bankiet (na liczbę gości)</option>
@@ -221,21 +226,14 @@ export function RezerwacjaSwietlicyFormularz({ hallId, maxGosci, inventory }: Pr
       </div>
 
       <div>
-        <label htmlFor="rs-title" className="mb-1 block text-sm font-medium text-stone-700">
+        <label htmlFor="rs-title" className="mb-1 block">
           Tytuł / krótki opis (opcjonalnie)
         </label>
-        <input
-          id="rs-title"
-          name="event_title"
-          type="text"
-          maxLength={200}
-          className="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm text-stone-900 outline-none ring-green-800 focus:ring-2"
-          placeholder="np. Zebranie KGW"
-        />
+        <input id="rs-title" name="event_title" type="text" maxLength={200} placeholder="np. Zebranie KGW" />
       </div>
 
       <div>
-        <label htmlFor="rs-guests" className="mb-1 block text-sm font-medium text-stone-700">
+        <label htmlFor="rs-guests" className="mb-1 block">
           Planowana liczba osób
         </label>
         <input
@@ -247,7 +245,6 @@ export function RezerwacjaSwietlicyFormularz({ hallId, maxGosci, inventory }: Pr
           required
           defaultValue={20}
           onChange={(e) => setExpectedGuestsInput(Math.max(1, Number(e.target.value) || 1))}
-          className="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm text-stone-900 outline-none ring-green-800 focus:ring-2"
         />
         {maxGosci != null ? (
           <p className="mt-1 text-xs text-stone-500">Limit sali: {maxGosci} osób.</p>
@@ -280,33 +277,38 @@ export function RezerwacjaSwietlicyFormularz({ hallId, maxGosci, inventory }: Pr
       </div>
 
       <div>
-        <label htmlFor="rs-phone" className="mb-1 block text-sm font-medium text-stone-700">
+        <label htmlFor="rs-phone" className="mb-1 block">
           Telefon kontaktowy (opcjonalnie)
         </label>
-        <input
-          id="rs-phone"
-          name="contact_phone"
-          type="tel"
-          maxLength={40}
-          autoComplete="tel"
-          className="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm text-stone-900 outline-none ring-green-800 focus:ring-2"
-        />
+        <input id="rs-phone" name="contact_phone" type="tel" maxLength={40} autoComplete="tel" />
       </div>
 
       {sortedInventory.length > 0 ? (
-        <div className="rounded-xl border border-stone-200 bg-stone-50 p-3">
+        <div id="rs-sekcja-asortyment" className="scroll-mt-[10.5rem] rounded-xl border border-stone-200 bg-stone-50 p-3">
           <p className="text-sm font-medium text-stone-800">Asortyment do rezerwacji (opcjonalnie)</p>
           <p className="mt-1 text-xs text-stone-600">
             Możesz od razu zaznaczyć, czego potrzebujesz. Sołtys zobaczy listę przy wniosku.
           </p>
           <div className="mt-2 flex flex-wrap gap-2">
-            <button type="button" onClick={() => ustawPakiet("zebranie")} className="rounded border border-stone-300 bg-white px-2 py-1 text-xs">
+            <button
+              type="button"
+              onClick={() => ustawPakiet("zebranie")}
+              className="min-h-[40px] rounded border border-stone-300 bg-white px-2 py-1 text-xs"
+            >
               Pakiet: zebranie
             </button>
-            <button type="button" onClick={() => ustawPakiet("warsztaty")} className="rounded border border-stone-300 bg-white px-2 py-1 text-xs">
+            <button
+              type="button"
+              onClick={() => ustawPakiet("warsztaty")}
+              className="min-h-[40px] rounded border border-stone-300 bg-white px-2 py-1 text-xs"
+            >
               Pakiet: warsztaty
             </button>
-            <button type="button" onClick={() => ustawPakiet("impreza")} className="rounded border border-stone-300 bg-white px-2 py-1 text-xs">
+            <button
+              type="button"
+              onClick={() => ustawPakiet("impreza")}
+              className="min-h-[40px] rounded border border-stone-300 bg-white px-2 py-1 text-xs"
+            >
               Pakiet: impreza
             </button>
           </div>
@@ -338,7 +340,7 @@ export function RezerwacjaSwietlicyFormularz({ hallId, maxGosci, inventory }: Pr
         </div>
       ) : null}
 
-      <label className="flex cursor-pointer items-start gap-2 text-sm text-stone-700">
+      <label id="rs-sekcja-zgody" className="scroll-mt-[10.5rem] flex cursor-pointer items-start gap-2 text-sm text-stone-700">
         <input name="has_alcohol" type="checkbox" className="mt-1 accent-green-800" />
         <span>Planuję podawanie alkoholu (zgodnie z obowiązującymi przepisami i zasadami gminy).</span>
       </label>

@@ -9,6 +9,7 @@ type Props = {
   nastepnaSciezka: string;
   kodBledu?: string;
   szczegolBledu?: string;
+  emailStartowy?: string;
 };
 
 const OPISY_BLEDOW: Record<string, string> = {
@@ -17,9 +18,17 @@ const OPISY_BLEDOW: Record<string, string> = {
   konfiguracja: "Logowanie jest chwilowo niedostępne. Spróbuj ponownie później.",
 };
 
-export function LogowanieFormularz({ nastepnaSciezka, kodBledu, szczegolBledu }: Props) {
+function mapujBladLogowania(msg: string): string {
+  if (msg === "Invalid login credentials") return "Nieprawidłowy e-mail lub hasło.";
+  if (msg === "Email not confirmed") return "Najpierw potwierdź adres e-mail (sprawdź skrzynkę).";
+  if (msg.toLowerCase().includes("too many requests")) return "Za dużo prób logowania. Odczekaj chwilę i spróbuj ponownie.";
+  return msg;
+}
+
+export function LogowanieFormularz({ nastepnaSciezka, kodBledu, szczegolBledu, emailStartowy = "" }: Props) {
   const router = useRouter();
   const [laduje, ustawLaduje] = useState(false);
+  const [pokazHaslo, ustawPokazHaslo] = useState(false);
   const [blad, ustawBlad] = useState(() => {
     if (!kodBledu) return "";
     const podstawa = OPISY_BLEDOW[kodBledu] ?? "Wystąpił problem z logowaniem.";
@@ -41,7 +50,7 @@ export function LogowanieFormularz({ nastepnaSciezka, kodBledu, szczegolBledu }:
       const supabase = utworzKlientaSupabasePrzegladarka();
       const { error } = await supabase.auth.signInWithPassword({ email, password: haslo });
       if (error) {
-        ustawBlad(error.message === "Invalid login credentials" ? "Nieprawidłowy e-mail lub hasło." : error.message);
+        ustawBlad(mapujBladLogowania(error.message));
         return;
       }
       router.push(nastepnaSciezka.startsWith("/") ? nastepnaSciezka : "/panel");
@@ -72,7 +81,9 @@ export function LogowanieFormularz({ nastepnaSciezka, kodBledu, szczegolBledu }:
           name="email"
           type="email"
           required
+          defaultValue={emailStartowy}
           autoComplete="email"
+          disabled={laduje}
           className="min-h-[44px] w-full rounded-xl border border-stone-300 px-3 py-2.5 text-stone-900 outline-none transition focus:border-emerald-600 focus:ring-2 focus:ring-emerald-800/30"
         />
       </div>
@@ -80,15 +91,27 @@ export function LogowanieFormularz({ nastepnaSciezka, kodBledu, szczegolBledu }:
         <label htmlFor="log-haslo" className="mb-1 block text-sm font-medium text-stone-700">
           Hasło
         </label>
-        <input
-          id="log-haslo"
-          name="haslo"
-          type="password"
-          required
-          autoComplete="current-password"
-          minLength={6}
-          className="min-h-[44px] w-full rounded-xl border border-stone-300 px-3 py-2.5 text-stone-900 outline-none transition focus:border-emerald-600 focus:ring-2 focus:ring-emerald-800/30"
-        />
+        <div className="relative">
+          <input
+            id="log-haslo"
+            name="haslo"
+            type={pokazHaslo ? "text" : "password"}
+            required
+            autoComplete="current-password"
+            minLength={6}
+            disabled={laduje}
+            className="min-h-[44px] w-full rounded-xl border border-stone-300 px-3 py-2.5 pr-24 text-stone-900 outline-none transition focus:border-emerald-600 focus:ring-2 focus:ring-emerald-800/30"
+          />
+          <button
+            type="button"
+            onClick={() => ustawPokazHaslo((v) => !v)}
+            disabled={laduje}
+            className="absolute inset-y-1 right-1 rounded-lg px-3 text-xs font-medium text-stone-700 hover:bg-stone-100 disabled:opacity-50"
+            aria-label={pokazHaslo ? "Ukryj hasło" : "Pokaż hasło"}
+          >
+            {pokazHaslo ? "Ukryj" : "Pokaż"}
+          </button>
+        </div>
       </div>
       <button
         type="submit"

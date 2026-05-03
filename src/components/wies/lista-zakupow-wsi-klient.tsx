@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useState, useTransition } from "react";
+import { FormEvent, useEffect, useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import {
   dodajPozycjeListyZakupowWsi,
@@ -25,6 +25,7 @@ export function ListaZakupowWsiKlient({
   edytowalna,
   pokazSzablony = false,
   pokazDruk = false,
+  nazwaWsi,
 }: {
   villageId: string;
   pozycje: PozycjaListyZakupow[];
@@ -32,11 +33,36 @@ export function ListaZakupowWsiKlient({
   /** Szablony KGW / święta — tylko dla zalogowanych z aktywną rolą we wsi. */
   pokazSzablony?: boolean;
   pokazDruk?: boolean;
+  /** Nagłówek na wydruku / w tytule okna drukowania. */
+  nazwaWsi?: string | null;
 }) {
   const router = useRouter();
   const [czek, startT] = useTransition();
   const [blad, setBlad] = useState("");
   const [kluczSzablonu, setKluczSzablonu] = useState(listaKluczySzablonow()[0]?.id ?? "");
+  const [widok, setWidok] = useState<"aktywne" | "zakonczone">("aktywne");
+
+  const aktywne = useMemo(() => pozycje.filter((p) => !p.is_done), [pozycje]);
+  const zakonczone = useMemo(() => pozycje.filter((p) => p.is_done), [pozycje]);
+  const wyswietlane = widok === "aktywne" ? aktywne : zakonczone;
+
+  const tytulDruku = (nazwaWsi?.trim() ? `${nazwaWsi.trim()} — lista zakupów` : "Lista zakupów") + " | naszawies.pl";
+
+  useEffect(() => {
+    const poprzedniTytul = document.title;
+    const przed = () => {
+      document.title = tytulDruku;
+    };
+    const po = () => {
+      document.title = poprzedniTytul;
+    };
+    window.addEventListener("beforeprint", przed);
+    window.addEventListener("afterprint", po);
+    return () => {
+      window.removeEventListener("beforeprint", przed);
+      window.removeEventListener("afterprint", po);
+    };
+  }, [tytulDruku]);
 
   function run(run: () => Promise<{ ok?: true; blad?: string }>) {
     setBlad("");
@@ -69,6 +95,32 @@ export function ListaZakupowWsiKlient({
   return (
     <div id="lista-zakupow-wsi-print" className="mt-4 space-y-3 print:text-black">
       {blad ? <p className="rounded border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-900">{blad}</p> : null}
+      {pozycje.length > 0 ? (
+        <div className="no-print flex flex-wrap gap-2 border-b border-stone-200 pb-3">
+          <button
+            type="button"
+            onClick={() => setWidok("aktywne")}
+            className={`rounded-lg px-3 py-1.5 text-xs font-medium ${
+              widok === "aktywne"
+                ? "bg-amber-900 text-white"
+                : "border border-stone-300 bg-white text-stone-800 hover:bg-stone-50"
+            }`}
+          >
+            Do kupienia ({aktywne.length})
+          </button>
+          <button
+            type="button"
+            onClick={() => setWidok("zakonczone")}
+            className={`rounded-lg px-3 py-1.5 text-xs font-medium ${
+              widok === "zakonczone"
+                ? "bg-amber-900 text-white"
+                : "border border-stone-300 bg-white text-stone-800 hover:bg-stone-50"
+            }`}
+          >
+            Zakończone / historia ({zakonczone.length})
+          </button>
+        </div>
+      ) : null}
       {pokazDruk && pozycje.length > 0 ? (
         <div className="no-print flex flex-wrap gap-2">
           <button
@@ -76,7 +128,7 @@ export function ListaZakupowWsiKlient({
             onClick={() => window.print()}
             className="rounded border border-stone-300 bg-white px-3 py-1.5 text-xs text-stone-800 hover:bg-stone-50"
           >
-            Drukuj listę
+            Drukuj (do kupienia + zakończone)
           </button>
         </div>
       ) : null}
@@ -108,11 +160,38 @@ export function ListaZakupowWsiKlient({
           </button>
         </div>
       ) : null}
+      <div className="hidden print:block print:pb-4">
+        <h2 className="font-serif text-lg text-black">{tytulDruku}</h2>
+        <h3 className="mt-3 text-sm font-semibold text-black">Do kupienia</h3>
+        <ul className="mt-1 space-y-1 text-sm">
+          {aktywne.map((p) => (
+            <li key={`p-a-${p.id}`}>
+              □ {p.title}
+              {p.quantity_text ? ` (${p.quantity_text})` : ""}
+              {p.note ? ` — ${p.note}` : ""}
+            </li>
+          ))}
+        </ul>
+        {zakonczone.length > 0 ? (
+          <>
+            <h3 className="mt-4 text-sm font-semibold text-black">Zakończone (archiwum z widoku listy)</h3>
+            <ul className="mt-1 space-y-1 text-sm text-stone-800">
+              {zakonczone.map((p) => (
+                <li key={`p-z-${p.id}`}>
+                  ☑ {p.title}
+                  {p.quantity_text ? ` (${p.quantity_text})` : ""}
+                </li>
+              ))}
+            </ul>
+          </>
+        ) : null}
+      </div>
+
       {pozycje.length === 0 ? (
-        <p className="text-sm text-stone-500">Lista jest pusta — dodaj pierwszą pozycję (np. mąka 2 kg, śmietana).</p>
+        <p className="text-sm text-stone-500 print:hidden">Lista jest pusta — dodaj pierwszą pozycję (np. mąka 2 kg, śmietana).</p>
       ) : (
-        <ul className="space-y-2">
-          {pozycje.map((p) => (
+        <ul className="space-y-2 print:hidden">
+          {wyswietlane.map((p) => (
             <li
               key={p.id}
               className={`flex flex-wrap items-start gap-2 rounded-lg border px-3 py-2 text-sm ${
@@ -153,8 +232,12 @@ export function ListaZakupowWsiKlient({
           ))}
         </ul>
       )}
+      {wyswietlane.length === 0 && pozycje.length > 0 ? (
+        <p className="text-sm text-stone-500 print:hidden">Brak pozycji w tej zakładce.</p>
+      ) : null}
+
       {edytowalna ? (
-        <form onSubmit={onDodaj} className="mt-4 flex flex-col gap-2 border-t border-stone-200 pt-4">
+        <form onSubmit={onDodaj} className="mt-4 flex flex-col gap-2 border-t border-stone-200 pt-4 print:hidden">
           <p className="text-xs font-medium text-stone-700">Dodaj pozycję (widzą ją wszyscy na profilu wsi)</p>
           <div className="flex flex-col gap-2 sm:flex-row sm:flex-wrap">
             <input

@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { ListaZakupowWsiKlient } from "@/components/wies/lista-zakupow-wsi-klient";
+import { roleDlaUprawnienia } from "@/lib/panel/uprawnienia-wsi";
 import { pojedynczaWies } from "@/lib/supabase/wies-z-zapytania";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
 
@@ -27,7 +28,7 @@ export default async function MieszkaniecListaZakupowPage({
     .select("village_id, villages(id, name, is_active)")
     .eq("user_id", user.id)
     .eq("status", "active")
-    .in("role", ["mieszkaniec", "soltys", "wspoladmin", "reprezentant_podmiotu"]);
+    .in("role", [...roleDlaUprawnienia("dostep_podstawowy")]);
 
   const wsie = (roleRows ?? [])
     .map((r) => {
@@ -40,7 +41,7 @@ export default async function MieszkaniecListaZakupowPage({
   if (wsie.length === 0) {
     return (
       <main>
-        <h1 className="font-serif text-3xl text-green-950">Lista zakupów wsi</h1>
+        <h1 className="tytul-sekcji-panelu">Lista zakupów wsi</h1>
         <p className="mt-2 text-sm text-stone-600">Nie masz aktywnej roli mieszkańca ani sołtysa w żadnej wsi.</p>
         <p className="mt-4 text-sm">
           <Link href="/panel/mieszkaniec" className="text-green-800 underline">
@@ -71,9 +72,11 @@ export default async function MieszkaniecListaZakupowPage({
     created_by: string | null;
   }[];
 
+  const nazwaWybranejWsi = wsie.find((w) => w.id === villageId)?.name ?? "";
+
   return (
     <main>
-      <h1 className="font-serif text-3xl text-green-950">Lista zakupów wsi</h1>
+      <h1 className="tytul-sekcji-panelu">Lista zakupów wsi</h1>
       <p className="mt-2 text-sm text-stone-600">
         Wspólna lista na KGW i sąsiadów — dopisuj produkty i zaznaczaj kupione. To samo widać na publicznym profilu
         wsi.
@@ -101,6 +104,7 @@ export default async function MieszkaniecListaZakupowPage({
           edytowalna
           pokazSzablony
           pokazDruk={pozycje.length > 0}
+          nazwaWsi={nazwaWybranejWsi}
         />
       </div>
       <p className="mt-6 text-sm">

@@ -124,7 +124,7 @@ export default async function SoltysFotokronikaPage() {
           ← Panel sołtysa
         </Link>
       </p>
-      <h1 className="font-serif text-3xl text-green-950">Fotokronika wsi</h1>
+      <h1 className="tytul-sekcji-panelu">Fotokronika wsi</h1>
       <p className="mt-2 max-w-2xl text-sm text-stone-600">
         Twórz albumy, zatwierdzaj lub odrzucaj zdjęcia od mieszkańców. Oni wysyłają pliki w{" "}
         <Link href="/panel/mieszkaniec/fotokronika" className="text-green-800 underline">

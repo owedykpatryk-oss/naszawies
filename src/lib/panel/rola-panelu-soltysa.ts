@@ -1,12 +1,7 @@
 import { cache } from "react";
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { roleDlaUprawnienia } from "@/lib/panel/uprawnienia-wsi";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
-
-/**
- * Zgodne z `is_village_soltys()` w PostgreSQL: aktywna rola sołtysa lub współadministratora wsi.
- * Nie obejmuje: mieszkaniec, reprezentant_podmiotu, pending.
- */
-export const ROLE_PANELU_SOLTYSA = ["soltys", "wspoladmin"] as const;
 
 /**
  * Id wsi, w których użytkownik może działać jak panel sołtysa (sołtys / współadmin).
@@ -20,7 +15,7 @@ export async function pobierzVillageIdsRoliPaneluSoltysa(
     .select("village_id")
     .eq("user_id", userId)
     .eq("status", "active")
-    .in("role", [...ROLE_PANELU_SOLTYSA]);
+    .in("role", [...roleDlaUprawnienia("panel_soltysa")]);
 
   return (mojeWsi ?? []).map((m) => m.village_id).filter(Boolean) as string[];
 }

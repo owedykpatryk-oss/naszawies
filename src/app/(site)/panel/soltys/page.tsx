@@ -97,26 +97,184 @@ export default async function SoltysPage() {
 
   let liczbaWiadomosciDoAkceptu = 0;
   let liczbaKanaalowRss = 0;
+  let liczbaRezerwacjiDoDecyzji = 0;
+  let liczbaWydarzen7Dni = 0;
+  let liczbaGrupKgw = 0;
+  let liczbaGrupOsp = 0;
+  let liczbaWydarzenKgw7Dni = 0;
+  let liczbaWydarzenOsp7Dni = 0;
   if (villageIds.length > 0) {
-    const { count: cNews } = await supabase
-      .from("local_news_items")
-      .select("id", { count: "exact", head: true })
-      .in("village_id", villageIds)
-      .in("status", ["pending", "draft"]);
+    const teraz = new Date();
+    const terazIso = teraz.toISOString();
+    const za7dniIso = new Date(teraz.getTime() + 7 * 24 * 60 * 60 * 1000).toISOString();
+
+    const [{ count: cNews }, { count: cFeeds }, { data: hallsRows }, { count: cEvents7Dni }, { data: grupyRows }] =
+      await Promise.all([
+        supabase
+          .from("local_news_items")
+          .select("id", { count: "exact", head: true })
+          .in("village_id", villageIds)
+          .in("status", ["pending", "draft"]),
+        supabase
+          .from("village_news_feed_sources")
+          .select("id", { count: "exact", head: true })
+          .in("village_id", villageIds),
+        supabase.from("halls").select("id").in("village_id", villageIds).limit(500),
+        supabase
+          .from("village_community_events")
+          .select("id", { count: "exact", head: true })
+          .in("village_id", villageIds)
+          .eq("status", "approved")
+          .gte("starts_at", terazIso)
+          .lte("starts_at", za7dniIso),
+        supabase
+          .from("village_community_groups")
+          .select("id, group_type")
+          .in("village_id", villageIds)
+          .eq("is_active", true)
+          .limit(500),
+      ]);
+
     liczbaWiadomosciDoAkceptu = cNews ?? 0;
-    const { count: cFeeds } = await supabase
-      .from("village_news_feed_sources")
-      .select("id", { count: "exact", head: true })
-      .in("village_id", villageIds);
     liczbaKanaalowRss = cFeeds ?? 0;
+    liczbaWydarzen7Dni = cEvents7Dni ?? 0;
+
+    const hallIds = (hallsRows ?? []).map((h) => h.id).filter(Boolean) as string[];
+    const grupy = (grupyRows ?? []) as { id: string; group_type: string }[];
+    const idsKgw = grupy.filter((g) => g.group_type === "kgw").map((g) => g.id);
+    const idsOsp = grupy.filter((g) => g.group_type === "sport" || g.group_type === "osp").map((g) => g.id);
+    liczbaGrupKgw = idsKgw.length;
+    liczbaGrupOsp = idsOsp.length;
+
+    const [bookingsRes, kgwRes, ospRes] = await Promise.all([
+      hallIds.length > 0
+        ? supabase
+            .from("hall_bookings")
+            .select("id", { count: "exact", head: true })
+            .in("hall_id", hallIds)
+            .eq("status", "pending")
+        : Promise.resolve({ count: 0 }),
+      idsKgw.length > 0
+        ? supabase
+            .from("village_community_events")
+            .select("id", { count: "exact", head: true })
+            .in("group_id", idsKgw)
+            .eq("status", "approved")
+            .gte("starts_at", terazIso)
+            .lte("starts_at", za7dniIso)
+        : Promise.resolve({ count: 0 }),
+      idsOsp.length > 0
+        ? supabase
+            .from("village_community_events")
+            .select("id", { count: "exact", head: true })
+            .in("group_id", idsOsp)
+            .eq("status", "approved")
+            .gte("starts_at", terazIso)
+            .lte("starts_at", za7dniIso)
+        : Promise.resolve({ count: 0 }),
+    ]);
+    liczbaRezerwacjiDoDecyzji = bookingsRes.count ?? 0;
+    liczbaWydarzenKgw7Dni = kgwRes.count ?? 0;
+    liczbaWydarzenOsp7Dni = ospRes.count ?? 0;
   }
 
   return (
     <main>
-      <h1 className="font-serif text-3xl text-green-950">Sołtys</h1>
+      <h1 className="tytul-sekcji-panelu">Sołtys</h1>
       <p className="mt-2 text-sm text-stone-600">
         Wnioski mieszkańców w Twoich wsiach oraz posty oczekujące na moderację.
       </p>
+      <p className="mt-1 text-sm text-stone-600">
+        Zaczynasz pracę? Otwórz{" "}
+        <Link href="/panel/soltys/pomoc" className="text-green-800 underline">
+          pomoc krok po kroku
+        </Link>
+        .
+      </p>
+
+      {villageIds.length > 0 ? (
+        <section className="mt-8 rounded-2xl border border-amber-200/80 bg-gradient-to-br from-amber-50/40 via-white to-orange-50/30 p-4 sm:p-5">
+          <h2 className="font-serif text-lg text-green-950">Dziś do zrobienia</h2>
+          <p className="mt-1 text-xs text-stone-600">
+            Jedno miejsce z najważniejszymi decyzjami i najbliższymi działaniami dla Twoich wsi.
+          </p>
+          <div className="siatka-kafli-responsywna mt-4 lg:grid-cols-4">
+            <Link
+              href="/panel/soltys"
+              className="rounded-xl border border-stone-200 bg-white/95 p-3 shadow-sm transition hover:border-amber-400"
+            >
+              <p className="text-xs text-stone-500">Wnioski mieszkańców</p>
+              <p className="mt-1 text-2xl font-semibold text-green-950">{wnioski.length}</p>
+              <p className="mt-1 text-xs text-stone-600">Do akceptacji lub odrzucenia</p>
+            </Link>
+            <Link
+              href="/panel/soltys/rezerwacje"
+              className="rounded-xl border border-stone-200 bg-white/95 p-3 shadow-sm transition hover:border-amber-400"
+            >
+              <p className="text-xs text-stone-500">Rezerwacje sal</p>
+              <p className="mt-1 text-2xl font-semibold text-green-950">{liczbaRezerwacjiDoDecyzji}</p>
+              <p className="mt-1 text-xs text-stone-600">Wnioski oczekujące na decyzję</p>
+            </Link>
+            <Link
+              href="/panel/soltys/wiadomosci-lokalne"
+              className="rounded-xl border border-stone-200 bg-white/95 p-3 shadow-sm transition hover:border-amber-400"
+            >
+              <p className="text-xs text-stone-500">Moderacja treści</p>
+              <p className="mt-1 text-2xl font-semibold text-green-950">{postyDoModeracji.length + liczbaWiadomosciDoAkceptu}</p>
+              <p className="mt-1 text-xs text-stone-600">Posty + wiadomości lokalne do przejrzenia</p>
+            </Link>
+            <Link
+              href="/panel/soltys/spolecznosc"
+              className="rounded-xl border border-stone-200 bg-white/95 p-3 shadow-sm transition hover:border-amber-400"
+            >
+              <p className="text-xs text-stone-500">Wydarzenia 7 dni</p>
+              <p className="mt-1 text-2xl font-semibold text-green-950">{liczbaWydarzen7Dni}</p>
+              <p className="mt-1 text-xs text-stone-600">Zaplanowane w najbliższym tygodniu</p>
+            </Link>
+          </div>
+          <div className="mt-3 flex flex-wrap gap-3 text-xs text-stone-600">
+            <span className="rounded-full border border-stone-200 bg-white px-2 py-1">
+              Kanały RSS podpięte: <strong>{liczbaKanaalowRss}</strong>
+            </span>
+            <span className="rounded-full border border-stone-200 bg-white px-2 py-1">
+              Wiadomości (pending/draft): <strong>{liczbaWiadomosciDoAkceptu}</strong>
+            </span>
+          </div>
+        </section>
+      ) : null}
+
+      {villageIds.length > 0 ? (
+        <section className="mt-8 rounded-2xl border border-indigo-200/80 bg-gradient-to-br from-indigo-50/60 via-white to-fuchsia-50/40 p-4 sm:p-5">
+          <h2 className="font-serif text-lg text-green-950">Centra ról organizacyjnych</h2>
+          <p className="mt-1 text-xs text-stone-600">
+            Wejdź od razu w właściwy kontekst pracy, zamiast szukać opcji po całym panelu.
+          </p>
+          <div className="mt-4 grid gap-3 sm:grid-cols-2">
+            <Link
+              href="/panel/soltys/spolecznosc?tryb=kgw"
+              className="rounded-xl border border-fuchsia-200 bg-fuchsia-50/45 p-4 shadow-sm transition hover:border-fuchsia-400"
+            >
+              <p className="text-xs text-fuchsia-900">Centrum KGW</p>
+              <p className="mt-1 text-lg font-semibold text-fuchsia-950">
+                Grupy: {liczbaGrupKgw} · Wydarzenia 7 dni: {liczbaWydarzenKgw7Dni}
+              </p>
+              <p className="mt-1 text-xs text-stone-700">Harmonogram spotkań, inicjatywy i dokumenty pod dotacje.</p>
+            </Link>
+            <Link
+              href="/panel/soltys/spolecznosc?tryb=osp"
+              className="rounded-xl border border-indigo-200 bg-indigo-50/45 p-4 shadow-sm transition hover:border-indigo-400"
+            >
+              <p className="text-xs text-indigo-900">Centrum OSP / sport</p>
+              <p className="mt-1 text-lg font-semibold text-indigo-950">
+                Grupy: {liczbaGrupOsp} · Wydarzenia 7 dni: {liczbaWydarzenOsp7Dni}
+              </p>
+              <p className="mt-1 text-xs text-stone-700">
+                Ćwiczenia, mecze, komunikaty bezpieczeństwa i szybkie planowanie tygodnia.
+              </p>
+            </Link>
+          </div>
+        </section>
+      ) : null}
 
       {villageIds.length > 0 ? (
         <section className="mt-8 rounded-2xl border border-emerald-200/80 bg-gradient-to-br from-emerald-50/60 via-white to-teal-50/30 p-4 sm:p-5">
@@ -124,7 +282,7 @@ export default async function SoltysPage() {
           <p className="mt-1 text-xs text-stone-600">
             Skróty do modułów, które oszczędzają czas — od dokumentów po świetlicę i społeczność.
           </p>
-          <div className="mt-4 grid gap-3 sm:grid-cols-2">
+          <div className="siatka-kafli-responsywna mt-4">
             <Link
               href="/panel/soltys/dokumenty"
               className="rounded-xl border border-stone-200 bg-white/95 p-4 text-sm shadow-sm transition hover:border-green-800/25 hover:shadow-md"
@@ -150,6 +308,24 @@ export default async function SoltysPage() {
               <span className="font-semibold text-green-950">Społeczność i WOW</span>
               <span className="mt-1 block text-xs text-stone-600">
                 Blog, historia, marketplace, KGW i kluby, kalendarz wydarzeń, wiadomości i automatyzacje.
+              </span>
+            </Link>
+            <Link
+              href="/panel/soltys/spolecznosc?tryb=kgw"
+              className="rounded-xl border border-fuchsia-200 bg-fuchsia-50/40 p-4 text-sm shadow-sm transition hover:border-fuchsia-400 hover:shadow-md"
+            >
+              <span className="font-semibold text-fuchsia-950">Tryb KGW</span>
+              <span className="mt-1 block text-xs text-stone-600">
+                Od razu filtruje moduł społeczności pod działania KGW i wydarzenia koła.
+              </span>
+            </Link>
+            <Link
+              href="/panel/soltys/spolecznosc?tryb=osp"
+              className="rounded-xl border border-indigo-200 bg-indigo-50/40 p-4 text-sm shadow-sm transition hover:border-indigo-400 hover:shadow-md"
+            >
+              <span className="font-semibold text-indigo-950">Tryb OSP / sport</span>
+              <span className="mt-1 block text-xs text-stone-600">
+                Szybki start dla komunikatów OSP, harmonogramu treningów i wydarzeń sportowych.
               </span>
             </Link>
             <Link

@@ -46,7 +46,7 @@ export default async function SoltysSwietlicaPage() {
 
   return (
     <main>
-      <h1 className="font-serif text-3xl text-green-950">Świetlica i wyposażenie</h1>
+      <h1 className="tytul-sekcji-panelu">Świetlica i wyposażenie</h1>
       <p className="mt-2 text-sm text-stone-600">
         Dla każdej sali ustawiasz m.in. <strong>plan układu stołów</strong> (rysunek w panelu) oraz listę wyposażenia
         — mieszkańcy zobaczą to przy rezerwacji. Nie trzeba zgłaszać tego do administratora: robisz to sam w
