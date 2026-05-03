@@ -225,27 +225,28 @@ otp_expiry = 3600
 
 [auth.email.template.confirmation]
 subject = "Potwierdź konto — naszawies.pl"
-content_path = "./templates/email/potwierdzenie.html"
+# Ścieżki względem katalogu projektu (root), żeby `supabase db push` / CLI na Windows znajdowały pliki.
+content_path = "./supabase/templates/email/potwierdzenie.html"
 
 [auth.email.template.recovery]
 subject = "Zresetuj hasło — naszawies.pl"
-content_path = "./templates/email/odbuduj-haslo.html"
+content_path = "./supabase/templates/email/odbuduj-haslo.html"
 
 [auth.email.template.magic_link]
 subject = "Link do logowania — naszawies.pl"
-content_path = "./templates/email/magic-link.html"
+content_path = "./supabase/templates/email/magic-link.html"
 
 [auth.email.template.email_change]
 subject = "Potwierdź zmianę e-mail — naszawies.pl"
-content_path = "./templates/email/zmiana-email.html"
+content_path = "./supabase/templates/email/zmiana-email.html"
 
 [auth.email.template.invite]
 subject = "Zaproszenie — naszawies.pl"
-content_path = "./templates/email/zaproszenie.html"
+content_path = "./supabase/templates/email/zaproszenie.html"
 
 [auth.email.template.reauthentication]
 subject = "Kod potwierdzenia — naszawies.pl"
-content_path = "./templates/email/potwierdz-dzialanie.html"
+content_path = "./supabase/templates/email/potwierdz-dzialanie.html"
 
 # Uncomment to customize notification email template
 # [auth.email.notification.password_changed]

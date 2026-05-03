@@ -21,7 +21,10 @@ export default function MieszkaniecPomocPage() {
       <section className="mt-6 rounded-2xl border border-sky-200/80 bg-sky-50/40 p-4">
         <h2 className="font-serif text-lg text-green-950">Pierwsze 5 minut</h2>
         <ol className="mt-2 list-decimal space-y-1 pl-5 text-sm text-stone-700">
-          <li>W `Przegląd` złóż wniosek o rolę mieszkańca dla swojej wsi.</li>
+          <li>
+            W `Przegląd` złóż wniosek o rolę mieszkańca lub (jeśli dotyczy) o rolę OSP / KGW / radę sołecką — sołtys
+            rozpatrzy wnioski w panelu.
+          </li>
           <li>Włącz powiadomienia w `Powiadomienia`.</li>
           <li>Dodaj jedną pozycję do `Listy zakupów`.</li>
           <li>Jeśli coś wymaga interwencji, dodaj `Zgłoszenie` ze zdjęciem.</li>

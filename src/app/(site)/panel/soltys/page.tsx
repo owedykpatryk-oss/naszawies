@@ -44,14 +44,20 @@ export default async function SoltysPage() {
   }
 
   let wnioski: WniosekWiersz[] = [];
-  type WniosekRaw = { id: string; user_id: string; village_id: string; created_at: string };
+  type WniosekRaw = {
+    id: string;
+    user_id: string;
+    village_id: string;
+    created_at: string;
+    role: string;
+  };
   let surowe: WniosekRaw[] = [];
   if (villageIds.length > 0) {
     const { data } = await supabase
       .from("user_village_roles")
-      .select("id, user_id, village_id, created_at")
+      .select("id, user_id, village_id, created_at, role")
       .in("village_id", villageIds)
-      .eq("role", "mieszkaniec")
+      .in("role", ["mieszkaniec", "osp_naczelnik", "kgw_przewodniczaca", "rada_solecka"])
       .eq("status", "pending")
       .order("created_at", { ascending: false });
     surowe = (data ?? []) as WniosekRaw[];
@@ -72,6 +78,7 @@ export default async function SoltysPage() {
     created_at: w.created_at,
     wies: nazwyWsi[w.village_id] ?? "—",
     mieszkaniec: mapaUzytkownikow[w.user_id] ?? w.user_id.slice(0, 8),
+    rola: w.role,
   }));
 
   type WpisPostu = { id: string; title: string; village_id: string; created_at: string };
@@ -182,7 +189,7 @@ export default async function SoltysPage() {
     <main>
       <h1 className="tytul-sekcji-panelu">Sołtys</h1>
       <p className="mt-2 text-sm text-stone-600">
-        Wnioski mieszkańców w Twoich wsiach oraz posty oczekujące na moderację.
+        Wnioski o role (mieszkaniec, OSP, KGW, rada) oraz posty oczekujące na moderację.
       </p>
       <p className="mt-1 text-sm text-stone-600">
         Zaczynasz pracę? Otwórz{" "}
@@ -200,10 +207,10 @@ export default async function SoltysPage() {
           </p>
           <div className="siatka-kafli-responsywna mt-4 lg:grid-cols-4">
             <Link
-              href="/panel/soltys"
+              href="/panel/soltys#wnioski-o-role"
               className="rounded-xl border border-stone-200 bg-white/95 p-3 shadow-sm transition hover:border-amber-400"
             >
-              <p className="text-xs text-stone-500">Wnioski mieszkańców</p>
+              <p className="text-xs text-stone-500">Wnioski o role</p>
               <p className="mt-1 text-2xl font-semibold text-green-950">{wnioski.length}</p>
               <p className="mt-1 text-xs text-stone-600">Do akceptacji lub odrzucenia</p>
             </Link>
@@ -394,8 +401,8 @@ export default async function SoltysPage() {
         </p>
       ) : null}
 
-      <section className="mt-10">
-        <h2 className="font-serif text-xl text-green-950">Wnioski o rolę mieszkańca</h2>
+      <section id="wnioski-o-role" className="scroll-mt-24 mt-10">
+        <h2 className="font-serif text-xl text-green-950">Wnioski o role we wsi</h2>
         <div className="mt-4">
           <SoltysWnioskiKlient wnioski={wnioski} />
         </div>
@@ -413,6 +420,9 @@ export default async function SoltysPage() {
       </section>
 
       <p className="mt-10 flex flex-wrap gap-x-4 gap-y-2 text-sm text-stone-500">
+        <Link href="/panel/soltys#wnioski-o-role" className="text-green-800 underline">
+          Wnioski o role
+        </Link>
         <Link href="/panel/soltys/rezerwacje" className="text-green-800 underline">
           Rezerwacje sal
         </Link>

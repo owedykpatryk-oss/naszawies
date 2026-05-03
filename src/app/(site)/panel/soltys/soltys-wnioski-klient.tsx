@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
+import { etykietaRoliWsi } from "@/lib/panel/role-definicje";
 import { odrzucWniosekMieszkanca, zatwierdzWniosekMieszkanca, type WynikProsty } from "./akcje";
 
 export type WniosekWiersz = {
@@ -9,6 +10,7 @@ export type WniosekWiersz = {
   created_at: string;
   wies: string;
   mieszkaniec: string;
+  rola: string;
 };
 
 export function SoltysWnioskiKlient({ wnioski }: { wnioski: WniosekWiersz[] }) {
@@ -32,7 +34,7 @@ export function SoltysWnioskiKlient({ wnioski }: { wnioski: WniosekWiersz[] }) {
   }
 
   if (wnioski.length === 0) {
-    return <p className="text-sm text-stone-600">Brak oczekujących wniosków o rolę mieszkańca.</p>;
+    return <p className="text-sm text-stone-600">Brak oczekujących wniosków o role (mieszkaniec, OSP, KGW, rada).</p>;
   }
 
   return (
@@ -48,7 +50,7 @@ export function SoltysWnioskiKlient({ wnioski }: { wnioski: WniosekWiersz[] }) {
             <div>
               <p className="font-medium text-stone-900">{w.mieszkaniec}</p>
               <p className="text-sm text-stone-600">
-                Wieś: <strong>{w.wies}</strong>
+                Wieś: <strong>{w.wies}</strong> · Wniosek: <strong>{etykietaRoliWsi(w.rola)}</strong>
               </p>
               <p className="text-xs text-stone-500">{new Date(w.created_at).toLocaleString("pl-PL")}</p>
             </div>

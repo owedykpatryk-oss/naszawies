@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { redirect } from "next/navigation";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
 import { ProfilFormularz } from "./profil-formularz";
+import { ProfilSekcjaRodo } from "./profil-sekcja-rodo";
 
 export const metadata: Metadata = {
   title: "Mój profil",
@@ -56,6 +57,8 @@ export default async function PanelProfilPage() {
       )}
 
       <ProfilFormularz poczatkowe={poczatkowe} />
+
+      <ProfilSekcjaRodo />
     </main>
   );
 }

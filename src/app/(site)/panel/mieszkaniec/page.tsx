@@ -6,6 +6,7 @@ import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
 import { pojedynczaWies } from "@/lib/supabase/wies-z-zapytania";
 import { sciezkaProfiluWsi } from "@/lib/wies/sciezka-publiczna";
 import { MieszkaniecKlient } from "./mieszkaniec-klient";
+import { ObserwowaneWsiPreferencje, type ObserwacjaWsiDoEdycji } from "./obserwowane-wsi-preferencje";
 
 function klasyStatusu(status: string): string {
   if (status === "active") return "border-emerald-300 bg-emerald-50 text-emerald-900";
@@ -112,6 +113,33 @@ export default async function MieszkaniecPage() {
     is_active: boolean;
   }[];
 
+  const { data: obserwacjeRaw } = await supabase
+    .from("user_follows")
+    .select(
+      "id, notify_posts, notify_events, notify_issues, notify_alerts, village_id, villages (name, slug, voivodeship, county, commune)"
+    )
+    .eq("user_id", user.id)
+    .order("created_at", { ascending: false });
+
+  const obserwacjeDoEdycji: ObserwacjaWsiDoEdycji[] = (obserwacjeRaw ?? []).map((r) => {
+    const v = pojedynczaWies<{
+      name: string;
+      slug: string;
+      voivodeship: string;
+      county: string;
+      commune: string;
+    }>(r.villages);
+    return {
+      id: r.id,
+      nazwaWsi: v?.name ?? "Wieś",
+      sciezkaWsi: v ? sciezkaProfiluWsi(v) : null,
+      notify_posts: Boolean(r.notify_posts),
+      notify_events: Boolean(r.notify_events),
+      notify_issues: Boolean(r.notify_issues),
+      notify_alerts: Boolean(r.notify_alerts),
+    };
+  });
+
   return (
     <main>
       <h1 className="tytul-sekcji-panelu">Mieszkaniec</h1>
@@ -187,7 +215,17 @@ export default async function MieszkaniecPage() {
         </p>
         <ol className="mt-3 list-decimal space-y-1.5 pl-5 text-sm text-stone-700">
           {aktywneRole === 0 ? (
-            <li>Złóż pierwszy wniosek o rolę mieszkańca (sekcja „Dołącz do wsi”).</li>
+            <li>
+              Złóż pierwszy wniosek o rolę mieszkańca (
+              <Link href="#dolacz-mieszkaniec" className="text-green-800 underline">
+                Dołącz do wsi
+              </Link>
+              ) lub o rolę organizacyjną (
+              <Link href="#wnioski-org" className="text-green-800 underline">
+                OSP / KGW / rada
+              </Link>
+              ).
+            </li>
           ) : (
             <li>Masz aktywną rolę — wejdź do ogłoszeń i ustaw powiadomienia na telefonie.</li>
           )}
@@ -195,7 +233,13 @@ export default async function MieszkaniecPage() {
           {maRoleSoltys ? (
             <li>Masz też dostęp sołecki — skróty administracyjne znajdziesz w panelu sołtysa.</li>
           ) : (
-            <li>Jeśli jesteś w zarządzie lub KGW, poproś o odpowiednią rolę w systemie.</li>
+            <li>
+              W zarządzie OSP / KGW / radzie? Wyślij{" "}
+              <Link href="#wnioski-org" className="text-green-800 underline">
+                wniosek o rolę
+              </Link>{" "}
+              — sołtys go rozpatrzy.
+            </li>
           )}
         </ol>
         <div className="mt-3 flex flex-wrap gap-2 text-xs text-stone-600">
@@ -207,6 +251,10 @@ export default async function MieszkaniecPage() {
           </span>
         </div>
       </section>
+
+      <div className="mt-10">
+        <MieszkaniecKlient />
+      </div>
 
       <section className="mt-8 rounded-2xl border border-sky-200/80 bg-sky-50/40 p-5 shadow-sm">
         <h2 className="font-serif text-lg text-green-950">Ulubione relacje transportowe</h2>
@@ -227,10 +275,18 @@ export default async function MieszkaniecPage() {
         )}
       </section>
 
+      <ObserwowaneWsiPreferencje obserwacje={obserwacjeDoEdycji} />
+
       <section className="mt-8 rounded-2xl border border-stone-200 bg-white p-6 shadow-sm">
         <h2 className="font-serif text-xl text-green-950">Moje role we wsiach</h2>
         {roleList.length === 0 ? (
-          <p className="mt-3 text-sm text-stone-600">Brak zapisów — złóż wniosek poniżej.</p>
+          <p className="mt-3 text-sm text-stone-600">
+            Brak zapisów —{" "}
+            <Link href="#dolacz-mieszkaniec" className="text-green-800 underline">
+              złóż wniosek
+            </Link>
+            .
+          </p>
         ) : (
           <ul className="mt-4 divide-y divide-stone-100">
             {roleList.map((r) => (
@@ -254,10 +310,6 @@ export default async function MieszkaniecPage() {
           </ul>
         )}
       </section>
-
-      <div className="mt-10">
-        <MieszkaniecKlient />
-      </div>
     </main>
   );
 }

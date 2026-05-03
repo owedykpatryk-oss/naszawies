@@ -45,6 +45,9 @@ export function WiesProfilPubliczny({
   transportOdjazdy = [],
   kontaktyUrzedowe = [],
   kadencjeFunkcyjne = [],
+  geoKontekst = [],
+  adresyUrzedowe = [],
+  geoJakosc = null,
 }: {
   wies: WiesPubliczna;
   posty: WpisPostu[];
@@ -154,10 +157,59 @@ export function WiesProfilPubliczny({
     note: string | null;
     is_current: boolean;
   }[];
+  geoKontekst?: {
+    id: string;
+    dataset: string;
+    layer_name: string;
+    feature_category: string | null;
+    feature_name: string | null;
+    latitude: number | null;
+    longitude: number | null;
+    updated_at: string;
+  }[];
+  adresyUrzedowe?: {
+    id: string;
+    street_name: string | null;
+    house_number: string;
+    postal_code: string | null;
+    latitude: number;
+    longitude: number;
+    updated_at: string;
+  }[];
+  geoJakosc?: {
+    maGraniceGeojson: boolean;
+    liczbaAdresow: number;
+    liczbaPrng: number;
+    liczbaInstytucji: number;
+  } | null;
 }) {
   const sciezka = sciezkaProfiluWsi(wies);
   const prefixOgloszenia = `${sciezka}/ogloszenie`;
   const laczonyFeed = zbudujLaczonyFeedAktualnosci(sciezka, posty, blog, historia, wiadomosci, wydarzenia, 14);
+  const prng = geoKontekst
+    .filter((x) => x.dataset === "PRNG")
+    .filter((x) => x.feature_name || x.feature_category)
+    .slice(0, 14);
+  const instytucje = geoKontekst
+    .filter((x) => x.dataset === "PRG_INSTITUTIONAL")
+    .filter((x) => x.feature_name || x.feature_category)
+    .slice(0, 14);
+  const adresyWgUlicy = Array.from(
+    adresyUrzedowe.reduce((acc, a) => {
+      const k = a.street_name?.trim() || "(bez nazwy ulicy)";
+      acc.set(k, (acc.get(k) ?? 0) + 1);
+      return acc;
+    }, new Map<string, number>()),
+  )
+    .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], "pl"))
+    .slice(0, 20);
+  const ostatniaAktualizacjaAdresow =
+    adresyUrzedowe.length > 0
+      ? adresyUrzedowe
+          .map((a) => Date.parse(a.updated_at))
+          .filter((t) => Number.isFinite(t))
+          .sort((a, b) => b - a)[0]
+      : null;
 
   return (
     <article>
@@ -226,6 +278,178 @@ export function WiesProfilPubliczny({
           <div className="mt-3 whitespace-pre-wrap text-sm leading-relaxed text-stone-700">{wies.description}</div>
         </section>
       ) : null}
+
+      {geoJakosc ? (
+        <section className="mt-8 rounded-xl border border-stone-200 bg-stone-50/70 px-4 py-3">
+          <h2 className="font-serif text-lg text-green-950">Jakość danych geo</h2>
+          <p className="mt-1 text-xs text-stone-600">
+            Szybki podgląd, czy wieś ma już kluczowe dane referencyjne z synchronizacji Geoportalu.
+          </p>
+          <ul className="mt-3 grid gap-2 text-sm sm:grid-cols-2 lg:grid-cols-4">
+            <li className="rounded-lg border border-stone-200 bg-white px-3 py-2">
+              <p className="text-xs text-stone-500">Granica wsi</p>
+              <p className="font-medium text-stone-900">{geoJakosc.maGraniceGeojson ? "OK" : "Brak"}</p>
+            </li>
+            <li className="rounded-lg border border-stone-200 bg-white px-3 py-2">
+              <p className="text-xs text-stone-500">Punkty adresowe</p>
+              <p className="font-medium text-stone-900">{geoJakosc.liczbaAdresow}</p>
+            </li>
+            <li className="rounded-lg border border-stone-200 bg-white px-3 py-2">
+              <p className="text-xs text-stone-500">Obiekty PRNG</p>
+              <p className="font-medium text-stone-900">{geoJakosc.liczbaPrng}</p>
+            </li>
+            <li className="rounded-lg border border-stone-200 bg-white px-3 py-2">
+              <p className="text-xs text-stone-500">Warstwy instytucjonalne</p>
+              <p className="font-medium text-stone-900">{geoJakosc.liczbaInstytucji}</p>
+            </li>
+          </ul>
+        </section>
+      ) : null}
+
+      <section className="mt-10">
+        <h2 className="font-serif text-xl text-green-950">Kontekst Geoportalu (PRNG i instytucje)</h2>
+        <p className="mt-1 text-sm text-stone-600">
+          Nazwy terenowe i obiekty referencyjne z rejestrów państwowych (Geoportal): pomocne przy orientacji i opisie
+          okolicy.
+        </p>
+        {prng.length === 0 && instytucje.length === 0 ? (
+          <p className="mt-4 text-sm text-stone-500">
+            Brak danych kontekstowych w tej chwili. Synchronizacja Geoportalu uzupełni je automatycznie.
+          </p>
+        ) : (
+          <div className="mt-4 grid gap-5 lg:grid-cols-2">
+            <div>
+              <h3 className="text-sm font-semibold uppercase tracking-wide text-stone-500">
+                PRNG — nazwy geograficzne
+              </h3>
+              {prng.length === 0 ? (
+                <p className="mt-3 text-sm text-stone-500">Brak obiektów PRNG w promieniu synchronizacji.</p>
+              ) : (
+                <ul className="mt-3 space-y-2">
+                  {prng.map((f) => (
+                    <li key={f.id} className="rounded-lg border border-stone-200 bg-white px-3 py-2 text-sm">
+                      <p className="font-medium text-stone-900">{f.feature_name ?? "Nazwa obiektu bez etykiety"}</p>
+                      <p className="mt-1 text-xs text-stone-600">
+                        {f.feature_category ?? "kategoria nieokreślona"}
+                        {f.latitude != null && f.longitude != null ? (
+                          <>
+                            {" · "}
+                            <a
+                              href={`https://www.openstreetmap.org/?mlat=${f.latitude}&mlon=${f.longitude}&zoom=14`}
+                              className="text-green-800 underline"
+                              target="_blank"
+                              rel="noopener noreferrer"
+                            >
+                              punkt na mapie
+                            </a>
+                          </>
+                        ) : null}
+                      </p>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+
+            <div>
+              <h3 className="text-sm font-semibold uppercase tracking-wide text-stone-500">
+                PRG — warstwy instytucjonalne
+              </h3>
+              {instytucje.length === 0 ? (
+                <p className="mt-3 text-sm text-stone-500">Brak instytucji referencyjnych w promieniu synchronizacji.</p>
+              ) : (
+                <ul className="mt-3 space-y-2">
+                  {instytucje.map((f) => (
+                    <li key={f.id} className="rounded-lg border border-stone-200 bg-white px-3 py-2 text-sm">
+                      <p className="font-medium text-stone-900">{f.feature_name ?? "Jednostka bez nazwy"}</p>
+                      <p className="mt-1 text-xs text-stone-600">
+                        {f.feature_category ?? f.layer_name}
+                        {f.latitude != null && f.longitude != null ? (
+                          <>
+                            {" · "}
+                            <a
+                              href={`https://www.openstreetmap.org/?mlat=${f.latitude}&mlon=${f.longitude}&zoom=14`}
+                              className="text-green-800 underline"
+                              target="_blank"
+                              rel="noopener noreferrer"
+                            >
+                              punkt na mapie
+                            </a>
+                          </>
+                        ) : null}
+                      </p>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          </div>
+        )}
+      </section>
+
+      <section className="mt-10">
+        <h2 className="font-serif text-xl text-green-950">Ulice i punkty adresowe (KIN/PRG)</h2>
+        <p className="mt-1 text-sm text-stone-600">
+          Oficjalne punkty adresowe z rejestru państwowego. Przydatne przy nawigacji, opisie lokalizacji i planowaniu usług.
+        </p>
+        {adresyUrzedowe.length === 0 ? (
+          <p className="mt-4 text-sm text-stone-500">
+            Brak punktów adresowych dla tej wsi. Synchronizacja KIN/PRG uzupełni je automatycznie.
+          </p>
+        ) : (
+          <>
+            <p className="mt-3 text-xs text-stone-600">
+              Punktów adresowych: <strong>{adresyUrzedowe.length}</strong>
+              {" · "}
+              Ulic z danymi: <strong>{adresyWgUlicy.length}</strong>
+              {ostatniaAktualizacjaAdresow ? (
+                <>
+                  {" · "}
+                  Ostatnia aktualizacja:{" "}
+                  <strong>{new Date(ostatniaAktualizacjaAdresow).toLocaleDateString("pl-PL")}</strong>
+                </>
+              ) : null}
+            </p>
+            <div className="mt-4 grid gap-5 lg:grid-cols-2">
+              <div>
+                <h3 className="text-sm font-semibold uppercase tracking-wide text-stone-500">Najczęściej występujące ulice</h3>
+                <ul className="mt-3 space-y-2">
+                  {adresyWgUlicy.map(([ulica, liczba]) => (
+                    <li key={ulica} className="rounded-lg border border-stone-200 bg-white px-3 py-2 text-sm">
+                      <p className="font-medium text-stone-900">{ulica}</p>
+                      <p className="mt-1 text-xs text-stone-600">Punktów adresowych: {liczba}</p>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+              <div>
+                <h3 className="text-sm font-semibold uppercase tracking-wide text-stone-500">Przykładowe adresy</h3>
+                <ul className="mt-3 space-y-2">
+                  {adresyUrzedowe.slice(0, 20).map((a) => (
+                    <li key={a.id} className="rounded-lg border border-stone-200 bg-white px-3 py-2 text-sm">
+                      <p className="font-medium text-stone-900">
+                        {a.street_name?.trim() ? `${a.street_name} ${a.house_number}` : a.house_number}
+                      </p>
+                      <p className="mt-1 text-xs text-stone-600">
+                        {a.postal_code ?? "kod pocztowy b/d"}
+                        {" · "}
+                        <a
+                          href={`https://www.openstreetmap.org/?mlat=${a.latitude}&mlon=${a.longitude}&zoom=17`}
+                          className="text-green-800 underline"
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
+                          punkt na mapie
+                        </a>
+                      </p>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          </>
+        )}
+      </section>
 
       <SekcjaPrzewodnikSamorzadowy wies={wies} przewodnik={przewodnikSamorzadowy} />
 

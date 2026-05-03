@@ -186,6 +186,9 @@ export default async function WiesCatchAllPage({ params, searchParams }: Props) 
       { data: transportOdjazdyRaw },
       { data: kontaktyUrzedoweRaw },
       { data: kadencjeFunkcyjneRaw },
+      { data: geoKontekstRaw },
+      { data: adresyRaw },
+      { data: granicaRaw },
     ] = await Promise.all([
       supabaseSerwer.auth.getUser(),
       supabase
@@ -296,6 +299,24 @@ export default async function WiesCatchAllPage({ params, searchParams }: Props) 
         .eq("village_id", wies.id)
         .order("term_start", { ascending: false })
         .limit(24),
+      supabase
+        .from("geo_context_features")
+        .select("id, dataset, layer_name, feature_category, feature_name, latitude, longitude, updated_at")
+        .eq("village_id", wies.id)
+        .order("updated_at", { ascending: false })
+        .limit(80),
+      supabase
+        .from("address_points")
+        .select("id, street_name, house_number, postal_code, latitude, longitude, updated_at")
+        .eq("village_id", wies.id)
+        .order("street_name", { ascending: true })
+        .order("house_number", { ascending: true })
+        .limit(500),
+      supabase
+        .from("villages")
+        .select("boundary_geojson")
+        .eq("id", wies.id)
+        .maybeSingle(),
     ]);
 
     const userSesji = authRes.data.user;
@@ -438,6 +459,28 @@ export default async function WiesCatchAllPage({ params, searchParams }: Props) 
       note: string | null;
       is_current: boolean;
     }[];
+    const geoKontekst = (geoKontekstRaw ?? []) as {
+      id: string;
+      dataset: string;
+      layer_name: string;
+      feature_category: string | null;
+      feature_name: string | null;
+      latitude: number | null;
+      longitude: number | null;
+      updated_at: string;
+    }[];
+    const adresyUrzedowe = (adresyRaw ?? []) as {
+      id: string;
+      street_name: string | null;
+      house_number: string;
+      postal_code: string | null;
+      latitude: number;
+      longitude: number;
+      updated_at: string;
+    }[];
+    const maGraniceGeojson = Boolean((granicaRaw as { boundary_geojson?: unknown } | null)?.boundary_geojson);
+    const liczbaPrng = geoKontekst.filter((x) => x.dataset === "PRNG").length;
+    const liczbaInst = geoKontekst.filter((x) => x.dataset === "PRG_INSTITUTIONAL").length;
 
     return (
       <main className="mx-auto min-w-0 max-w-2xl py-16 text-stone-800">
@@ -470,6 +513,14 @@ export default async function WiesCatchAllPage({ params, searchParams }: Props) 
           transportOdjazdy={transportOdjazdy}
           kontaktyUrzedowe={kontaktyUrzedowe}
           kadencjeFunkcyjne={kadencjeFunkcyjne}
+          geoKontekst={geoKontekst}
+          adresyUrzedowe={adresyUrzedowe}
+          geoJakosc={{
+            maGraniceGeojson,
+            liczbaAdresow: adresyUrzedowe.length,
+            liczbaPrng,
+            liczbaInstytucji: liczbaInst,
+          }}
         />
       </main>
     );

@@ -89,6 +89,17 @@ export default function PolitykaPrywatnosciPage() {
             sprzeciw, przenoszenie danych (w zakresie przewidzianym prawem), cofnięcie zgody w dowolnym momencie
             (bez wpływu na zgodność z prawem przetwarzania przed cofnięciem). Skargę można złożyć do Prezesa UODO.
           </p>
+          <p className="mt-3 leading-relaxed text-stone-700">
+            Po zalogowaniu można samodzielnie{" "}
+            <Link href="/panel/profil" className="font-medium text-green-800 underline">
+              pobrać pakiet danych w formacie JSON
+            </Link>{" "}
+            oraz zlecić trwałe usunięcie konta — z poziomu sekcji „Twoje dane (RODO)” na stronie{" "}
+            <Link href="/panel/profil" className="font-medium text-green-800 underline">
+              Mój profil
+            </Link>{" "}
+            w panelu użytkownika.
+          </p>
         </section>
 
         <section>

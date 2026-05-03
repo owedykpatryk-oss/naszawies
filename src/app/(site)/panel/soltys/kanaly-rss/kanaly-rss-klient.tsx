@@ -89,7 +89,8 @@ export function SoltysKanalyRssKlient({
         </select>
         <p className="mt-3 text-xs text-stone-600">
           Kanały RSS są pobierane w tle (cron lub przycisk „Synchronizuj teraz”). Nowe pozycje trafiają do moderacji
-          jako wiadomości lokalne ze statusem „oczekuje”.
+          jako wiadomości lokalne ze statusem „oczekuje”. Synchronizacja treści działa na Twojej sesji; powiadomienia push
+          do innych osób wymagają na serwerze zmiennej <code className="text-[11px]">SUPABASE_SERVICE_ROLE_KEY</code>.
         </p>
         {komunikat ? (
           <p className="mt-3 rounded border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-900">{komunikat}</p>

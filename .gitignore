@@ -31,6 +31,12 @@ yarn-error.log*
 # vercel
 .vercel
 
+# lokalne / przypadkowe (nie commituj)
+__q.sql
+_apply_m1.json
+_mcp/
+/supabase/supabase/
+
 # lokalne eksporty GUS eTeryt (duże pliki, nie w repo)
 docs/Pliki/
 

@@ -2,7 +2,9 @@
 
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
+import { powiadomSoltysowIObserwujacychONowymZgloszeniu } from "@/lib/powiadomienia/powiadom-o-nowym-zgloszeniu";
 import { SZYBKIE_OZNACZENIA, type KluczSzybkiegoOznaczenia } from "@/lib/zgloszenia/szybkie-etykiety";
+import { createAdminSupabaseClient } from "@/lib/supabase/admin-client";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
 
 const uuid = z.string().uuid();
@@ -94,7 +96,17 @@ export async function dodajZgloszenieProblemu(body: z.infer<typeof schemaDodaj>)
     return { blad: "Nie udało się potwierdzić zapisu." };
   }
 
+  const admin = createAdminSupabaseClient();
+  if (admin) {
+    await powiadomSoltysowIObserwujacychONowymZgloszeniu(admin, {
+      villageId: d.villageId,
+      title: d.title,
+      reporterUserId: user.id,
+    });
+  }
+
   revalidatePath("/panel/mieszkaniec/zgloszenia");
   revalidatePath("/panel/soltys/zgloszenia");
+  revalidatePath("/panel/powiadomienia");
   return { ok: true, id: wstaw.id };
 }

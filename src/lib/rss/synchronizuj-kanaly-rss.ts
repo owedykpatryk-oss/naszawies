@@ -9,13 +9,19 @@ export type WynikSyncRss = {
   bledy: string[];
 };
 
+/** Opcje przy wywołaniu z sesji użytkownika (RLS): Web Push wymaga odczytu cudzych subskrypcji — tylko service role. */
+export type OpcjeSynchronizacjiKanalyRss = {
+  klientDoWebPush?: SupabaseClient | null;
+};
+
 const MAX_RSS_ITEMS_NA_KANAL = 18;
 
 async function powiadomSołtysowWsiRssDigest(
-  admin: SupabaseClient,
+  client: SupabaseClient,
   villageId: string,
   liczbaNowych: number,
   linkUrl: string,
+  klientDoWebPush: SupabaseClient,
 ) {
   if (liczbaNowych < 1) return;
   const tytul =
@@ -26,7 +32,7 @@ async function powiadomSołtysowWsiRssDigest(
     liczbaNowych === 1
       ? "Jeden wpis z kanału RSS czeka na akceptację w wiadomościach lokalnych (jedno powiadomienie na synchronizację)."
       : `${liczbaNowych} wpisów z kanałów RSS czeka na akceptację — podsumowanie jednej synchronizacji (mniej szumu niż osobny alert na każdy wpis).`;
-  const { data: roleRows, error } = await admin
+  const { data: roleRows, error } = await client
     .from("user_village_roles")
     .select("user_id")
     .eq("village_id", villageId)
@@ -44,9 +50,9 @@ async function powiadomSołtysowWsiRssDigest(
     related_type: "village",
     channel: "in_app" as const,
   }));
-  const { error: bladNotif } = await admin.from("notifications").insert(wstaw);
+  const { error: bladNotif } = await client.from("notifications").insert(wstaw);
   if (!bladNotif && ids.length > 0) {
-    void wyslijWebPushDoWieluOdbiorcow(admin, ids, {
+    void wyslijWebPushDoWieluOdbiorcow(klientDoWebPush, ids, {
       title: tytul,
       body: tresc.slice(0, 110) + (tresc.length > 110 ? "…" : ""),
       linkUrl,
@@ -56,14 +62,16 @@ async function powiadomSołtysowWsiRssDigest(
 }
 
 export async function synchronizujKanalyRssDlaWsi(
-  admin: SupabaseClient,
+  client: SupabaseClient,
   filtrVillageIds: string[] | null,
+  opcje?: OpcjeSynchronizacjiKanalyRss,
 ): Promise<WynikSyncRss> {
+  const klientDoWebPush = opcje?.klientDoWebPush ?? client;
   const bledy: string[] = [];
   let zrodlaPrzetworzone = 0;
   let noweWpisy = 0;
 
-  let q = admin.from("village_news_feed_sources").select("id, village_id, label, feed_url, is_enabled").eq("is_enabled", true);
+  let q = client.from("village_news_feed_sources").select("id, village_id, label, feed_url, is_enabled").eq("is_enabled", true);
   if (filtrVillageIds && filtrVillageIds.length > 0) {
     q = q.in("village_id", filtrVillageIds);
   }
@@ -94,7 +102,7 @@ export async function synchronizujKanalyRssDlaWsi(
         const items = parseRss2Items(xml).slice(0, MAX_RSS_ITEMS_NA_KANAL);
         for (const it of items) {
           const hash = sha256Hex(`${z.village_id}:${it.guid}`);
-          const { error: insErr } = await admin.from("local_news_items").insert({
+          const { error: insErr } = await client.from("local_news_items").insert({
             village_id: z.village_id,
             created_by: null,
             source_name: z.label,
@@ -123,7 +131,7 @@ export async function synchronizujKanalyRssDlaWsi(
       bledy.push(`${z.label}: ${lastErr}`);
     }
 
-    await admin
+    await client
       .from("village_news_feed_sources")
       .update({
         last_fetched_at: new Date().toISOString(),
@@ -133,7 +141,13 @@ export async function synchronizujKanalyRssDlaWsi(
   }
 
   for (const [vid, ile] of Array.from(nowychNaWies.entries())) {
-    await powiadomSołtysowWsiRssDigest(admin, vid, ile, "/panel/soltys/wiadomosci-lokalne");
+    await powiadomSołtysowWsiRssDigest(
+      client,
+      vid,
+      ile,
+      "/panel/soltys/wiadomosci-lokalne",
+      klientDoWebPush,
+    );
   }
 
   return { zrodlaPrzetworzone, noweWpisy, bledy };

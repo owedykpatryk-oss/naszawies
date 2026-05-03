@@ -85,7 +85,7 @@ export default async function PanelPage() {
               →
             </span>
           </Link>
-          <p className="mt-2 text-sm text-stone-600">Wniosek o rolę, ogłoszenia, świetlica.</p>
+          <p className="mt-2 text-sm text-stone-600">Wnioski o role (mieszkaniec, OSP, KGW), ogłoszenia, świetlica.</p>
         </li>
         <li className="group panel-karta">
           <Link href="/panel/soltys" className="link-panel">
@@ -97,7 +97,7 @@ export default async function PanelPage() {
               →
             </span>
           </Link>
-          <p className="mt-2 text-sm text-stone-600">Wnioski mieszkańców, moderacja, wyposażenie sal.</p>
+          <p className="mt-2 text-sm text-stone-600">Wnioski o role, moderacja, wyposażenie sal.</p>
         </li>
         <li className="group panel-karta">
           <Link href="/panel/powiadomienia" className="link-panel">

@@ -3,10 +3,16 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMemo, useState } from "react";
+import {
+  grupaListyPowiadomien,
+  etykietaGrupyPowiadomien,
+  type GrupaListyPowiadomien,
+} from "@/lib/powiadomienia/grupy-typow-powiadomien";
 import { oznaczPowiadomienieJakoPrzeczytane } from "./akcje";
 
 export type PowiadomienieWiersz = {
   id: string;
+  type: string;
   title: string;
   body: string | null;
   link_url: string | null;
@@ -14,16 +20,36 @@ export type PowiadomienieWiersz = {
   created_at: string;
 };
 
-type FiltrPowiadomien = "wszystkie" | "nieprzeczytane" | "przeczytane";
+type FiltrPowiadomien =
+  | "wszystkie"
+  | "nieprzeczytane"
+  | "przeczytane"
+  | GrupaListyPowiadomien;
 
 export function PowiadomieniaLista({ wpisy }: { wpisy: PowiadomienieWiersz[] }) {
   const router = useRouter();
   const [laduje, ustawLaduje] = useState<string | null>(null);
   const [filtr, ustawFiltr] = useState<FiltrPowiadomien>("wszystkie");
 
+  const liczbaWnioski = useMemo(
+    () => wpisy.filter((p) => grupaListyPowiadomien(p.type) === "wnioski_role").length,
+    [wpisy],
+  );
+  const liczbaZgloszenia = useMemo(
+    () => wpisy.filter((p) => grupaListyPowiadomien(p.type) === "zgloszenia").length,
+    [wpisy],
+  );
+  const liczbaPozostale = useMemo(
+    () => wpisy.filter((p) => grupaListyPowiadomien(p.type) === "pozostale").length,
+    [wpisy],
+  );
+
   const przefiltrowane = useMemo(() => {
     if (filtr === "nieprzeczytane") return wpisy.filter((p) => !p.is_read);
     if (filtr === "przeczytane") return wpisy.filter((p) => p.is_read);
+    if (filtr === "wnioski_role" || filtr === "zgloszenia" || filtr === "pozostale") {
+      return wpisy.filter((p) => grupaListyPowiadomien(p.type) === filtr);
+    }
     return wpisy;
   }, [wpisy, filtr]);
 
@@ -67,6 +93,9 @@ export function PowiadomieniaLista({ wpisy }: { wpisy: PowiadomienieWiersz[] }) 
         {chip("wszystkie", "Wszystkie", wpisy.length)}
         {chip("nieprzeczytane", "Nieprzeczytane", liczbaNieprzeczytanych)}
         {chip("przeczytane", "Przeczytane", wpisy.length - liczbaNieprzeczytanych)}
+        {liczbaWnioski > 0 ? chip("wnioski_role", etykietaGrupyPowiadomien("wnioski_role"), liczbaWnioski) : null}
+        {liczbaZgloszenia > 0 ? chip("zgloszenia", etykietaGrupyPowiadomien("zgloszenia"), liczbaZgloszenia) : null}
+        {liczbaPozostale > 0 ? chip("pozostale", etykietaGrupyPowiadomien("pozostale"), liczbaPozostale) : null}
       </div>
       {przefiltrowane.length === 0 ? (
         <p className="rounded-lg border border-stone-200 bg-stone-50 px-4 py-3 text-sm text-stone-600">
@@ -76,7 +105,10 @@ export function PowiadomieniaLista({ wpisy }: { wpisy: PowiadomienieWiersz[] }) 
       <ul className="divide-y divide-stone-200 rounded-xl border border-stone-200 bg-white">
       {przefiltrowane.map((p) => (
         <li key={p.id} className={`px-4 py-4 ${p.is_read ? "opacity-70" : "bg-green-50/40"}`}>
-          <p className="font-medium text-stone-900">{p.title}</p>
+          <p className="text-[11px] font-medium uppercase tracking-wide text-stone-500">
+            {etykietaGrupyPowiadomien(grupaListyPowiadomien(p.type))}
+          </p>
+          <p className="mt-0.5 font-medium text-stone-900">{p.title}</p>
           {p.body ? <p className="mt-1 text-sm text-stone-700">{p.body}</p> : null}
           <p className="mt-2 text-xs text-stone-500">{new Date(p.created_at).toLocaleString("pl-PL")}</p>
           <div className="mt-3 flex flex-wrap gap-3">

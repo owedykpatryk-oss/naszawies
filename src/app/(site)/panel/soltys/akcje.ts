@@ -5,9 +5,11 @@ import { z } from "zod";
 import { R2_BUCKET_HALL_INVENTORY } from "@/lib/cloudflare/r2-bucket-znaczniki";
 import { wyciagnijBucketIKluczZUrlaR2 } from "@/lib/cloudflare/r2-url-pomoc";
 import { usunObiektR2JesliUrlNasz } from "@/lib/storage/usun-plik-r2-po-url";
+import { etykietaRoliWsi } from "@/lib/panel/role-definicje";
 import { pobierzVillageIdsRoliPaneluSoltysa } from "@/lib/panel/rola-panelu-soltysa";
 import { zaplanujPowiadomienieEmail } from "@/lib/email/zaplanuj-powiadomienie-email";
 import { wyslijWebPushDlaUzytkownika } from "@/lib/pwa/wyslij-web-push";
+import { powiadomObserwujacychOOpublikowanyPost } from "@/lib/powiadomienia/powiadom-obserwujacych-wies-post";
 import { synchronizujKanalyRssDlaWsi } from "@/lib/rss/synchronizuj-kanaly-rss";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin-client";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
@@ -15,6 +17,13 @@ import { sciezkaProfiluWsi } from "@/lib/wies/sciezka-publiczna";
 import { schemaPlanSali, type PlanSaliJson } from "@/lib/swietlica/plan-sali";
 
 const uuid = z.string().uuid();
+
+const ROLE_WNIOSKOW_SOLTYS = new Set([
+  "mieszkaniec",
+  "osp_naczelnik",
+  "kgw_przewodniczaca",
+  "rada_solecka",
+]);
 
 function zaplanujWebPushDlaUzytkownika(
   userId: string,
@@ -49,7 +58,7 @@ export async function zatwierdzWniosekMieszkanca(rolaId: string): Promise<WynikP
     .eq("id", id.data)
     .maybeSingle();
 
-  if (readErr || !wiersz || wiersz.status !== "pending" || wiersz.role !== "mieszkaniec") {
+  if (readErr || !wiersz || wiersz.status !== "pending" || !ROLE_WNIOSKOW_SOLTYS.has(wiersz.role)) {
     return { blad: "Nie znaleziono wniosku lub został już rozpatrzony." };
   }
 
@@ -64,15 +73,35 @@ export async function zatwierdzWniosekMieszkanca(rolaId: string): Promise<WynikP
     .eq("status", "pending");
 
   if (upErr) {
+    if (upErr.code === "23505") {
+      const rola = wiersz.role;
+      const msgUnikalna =
+        rola === "osp_naczelnik"
+          ? "W tej wsi jest już inny aktywny naczelnik OSP — odrzuć ten wniosek albo zmień rolę u dotychczasowej osoby."
+          : rola === "kgw_przewodniczaca"
+            ? "W tej wsi jest już inna aktywna przewodnicząca KGW."
+            : rola === "rada_solecka"
+              ? "W tej wsi jest już inna aktywna rola rady sołeckiej."
+              : "Nie można aktywować — naruszenie reguły unikalności ról we wsi.";
+      return { blad: msgUnikalna };
+    }
     console.error("[zatwierdzWniosek]", upErr.message);
     return { blad: "Nie udało się zaakceptować (sprawdź, czy jesteś sołtysem tej wsi)." };
   }
 
+  const rolaEtykieta = etykietaRoliWsi(wiersz.role);
+  const tytulNotif =
+    wiersz.role === "mieszkaniec" ? "Zaakceptowano wniosek mieszkańca" : `Zaakceptowano: ${rolaEtykieta}`;
+  const trescNotif =
+    wiersz.role === "mieszkaniec"
+      ? "Twoja rola we wsi została aktywowana."
+      : `Twoja rola „${rolaEtykieta}” we wsi została aktywowana.`;
+
   const { error: notifErr } = await supabase.from("notifications").insert({
     user_id: wiersz.user_id,
     type: "role_approved",
-    title: "Zaakceptowano wniosek mieszkańca",
-    body: "Twoja rola we wsi została aktywowana.",
+    title: tytulNotif,
+    body: trescNotif,
     link_url: "/panel/mieszkaniec",
     related_id: wiersz.village_id,
     related_type: "village",
@@ -83,20 +112,32 @@ export async function zatwierdzWniosekMieszkanca(rolaId: string): Promise<WynikP
     console.warn("[zatwierdzWniosek] powiadomienie:", notifErr.message);
   } else {
     zaplanujWebPushDlaUzytkownika(wiersz.user_id, {
-      title: "Zaakceptowano wniosek mieszkańca",
-      body: "Twoja rola we wsi została aktywowana.",
+      title: tytulNotif,
+      body: trescNotif.length > 110 ? `${trescNotif.slice(0, 110)}…` : trescNotif,
       linkUrl: "/panel/mieszkaniec",
       tag: `role-approved-${wiersz.village_id}`,
     });
-    zaplanujPowiadomienieEmail(
-      wiersz.user_id,
-      "naszawies.pl — zaakceptowano wniosek mieszkańca",
-      "Witaj na portalu",
-      [
-        "Sołtys zaakceptował Twój wniosek o rolę mieszkańca we wsi.",
-        "Możesz korzystać z panelu mieszkańca: ogłoszenia, świetlica, lista zakupów i inne moduły przypisane do Twojej wsi.",
-      ],
-    );
+    if (wiersz.role === "mieszkaniec") {
+      zaplanujPowiadomienieEmail(
+        wiersz.user_id,
+        "naszawies.pl — zaakceptowano wniosek mieszkańca",
+        "Witaj na portalu",
+        [
+          "Sołtys zaakceptował Twój wniosek o rolę mieszkańca we wsi.",
+          "Możesz korzystać z panelu mieszkańca: ogłoszenia, świetlica, lista zakupów i inne moduły przypisane do Twojej wsi.",
+        ],
+      );
+    } else {
+      zaplanujPowiadomienieEmail(
+        wiersz.user_id,
+        `naszawies.pl — zaakceptowano wniosek (${rolaEtykieta})`,
+        "Informacja z portalu",
+        [
+          `Sołtys zaakceptował Twój wniosek o rolę „${rolaEtykieta}” we wsi w serwisie naszawies.pl.`,
+          "Szczegóły uprawnień ustalisz ze sołtysem — moduły panelu są rozbudowywane etapami.",
+        ],
+      );
+    }
   }
 
   revalidatePath("/panel/soltys");
@@ -121,13 +162,12 @@ export async function odrzucWniosekMieszkanca(rolaId: string): Promise<WynikPros
 
   const { data: wierszWniosku, error: readW } = await supabase
     .from("user_village_roles")
-    .select("user_id, village_id")
+    .select("user_id, village_id, role")
     .eq("id", id.data)
     .eq("status", "pending")
-    .eq("role", "mieszkaniec")
     .maybeSingle();
 
-  if (readW || !wierszWniosku) {
+  if (readW || !wierszWniosku || !ROLE_WNIOSKOW_SOLTYS.has(wierszWniosku.role)) {
     return { blad: "Nie znaleziono oczekującego wniosku lub został już rozpatrzony." };
   }
 
@@ -136,7 +176,7 @@ export async function odrzucWniosekMieszkanca(rolaId: string): Promise<WynikPros
     .update({ status: "suspended" })
     .eq("id", id.data)
     .eq("status", "pending")
-    .eq("role", "mieszkaniec")
+    .in("role", Array.from(ROLE_WNIOSKOW_SOLTYS))
     .select("id");
 
   if (error) {
@@ -148,11 +188,15 @@ export async function odrzucWniosekMieszkanca(rolaId: string): Promise<WynikPros
   }
 
   if (wierszWniosku.user_id) {
+    const rolaEtykieta = etykietaRoliWsi(wierszWniosku.role);
     const { error: notifErr } = await supabase.from("notifications").insert({
       user_id: wierszWniosku.user_id,
       type: "role_rejected",
-      title: "Wniosek mieszkańca nie został zaakceptowany",
-      body: "Sołtys odrzucił wniosek o przystąpienie do społeczności wsi w portalu. W razie pytań skontaktuj się ze sołtysem poza portalem.",
+      title:
+        wierszWniosku.role === "mieszkaniec"
+          ? "Wniosek mieszkańca nie został zaakceptowany"
+          : `Wniosek (${rolaEtykieta}) nie został zaakceptowany`,
+      body: "Sołtys odrzucił wniosek o rolę we wsi w portalu. W razie pytań skontaktuj się ze sołtysem poza portalem.",
       link_url: "/panel/mieszkaniec",
       related_id: wierszWniosku.village_id,
       related_type: "village",
@@ -162,17 +206,21 @@ export async function odrzucWniosekMieszkanca(rolaId: string): Promise<WynikPros
       console.warn("[odrzucWniosek] powiadomienie:", notifErr.message);
     } else {
       zaplanujWebPushDlaUzytkownika(wierszWniosku.user_id, {
-        title: "Wniosek mieszkańca",
+        title: wierszWniosku.role === "mieszkaniec" ? "Wniosek mieszkańca" : `Wniosek: ${rolaEtykieta}`,
         body: "Wniosek nie został zaakceptowany przez sołtysa.",
         linkUrl: "/panel/mieszkaniec",
         tag: `role-rejected-${wierszWniosku.village_id}`,
       });
       zaplanujPowiadomienieEmail(
         wierszWniosku.user_id,
-        "naszawies.pl — wniosek mieszkańca",
+        wierszWniosku.role === "mieszkaniec"
+          ? "naszawies.pl — wniosek mieszkańca"
+          : `naszawies.pl — wniosek (${rolaEtykieta})`,
         "Informacja z portalu",
         [
-          "Sołtys nie zaakceptował wniosku o rolę mieszkańca dla tej wsi w serwisie naszawies.pl.",
+          wierszWniosku.role === "mieszkaniec"
+            ? "Sołtys nie zaakceptował wniosku o rolę mieszkańca dla tej wsi w serwisie naszawies.pl."
+            : `Sołtys nie zaakceptował wniosku o rolę „${rolaEtykieta}” dla tej wsi w serwisie naszawies.pl.`,
           "Szczegóły możesz ustalić bezpośrednio ze sołtysem.",
         ],
       );
@@ -936,7 +984,7 @@ export async function zatwierdzPostSoltysa(postId: string): Promise<WynikProsty>
   const { data: wiersz, error: readErr } = await supabase
     .from("posts")
     .select(
-      "id, status, author_id, village_id, title, villages ( voivodeship, county, commune, slug )",
+      "id, status, author_id, village_id, title, type, villages ( voivodeship, county, commune, slug )",
     )
     .eq("id", id.data)
     .maybeSingle();
@@ -947,6 +995,7 @@ export async function zatwierdzPostSoltysa(postId: string): Promise<WynikProsty>
     author_id: string | null;
     village_id: string;
     title: string;
+    type: string;
     villages:
       | { voivodeship: string; county: string; commune: string; slug: string }
       | { voivodeship: string; county: string; commune: string; slug: string }[]
@@ -1012,8 +1061,22 @@ export async function zatwierdzPostSoltysa(postId: string): Promise<WynikProsty>
     }
   }
 
+  const adminPowiadomienia = createAdminSupabaseClient();
+  if (adminPowiadomienia && v != null) {
+    const linkPelny = `${sciezkaProfiluWsi(v)}/ogloszenie/${w.id}`;
+    await powiadomObserwujacychOOpublikowanyPost(adminPowiadomienia, {
+      villageId: w.village_id,
+      postId: w.id,
+      postType: w.type,
+      title: w.title,
+      linkUrlPelny: linkPelny,
+      excludeUserId: w.author_id,
+    });
+  }
+
   revalidatePath("/panel/soltys");
   revalidatePath("/panel/powiadomienia");
+  revalidatePath("/panel/mieszkaniec");
   if (v != null) {
     revalidatePath(sciezkaProfiluWsi(v));
     revalidatePath(`${sciezkaProfiluWsi(v)}/ogloszenie/${w.id}`);
@@ -2273,11 +2336,10 @@ export async function uruchomSynchronizacjeRssDlaMoichWsi(): Promise<WynikSyncRs
   if (!user) return { blad: "Zaloguj się." };
   const vids = await pobierzVillageIdsRoliPaneluSoltysa(supabase, user.id);
   if (vids.length === 0) return { blad: "Brak wsi w panelu sołtysa." };
-  const admin = createAdminSupabaseClient();
-  if (!admin) {
-    return { blad: "Brak SUPABASE_SERVICE_ROLE_KEY — synchronizacja RSS wymaga klienta admin." };
-  }
-  const wynik = await synchronizujKanalyRssDlaWsi(admin, vids);
+  const klientPush = createAdminSupabaseClient();
+  const wynik = await synchronizujKanalyRssDlaWsi(supabase, vids, {
+    ...(klientPush ? { klientDoWebPush: klientPush } : {}),
+  });
   for (const vid of vids) {
     await revalidateProfilWsiDlaWioski(supabase, vid);
   }

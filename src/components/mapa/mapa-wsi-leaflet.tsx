@@ -10,6 +10,7 @@ import {
   useImperativeHandle,
   useMemo,
   useRef,
+  useState,
 } from "react";
 import { etykietaKategoriiPoi, emojiKategoriiPoi, kolorObramowaniaPoi } from "@/lib/mapa/kategorie-poi";
 import "./mapa-wsi-leaflet.css";
@@ -173,10 +174,16 @@ type InstancjaLeaflet = {
   map: import("leaflet").Map;
   cluster: import("leaflet").Layer;
   boundaryGroup: import("leaflet").LayerGroup;
+  baseTileLayer: import("leaflet").TileLayer;
+  geoportalWmsLayer: import("leaflet").TileLayer.WMS | null;
   markersById: Map<string, import("leaflet").Marker>;
   resizeHandler: () => void;
   wheelHandlers: { enter: () => void; leave: () => void };
 };
+
+const GEO_WMS_URL = process.env.NEXT_PUBLIC_GEOPORTAL_WMS_URL?.trim() ?? "";
+const GEO_WMS_LAYERS = process.env.NEXT_PUBLIC_GEOPORTAL_WMS_LAYERS?.trim() ?? "";
+const CZY_GEO_WMS_DOSTEPNY = GEO_WMS_URL.length > 0 && GEO_WMS_LAYERS.length > 0;
 
 function zbudujIkone(L: LeafletNs) {
   const ikonaHtml = `<div class="naszawies-marker-wrap" aria-hidden="true">
@@ -235,6 +242,7 @@ export const MapaWsiLeaflet = forwardRef<
     const refMapa = useRef<HTMLDivElement>(null);
     const instancja = useRef<InstancjaLeaflet | null>(null);
     const leafletRef = useRef<LeafletNs | null>(null);
+    const [pokazWarstweReferencyjna, setPokazWarstweReferencyjna] = useState(false);
     const znacznikiRef = useRef(znaczniki);
     znacznikiRef.current = znaczniki;
     const punktyPoiRef = useRef(punktyPoi);
@@ -284,12 +292,21 @@ export const MapaWsiLeaflet = forwardRef<
         });
         ustawPaneWarstwicyGranicy(map);
 
-        L.tileLayer("https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png", {
+        const baseTileLayer = L.tileLayer("https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png", {
           attribution:
             '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> &copy; <a href="https://carto.com/">CARTO</a>',
           subdomains: "abcd",
           maxZoom: 19,
         }).addTo(map);
+        const geoportalWmsLayer = CZY_GEO_WMS_DOSTEPNY
+          ? L.tileLayer.wms(GEO_WMS_URL, {
+              layers: GEO_WMS_LAYERS,
+              format: "image/png",
+              transparent: true,
+              version: "1.3.0",
+              opacity: 0.72,
+            })
+          : null;
 
         leafletRef.current = L;
         const ikona = zbudujIkone(L);
@@ -324,6 +341,8 @@ export const MapaWsiLeaflet = forwardRef<
           map,
           cluster,
           boundaryGroup,
+          baseTileLayer,
+          geoportalWmsLayer,
           markersById: new Map(),
           resizeHandler,
           wheelHandlers: { enter, leave },
@@ -360,6 +379,18 @@ export const MapaWsiLeaflet = forwardRef<
       syncWarstwy(L, inst, znaczniki, punktyPoi, ikona, bboxPoczatkowy);
     }, [znaczniki, punktyPoi, bboxPoczatkowy]);
 
+    useEffect(() => {
+      const inst = instancja.current;
+      if (!inst || !inst.geoportalWmsLayer) return;
+      if (pokazWarstweReferencyjna) {
+        if (!inst.map.hasLayer(inst.geoportalWmsLayer)) {
+          inst.geoportalWmsLayer.addTo(inst.map);
+        }
+      } else if (inst.map.hasLayer(inst.geoportalWmsLayer)) {
+        inst.map.removeLayer(inst.geoportalWmsLayer);
+      }
+    }, [pokazWarstweReferencyjna]);
+
     return (
       <div className="mapa-wsi-map-shell relative h-[min(72dvh,560px)] w-full min-h-[320px] md:h-[min(78dvh,640px)]">
         <div
@@ -369,6 +400,17 @@ export const MapaWsiLeaflet = forwardRef<
           aria-label="Mapa interaktywna — wsie naszawies.pl"
           tabIndex={0}
         />
+        {CZY_GEO_WMS_DOSTEPNY ? (
+          <div className="absolute right-3 top-3 z-[410]">
+            <button
+              type="button"
+              onClick={() => setPokazWarstweReferencyjna((v) => !v)}
+              className="rounded-lg border border-stone-200/80 bg-white/90 px-3 py-1.5 text-[11px] font-medium text-stone-700 shadow-sm backdrop-blur hover:bg-white"
+            >
+              {pokazWarstweReferencyjna ? "Ukryj warstwę Geoportal WMS" : "Pokaż warstwę Geoportal WMS"}
+            </button>
+          </div>
+        ) : null}
         <div
           className="mapa-wsi-legenda-wow pointer-events-none absolute left-3 top-3 z-[400] max-w-[min(100%,300px)] rounded-xl border border-stone-200/80 bg-white/90 px-3 py-2.5 text-[11px] leading-snug text-stone-700 shadow-lg shadow-green-950/5 backdrop-blur-md"
           aria-hidden="true"

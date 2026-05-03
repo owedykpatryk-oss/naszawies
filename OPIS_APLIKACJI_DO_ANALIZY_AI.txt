@@ -51,10 +51,13 @@ UWAGI WDROŻENIOWE
 3. ROLE I DOSTĘP (POSTGRES + RLS)
 --------------------------------------------------------------------------------
 3.1 Enum / kolumna `user_village_roles.role` (wartości używane w kodzie)
-- `mieszkaniec` — wniosek zwykle `pending` do akceptacji sołtysem.
+- `mieszkaniec` — wniosek `pending` (self-insert RLS), akceptacja sołtysa; po złożeniu: powiadomienie do sołtysów
+  / współadminów (`powiadom-soltysow-o-wniosku-roli`, wymaga `SUPABASE_SERVICE_ROLE_KEY` na serwerze).
 - `soltys`, `wspoladmin` — zarządzanie treściami wsi, moderacja, świetlica.
 - `reprezentant_podmiotu` — rozszerzenie katalogu podmiotów (wg migracji i RLS).
-- `kgw_przewodniczaca`, `osp_naczelnik`, `rada_solecka` — role organizacyjne (granularne scope pod moduły KGW/OSP/rady).
+- `kgw_przewodniczaca`, `osp_naczelnik`, `rada_solecka` — role organizacyjne; self-insert `pending` jak mieszkaniec,
+  sołtys aktywuje; migracja `20260505160000_*` — **co najwyżej jedna aktywna** rola danego typu na `village_id`
+  (partial unique indeksy, analogicznie do sołtysa).
 
 3.2 Status roli (`user_village_roles.status`)
 - M.in. `pending`, `active`, `suspended` — wpływa na to, kto widzi i zapisuje dane (polityki RLS).

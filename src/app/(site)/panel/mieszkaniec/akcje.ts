@@ -9,8 +9,11 @@ import {
   MAX_ZNAKOW_OPISU_PO_WYDARZENIU,
 } from "@/lib/swietlica/limity-dokumentacji-zniszczen";
 import { usunObiektR2 } from "@/lib/cloudflare/r2-s3-klient";
+import { powiadomSoltysowONowymWnioskuRoli } from "@/lib/powiadomienia/powiadom-soltysow-o-wniosku-roli";
+import { etykietaRoliWsi } from "@/lib/panel/role-definicje";
 import { pobierzVillageIdsRoliPaneluSoltysa } from "@/lib/panel/rola-panelu-soltysa";
 import { roleDlaUprawnienia } from "@/lib/panel/uprawnienia-wsi";
+import { createAdminSupabaseClient } from "@/lib/supabase/admin-client";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
 import { SZABLONY_LISTY_ZAKUPOW } from "@/lib/zakupy/szablony-listy-zakupow";
 import { sciezkaProfiluWsi } from "@/lib/wies/sciezka-publiczna";
@@ -24,6 +27,57 @@ import {
 const uuid = z.string().uuid();
 
 export type WynikProsty = { blad: string } | { ok: true; komunikat?: string };
+
+export const ROLE_ORG_WNIOSKI = ["osp_naczelnik", "kgw_przewodniczaca", "rada_solecka"] as const;
+export type RolaOrgWniosku = (typeof ROLE_ORG_WNIOSKI)[number];
+
+export async function zlozWniosekRoleOrganizacyjnej(
+  villageId: string,
+  rola: RolaOrgWniosku,
+): Promise<WynikProsty> {
+  const v = uuid.safeParse(villageId);
+  if (!v.success) {
+    return { blad: "Niepoprawny identyfikator wsi." };
+  }
+  if (!ROLE_ORG_WNIOSKI.includes(rola)) {
+    return { blad: "Nieobsługiwany typ wniosku." };
+  }
+  const supabase = utworzKlientaSupabaseSerwer();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) {
+    return { blad: "Zaloguj się." };
+  }
+
+  const { error } = await supabase.from("user_village_roles").insert({
+    user_id: user.id,
+    village_id: v.data,
+    role: rola,
+    status: "pending",
+  });
+
+  if (error) {
+    if (error.code === "23505") {
+      return { blad: "Masz już wniosek lub aktywną rolę tego typu dla tej wsi." };
+    }
+    console.error("[zlozWniosekRoleOrganizacyjnej]", error.message);
+    return { blad: "Nie udało się złożyć wniosku." };
+  }
+
+  const adminPowiadomienia = createAdminSupabaseClient();
+  if (adminPowiadomienia) {
+    void powiadomSoltysowONowymWnioskuRoli(adminPowiadomienia, {
+      villageId: v.data,
+      applicantUserId: user.id,
+      rolaEtykieta: etykietaRoliWsi(rola),
+    }).catch((e) => console.warn("[zlozWniosekRoleOrganizacyjnej] powiadomienie:", e));
+  }
+
+  revalidatePath("/panel/mieszkaniec");
+  revalidatePath("/panel/soltys");
+  return { ok: true, komunikat: "Wniosek wysłany — sołtys rozpatrzy go w panelu." };
+}
 
 export async function zlozWniosekMieszkaniec(villageId: string): Promise<WynikProsty> {
   const v = uuid.safeParse(villageId);
@@ -51,6 +105,15 @@ export async function zlozWniosekMieszkaniec(villageId: string): Promise<WynikPr
     }
     console.error("[zlozWniosekMieszkaniec]", error.message);
     return { blad: "Nie udało się złożyć wniosku." };
+  }
+
+  const adminPowiadomienia = createAdminSupabaseClient();
+  if (adminPowiadomienia) {
+    void powiadomSoltysowONowymWnioskuRoli(adminPowiadomienia, {
+      villageId: v.data,
+      applicantUserId: user.id,
+      rolaEtykieta: etykietaRoliWsi("mieszkaniec"),
+    }).catch((e) => console.warn("[zlozWniosekMieszkaniec] powiadomienie:", e));
   }
 
   revalidatePath("/panel/mieszkaniec");
@@ -89,7 +152,57 @@ export async function obserwujWies(villageId: string): Promise<WynikProsty> {
   }
 
   revalidatePath("/panel/mieszkaniec");
-  return { ok: true, komunikat: "Dodano obserwację wsi (powiadomienia — w rozwoju)." };
+  return { ok: true, komunikat: "Dodano obserwację — poniżej możesz dopasować kategorie powiadomień." };
+}
+
+const schematPreferencjiObserwacji = z.object({
+  follow_id: z.string().uuid(),
+  notify_posts: z.boolean(),
+  notify_events: z.boolean(),
+  notify_issues: z.boolean(),
+  notify_alerts: z.boolean(),
+});
+
+/** Aktualizacja przełączników powiadomień dla jednej obserwowanej wsi (tabela `user_follows`). */
+export async function aktualizujPreferencjeObserwacjiWsi(formData: FormData): Promise<WynikProsty> {
+  const surowe = {
+    follow_id: String(formData.get("follow_id") ?? ""),
+    notify_posts: formData.get("notify_posts") === "on",
+    notify_events: formData.get("notify_events") === "on",
+    notify_issues: formData.get("notify_issues") === "on",
+    notify_alerts: formData.get("notify_alerts") === "on",
+  };
+  const sparsowane = schematPreferencjiObserwacji.safeParse(surowe);
+  if (!sparsowane.success) {
+    return { blad: sparsowane.error.issues[0]?.message ?? "Niepoprawne dane." };
+  }
+
+  const supabase = utworzKlientaSupabaseSerwer();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) {
+    return { blad: "Zaloguj się." };
+  }
+
+  const { error } = await supabase
+    .from("user_follows")
+    .update({
+      notify_posts: sparsowane.data.notify_posts,
+      notify_events: sparsowane.data.notify_events,
+      notify_issues: sparsowane.data.notify_issues,
+      notify_alerts: sparsowane.data.notify_alerts,
+    })
+    .eq("id", sparsowane.data.follow_id)
+    .eq("user_id", user.id);
+
+  if (error) {
+    console.error("[aktualizujPreferencjeObserwacjiWsi]", error.message);
+    return { blad: "Nie udało się zapisać preferencji." };
+  }
+
+  revalidatePath("/panel/mieszkaniec");
+  return { ok: true, komunikat: "Zapisano preferencje powiadomień." };
 }
 
 const typyWydarzen = ["urodziny", "wesele", "zebranie", "zajecia", "inne"] as const;

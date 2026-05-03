@@ -1,3 +1,5 @@
+import { XMLParser } from "fast-xml-parser";
+
 type GeoJsonGeometry = {
   type: string;
   coordinates?: unknown;
@@ -53,6 +55,103 @@ function wybierzGeojsonGranicy(fc: GeoJsonFeatureCollection): unknown | null {
     return trafiona.geometry;
   }
   return fc;
+}
+
+function asArray<T>(v: T | T[] | null | undefined): T[] {
+  if (v == null) return [];
+  return Array.isArray(v) ? v : [v];
+}
+
+function liczbyZPosList(posList: string): number[] {
+  return posList
+    .trim()
+    .split(/\s+/)
+    .map((x) => Number.parseFloat(x))
+    .filter((x) => Number.isFinite(x));
+}
+
+function paraDoGeoJson(a: number, b: number): [number, number] {
+  // Częsty przypadek dla usług PRG: EPSG:4326 jako (lat, lon).
+  if (Math.abs(a) > 40 && Math.abs(b) < 40) return [b, a];
+  return [a, b];
+}
+
+function ringFromPosList(posList: string): [number, number][] | null {
+  const nums = liczbyZPosList(posList);
+  if (nums.length < 6 || nums.length % 2 !== 0) return null;
+  const ring: [number, number][] = [];
+  for (let i = 0; i < nums.length; i += 2) {
+    ring.push(paraDoGeoJson(nums[i], nums[i + 1]));
+  }
+  const first = ring[0];
+  const last = ring[ring.length - 1];
+  if (first && last && (first[0] !== last[0] || first[1] !== last[1])) {
+    ring.push([first[0], first[1]]);
+  }
+  return ring.length >= 4 ? ring : null;
+}
+
+function collectPosLists(node: unknown, out: string[]): void {
+  if (!node) return;
+  if (Array.isArray(node)) {
+    for (const x of node) collectPosLists(x, out);
+    return;
+  }
+  if (typeof node !== "object") return;
+  const obj = node as Record<string, unknown>;
+  for (const [k, v] of Object.entries(obj)) {
+    const lk = k.toLowerCase();
+    if ((lk.endsWith(":poslist") || lk === "poslist") && typeof v === "string") {
+      out.push(v);
+      continue;
+    }
+    collectPosLists(v, out);
+  }
+}
+
+function boundaryFromWfsXml(xmlText: string): unknown | null {
+  const parser = new XMLParser({
+    ignoreAttributes: false,
+    attributeNamePrefix: "",
+    trimValues: true,
+  });
+  let root: unknown;
+  try {
+    root = parser.parse(xmlText) as unknown;
+  } catch {
+    return null;
+  }
+  const obj = root as Record<string, unknown>;
+  const fc =
+    (obj["wfs:FeatureCollection"] as Record<string, unknown> | undefined) ??
+    (obj.FeatureCollection as Record<string, unknown> | undefined) ??
+    obj;
+  const members = asArray(
+    (fc?.["wfs:member"] as unknown) ??
+      (fc?.member as unknown) ??
+      (fc?.["gml:featureMember"] as unknown) ??
+      (fc?.featureMember as unknown),
+  );
+  if (members.length === 0) return null;
+
+  const rings: [number, number][][] = [];
+  for (const m of members) {
+    const mo = m as Record<string, unknown>;
+    const featureObj =
+      Object.values(mo).find((v) => typeof v === "object" && v !== null) ??
+      m;
+    const posLists: string[] = [];
+    collectPosLists(featureObj, posLists);
+    for (const pl of posLists) {
+      const ring = ringFromPosList(pl);
+      if (ring) rings.push(ring);
+    }
+  }
+  if (rings.length === 0) return null;
+  if (rings.length === 1) {
+    return { type: "Polygon", coordinates: [rings[0]] };
+  }
+  return { type: "MultiPolygon", coordinates: rings.map((r) => [r]) };
 }
 
 /**
@@ -119,39 +218,65 @@ export async function pobierzGraniceWsiZPrgWfs(terytId: string): Promise<PrgBoun
     };
   }
 
-  let json: unknown;
-  try {
-    json = (await res.json()) as unknown;
-  } catch {
+  const contentType = (res.headers.get("content-type") ?? "").toLowerCase();
+  const text = await res.text();
+  if (!text.trim()) {
+    return { ok: false, reason: "Pusta odpowiedź WFS PRG.", retryable: true };
+  }
+
+  if (contentType.includes("json")) {
+    let json: unknown;
+    try {
+      json = JSON.parse(text) as unknown;
+    } catch {
+      return { ok: false, reason: "WFS PRG zwrócił niepoprawny JSON.", retryable: false };
+    }
+    const fc = json as GeoJsonFeatureCollection;
+    if (fc?.type !== "FeatureCollection" || !Array.isArray(fc.features)) {
+      return { ok: false, reason: "Nieoczekiwany format odpowiedzi WFS.", retryable: false };
+    }
+    if (fc.features.length === 0) {
+      return {
+        ok: false,
+        reason: `Brak granicy dla TERYT=${cleanTeryt} (typ warstwy: ${typeName}, pole: ${terytField}).`,
+        retryable: false,
+      };
+    }
+    const boundary = wybierzGeojsonGranicy(fc);
+    if (!boundary) {
+      return { ok: false, reason: "Brak geometrii granicy w odpowiedzi WFS.", retryable: false };
+    }
+    return {
+      ok: true,
+      boundaryGeojson: boundary,
+      sourceName: wfsUrl,
+      sourceTypeName: typeName,
+      featureCount: fc.features.length,
+    };
+  }
+
+  if (text.includes("ExceptionReport")) {
     return {
       ok: false,
-      reason: "WFS PRG nie zwrócił JSON (sprawdź outputFormat / typename).",
+      reason: "WFS PRG zwrócił ExceptionReport (sprawdź typ warstwy/filtr).",
       retryable: false,
     };
   }
 
-  const fc = json as GeoJsonFeatureCollection;
-  if (fc?.type !== "FeatureCollection" || !Array.isArray(fc.features)) {
-    return { ok: false, reason: "Nieoczekiwany format odpowiedzi WFS.", retryable: false };
-  }
-  if (fc.features.length === 0) {
+  const boundaryFromXml = boundaryFromWfsXml(text);
+  if (!boundaryFromXml) {
     return {
       ok: false,
-      reason: `Brak granicy dla TERYT=${cleanTeryt} (typ warstwy: ${typeName}, pole: ${terytField}).`,
+      reason: "Nie udało się odczytać geometrii granicy z odpowiedzi GML/XML.",
       retryable: false,
     };
-  }
-
-  const boundary = wybierzGeojsonGranicy(fc);
-  if (!boundary) {
-    return { ok: false, reason: "Brak geometrii granicy w odpowiedzi WFS.", retryable: false };
   }
 
   return {
     ok: true,
-    boundaryGeojson: boundary,
+    boundaryGeojson: boundaryFromXml,
     sourceName: wfsUrl,
     sourceTypeName: typeName,
-    featureCount: fc.features.length,
+    featureCount: 1,
   };
 }

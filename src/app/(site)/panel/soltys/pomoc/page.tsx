@@ -35,7 +35,7 @@ export default function SoltysPomocPage() {
             Każdego dnia zacznij od sekcji, które blokują innych użytkowników.
           </p>
           <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-stone-700">
-            <li>Wnioski mieszkańców</li>
+            <li>Wnioski o role (mieszkaniec, OSP, KGW, rada sołecka)</li>
             <li>Rezerwacje sal</li>
             <li>Moderacja treści</li>
           </ul>
