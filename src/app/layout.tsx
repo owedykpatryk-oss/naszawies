@@ -1,7 +1,10 @@
 import type { Metadata, Viewport } from "next";
+import { Analytics } from "@vercel/analytics/next";
+import { SpeedInsights } from "@vercel/speed-insights/next";
 import { Fraunces, Inter } from "next/font/google";
 import Script from "next/script";
 import { BanerCiasteczek } from "@/components/baner-ciasteczek";
+import { PwaServiceWorkerKlient } from "@/components/pwa/pwa-service-worker-klient";
 import "../styles/landing.css";
 import "./globals.css";
 
@@ -57,6 +60,11 @@ export const metadata: Metadata = {
     index: true,
     follow: true,
   },
+  appleWebApp: {
+    capable: true,
+    title: "naszawies.pl",
+    statusBarStyle: "default",
+  },
 };
 
 export const viewport: Viewport = {
@@ -83,7 +91,10 @@ export default function RootLayout({
           />
         ) : null}
         {children}
+        <PwaServiceWorkerKlient />
         <BanerCiasteczek />
+        <Analytics />
+        <SpeedInsights />
       </body>
     </html>
   );

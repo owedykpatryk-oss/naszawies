@@ -7,7 +7,12 @@ export const metadata: Metadata = {
   description: "Wyszukaj miejscowość po nazwie lub lokalizacji w serwisie naszawies.pl.",
 };
 
-export default function SzukajPage() {
+type Props = { searchParams?: { q?: string | string[] } };
+
+export default function SzukajPage({ searchParams }: Props) {
+  const qParam = searchParams?.q;
+  const qPoczatkowe = Array.isArray(qParam) ? qParam[0] : qParam;
+
   return (
     <main className="mx-auto min-w-0 max-w-2xl py-16 text-stone-800">
       <p className="mb-6 text-sm text-stone-500">
@@ -21,7 +26,7 @@ export default function SzukajPage() {
         miejscowości dostępne w serwisie. Możesz też wpisać <strong>fragment adresu strony wsi</strong> z
         paska przeglądarki.
       </p>
-      <SzukajKatalog />
+      <SzukajKatalog key={qPoczatkowe ?? ""} poczatkoweZapytanie={qPoczatkowe} />
     </main>
   );
 }

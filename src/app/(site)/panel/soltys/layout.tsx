@@ -3,8 +3,12 @@ import Link from "next/link";
 const podstrony = [
   { href: "/panel/soltys", label: "Przegląd" },
   { href: "/panel/soltys/moja-wies", label: "Profil wsi" },
+  { href: "/panel/soltys/samorzad", label: "Przewodnik samorządowy" },
+  { href: "/panel/soltys/kanaly-rss", label: "Kanały RSS" },
+  { href: "/panel/soltys/wiadomosci-lokalne", label: "Wiadomości lokalne" },
   { href: "/panel/soltys/rezerwacje", label: "Rezerwacje sal" },
   { href: "/panel/soltys/swietlica", label: "Świetlica i wyposażenie" },
+  { href: "/panel/soltys/spolecznosc", label: "Społeczność i WOW" },
   { href: "/panel/soltys/dokumenty", label: "Generator dokumentów" },
   { href: "/panel/soltys/zgloszenia", label: "Zgłoszenia" },
   { href: "/panel/soltys/fotokronika", label: "Fotokronika" },

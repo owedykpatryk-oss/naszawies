@@ -49,6 +49,7 @@ const nowyFormularzWaitlist = `<form id="waitlist-form" novalidate>
               <span>Akceptuję <a href="/regulamin" target="_blank" rel="noopener noreferrer">Regulamin</a> oraz zapoznałem(-am) się z <a href="/polityka-prywatnosci" target="_blank" rel="noopener noreferrer">Polityką prywatności</a>. Wyrażam zgodę na przetwarzanie moich danych w celu kontaktu w sprawie listy oczekujących.</span>
             </label>
           </div>
+          <div id="waitlist-turnstile" class="waitlist-turnstile" aria-live="polite"></div>
           <button type="submit" class="form-submit">Chcę być pierwszy →</button>`;
 
 if (body.includes(staryFormularzWaitlist)) {
@@ -73,6 +74,7 @@ const cssForNext = css
   );
 fs.writeFileSync(path.join(root, "src", "styles", "landing.css"), cssForNext);
 // Po sync sprawdź landing: nawigacja „Katalog/Mapa”, blok hero-dwie-sciezki i stopka — mogą wymagać ręcznego scalenia z repo.
+// Statystyki strony głównej: zachowaj w HTML placeholdery __LANDING_STAT_WSIE_LACZNIE__ i __LANDING_STAT_WSIE_AKTYWNE__ (podmienia src/app/page.tsx).
 fs.writeFileSync(path.join(root, "src", "content", "landing-body.html"), body);
 
 const ski = html.indexOf("<script>") + "<script>".length;

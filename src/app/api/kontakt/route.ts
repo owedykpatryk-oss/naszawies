@@ -1,8 +1,11 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
+import { odczytajAdresIpZNaglowkow } from "@/lib/api/odczytaj-adres-ip";
 import { htmlSzablonNaszawies, siteUrlDlaSzablonuEmail } from "@/lib/email/szablon-html-naszawies";
 import { wyslijPrzezResend } from "@/lib/email/wyslij-przez-resend";
+import { sprawdzLimitApi } from "@/lib/rate-limit/sprawdz-limit-upstash";
 import { escapeHtml } from "@/lib/tekst/escape-html";
+import { walidujOdpowiedzTurnstile } from "@/lib/turnstile/waliduj-token-serwer";
 
 const tresc = z
   .object({
@@ -11,6 +14,7 @@ const tresc = z
     temat: z.string().min(3).max(200),
     wiadomosc: z.string().min(10).max(8000),
     rodoZaakceptowane: z.boolean().refine((v) => v === true),
+    cfTurnstileResponse: z.string().max(4096).optional(),
     bottrap: z.string().optional(),
   })
   .strict()
@@ -40,6 +44,27 @@ export async function POST(request: Request) {
   }
 
   const d = sparsowane.data;
+
+  const turnstile = await walidujOdpowiedzTurnstile(d.cfTurnstileResponse);
+  if (!turnstile.ok) {
+    return NextResponse.json(
+      { error: "Weryfikacja antybotowa nie powiodła się. Odśwież stronę i spróbuj ponownie." },
+      { status: 400 },
+    );
+  }
+
+  const ip = odczytajAdresIpZNaglowkow(request.headers);
+  const limit = await sprawdzLimitApi("kontakt", ip);
+  if (!limit.ok) {
+    return NextResponse.json(
+      { error: "Zbyt wiele wiadomości z tego adresu. Spróbuj ponownie później." },
+      {
+        status: 429,
+        headers: { "Retry-After": String(limit.retryPoSekundach) },
+      },
+    );
+  }
+
   const docelowy =
     process.env.KONTAKT_EMAIL_DOCELOWY || "kontakt@naszawies.pl";
 

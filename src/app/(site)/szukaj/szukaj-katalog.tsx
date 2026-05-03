@@ -1,7 +1,8 @@
 "use client";
 
 import Link from "next/link";
-import { FormEvent, useState } from "react";
+import { FormEvent, useCallback, useEffect, useRef, useState } from "react";
+import { useRouter } from "next/navigation";
 
 type Wynik = {
   id: string;
@@ -12,42 +13,63 @@ type Wynik = {
   sciezka: string;
 };
 
-export function SzukajKatalog() {
-  const [fraza, ustawFraze] = useState("");
+export function SzukajKatalog({ poczatkoweZapytanie }: { poczatkoweZapytanie?: string }) {
+  const router = useRouter();
+  const [fraza, ustawFraze] = useState(() => (poczatkoweZapytanie ?? "").trim());
   const [laduje, ustawLaduje] = useState(false);
   const [wyniki, ustawWyniki] = useState<Wynik[]>([]);
   const [blad, ustawBlad] = useState("");
 
-  async function szukaj(e: FormEvent) {
-    e.preventDefault();
-    const q = fraza.trim();
-    if (q.length < 2) {
-      ustawBlad("Wpisz co najmniej 2 znaki.");
-      ustawWyniki([]);
-      return;
-    }
-    ustawLaduje(true);
-    ustawBlad("");
-    try {
-      const res = await fetch(`/api/wies/szukaj?q=${encodeURIComponent(q)}`);
-      const d = (await res.json()) as { wyniki?: Wynik[]; blad?: string };
-      if (!res.ok) {
-        ustawBlad(d.blad ?? "Błąd wyszukiwania.");
+  const wykonanoZapytanieStartowe = useRef(false);
+
+  const wykonajSzukanie = useCallback(
+    async (qSurowe: string, opcje?: { aktualizujUrl?: boolean }) => {
+      const q = qSurowe.trim();
+      if (q.length < 2) {
+        ustawBlad("Wpisz co najmniej 2 znaki.");
         ustawWyniki([]);
         return;
       }
-      ustawWyniki(d.wyniki ?? []);
-      if ((d.wyniki ?? []).length === 0) {
-        ustawBlad(
-          "Nic nie znaleziono. Spróbuj innej frazy. Jeśli miejscowość jeszcze nie jest w serwisie, napisz do nas z formularza na stronie głównej (lista zainteresowanych) — dołożymy ją po weryfikacji w urzędowym wykazie miejscowości."
-        );
+      ustawLaduje(true);
+      ustawBlad("");
+      try {
+        const res = await fetch(`/api/wies/szukaj?q=${encodeURIComponent(q)}`);
+        const d = (await res.json()) as { wyniki?: Wynik[]; blad?: string };
+        if (!res.ok) {
+          ustawBlad(d.blad ?? "Błąd wyszukiwania.");
+          ustawWyniki([]);
+          return;
+        }
+        ustawWyniki(d.wyniki ?? []);
+        if ((d.wyniki ?? []).length === 0) {
+          ustawBlad(
+            "Nic nie znaleziono. Spróbuj innej frazy. Jeśli miejscowość jeszcze nie jest w serwisie, napisz do nas z formularza na stronie głównej (lista zainteresowanych) — dołożymy ją po weryfikacji w urzędowym wykazie miejscowości.",
+          );
+        }
+        if (opcje?.aktualizujUrl !== false) {
+          router.replace(`/szukaj?q=${encodeURIComponent(q)}`, { scroll: false });
+        }
+      } catch {
+        ustawBlad("Brak połączenia z serwerem.");
+        ustawWyniki([]);
+      } finally {
+        ustawLaduje(false);
       }
-    } catch {
-      ustawBlad("Brak połączenia z serwerem.");
-      ustawWyniki([]);
-    } finally {
-      ustawLaduje(false);
-    }
+    },
+    [router],
+  );
+
+  useEffect(() => {
+    if (wykonanoZapytanieStartowe.current) return;
+    const q = (poczatkoweZapytanie ?? "").trim();
+    if (q.length < 2) return;
+    wykonanoZapytanieStartowe.current = true;
+    void wykonajSzukanie(q, { aktualizujUrl: false });
+  }, [poczatkoweZapytanie, wykonajSzukanie]);
+
+  async function szukaj(e: FormEvent) {
+    e.preventDefault();
+    await wykonajSzukanie(fraza, { aktualizujUrl: true });
   }
 
   return (

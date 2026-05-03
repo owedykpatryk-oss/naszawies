@@ -1,0 +1,368 @@
+================================================================================
+NASZAWIES.PL — SZCZEGÓŁOWY OPIS APLIKACJI DO ANALIZY AI (roadmapa, luki, ryzyka)
+================================================================================
+Źródło: kod repozytorium `naszawies/` (Next.js App Router, TypeScript) oraz migracje
+        SQL w `naszawies/supabase/migrations/`.
+Ostatnia aktualizacja treści: 2026-05-03.
+
+UWAGI WDROŻENIOWE
+- Na każdym środowisku (staging/produkcja) muszą być zastosowane **wszystkie** migracje oczekiwane przez kod;
+  inaczej brakuje tabel, kolumn, funkcji RPC lub RLS — aplikacja zwraca błędy lub puste sekcje.
+- Historia `supabase_migrations.schema_migrations` na zdalnej bazie może **nie odpowiadać 1:1 nazwom plików**
+  (np. starsze migracje mapy/szukania były kiedyś zapisane pod innymi timestampami). Przed masowym `psql` na
+  produkcji zweryfikuj, które obiekty już istnieją (np. `\d tabela`, `select proname from pg_proc`).
+- Skrypt `node scripts/zastosuj-migracje-sql.mjs` wykonuje **wszystkie** pliki `.sql` z katalogu po kolei — na
+  produkcji używaj raczej `supabase db push` / pojedynczych migracji, żeby uniknąć duplikatów.
+
+--------------------------------------------------------------------------------
+1. CZYM JEST PRODUKT (WARTOŚĆ BIZNESOWA)
+--------------------------------------------------------------------------------
+- Serwis **naszawies.pl**: cyfrowy „dom” polskiej wsi — **publiczny profil miejscowości** (katalog ścieżek URL
+  wg województwa / powiatu / gminy / slug) oraz **panele po zalogowaniu** dla ról: **sołtys**, **współadmin**,
+  **mieszkaniec**, **reprezentant_podmiotu**.
+- **Wielowsiowość**: jeden użytkownik może mieć wiele rekordów w `user_village_roles` (różne `village_id`, role,
+  statusy). Treści modułów są zawsze powiązane z `village_id` (UUID).
+- **Cel funkcjonalny**: komunikacja wsi (ogłoszenia, wydarzenia), **rezerwacja świetlicy** z workflow (pending →
+  approved/rejected → zakończenie), **zgłoszenia problemów**, **fotokronika**, moduły „WOW” (blog, historia,
+  marketplace, wiadomości lokalne, organizacje i kalendarz społeczny, lista zakupów, harmonogram tygodnia,
+  źródła dotacji), **przewodnik samorządowy**, **kanały RSS** (wpisy automatyczne do moderacji), **powiadomienia**
+  in-app + opcjonalnie **Web Push** i **PWA** (instalacja na telefonie).
+- **Stack**: frontend **Next.js 14** (React 18), backend danych **Supabase** (Postgres + Auth + RLS), część plików
+  w **Cloudflare R2** (avatary, wyposażenie sali, dokumentacja zniszczeń — wg kodu i bucketów w migracjach).
+- Mutacje dla zalogowanych użytkowników: głównie **Server Actions** (`"use server"`) z cookies sesji Supabase;
+  publiczne API REST pod `/api/...` dla formularzy, cronów i narzędzi SEO.
+
+--------------------------------------------------------------------------------
+2. STOS TECHNOLOGICZNY (ROZSZERZONY)
+--------------------------------------------------------------------------------
+- **Next.js** — App Router, `metadata`, `manifest.ts` (PWA), `robots.ts`, `sitemap.ts`, route handlers API.
+- **Supabase** — `@supabase/ssr` (middleware odświeżanie sesji), `@supabase/supabase-js`; klient serwerowy z
+  cookies; **service role** tylko po stronie serwera (cron RSS, automatyzacje, web-push odczyt subskrypcji).
+- **Tailwind CSS** — layout, komponenty panelu i strony publicznej.
+- **Zod** — walidacja wejść (API, Server Actions).
+- **Resend** — e-mail z formularzy (kontakt, waitlist, zgłoszenia — gdy skonfigurowane zmienne).
+- **web-push** (Node) — wysyłka powiadomień push po VAPID, gdy ustawione `VAPID_PRIVATE_KEY` i subskrypcje w bazie.
+- **Leaflet** — mapa publiczna wsi i mapa katalogu (klient).
+- **html2pdf.js** — eksport PDF w generatorze dokumentów sołtysa.
+- **slugify**, **fast-xml-parser** — m.in. RSS.
+- Migracje: pojedyncze pliki `.sql` w `supabase/migrations/` (kolejność leksykograficzna nazw plików).
+
+--------------------------------------------------------------------------------
+3. ROLE I DOSTĘP (POSTGRES + RLS)
+--------------------------------------------------------------------------------
+3.1 Enum / kolumna `user_village_roles.role` (wartości używane w kodzie)
+- `mieszkaniec` — wniosek zwykle `pending` do akceptacji sołtysem.
+- `soltys`, `wspoladmin` — zarządzanie treściami wsi, moderacja, świetlica.
+- `reprezentant_podmiotu` — rozszerzenie katalogu podmiotów (wg migracji i RLS).
+
+3.2 Status roli (`user_village_roles.status`)
+- M.in. `pending`, `active`, `suspended` — wpływa na to, kto widzi i zapisuje dane (polityki RLS).
+
+3.3 Funkcje pomocnicze (SECURITY DEFINER / STABLE) — podstawa pod RLS
+- `is_village_soltys(village_uuid)` — aktywny sołtys lub współadmin danej wsi.
+- `is_village_resident(village_uuid)` — mieszkaniec, sołtys, współadmin lub reprezentant (aktywny).
+- `is_platform_admin()` — ograniczona lista kont administracji platformy (treść w migracji — **do weryfikacji**
+  przy produkcji: e-maile / UUID).
+
+--------------------------------------------------------------------------------
+4. INWENTARZ TABEL I MODUŁÓW (POSTGRES)
+--------------------------------------------------------------------------------
+Poniżej: główne tabele logiczne pogrupowane modułowo. Pełny DDL w migracjach (zwłaszcza
+`20260423140000_schemat_i_rls_z_dokumentacji.sql` + kolejne pliki datowane 202605…).
+
+4.1 Rdzeń
+- `users` — profil aplikacyjny (powiązanie z `auth.users`), m.in. `display_name`, avatar (URL R2/Storage).
+- `villages` — identyfikacja wsi: nazwa, `slug`, województwo, powiat, gmina, typ gminy, `teryt_id`, współrzędne,
+  opis, www, `is_active`, `soltys_user_id`, `boundary_geojson` (granica na mapie), `playground_rules_text`,
+  `cover_image_url`, itd.
+- `user_village_roles` — przypisanie użytkownika do wsi + rola + status.
+- `user_follows` — obserwowanie wsi (`notify_*`).
+- `notifications` — powiadomienia in-app: `type`, `title`, `body`, `link_url`, `is_read`, `channel`, powiązania
+  `related_id` / `related_type`.
+- `user_web_push_subscriptions` — endpoint Push API + klucze `keys_p256dh`, `keys_auth` (migracja
+  `20260504140000_...`); zapis z przeglądarki po zalogowaniu; wysyłka z serwera (`web-push` + VAPID).
+- `waitlist` — zapisy z landing (osobna migracja waitlist).
+
+4.2 Posty i komentarze
+- `posts` — typ (`post_type`): m.in. `ogloszenie`, `wydarzenie`, `zebranie`, `awaria`, `ogloszenie_drobne`,
+  rozszerzenie **`targ_lokalny`**; statusy `draft`, `pending`, `approved`, `rejected`, `archived`; pola czasu
+  wydarzenia (`event_end_at` itd. — używane w automatyzacji archiwizacji).
+- `comments` — komentarze do postów (gdy włączone w produkcie i RLS).
+
+4.3 Świetlica
+- `halls` — obiekt (sala) przypisany do `village_id`.
+- `hall_inventory` — wyposażenie (kategoria, ilość, stan, zdjęcia).
+- `hall_bookings` — rezerwacje; statusy; dokumentacja zniszczeń (URL do storage/R2); integracja z planem sali (JSON).
+
+4.4 Zgłoszenia
+- `issues` — zgłoszenia mieszkańców (`issue_category`, `issue_status`).
+
+4.5 Podmioty (starszy katalog)
+- `entities`, `entity_representatives` — typy `entity_type` (parafia, OSP, KGW, …).
+
+4.6 Mapa / POI / zdjęcia
+- `pois` — punkty na mapie wsi (kategoria, nazwa, opis, współrzędne). Migracja przykładowa może **wstawiać**
+  przykładowe POI dla wsie demo (np. Studzienki).
+- `photo_albums`, `photos` — fotokronika; bucket `village_photos` (storage + RLS w migracji fotokroniki).
+
+4.7 Moderacja i audyt
+- `moderation_reports` — zgłoszenia naruszeń.
+- `audit_log` — audyt (RLS włączany w dedykowanej migracji).
+
+4.8 Społeczność / „WOW” (`20260503124000_spolecznosc_historia_marketplace_automatyzacje.sql` i powiązane)
+- `village_bloggers`, `village_blog_posts` — blog / kronikarz.
+- `village_history_entries` — historia wsi.
+- `marketplace_profiles`, `marketplace_listings` — lokalny marketplace (ogłoszenia typów sprzedaż/usługa/praca itd.).
+- `local_news_items` — wiadomości lokalne; `is_automated` (wpisy z RSS); **`external_guid_hash`** unikalność wpisów
+  z kanału (migracja `20260503200000_kanaly_rss_local_news_guid.sql`).
+- `village_news_feed_sources` — **źródła RSS** na wieś: `feed_url`, `label`, `is_enabled`, `last_fetched_at`,
+  `last_error` — zarządzanie z panelu sołtysa; synchronizacja przez cron/API.
+
+4.9 Organizacje i kalendarz (`20260503150000_village_organizacje_kalendarz_wydarzen.sql`)
+- Typy enum: `village_group_type`, `village_event_kind`.
+- `village_community_groups` — KGW, sport, taniec, itd.
+- `village_organization_events` — wydarzenia podmiotów (powiązanie z grupą).
+- `village_community_events` — wydarzenia społeczności (kalendarz publiczny / panel).
+
+4.10 Lista, harmonogram, dotacje (`20260503170000_kgw_lista_harmonogram_dotacje.sql`)
+- `village_shopping_list_items` — wspólna lista zakupów.
+- `village_weekly_schedule_slots` — powtarzalny harmonogram tygodnia.
+- `village_funding_sources` — źródła dofinansowania + terminy naborów (`application_deadline` — archiwizacja w RPC).
+
+4.11 Przewodnik samorządowy (`20260503190000_village_przewodnik_samorzadowy.sql`)
+- `village_civic_guides` — jeden rekord na `village_id`: pola tekstowe (gmina, powiat, województwo, drogi,
+  śmieci, media, inne).
+STAN W KODZIE (2026-05):
+- Publiczny profil wsi **pobiera** `village_civic_guides` i przekazuje do `SekcjaPrzewodnikSamorzadowy`.
+- Panel sołtysa: **`/panel/soltys/samorzad`** — edycja treści + Server Action `zapiszPrzewodnikSamorzadowyWsi`
+  w `akcje.ts`.
+
+--------------------------------------------------------------------------------
+5. FUNKCJE RPC I TRIGGERY (WYBRANE)
+--------------------------------------------------------------------------------
+- `run_village_automation()` — SECURITY DEFINER; zwraca `(action, affected_rows)` dla wielu kroków. Po migracji
+  rozszerzenia (`20260504120000_...`) m.in.: archiwum wygasłych ofert marketplace; archiwum wygasłych wiadomości
+  lokalnych; dezaktywacja blogerów bez aktywności; archiwum wydarzeń społecznych po `expires_at`; archiwum naborów
+  po terminie; **odrzucenie** zaległych `pending` wpisów RSS (`is_automated`, >90 dni); archiwum postów typu
+  wydarzenie/zebranie po `event_end_at`; archiwum wydarzeń społeczności po czasie; **purge** przeczytanych
+  powiadomień starszych niż 180 dni. Na końcu migracji: `GRANT EXECUTE` dla `authenticated` i `service_role`;
+  indeks `(read_at)` pod purge.
+- `mapa_wsi_znaczniki()` — znaczniki mapy + licznik targu lokalnego; `boundary_geojson`, `teryt_id`.
+- `szukaj_wsi_katalog(p_fraza text)` — wyszukiwarka katalogu (nazwa znormalizowana w migracji — sprawdź dokładną
+  sygnaturę w pliku SQL).
+- `hall_kalendarz_zajetosci_publiczny(p_hall_id)`, `wies_kalendarz_zajetosci_sal_publiczny(p_village_id)` —
+  publiczna zajętość sal (bez danych osobowych).
+- `hall_ma_kolizje_terminu(...)` — kolizje rezerwacji.
+- `admin_utworz_wies_i_soltysa(...)` — narzędzie administracyjne (seed).
+- Triggery: `handle_new_user`, `activate_village_on_soltys_approval`, `set_publication_timestamp` (wg migracji).
+
+--------------------------------------------------------------------------------
+6. API ROUTES (`src/app/api/.../route.ts`) — METODY I PRZEZNACZENIE
+--------------------------------------------------------------------------------
+**Rate limiting (Upstash):** przy **`UPSTASH_REDIS_REST_URL`** + **`UPSTASH_REDIS_REST_TOKEN`**
+(`src/lib/rate-limit/sprawdz-limit-upstash.ts`) limity wg IP: waitlist **3/h**, kontakt **5/h**,
+zgłoszenie naruszenia **10/24h**, `GET /api/wies/szukaj` **60/min**. Bez zmiennych — limity wyłączone (dev).
+
+**Cloudflare Turnstile:** przy **`TURNSTILE_SECRET_KEY`** API wymaga poprawnego **`cfTurnstileResponse`**
+(walidacja `src/lib/turnstile/waliduj-token-serwer.ts`). Klient: **`NEXT_PUBLIC_TURNSTILE_SITE_KEY`** —
+widget na `/kontakt`, `/zglos-naruszenie` (`TurnstileAntybot`) oraz landing (`#waitlist-turnstile` +
+`landing-app.js`). Bez sekretu — weryfikacja pomijana (dev).
+
+**Sentry:** przy **`SENTRY_DSN`** — `instrumentation.ts`, `sentry.server.config.ts`, `sentry.edge.config.ts`,
+`sentry.client.config.ts`, `src/app/global-error.tsx`; `next.config.mjs` owija **`withSentryConfig`** tylko gdy DSN
+ustawiony; upload source map domyślnie wyłączony (`sourcemaps.disable`).
+
+- `GET /api/health` — monitoring: odczyt `villages` (anon), ping **`/auth/v1/health`**, pole `wersja` z
+  `NEXT_PUBLIC_APP_VERSION` lub `NEXT_PUBLIC_WERSJA_APLIKACJI`.
+- `GET /api/wies/mapa-znaczniki` — JSON dla mapy katalogu (proxy/logika nad RPC).
+- `GET /api/wies/wg-teryt?id=` — dane wsi po TERYT (API pomocnicze).
+- `GET /api/wies/statystyki` — statystyki pod landing (katalog).
+- `GET /api/wies/szukaj` — wyszukiwanie wsi (katalog, parametr `q`).
+- `POST /api/waitlist` — zapis na listę (walidacja Zod); opcjonalny mail przez Resend.
+- `POST /api/kontakt` — formularz kontaktu.
+- `POST /api/zglos-naruszenie` — DSA / zgłoszenia naruszeń (e-mail do moderacji jeśli skonfigurowane).
+- `GET|POST /api/automatyzacje/run` — RPC **`run_village_automation_for_cron()`** (blokada advisory, wewnątrz
+  `run_village_automation()`); autoryzacja **`Authorization: Bearer <CRON_SECRET>`**
+  (`src/lib/api/autoryzacja-cron.ts`); audyt w **`cron_runs`** (`20260504150000_…`); idempotencja
+  (`20260504160000_cron_idempotencja_blokady.sql`).
+- `GET|POST /api/kanaly-rss/sync` — synchronizacja kanałów RSS (admin); Bearer jak wyżej; przed jobem lease
+  **`cron_acquire_lease`** / po jobie **`cron_release_lease`** (klucz `rss_sync_global`, TTL 2700 s); zapis do
+  **`cron_runs`**.
+- `POST /api/powiadomienia-push` — zapis / usunięcie subskrypcji Web Push zalogowanego użytkownika (JSON:
+  `rodzaj`: `zapisz` | `usun`, endpoint, klucze).
+- `GET /api/pwa/icon/[rozmiar]` — dynamiczna ikona PNG dla manifestu / powiadomień.
+
+--------------------------------------------------------------------------------
+7. CRON (VERCEL) — `vercel.json`
+--------------------------------------------------------------------------------
+- `/api/automatyzacje/run` — co **4 godziny** (`0 */4 * * *`).
+- `/api/kanaly-rss/sync` — co **6 godzin**, minuta 25 (`25 */6 * * *`).
+Oba endpointy wymagają poprawnego **`CRON_SECRET`** w środowisku Vercel oraz **`SUPABASE_SERVICE_ROLE_KEY`** po stronie
+serwera (klient admin w handlerach).
+
+--------------------------------------------------------------------------------
+8. PWA, SERVICE WORKER, WEB PUSH
+--------------------------------------------------------------------------------
+8.1 Manifest (`src/app/manifest.ts`)
+- `name`, `short_name`, `theme_color`, `background_color`, `display: standalone`, ikony 192/512 z `/api/pwa/icon/…`,
+  **`shortcuts`**: m.in. `/panel/powiadomienia`, `/panel`.
+- Bazowy URL z `NEXT_PUBLIC_SITE_URL` lub domyślnie `https://naszawies.pl` (ikon w pełnym URL).
+
+8.2 Service worker (`public/sw.js`)
+- Rejestracja z layoutu (`PwaServiceWorkerKlient`): `navigator.serviceWorker.register("/sw.js", { scope: "/" })`.
+- `push` — parsuje JSON `{ title, body, link_url, tag? }`, wyświetla `showNotification`.
+- `notificationclick` — próba **focus** istniejącego okna origin, inaczej `clients.openWindow(url)`.
+- `install` / `activate`: `skipWaiting`, `clients.claim`.
+
+8.3 Baner instalacji PWA
+- Obsługa `beforeinstallprompt` (Chrome/Android); „Później” zapis w `sessionStorage`.
+
+8.4 Web Push — konfiguracja
+- Zmienne: `NEXT_PUBLIC_VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, opcjonalnie `VAPID_SUBJECT` (np. mailto:…).
+- UI: `/panel/powiadomienia` — sekcja **PowiadomieniaPushKlient** (zgoda przeglądarki, subscribe, POST do API).
+- Serwer: `src/lib/pwa/wyslij-web-push.ts` — po utworzeniu powiadomień in-app w wybranych akcjach wysyłka push do
+  wszystkich subskrypcji użytkownika; usuwanie subskrypcji przy 410/404.
+
+--------------------------------------------------------------------------------
+9. SEO I METADANE
+--------------------------------------------------------------------------------
+- `src/app/robots.ts` — `allow: /`, `disallow: /panel/`, `/auth/`; `sitemap` na produkcyjny host.
+- `src/app/sitemap.ts` — strony statyczne + do **800** aktywnych profili wsi (`revalidate = 3600`).
+- Strona główna i landing: m.in. `revalidate`, JSON-LD (komponenty w kodzie).
+
+--------------------------------------------------------------------------------
+10. MIDDLEWARE
+--------------------------------------------------------------------------------
+- `src/middleware.ts` — `favicon.ico` → rewrite na `/icon`; **Supabase SSR** — odświeżanie cookies sesji (OAuth/PKCE).
+
+--------------------------------------------------------------------------------
+11. ŚCIEŻKI PUBLICZNE (FRONTEND) — SKRÓT + PODSTRONY WSI
+--------------------------------------------------------------------------------
+11.1 Marketing, prawo, konto
+- `/`, `/o-nas`, `/kontakt`, `/regulamin`, `/polityka-prywatnosci`.
+- `/logowanie`, `/rejestracja`, `/reset-hasla`, `/potwierdz-email`, `/auth/ustaw-haslo`.
+- `/zglos-naruszenie`.
+
+11.2 Katalog
+- `/szukaj` — wyszukiwarka (param `?q=`); komponent kliencki + synchronizacja URL.
+- `/mapa` — mapa Leaflet + znaczniki.
+- `/wybierz-wies` — onboarding wyboru wsi.
+
+11.3 Profil wsi (catch-all `wies/[[...segmenty]]`)
+- URL: `/wies/{woj}/{powiat}/{gmina}/{slug}` + opcjonalne segmenty podstron.
+- Główna karta wsi: posty zatwierdzone, kalendarz zajętości sal (publicznie bezpieczny), blog, historia, marketplace,
+  wiadomości lokalne, organizacje, wydarzenia społeczności, lista zakupów (interakcja dla uprawnionych), harmonogram,
+  dotacje, **przewodnik samorządowy** (z bazy), świetlica, czasem strona projektu świetlicy (TERYT w kodzie dla demo).
+- Przykładowe ścieżki podstron: `/.../ogloszenie/{id}`, `/.../blog`, `/.../blog/{id}`, `/.../historia`, …,
+  `/.../wydarzenia`, `/.../dotacje`, itd. (wg routera w `page.tsx`).
+
+11.4 Profil użytkownika
+- `/u/{uuid}` — skrót publiczny profilu.
+
+--------------------------------------------------------------------------------
+12. PANEL `/panel/...`
+--------------------------------------------------------------------------------
+12.1 Wspólne
+- `/panel` — wejście.
+- `/panel/profil` — dane konta.
+- `/panel/powiadomienia` — lista `notifications` + **Web Push** (sekcja kliencka).
+- `/panel/admin` — funkcje administracji platformy (dostęp ograniczony).
+- `/panel/[...sciezka]` — łapacz dla nieobsłużonych ścieżek (komunikat / roadmapa).
+
+12.2 Panel SOŁTYSA — nawigacja (`layout.tsx`)
+Kolejność linków w menu:
+  Przegląd (`/panel/soltys`), Profil wsi, **Przewodnik samorządowy**, **Kanały RSS**, **Wiadomości lokalne**,
+  Rezerwacje sal, Świetlica i wyposażenie, Społeczność i WOW, Generator dokumentów, Zgłoszenia, Fotokronika.
+
+Ważniejsze strony (pliki `page.tsx`):
+- `/panel/soltys` — wnioski mieszkańców, posty do moderacji, skróty modułów / checklista.
+- `/panel/soltys/moja-wies` — profil publiczny wsi.
+- `/panel/soltys/samorzad` — edycja `village_civic_guides`.
+- `/panel/soltys/kanaly-rss` — zarządzanie `village_news_feed_sources` + ręczna synchronizacja (akcja serwerowa).
+- `/panel/soltys/wiadomosci-lokalne` — moderacja `local_news_items` (zatwierdź / odrzuć).
+- `/panel/soltys/rezerwacje`, `/panel/soltys/swietlica`, `/panel/soltys/swietlica/[hallId]`, `.../dokument`.
+- `/panel/soltys/spolecznosc` — formularze modułów społecznościowych + przycisk automatyzacji RPC.
+- `/panel/soltys/dokumenty`, `/panel/soltys/zgloszenia`, `/panel/soltys/fotokronika`.
+
+12.3 Panel MIESZKAŃCA
+- `/panel/mieszkaniec` — przegląd ról i skróty.
+- `/panel/mieszkaniec/ogloszenia`, `/lista-zakupow`, `/swietlica`, `/zgloszenia`, `/fotokronika` (+ ścieżki sali).
+
+--------------------------------------------------------------------------------
+13. SERVER ACTIONS — PLIKI I ZAKRES (WYBRANE FUNKCJE)
+--------------------------------------------------------------------------------
+13.1 `src/app/(site)/panel/soltys/akcje.ts` (fragment listy — pełna lista w pliku źródłowym)
+- Wnioski: `zatwierdzWniosekMieszkanca`, `odrzucWniosekMieszkanca`.
+- Świetlica / wyposażenie: `dodajWyposazenieSwietlicy`, `dodajPakietWyposazeniaSwietlicy`, `usunWyposazenieSwietlicy`,
+  `aktualizujWyposazenieSwietlicy`, `ustawZdjecieWyposazeniaSwietlicy`, `zapiszPlanSali`, `zapiszRegulaminIKaucjeSali`,
+  `zapiszRegulaminPlacuZabawWsi`.
+- Rezerwacje: `zatwierdzRezerwacjeSwietlicy`, `odrzucRezerwacjeSwietlicy`, `oznaczRezerwacjeJakoZakonczonaSwietlicy`.
+- Posty: `zatwierdzPostSoltysa`, `odrzucPostSoltysa`.
+- Profil wsi: `zapiszProfilPublicznyWsi`.
+- WOW: blog/historia/marketplace/wiadomości: `dodajProfilBlogeraWsi`, `dodajWpisBlogaWsi`, `dodajWpisHistoriiWsi`,
+  `zapiszMarketplaceProfil`, `dodajMarketplaceOferte`, `dodajWiadomoscLokalna`, `zatwierdzWiadomoscLokalnaSoltys`,
+  `odrzucWiadomoscLokalnaSoltys`.
+- Organizacje / wydarzenia / harmonogram / dotacje: `dodajOrganizacjeWsi`, `dodajWydarzenieSpolecznosciWsi`,
+  `dodajSlotHarmonogramuTygodniaWsi`, `usunSlotHarmonogramuTygodniaWsi`, `dodajZrodloDotacjiWsi`,
+  `usunZrodloDotacjiWsi`.
+- Automatyzacja i RSS: `uruchomAutomatyzacjeWsi`, `dodajKanalRssWsi`, `usunKanalRssWsi`,
+  `uruchomSynchronizacjeRssDlaMoichWsi` (oraz lib `synchronizuj-kanaly-rss.ts` używana z API cron).
+- Przewodnik: `zapiszPrzewodnikSamorzadowyWsi`.
+
+13.2 `src/app/(site)/panel/mieszkaniec/akcje.ts`
+- `zlozWniosekMieszkaniec`, `obserwujWies`, `zlozRezerwacjeSwietlicy`, dokumentacja zniszczeń i opis po wydarzeniu,
+  lista zakupów: dodawanie / przełączanie / usuwanie pozycji.
+
+13.3 Inne akcje
+- `src/app/(site)/panel/powiadomienia/akcje.ts` — oznaczanie powiadomień jako przeczytane (wg implementacji).
+
+--------------------------------------------------------------------------------
+14. BEZPIECZEŃSTWO I RLS (ZASADY OGÓLNE)
+--------------------------------------------------------------------------------
+- Dostęp do danych w Postgres przez polityki **RLS** — klucz anon tylko tam, gdzie celowo udostępnione; reszta przez
+  sesję użytkownika lub service role w zaufanych endpointach.
+- Publiczny kalendarz sal nie ujawnia tożsamości rezerwującego — tylko „zajęte” okna.
+- Endpointy cron i sync RSS **nie** mogą być publicznie wywoływane bez sekretu.
+- **Nigdy** nie eksponuj `SUPABASE_SERVICE_ROLE_KEY` ani `VAPID_PRIVATE_KEY` po stronie klienta.
+
+--------------------------------------------------------------------------------
+15. STORAGE, R2, ZMIENNE ŚRODOWISKOWE (SKRÓT)
+--------------------------------------------------------------------------------
+- Supabase Storage: m.in. `village_photos`, `hall_inventory`, `hall_booking_damage` (nazwy w migracjach).
+- R2: zmienne `CLOUDFLARE_R2_*`, `NEXT_PUBLIC_R2_PUBLIC_BASE_URL` — szczegóły w `.env.example`.
+- Resend: `RESEND_API_KEY`, adresy docelowe dla kontaktu / waitlist / zgłoszeń.
+- Cron: `CRON_SECRET`.
+- Push: `NEXT_PUBLIC_VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT`.
+- Analityka (opcjonalnie): `NEXT_PUBLIC_PLAUSIBLE_DOMAIN`.
+
+--------------------------------------------------------------------------------
+16. SEED I DANE DEMO
+--------------------------------------------------------------------------------
+- Migracje seedują przykładowe wsie (m.in. Studzienki, Sipióry), świetlice, granice mapy, czasem teksty BHP/opisy,
+  przykładowe POI — do demonstracji i testów UX.
+
+--------------------------------------------------------------------------------
+17. ŚWIADOME LUKI / OBSZARY „NIE ROBI” ALBO CZĘŚCIOWO (DO ROADMAPY)
+--------------------------------------------------------------------------------
+- **E-mail z powiadomień in-app** — osobny kanał (poza wybranymi formularzami Resend); brak pełnej spójnej
+  „dostawy mailowej” przy każdym `notifications.insert`.
+- **Płatności / faktury / sklep** — marketplace jest ogłoszeniowy, bez płatności online w modelu.
+- **Pełny CMS prawny** — generator dokumentów to szablony techniczne, nie substytut doradztwa prawnego.
+- **Odrzucenie rezerwacji świetlicy** — sprawdź, czy wysyłane jest powiadomienie in-app + push do mieszkańca (ew.
+  dopisać symetrię względem zatwierdzenia).
+- **Zatwierdzenie posta** — można rozważyć powiadomienie autora (obecnie powiadomienie przy odrzuceniu).
+- **iOS Web Push** — wymaga dodania do ekranu początkowego; zachowanie zależy od wersji iOS/Safari.
+- **Retencja / backup** — polityki długoterminowe poza automatycznym purge powiadomień (do decyzji operacyjnej).
+
+--------------------------------------------------------------------------------
+18. PYTANIA POMOCNICZE DLA MODELU ANALITYCZNEGO
+--------------------------------------------------------------------------------
+- Które 3 moduły dają największą wartość dla sołtysa tygodniowo vs miesięcznie?
+- Jak ograniczyć szum z **RSS** (limity, jeden kanał na urząd, digest zamiast push per wpis)?
+- Jakie integracje z urzędami są realne jako API vs scraping (ryzyko prawne / zmiany HTML)?
+- Czy lista zakupów powinna mieć **druk** i **historię realizacji**?
+- Czy profil wsi powinien mieć **jeden skonsolidowany feed** chronologiczny (posty + blog + wydarzenia)?
+
+================================================================================
+KONIEC — wklej całość do innego modelu AI w celu analizy priorytetów, luk i ryzyk.
+================================================================================

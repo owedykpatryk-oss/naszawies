@@ -106,6 +106,20 @@ export default async function MieszkaniecSwietlicaHallPage({ params }: Props) {
     completed: "Zakończona",
   };
 
+  const poKategorii = pozycje.reduce<Record<string, PozycjaWyposazenia[]>>((acc, p) => {
+    const k = p.category?.trim() || "Pozostałe";
+    if (!acc[k]) acc[k] = [];
+    acc[k]!.push(p);
+    return acc;
+  }, {});
+
+  function etykietaStanu(stan: string | null) {
+    if (stan === "good") return { txt: "Dobry", cls: "bg-emerald-50 text-emerald-800 border-emerald-200" };
+    if (stan === "fair") return { txt: "Do użytku z uwagami", cls: "bg-amber-50 text-amber-900 border-amber-200" };
+    if (stan === "damaged") return { txt: "Uszkodzony / do naprawy", cls: "bg-red-50 text-red-800 border-red-200" };
+    return { txt: "Nie podano", cls: "bg-stone-50 text-stone-700 border-stone-200" };
+  }
+
   return (
     <main>
       <p className="mb-4 text-sm text-stone-500">
@@ -168,7 +182,16 @@ export default async function MieszkaniecSwietlicaHallPage({ params }: Props) {
           Po wysłaniu sołtys dostanie prośbę w panelu „Rezerwacje sal”. Dopóki status to „oczekujący”, termin nie jest
           potwierdzony.
         </p>
-        <RezerwacjaSwietlicyFormularz hallId={hallId} maxGosci={sala.max_capacity} />
+        <RezerwacjaSwietlicyFormularz
+          hallId={hallId}
+          maxGosci={sala.max_capacity}
+          inventory={pozycje.map((p) => ({
+            id: p.id,
+            name: p.name,
+            quantity_available: p.quantity_available,
+            quantity: p.quantity,
+          }))}
+        />
       </section>
 
       <section className="mt-10">
@@ -230,30 +253,40 @@ export default async function MieszkaniecSwietlicaHallPage({ params }: Props) {
         {pozycje.length === 0 ? (
           <p className="mt-4 text-sm text-stone-600">Brak wpisów w katalogu wyposażenia.</p>
         ) : (
-          <ul className="mt-6 space-y-3">
-            {pozycje.map((p) => (
-              <li
-                key={p.id}
-                className="flex gap-3 rounded-xl border border-stone-200 bg-white px-4 py-3 shadow-sm"
-              >
-                {p.image_url ? (
-                  <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-lg border border-stone-200 bg-stone-100">
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={p.image_url} alt="" className="h-full w-full object-cover" />
-                  </div>
-                ) : null}
-                <div className="min-w-0">
-                  <p className="font-medium text-stone-900">{p.name}</p>
-                  <p className="text-xs text-stone-500">
-                    {p.category} · stan: {p.condition ?? "—"} · łącznie: {p.quantity}, wolne: {dostepne(p)}
-                  </p>
-                  {p.description ? (
-                    <p className="mt-2 text-sm text-stone-600">{p.description}</p>
-                  ) : null}
-                </div>
-              </li>
-            ))}
-          </ul>
+          <div className="mt-6 space-y-6">
+            {Object.entries(poKategorii)
+              .sort(([a], [b]) => a.localeCompare(b, "pl-PL"))
+              .map(([kategoria, lista]) => (
+                <section key={kategoria}>
+                  <h3 className="text-sm font-semibold uppercase tracking-wide text-stone-500">{kategoria}</h3>
+                  <ul className="mt-3 space-y-3">
+                    {lista.map((p) => {
+                      const stan = etykietaStanu(p.condition);
+                      return (
+                        <li key={p.id} className="flex gap-3 rounded-xl border border-stone-200 bg-white px-4 py-3 shadow-sm">
+                          {p.image_url ? (
+                            <div className="relative h-20 w-20 shrink-0 overflow-hidden rounded-lg border border-stone-200 bg-stone-100">
+                              {/* eslint-disable-next-line @next/next/no-img-element */}
+                              <img src={p.image_url} alt="" className="h-full w-full object-cover" />
+                            </div>
+                          ) : null}
+                          <div className="min-w-0">
+                            <p className="font-medium text-stone-900">{p.name}</p>
+                            <p className="mt-1 text-xs text-stone-500">
+                              łącznie: {p.quantity}, wolne: {dostepne(p)}
+                            </p>
+                            <span className={`mt-2 inline-flex rounded-full border px-2 py-0.5 text-[11px] ${stan.cls}`}>
+                              {stan.txt}
+                            </span>
+                            {p.description ? <p className="mt-2 text-sm text-stone-600">{p.description}</p> : null}
+                          </div>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </section>
+              ))}
+          </div>
         )}
       </section>
     </main>

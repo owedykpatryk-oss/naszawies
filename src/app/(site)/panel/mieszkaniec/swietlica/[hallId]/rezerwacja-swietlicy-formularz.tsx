@@ -1,18 +1,70 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { FormEvent, useState, useTransition } from "react";
+import { FormEvent, useMemo, useState, useTransition } from "react";
 import { zlozRezerwacjeSwietlicy } from "../../akcje";
 
 const typyWydarzen = ["urodziny", "wesele", "zebranie", "zajecia", "inne"] as const;
+const typyUstawienia = ["auto_bankiet", "teatralny", "warsztatowy", "u_ksztalt", "wlasny"] as const;
 
-type Props = { hallId: string; maxGosci: number | null };
+type Props = {
+  hallId: string;
+  maxGosci: number | null;
+  inventory: { id: string; name: string; quantity_available: number | null; quantity: number }[];
+};
 
-export function RezerwacjaSwietlicyFormularz({ hallId, maxGosci }: Props) {
+export function RezerwacjaSwietlicyFormularz({ hallId, maxGosci, inventory }: Props) {
   const router = useRouter();
   const [blad, ustawBlad] = useState("");
   const [sukces, ustawSukces] = useState("");
   const [oczekuje, startTransition] = useTransition();
+  const [requested, setRequested] = useState<Record<string, number>>({});
+  const [expectedGuestsInput, setExpectedGuestsInput] = useState<number>(20);
+  const [seatingPresetInput, setSeatingPresetInput] =
+    useState<(typeof typyUstawienia)[number]>("auto_bankiet");
+
+  const sortedInventory = useMemo(
+    () => [...inventory].sort((a, b) => a.name.localeCompare(b.name, "pl-PL")),
+    [inventory]
+  );
+  const chairsAvailable = useMemo(
+    () =>
+      sortedInventory
+        .filter((i) => i.name.toLowerCase().includes("krzes"))
+        .reduce((sum, i) => sum + dostepne(i), 0),
+    [sortedInventory]
+  );
+  const estimatedTables = useMemo(() => Math.max(1, Math.ceil(expectedGuestsInput / 8)), [expectedGuestsInput]);
+  const maxRequestedGap = useMemo(() => {
+    let gap = 0;
+    for (const it of sortedInventory) {
+      const req = requested[it.id] ?? 0;
+      const available = dostepne(it);
+      if (req > available) gap += req - available;
+    }
+    return gap;
+  }, [requested, sortedInventory]);
+
+  function dostepne(i: { quantity_available: number | null; quantity: number }) {
+    return i.quantity_available ?? i.quantity;
+  }
+
+  function ustawPakiet(pakiet: "zebranie" | "warsztaty" | "impreza") {
+    const nowy: Record<string, number> = {};
+    for (const it of sortedInventory) {
+      const n = it.name.toLowerCase();
+      if (pakiet === "zebranie" && (n.includes("krzes") || n.includes("stol") || n.includes("mikrofon"))) {
+        nowy[it.id] = Math.min(10, Math.max(1, Math.floor(dostepne(it) * 0.5)));
+      }
+      if (pakiet === "warsztaty" && (n.includes("stol") || n.includes("przedluz") || n.includes("krzes"))) {
+        nowy[it.id] = Math.min(8, Math.max(1, Math.floor(dostepne(it) * 0.4)));
+      }
+      if (pakiet === "impreza" && (n.includes("krzes") || n.includes("nacz") || n.includes("stol"))) {
+        nowy[it.id] = Math.min(20, Math.max(1, Math.floor(dostepne(it) * 0.6)));
+      }
+    }
+    setRequested(nowy);
+  }
 
   function onSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -20,6 +72,7 @@ export function RezerwacjaSwietlicyFormularz({ hallId, maxGosci }: Props) {
     const startAt = String(fd.get("start_at") || "");
     const endAt = String(fd.get("end_at") || "");
     const eventType = String(fd.get("event_type") || "inne");
+    const seatingPreset = String(fd.get("seating_preset") || "wlasny");
     const eventTitle = String(fd.get("event_title") || "").trim();
     const expectedGuests = Number(fd.get("expected_guests"));
     const hasAlcohol = fd.get("has_alcohol") === "on";
@@ -31,6 +84,10 @@ export function RezerwacjaSwietlicyFormularz({ hallId, maxGosci }: Props) {
 
     if (!typyWydarzen.includes(eventType as (typeof typyWydarzen)[number])) {
       ustawBlad("Wybierz typ wydarzenia.");
+      return;
+    }
+    if (!typyUstawienia.includes(seatingPreset as (typeof typyUstawienia)[number])) {
+      ustawBlad("Wybierz sposób ustawienia sali.");
       return;
     }
     if (!acceptRules) {
@@ -46,8 +103,17 @@ export function RezerwacjaSwietlicyFormularz({ hallId, maxGosci }: Props) {
       return;
     }
 
-    const startIso = new Date(startAt).toISOString();
-    const endIso = new Date(endAt).toISOString();
+    const startDate = new Date(startAt);
+    const endDate = new Date(endAt);
+    if (Number.isNaN(startDate.getTime()) || Number.isNaN(endDate.getTime())) {
+      ustawBlad("Podaj poprawny termin rozpoczęcia i zakończenia.");
+      return;
+    }
+    const startIso = startDate.toISOString();
+    const endIso = endDate.toISOString();
+    const requestedInventory = Object.entries(requested)
+      .filter(([, q]) => Number.isFinite(q) && q > 0)
+      .map(([inventoryId, quantity]) => ({ inventoryId, quantity: Math.trunc(quantity) }));
 
     startTransition(async () => {
       const wynik = await zlozRezerwacjeSwietlicy({
@@ -56,6 +122,8 @@ export function RezerwacjaSwietlicyFormularz({ hallId, maxGosci }: Props) {
         endAt: endIso,
         eventType: eventType as (typeof typyWydarzen)[number],
         eventTitle: eventTitle.length ? eventTitle : null,
+        seatingPreset: seatingPreset as (typeof typyUstawienia)[number],
+        requestedInventory,
         expectedGuests,
         hasAlcohol,
         contactPhone: contactPhone.length ? contactPhone : null,
@@ -67,6 +135,7 @@ export function RezerwacjaSwietlicyFormularz({ hallId, maxGosci }: Props) {
       }
       ustawSukces(wynik.komunikat ?? "Wysłano wniosek o rezerwację.");
       (e.target as HTMLFormElement).reset();
+      setRequested({});
       router.refresh();
     });
   }
@@ -133,6 +202,25 @@ export function RezerwacjaSwietlicyFormularz({ hallId, maxGosci }: Props) {
       </div>
 
       <div>
+        <label htmlFor="rs-seating" className="mb-1 block text-sm font-medium text-stone-700">
+          Preferowane ustawienie sali
+        </label>
+        <select
+          id="rs-seating"
+          name="seating_preset"
+          onChange={(e) => setSeatingPresetInput(e.target.value as (typeof typyUstawienia)[number])}
+          className="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm text-stone-900 outline-none ring-green-800 focus:ring-2"
+          defaultValue="auto_bankiet"
+        >
+          <option value="auto_bankiet">Auto bankiet (na liczbę gości)</option>
+          <option value="teatralny">Teatralny (rzędy)</option>
+          <option value="warsztatowy">Warsztatowy (wyspy)</option>
+          <option value="u_ksztalt">U-kształt</option>
+          <option value="wlasny">Własny / bez zmian</option>
+        </select>
+      </div>
+
+      <div>
         <label htmlFor="rs-title" className="mb-1 block text-sm font-medium text-stone-700">
           Tytuł / krótki opis (opcjonalnie)
         </label>
@@ -158,11 +246,37 @@ export function RezerwacjaSwietlicyFormularz({ hallId, maxGosci }: Props) {
           max={maxGosci ?? 5000}
           required
           defaultValue={20}
+          onChange={(e) => setExpectedGuestsInput(Math.max(1, Number(e.target.value) || 1))}
           className="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm text-stone-900 outline-none ring-green-800 focus:ring-2"
         />
         {maxGosci != null ? (
           <p className="mt-1 text-xs text-stone-500">Limit sali: {maxGosci} osób.</p>
         ) : null}
+      </div>
+
+      <div className="rounded-xl border border-stone-200 bg-stone-50 p-3 text-sm">
+        <p className="font-medium text-stone-800">Podsumowanie przygotowania (na żywo)</p>
+        <ul className="mt-2 space-y-1 text-xs text-stone-700">
+          <li>
+            Układ: <strong>{seatingPresetInput}</strong>
+          </li>
+          <li>
+            Szacowana liczba stołów (przy 8 os./stół): <strong>{estimatedTables}</strong>
+          </li>
+          <li>
+            Dostępne krzesła w katalogu: <strong>{chairsAvailable}</strong>
+          </li>
+          {chairsAvailable > 0 && expectedGuestsInput > chairsAvailable ? (
+            <li className="text-amber-800">
+              Uwaga: goście ({expectedGuestsInput}) przekraczają dostępną liczbę krzeseł ({chairsAvailable}).
+            </li>
+          ) : null}
+          {maxRequestedGap > 0 ? (
+            <li className="text-red-700">
+              Uwaga: w zamówionym asortymencie brakuje łącznie <strong>{maxRequestedGap}</strong> szt.
+            </li>
+          ) : null}
+        </ul>
       </div>
 
       <div>
@@ -178,6 +292,51 @@ export function RezerwacjaSwietlicyFormularz({ hallId, maxGosci }: Props) {
           className="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm text-stone-900 outline-none ring-green-800 focus:ring-2"
         />
       </div>
+
+      {sortedInventory.length > 0 ? (
+        <div className="rounded-xl border border-stone-200 bg-stone-50 p-3">
+          <p className="text-sm font-medium text-stone-800">Asortyment do rezerwacji (opcjonalnie)</p>
+          <p className="mt-1 text-xs text-stone-600">
+            Możesz od razu zaznaczyć, czego potrzebujesz. Sołtys zobaczy listę przy wniosku.
+          </p>
+          <div className="mt-2 flex flex-wrap gap-2">
+            <button type="button" onClick={() => ustawPakiet("zebranie")} className="rounded border border-stone-300 bg-white px-2 py-1 text-xs">
+              Pakiet: zebranie
+            </button>
+            <button type="button" onClick={() => ustawPakiet("warsztaty")} className="rounded border border-stone-300 bg-white px-2 py-1 text-xs">
+              Pakiet: warsztaty
+            </button>
+            <button type="button" onClick={() => ustawPakiet("impreza")} className="rounded border border-stone-300 bg-white px-2 py-1 text-xs">
+              Pakiet: impreza
+            </button>
+          </div>
+          <ul className="mt-3 space-y-2">
+            {sortedInventory.slice(0, 16).map((it) => {
+              const max = dostepne(it);
+              return (
+                <li key={it.id} className="grid grid-cols-[1fr,90px] items-center gap-2">
+                  <label className="text-xs text-stone-700">
+                    {it.name} <span className="text-stone-500">(dostępne: {max})</span>
+                  </label>
+                  <input
+                    type="number"
+                    min={0}
+                    max={max}
+                    value={requested[it.id] ?? 0}
+                    onChange={(e) =>
+                      setRequested((prev) => ({
+                        ...prev,
+                        [it.id]: Math.max(0, Math.min(max, Number(e.target.value) || 0)),
+                      }))
+                    }
+                    className="w-full rounded border border-stone-300 px-2 py-1 text-sm"
+                  />
+                </li>
+              );
+            })}
+          </ul>
+        </div>
+      ) : null}
 
       <label className="flex cursor-pointer items-start gap-2 text-sm text-stone-700">
         <input name="has_alcohol" type="checkbox" className="mt-1 accent-green-800" />

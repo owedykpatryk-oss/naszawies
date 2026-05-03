@@ -25,6 +25,8 @@ export type WiesPubliczna = {
   website: string | null;
   is_active: boolean;
   cover_image_url: string | null;
+  /** Ostatnia zmiana rekordu wsi w katalogu (nie treści modułów). */
+  updated_at: string | null;
 };
 
 /**
@@ -45,7 +47,7 @@ export async function znajdzWiesPoSciezce(
   const { data, error } = await supabase
     .from("villages")
     .select(
-      "id, teryt_id, name, slug, voivodeship, county, commune, commune_type, latitude, longitude, population, description, website, is_active, cover_image_url"
+      "id, teryt_id, name, slug, voivodeship, county, commune, commune_type, latitude, longitude, population, description, website, is_active, cover_image_url, updated_at"
     )
     .eq("slug", slug);
 

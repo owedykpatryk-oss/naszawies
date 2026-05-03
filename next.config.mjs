@@ -1,3 +1,5 @@
+import { withSentryConfig } from "@sentry/nextjs";
+
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   async headers() {
@@ -6,6 +8,7 @@ const nextConfig = {
         source: "/:path*",
         headers: [
           { key: "X-DNS-Prefetch-Control", value: "on" },
+          { key: "X-Content-Type-Options", value: "nosniff" },
           // Nie ustawiaj X-Frame-Options: SAMEORIGIN — blokuje iframe podglądu w panelu Vercel (inna domena).
           // Ochrona przed clickjackingiem: tylko my i panel Vercel mogą osadzać stronę w ramce.
           {
@@ -23,4 +26,16 @@ const nextConfig = {
   },
 };
 
-export default nextConfig;
+const konfiguracjaSentry = {
+  org: process.env.SENTRY_ORG,
+  project: process.env.SENTRY_PROJECT,
+  authToken: process.env.SENTRY_AUTH_TOKEN,
+  silent: true,
+  sourcemaps: {
+    disable: true,
+  },
+};
+
+export default process.env.SENTRY_DSN?.trim()
+  ? withSentryConfig(nextConfig, konfiguracjaSentry)
+  : nextConfig;

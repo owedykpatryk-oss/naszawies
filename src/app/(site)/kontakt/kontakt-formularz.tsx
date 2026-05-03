@@ -2,11 +2,16 @@
 
 import Link from "next/link";
 import { FormEvent, useState } from "react";
+import { TurnstileAntybot } from "@/components/turnstile/TurnstileAntybot";
+
+const TURNSTILE_SITE_KEY = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY?.trim() ?? "";
 
 export function KontaktFormularz() {
   const [laduje, ustawLaduje] = useState(false);
   const [wynik, ustawWynik] = useState<"brak" | "ok" | "blad">("brak");
   const [komunikat, ustawKomunikat] = useState("");
+  const [turnstileToken, ustawTurnstileToken] = useState<string | null>(null);
+  const [turnstileKey, ustawTurnstileKey] = useState(0);
 
   async function onSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -23,6 +28,7 @@ export function KontaktFormularz() {
       wiadomosc: String(fd.get("wiadomosc") || "").trim(),
       rodoZaakceptowane: fd.get("zgoda") === "on",
       bottrap: String(fd.get("bottrap") || ""),
+      ...(turnstileToken ? { cfTurnstileResponse: turnstileToken } : {}),
     };
 
     try {
@@ -40,6 +46,8 @@ export function KontaktFormularz() {
       ustawWynik("ok");
       ustawKomunikat("Wiadomość została wysłana. Dziękujemy!");
       form.reset();
+      ustawTurnstileToken(null);
+      ustawTurnstileKey((k) => k + 1);
     } catch {
       ustawWynik("blad");
       ustawKomunikat("Brak połączenia z serwerem.");
@@ -110,6 +118,12 @@ export function KontaktFormularz() {
           className="w-full rounded-xl border border-stone-300 px-3 py-2 text-stone-900"
         />
       </div>
+      {TURNSTILE_SITE_KEY ? (
+        <div className="rounded-xl border border-stone-200 bg-stone-50 p-3">
+          <p className="mb-2 text-xs text-stone-600">Weryfikacja antyspamowa (Cloudflare)</p>
+          <TurnstileAntybot key={turnstileKey} siteKey={TURNSTILE_SITE_KEY} onToken={ustawTurnstileToken} />
+        </div>
+      ) : null}
       <div className="flex items-start gap-2">
         <input type="checkbox" id="kontakt-zgoda" name="zgoda" required className="mt-1 h-4 w-4 accent-green-800" />
         <label htmlFor="kontakt-zgoda" className="text-sm text-stone-700">
@@ -126,7 +140,7 @@ export function KontaktFormularz() {
       </div>
       <button
         type="submit"
-        disabled={laduje}
+        disabled={laduje || (Boolean(TURNSTILE_SITE_KEY) && !turnstileToken)}
         className="rounded-full bg-green-800 px-6 py-3 font-semibold text-white transition hover:bg-green-900 disabled:opacity-60"
       >
         {laduje ? "Wysyłanie…" : "Wyślij wiadomość"}

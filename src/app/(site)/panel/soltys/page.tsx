@@ -95,12 +95,120 @@ export default async function SoltysPage() {
     hrefWsi: hrefWsi[p.village_id] ?? null,
   }));
 
+  let liczbaWiadomosciDoAkceptu = 0;
+  let liczbaKanaalowRss = 0;
+  if (villageIds.length > 0) {
+    const { count: cNews } = await supabase
+      .from("local_news_items")
+      .select("id", { count: "exact", head: true })
+      .in("village_id", villageIds)
+      .in("status", ["pending", "draft"]);
+    liczbaWiadomosciDoAkceptu = cNews ?? 0;
+    const { count: cFeeds } = await supabase
+      .from("village_news_feed_sources")
+      .select("id", { count: "exact", head: true })
+      .in("village_id", villageIds);
+    liczbaKanaalowRss = cFeeds ?? 0;
+  }
+
   return (
     <main>
       <h1 className="font-serif text-3xl text-green-950">Sołtys</h1>
       <p className="mt-2 text-sm text-stone-600">
         Wnioski mieszkańców w Twoich wsiach oraz posty oczekujące na moderację.
       </p>
+
+      {villageIds.length > 0 ? (
+        <section className="mt-8 rounded-2xl border border-emerald-200/80 bg-gradient-to-br from-emerald-50/60 via-white to-teal-50/30 p-4 sm:p-5">
+          <h2 className="font-serif text-lg text-green-950">Szybkie działania</h2>
+          <p className="mt-1 text-xs text-stone-600">
+            Skróty do modułów, które oszczędzają czas — od dokumentów po świetlicę i społeczność.
+          </p>
+          <div className="mt-4 grid gap-3 sm:grid-cols-2">
+            <Link
+              href="/panel/soltys/dokumenty"
+              className="rounded-xl border border-stone-200 bg-white/95 p-4 text-sm shadow-sm transition hover:border-green-800/25 hover:shadow-md"
+            >
+              <span className="font-semibold text-green-950">Generator dokumentów</span>
+              <span className="mt-1 block text-xs text-stone-600">
+                Scenariusze 1‑klik i lejek sponsora (prośba → przypomnienie → wpływ → podziękowanie).
+              </span>
+            </Link>
+            <Link
+              href="/panel/soltys/rezerwacje"
+              className="rounded-xl border border-stone-200 bg-white/95 p-4 text-sm shadow-sm transition hover:border-green-800/25 hover:shadow-md"
+            >
+              <span className="font-semibold text-green-950">Rezerwacje sal</span>
+              <span className="mt-1 block text-xs text-stone-600">
+                Checklista przygotowania, rekomendacje zakupów i druk dla wydarzeń.
+              </span>
+            </Link>
+            <Link
+              href="/panel/soltys/spolecznosc"
+              className="rounded-xl border border-stone-200 bg-white/95 p-4 text-sm shadow-sm transition hover:border-green-800/25 hover:shadow-md"
+            >
+              <span className="font-semibold text-green-950">Społeczność i WOW</span>
+              <span className="mt-1 block text-xs text-stone-600">
+                Blog, historia, marketplace, KGW i kluby, kalendarz wydarzeń, wiadomości i automatyzacje.
+              </span>
+            </Link>
+            <Link
+              href="/panel/soltys/swietlica"
+              className="rounded-xl border border-stone-200 bg-white/95 p-4 text-sm shadow-sm transition hover:border-green-800/25 hover:shadow-md"
+            >
+              <span className="font-semibold text-green-950">Świetlica i wyposażenie</span>
+              <span className="mt-1 block text-xs text-stone-600">
+                Układ sali, asortyment i szybkie pakiety wyposażenia.
+              </span>
+            </Link>
+            <Link
+              href="/panel/soltys/moja-wies"
+              className="rounded-xl border border-stone-200 bg-white/95 p-4 text-sm shadow-sm transition hover:border-green-800/25 hover:shadow-md"
+            >
+              <span className="font-semibold text-green-950">Profil wsi</span>
+              <span className="mt-1 block text-xs text-stone-600">Treści widoczne publicznie na naszawies.pl.</span>
+            </Link>
+            <Link
+              href="/panel/soltys/wiadomosci-lokalne"
+              className="rounded-xl border border-stone-200 bg-white/95 p-4 text-sm shadow-sm transition hover:border-green-800/25 hover:shadow-md"
+            >
+              <span className="font-semibold text-green-950">Wiadomości do akceptu</span>
+              <span className="mt-1 block text-xs text-stone-600">
+                {liczbaWiadomosciDoAkceptu > 0
+                  ? `Oczekujące wpisy: ${liczbaWiadomosciDoAkceptu} (w tym z RSS).`
+                  : "Brak oczekujących — sprawdź po synchronizacji kanałów."}
+              </span>
+            </Link>
+            <Link
+              href="/panel/soltys/kanaly-rss"
+              className="rounded-xl border border-stone-200 bg-white/95 p-4 text-sm shadow-sm transition hover:border-green-800/25 hover:shadow-md"
+            >
+              <span className="font-semibold text-green-950">Kanały RSS</span>
+              <span className="mt-1 block text-xs text-stone-600">
+                {liczbaKanaalowRss > 0
+                  ? `Podłączone źródła: ${liczbaKanaalowRss}.`
+                  : "Brak kanałów — dodaj adres kanału gminy lub lokalnej prasy."}
+              </span>
+            </Link>
+            <Link
+              href="/panel/soltys/samorzad"
+              className="rounded-xl border border-stone-200 bg-white/95 p-4 text-sm shadow-sm transition hover:border-green-800/25 hover:shadow-md"
+            >
+              <span className="font-semibold text-green-950">Przewodnik samorządowy</span>
+              <span className="mt-1 block text-xs text-stone-600">
+                Kontakty do gminy, śmieci, drogi — widoczne na profilu wsi.
+              </span>
+            </Link>
+            <Link
+              href="/panel/powiadomienia"
+              className="rounded-xl border border-stone-200 bg-white/95 p-4 text-sm shadow-sm transition hover:border-green-800/25 hover:shadow-md"
+            >
+              <span className="font-semibold text-green-950">Powiadomienia</span>
+              <span className="mt-1 block text-xs text-stone-600">Filtr nieprzeczytanych i szybki podgląd treści.</span>
+            </Link>
+          </div>
+        </section>
+      ) : null}
 
       {villageIds.length === 0 ? (
         <p className="mt-8 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-950">
@@ -134,6 +242,9 @@ export default async function SoltysPage() {
         </Link>
         <Link href="/panel/soltys/swietlica" className="text-green-800 underline">
           Świetlica i wyposażenie
+        </Link>
+        <Link href="/panel/soltys/spolecznosc" className="text-green-800 underline">
+          Społeczność i WOW
         </Link>
         <Link href="/panel/soltys/dokumenty" className="text-green-800 underline">
           Generator dokumentów

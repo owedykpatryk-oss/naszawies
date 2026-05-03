@@ -1,7 +1,10 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
+import { odczytajAdresIpZNaglowkow } from "@/lib/api/odczytaj-adres-ip";
 import { wyslijPrzezResend } from "@/lib/email/wyslij-przez-resend";
+import { sprawdzLimitApi } from "@/lib/rate-limit/sprawdz-limit-upstash";
 import { escapeHtml } from "@/lib/tekst/escape-html";
+import { walidujOdpowiedzTurnstile } from "@/lib/turnstile/waliduj-token-serwer";
 
 const tresc = z
   .object({
@@ -10,6 +13,7 @@ const tresc = z
     urlStrony: z.string().url().max(2048),
     opis: z.string().min(20).max(8000),
     rodoZaakceptowane: z.boolean().refine((v) => v === true),
+    cfTurnstileResponse: z.string().max(4096).optional(),
     bottrap: z.string().optional(),
   })
   .strict()
@@ -34,6 +38,27 @@ export async function POST(request: Request) {
   }
 
   const d = sparsowane.data;
+
+  const turnstile = await walidujOdpowiedzTurnstile(d.cfTurnstileResponse);
+  if (!turnstile.ok) {
+    return NextResponse.json(
+      { error: "Weryfikacja antybotowa nie powiodła się. Odśwież stronę i spróbuj ponownie." },
+      { status: 400 },
+    );
+  }
+
+  const ip = odczytajAdresIpZNaglowkow(request.headers);
+  const limit = await sprawdzLimitApi("zglos_naruszenie", ip);
+  if (!limit.ok) {
+    return NextResponse.json(
+      { error: "Zbyt wiele zgłoszeń z tego adresu. Spróbuj ponownie później." },
+      {
+        status: 429,
+        headers: { "Retry-After": String(limit.retryPoSekundach) },
+      },
+    );
+  }
+
   const docelowy =
     process.env.ZGLOSZENIA_NARUSZENIA_EMAIL ||
     process.env.KONTAKT_EMAIL_DOCELOWY ||

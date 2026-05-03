@@ -1,5 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
+import { odczytajAdresIpZNaglowkow } from "@/lib/api/odczytaj-adres-ip";
+import { sprawdzLimitApi } from "@/lib/rate-limit/sprawdz-limit-upstash";
 import { createPublicSupabaseClient } from "@/lib/supabase/public-client";
 import { sciezkaProfiluWsi } from "@/lib/wies/sciezka-publiczna";
 
@@ -29,6 +31,18 @@ export async function GET(request: Request) {
   const supabase = createPublicSupabaseClient();
   if (!supabase) {
     return NextResponse.json({ blad: "Wyszukiwarka jest chwilowo niedostępna. Spróbuj za chwilę." }, { status: 503 });
+  }
+
+  const ip = odczytajAdresIpZNaglowkow(request.headers);
+  const limit = await sprawdzLimitApi("szukaj_wies", ip);
+  if (!limit.ok) {
+    return NextResponse.json(
+      { blad: "Zbyt wiele zapytań. Odczekaj chwilę i spróbuj ponownie." },
+      {
+        status: 429,
+        headers: { "Retry-After": String(limit.retryPoSekundach) },
+      },
+    );
   }
 
   const fraza = sparsowane.data.q;

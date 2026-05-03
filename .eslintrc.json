@@ -1,3 +1,21 @@
 {
-  "extends": ["next/core-web-vitals", "next/typescript"]
+  "extends": ["next/core-web-vitals", "next/typescript"],
+  "overrides": [
+    {
+      "files": ["src/**/*.tsx"],
+      "rules": {
+        "no-restricted-imports": [
+          "error",
+          {
+            "paths": [
+              {
+                "name": "@/lib/supabase/admin-client",
+                "message": "Klient Supabase z service role nie w komponentach .tsx — użyj route API lub pliku .ts (Server Action)."
+              }
+            ]
+          }
+        ]
+      }
+    }
+  ]
 }

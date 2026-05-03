@@ -193,6 +193,10 @@
           role,
           rodoZaakceptowane: true,
           bottrap: bottrap,
+          cfTurnstileResponse:
+            typeof window.__waitlistTurnstileToken === "string"
+              ? window.__waitlistTurnstileToken
+              : "",
         }),
       });
       let data = {};
@@ -225,6 +229,12 @@
       submitBtn.textContent = "✓ Jesteś zapisany/a!";
       submitBtn.style.background = "var(--green-medium)";
       form.reset();
+      if (window.turnstile && waitlistTurnstileWidgetId != null) {
+        try {
+          window.turnstile.reset(waitlistTurnstileWidgetId);
+        } catch (_) {}
+        window.__waitlistTurnstileToken = "";
+      }
       setTimeout(function () {
         submitBtn.textContent = prevText;
         submitBtn.style.background = "var(--green-dark)";
@@ -246,8 +256,52 @@
     if (form) form.addEventListener("submit", handleWaitlistSubmit);
   }
 
+  var waitlistTurnstileWidgetId = null;
+
+  function loadTurnstileScript(cb) {
+    if (window.turnstile) {
+      cb();
+      return;
+    }
+    var s = document.createElement("script");
+    s.src = "https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit";
+    s.async = true;
+    s.defer = true;
+    s.onload = function () {
+      cb();
+    };
+    document.head.appendChild(s);
+  }
+
+  function initWaitlistTurnstile() {
+    var sk =
+      typeof window.__NEXT_PUBLIC_TURNSTILE_SITE_KEY__ === "string"
+        ? String(window.__NEXT_PUBLIC_TURNSTILE_SITE_KEY__).trim()
+        : "";
+    if (!sk) return;
+    var mount = document.getElementById("waitlist-turnstile");
+    if (!mount) return;
+    loadTurnstileScript(function () {
+      if (!window.turnstile) return;
+      waitlistTurnstileWidgetId = window.turnstile.render(mount, {
+        sitekey: sk,
+        theme: "light",
+        callback: function (token) {
+          window.__waitlistTurnstileToken = token || "";
+        },
+        "expired-callback": function () {
+          window.__waitlistTurnstileToken = "";
+        },
+        "error-callback": function () {
+          window.__waitlistTurnstileToken = "";
+        },
+      });
+    });
+  }
+
   init();
   initFaq();
   initTabs();
   initWaitlist();
+  initWaitlistTurnstile();
 })();

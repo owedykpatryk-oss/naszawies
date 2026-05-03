@@ -15,13 +15,20 @@
     "r2:buckets": "node scripts/r2-buckets.mjs",
     "r2:s3-ping": "node scripts/r2-s3-ping.mjs",
     "wgraj:szablony-maili": "node scripts/wgraj-szablony-maili-supabase.mjs",
-    "db:apply-sql": "node scripts/zastosuj-migracje-sql.mjs"
+    "db:apply-sql": "node scripts/zastosuj-migracje-sql.mjs",
+    "gml:obwody-spisowe-geojson": "node scripts/gml-obwody-spisowe-to-geojson.mjs"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1036.0",
     "@aws-sdk/s3-request-presigner": "^3.1036.0",
+    "@marsidev/react-turnstile": "^1.5.1",
+    "@sentry/nextjs": "^10.51.0",
     "@supabase/ssr": "^0.6.1",
     "@supabase/supabase-js": "^2.104.0",
+    "@upstash/ratelimit": "^2.0.8",
+    "@upstash/redis": "^1.37.0",
+    "@vercel/analytics": "^2.0.1",
+    "@vercel/speed-insights": "^2.0.0",
     "fast-xml-parser": "^5.7.1",
     "html2pdf.js": "^0.14.0",
     "leaflet": "^1.9.4",
@@ -30,7 +37,9 @@
     "react": "^18",
     "react-dom": "^18",
     "resend": "^6.12.2",
+    "sharp": "^0.34.5",
     "slugify": "^1.6.9",
+    "web-push": "^3.6.7",
     "zod": "^4.3.6"
   },
   "devDependencies": {
@@ -40,10 +49,12 @@
     "@types/node": "^20",
     "@types/react": "^18",
     "@types/react-dom": "^18",
+    "@types/web-push": "^3.6.4",
     "eslint": "^8",
     "eslint-config-next": "^14.2.28",
     "pg": "^8.14.1",
     "postcss": "^8",
+    "proj4": "^2.20.0",
     "tailwindcss": "^3.4.1",
     "typescript": "^5"
   }

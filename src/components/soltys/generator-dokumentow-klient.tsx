@@ -21,6 +21,18 @@ type Props = {
   domyslnySoltysNazwa?: string;
 };
 
+type ScenariuszDokumentu = {
+  id: string;
+  tytul: string;
+  opis: string;
+  presetId: string;
+  uzupelnienia: Record<string, string>;
+};
+
+function polaScenariusza(pola: Record<string, string>): Record<string, string> {
+  return pola;
+}
+
 function pogrupujPresety(lista: PresetDokumentu[]) {
   const map = new Map<string, PresetDokumentu[]>();
   for (const p of lista) {
@@ -59,6 +71,7 @@ export function GeneratorDokumentowSoltysaKlient({
   const [numerReferencyjnySesji, ustawNumerReferencyjnySesji] = useState(() =>
     wygenerujNumerReferencyjnySoltys(),
   );
+  const [aktywnyKrokLejka, ustawAktywnyKrokLejka] = useState<number | null>(null);
 
   const opcjeDomyslne = useMemo(
     () => ({
@@ -68,6 +81,192 @@ export function GeneratorDokumentowSoltysaKlient({
     }),
     [domyslnaWies, domyslnaGmina, domyslnySoltysNazwa],
   );
+
+  const scenariuszeWow = useMemo<ScenariuszDokumentu[]>(() => {
+    const nazwaWsi = domyslnaWies.trim() || "Twojej wsi";
+    const nazwaGminy = domyslnaGmina.trim() || "Twojej gminy";
+    const podpis = domyslnySoltysNazwa.trim()
+      ? `Sołtys ${domyslnySoltysNazwa.trim()}`
+      : "Sołtys sołectwa";
+    const kontakt = "tel. …, e-mail …";
+    const wnioskodawcaSolectwo =
+      nazwaWsi !== "Twojej wsi" && nazwaGminy !== "Twojej gminy"
+        ? `Sołectwo ${nazwaWsi}, gmina ${nazwaGminy}`
+        : nazwaWsi !== "Twojej wsi"
+          ? `Sołectwo ${nazwaWsi}`
+          : "Sołectwo …";
+
+    return [
+      {
+        id: "wow-finanse-firma",
+        tytul: "Kampania sponsora (finanse)",
+        opis: "Prośba o środki do firmy — start z gotowym uzasadnieniem i pakietem korzyści.",
+        presetId: "prosba-wsparcie-finansowe-firma",
+        uzupelnienia: polaScenariusza({
+          adresat: "Do Zarządu / Właściciela\n[NAZWA FIRMY]\n[ADRES]",
+          wnioskodawca: wnioskodawcaSolectwo,
+          cel: "doposażenie świetlicy wiejskiej",
+          kwota: "3 000,00 PLN",
+          uzasadnienie:
+            "Celem projektu jest doposażenie świetlicy i zwiększenie dostępności zajęć dla dzieci, seniorów oraz spotkań integracyjnych mieszkańców. Inicjatywa realnie poprawi warunki życia społecznego w sołectwie.",
+          korzysci:
+            "Publiczne podziękowanie na stronie wsi i tablicy ogłoszeń, informacja o partnerstwie podczas wydarzenia, możliwość oznaczenia sponsora na materiałach promocyjnych.",
+          kontakt,
+          podpis,
+        }),
+      },
+      {
+        id: "wow-rzeczowe-uslugi",
+        tytul: "Wsparcie rzeczowe/usługowe",
+        opis: "Pismo o materiały, transport lub robociznę z gotową sekcją rozliczenia.",
+        presetId: "prosba-wsparcie-rzeczowe-uslugowe",
+        uzupelnienia: polaScenariusza({
+          adresat: "Do [NAZWA FIRMY / SKLEPU / WYKONAWCY]",
+          cel: "odświeżenie i naprawy w świetlicy wiejskiej",
+          zakres:
+            "1) Materiały wykończeniowe.\n2) Transport materiałów.\n3) Wsparcie robocizną przy pracach przygotowawczych.",
+          termin: "do uzupełnienia (preferowany termin realizacji)",
+          rozliczenie:
+            "Przekazanie wsparcia zostanie udokumentowane protokołem odbioru. Po realizacji przygotujemy krótkie podsumowanie efektów dla darczyńcy.",
+          kontakt,
+          podpis,
+        }),
+      },
+      {
+        id: "wow-podziekowanie",
+        tytul: "Podziękowanie po realizacji",
+        opis: "Gotowe eleganckie podziękowanie dla sponsora po zakończonym działaniu.",
+        presetId: "podziekowanie-za-wsparcie",
+        uzupelnienia: polaScenariusza({
+          adresat: "Do [NAZWA FIRMY / ORGANIZACJI]",
+          projekt: "doposażenie świetlicy wiejskiej",
+          wsparcie:
+            "Dziękujemy za przekazane wsparcie finansowe / rzeczowe, które umożliwiło realizację zadania wskazanego przez mieszkańców.",
+          efekt:
+            "Dzięki wsparciu poprawiono warunki korzystania ze świetlicy i zwiększono dostępność wydarzeń społecznych dla mieszkańców.",
+          publikacja: "strona sołectwa, tablica ogłoszeń i profil społecznościowy",
+          podpis,
+        }),
+      },
+      {
+        id: "wow-potwierdzenie-darowizny",
+        tytul: "Protokół odbioru darowizny",
+        opis: "Potwierdzenie dla darczyńcy do podpisu, gotowe do wydruku.",
+        presetId: "potwierdzenie-darowizny-rzeczowej",
+        uzupelnienia: polaScenariusza({
+          darczyca: "[NAZWA DARCZYŃCY / FIRMY]",
+          odbiorca: wnioskodawcaSolectwo,
+          cel: "doposażenie i utrzymanie świetlicy wiejskiej",
+          przedmiot: "Lista przekazanych materiałów / sprzętu / usług (ilość, stan, wartość orientacyjna).",
+          uwagi: "Przekazanie zgodne z ustaleniami stron.",
+          podpis,
+        }),
+      },
+    ];
+  }, [domyslnaWies, domyslnaGmina, domyslnySoltysNazwa]);
+
+  const lejekSponsora = useMemo(() => {
+    const nazwaWsi = domyslnaWies.trim() || "Twojej wsi";
+    const nazwaGminy = domyslnaGmina.trim() || "Twojej gminy";
+    const podpis = domyslnySoltysNazwa.trim()
+      ? `Sołtys ${domyslnySoltysNazwa.trim()}`
+      : "Sołtys sołectwa";
+    const kontakt = "tel. …, e-mail …";
+    const wnioskodawcaSolectwo =
+      nazwaWsi !== "Twojej wsi" && nazwaGminy !== "Twojej gminy"
+        ? `Sołectwo ${nazwaWsi}, gmina ${nazwaGminy}`
+        : nazwaWsi !== "Twojej wsi"
+          ? `Sołectwo ${nazwaWsi}`
+          : "Sołectwo …";
+    const celSwietlica = "doposażenie świetlicy wiejskiej";
+
+    return [
+      {
+        krok: 1,
+        tytul: "Prośba",
+        opis: "Pierwsze pismo z uzasadnieniem i korzyściami dla sponsora.",
+        scenariusz: {
+          id: "lejek-1-prosba",
+          tytul: "",
+          opis: "",
+          presetId: "prosba-wsparcie-finansowe-firma",
+          uzupelnienia: polaScenariusza({
+            adresat: "Do Zarządu / Właściciela\n[NAZWA FIRMY]\n[ADRES]",
+            wnioskodawca: wnioskodawcaSolectwo,
+            cel: celSwietlica,
+            kwota: "3 000,00 PLN",
+            uzasadnienie:
+              "Celem projektu jest doposażenie świetlicy i zwiększenie dostępności zajęć dla dzieci, seniorów oraz spotkań integracyjnych mieszkańców. Inicjatywa realnie poprawi warunki życia społecznego w sołectwie.",
+            korzysci:
+              "Publiczne podziękowanie na stronie wsi i tablicy ogłoszeń, informacja o partnerstwie podczas wydarzenia, możliwość oznaczenia sponsora na materiałach promocyjnych.",
+            kontakt,
+            podpis,
+          }),
+        },
+      },
+      {
+        krok: 2,
+        tytul: "Przypomnienie",
+        opis: "Delikatne przypomnienie po pierwszej prośbie.",
+        scenariusz: {
+          id: "lejek-2-przypomnienie",
+          tytul: "",
+          opis: "",
+          presetId: "przypomnienie-o-wsparcie-sponsora",
+          uzupelnienia: polaScenariusza({
+            adresat: "Do Zarządu / Właściciela\n[NAZWA FIRMY]\n[ADRES]",
+            cel: celSwietlica,
+            data_pierwszej_prosby: "… (uzupełnij datę pierwszego pisma)",
+            tresc:
+              "Uprzejmie przypominam o wcześniejszej prośbie o wsparcie inicjatywy sołeckiej. Jeśli jest możliwość krótkiej odpowiedzi lub propozycji innej formy pomocy, będę wdzięczny/a. Pozostaję do dyspozycji.",
+            kontakt,
+            podpis,
+          }),
+        },
+      },
+      {
+        krok: 3,
+        tytul: "Potwierdzenie wpływu",
+        opis: "Notatka po otrzymaniu przelewu — do archiwum.",
+        scenariusz: {
+          id: "lejek-3-finanse",
+          tytul: "",
+          opis: "",
+          presetId: "potwierdzenie-wplywu-srodkow-finansowych",
+          uzupelnienia: polaScenariusza({
+            darczyca: "[NAZWA FIRMY / DARCZYŃCY]",
+            odbiorca: wnioskodawcaSolectwo,
+            kwota: "3 000,00",
+            nr_operacji: "… (z wyciągu bankowego)",
+            cel: `realizacja zadania: ${celSwietlica}`,
+            uwagi: "Dokument ma charakter informacyjny — dopasuj do praktyki księgowej w sołectwie / gminie.",
+            podpis,
+          }),
+        },
+      },
+      {
+        krok: 4,
+        tytul: "Podziękowanie",
+        opis: "Domknięcie współpracy z podziękowaniem i informacją o publikacji.",
+        scenariusz: {
+          id: "lejek-4-podziekowanie",
+          tytul: "",
+          opis: "",
+          presetId: "podziekowanie-za-wsparcie",
+          uzupelnienia: polaScenariusza({
+            adresat: "Do [NAZWA FIRMY / ORGANIZACJI]",
+            projekt: celSwietlica,
+            wsparcie:
+              "Dziękujemy za przekazane wsparcie finansowe, które umożliwiło realizację zadania wskazanego przez mieszkańców.",
+            efekt:
+              "Dzięki wsparciu poprawiono warunki korzystania ze świetlicy i zwiększono dostępność wydarzeń społecznych dla mieszkańców.",
+            publikacja: "strona sołectwa, tablica ogłoszeń i profil społecznościowy",
+            podpis,
+          }),
+        },
+      },
+    ];
+  }, [domyslnaWies, domyslnaGmina, domyslnySoltysNazwa]);
 
   const presetyPoFiltze = useMemo(
     () => PRESETY_DOKUMENTOW_SOLTYSA.filter((p) => presetPasujeDoFiltra(p, filtrSzukaj)),
@@ -100,6 +299,33 @@ export function GeneratorDokumentowSoltysaKlient({
     },
     [domyslnaWies, domyslnaGmina, opcjeDomyslne],
   );
+
+  const uruchomScenariusz = useCallback(
+    (scenariusz: ScenariuszDokumentu) => {
+      const p = znajdzPreset(scenariusz.presetId);
+      if (!p) return;
+      ustawPresetId(scenariusz.presetId);
+      const bazowe = domyslneWartosciPol(p);
+      const merged = { ...bazowe, ...scenariusz.uzupelnienia };
+      if (domyslnaWies && p.pola.some((x) => x.id === "wies")) merged.wies = merged.wies || domyslnaWies;
+      if (domyslnaGmina && p.pola.some((x) => x.id === "gmina")) merged.gmina = merged.gmina || domyslnaGmina;
+      ustawWartosci(uzupelnijDomyslnePresetu(p, merged, opcjeDomyslne));
+    },
+    [domyslnaWies, domyslnaGmina, opcjeDomyslne],
+  );
+
+  const uruchomKrokLejka = useCallback(
+    (krok: number, scenariusz: ScenariuszDokumentu) => {
+      ustawAktywnyKrokLejka(krok);
+      uruchomScenariusz(scenariusz);
+    },
+    [uruchomScenariusz],
+  );
+
+  useEffect(() => {
+    const dopasowany = lejekSponsora.find((x) => x.scenariusz.presetId === presetId);
+    ustawAktywnyKrokLejka(dopasowany ? dopasowany.krok : null);
+  }, [presetId, lejekSponsora]);
 
   useEffect(() => {
     if (presetyPoFiltze.length === 0) return;
@@ -195,6 +421,70 @@ export function GeneratorDokumentowSoltysaKlient({
 
   return (
     <div className="space-y-8">
+      <section className="no-print rounded-2xl border border-emerald-200/90 bg-gradient-to-br from-emerald-50 via-white to-teal-50/50 p-4 shadow-sm">
+        <div className="flex flex-wrap items-start justify-between gap-2">
+          <div>
+            <h2 className="font-serif text-lg text-green-950">Scenariusze WOW (1 klik)</h2>
+            <p className="mt-1 max-w-3xl text-xs leading-relaxed text-stone-600">
+              Szybkie uruchomienie najczęstszych pism dla sołtysa. Po kliknięciu generator wybiera dokument i
+              uzupełnia przykładowe treści, które możesz od razu dopracować i wydrukować.
+            </p>
+          </div>
+          <span className="rounded-full border border-emerald-300 bg-white px-2.5 py-1 text-[11px] font-medium text-emerald-900">
+            Oszczędność czasu: start w kilkanaście sekund
+          </span>
+        </div>
+        <div className="mt-3 grid gap-2 sm:grid-cols-2">
+          {scenariuszeWow.map((sc) => (
+            <button
+              key={sc.id}
+              type="button"
+              onClick={() => uruchomScenariusz(sc)}
+              className="rounded-xl border border-emerald-200 bg-white/95 p-3 text-left shadow-sm transition hover:border-emerald-400 hover:bg-emerald-50/60 active:scale-[0.99]"
+            >
+              <p className="text-sm font-semibold text-green-950">{sc.tytul}</p>
+              <p className="mt-1 text-xs leading-relaxed text-stone-600">{sc.opis}</p>
+            </button>
+          ))}
+        </div>
+      </section>
+
+      <section className="no-print rounded-2xl border border-violet-200/90 bg-gradient-to-br from-violet-50/90 via-white to-fuchsia-50/40 p-4 shadow-sm">
+        <div className="flex flex-wrap items-start justify-between gap-2">
+          <div>
+            <h2 className="font-serif text-lg text-green-950">Lejek sponsora (4 kroki)</h2>
+            <p className="mt-1 max-w-3xl text-xs leading-relaxed text-stone-600">
+              Od pierwszej prośby do podziękowania — każdy krok otwiera gotowy dokument i uzupełnia pola. Zapisz PDF
+              po każdym etapie, żeby mieć spójne archiwum korespondencji.
+            </p>
+          </div>
+        </div>
+        <ol className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+          {lejekSponsora.map(({ krok, tytul, opis, scenariusz }) => {
+            const aktywny = aktywnyKrokLejka === krok;
+            return (
+              <li key={krok} className="list-none">
+                <button
+                  type="button"
+                  onClick={() => uruchomKrokLejka(krok, scenariusz)}
+                  className={`flex h-full min-h-[88px] w-full flex-col rounded-xl border p-3 text-left text-sm transition hover:border-violet-400 hover:bg-violet-50/50 active:scale-[0.99] ${
+                    aktywny
+                      ? "border-violet-500 bg-violet-100/60 font-medium text-green-950 ring-2 ring-violet-300/60"
+                      : "border-violet-200/80 bg-white/90 text-stone-800"
+                  }`}
+                >
+                  <span className="text-[10px] font-semibold uppercase tracking-wide text-violet-800/90">
+                    Krok {krok} / 4
+                  </span>
+                  <span className="mt-1 font-serif text-[15px] text-green-950">{tytul}</span>
+                  <span className="mt-1 text-xs leading-snug text-stone-600">{opis}</span>
+                </button>
+              </li>
+            );
+          })}
+        </ol>
+      </section>
+
       <div className="no-print rounded-2xl border border-stone-200 bg-amber-50/40 p-4 text-sm leading-snug text-amber-950">
         Dokumenty są <strong>szablonami informacyjnymi</strong> — nie stanowią porady prawnej. Przed wysłaniem do
         urzędu lub banku dopasuj treść do przepisów i uchwał w Twojej gminie.{" "}

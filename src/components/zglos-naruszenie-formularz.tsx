@@ -1,11 +1,16 @@
 "use client";
 
 import { FormEvent, useState } from "react";
+import { TurnstileAntybot } from "@/components/turnstile/TurnstileAntybot";
+
+const TURNSTILE_SITE_KEY = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY?.trim() ?? "";
 
 export function ZglosNaruszenieFormularz() {
   const [blad, ustawBlad] = useState("");
   const [ok, ustawOk] = useState(false);
   const [laduje, ustawLaduje] = useState(false);
+  const [turnstileToken, ustawTurnstileToken] = useState<string | null>(null);
+  const [turnstileKey, ustawTurnstileKey] = useState(0);
 
   async function onSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -24,6 +29,7 @@ export function ZglosNaruszenieFormularz() {
       opis: String(fd.get("opis") ?? ""),
       rodoZaakceptowane: fd.get("rodo") === "1",
       bottrap: "",
+      ...(turnstileToken ? { cfTurnstileResponse: turnstileToken } : {}),
     };
     ustawLaduje(true);
     try {
@@ -39,6 +45,8 @@ export function ZglosNaruszenieFormularz() {
       }
       ustawOk(true);
       e.currentTarget.reset();
+      ustawTurnstileToken(null);
+      ustawTurnstileKey((k) => k + 1);
     } catch {
       ustawBlad("Błąd sieci. Spróbuj ponownie.");
     } finally {
@@ -115,6 +123,12 @@ export function ZglosNaruszenieFormularz() {
           placeholder="Opisz, co narusza prawo lub regulamin (np. treść, kontekst, data)."
         />
       </div>
+      {TURNSTILE_SITE_KEY ? (
+        <div className="rounded-lg border border-stone-200 bg-stone-50 p-3">
+          <p className="mb-2 text-xs text-stone-600">Weryfikacja antyspamowa</p>
+          <TurnstileAntybot key={turnstileKey} siteKey={TURNSTILE_SITE_KEY} onToken={ustawTurnstileToken} />
+        </div>
+      ) : null}
       <label className="flex items-start gap-2 text-sm text-stone-700">
         <input type="checkbox" name="rodo" value="1" required className="mt-1" />
         <span>
@@ -127,7 +141,7 @@ export function ZglosNaruszenieFormularz() {
       </label>
       <button
         type="submit"
-        disabled={laduje}
+        disabled={laduje || (Boolean(TURNSTILE_SITE_KEY) && !turnstileToken)}
         className="rounded-lg bg-green-800 px-4 py-2.5 text-sm font-medium text-white hover:bg-green-900 disabled:opacity-60"
       >
         {laduje ? "Wysyłanie…" : "Wyślij zgłoszenie"}

@@ -455,6 +455,185 @@ export function zbudujSugestieKontekstowe(
     });
   }
 
+  const fundraising: SugestiaKontekstowa[] = [];
+  if (preset.id === "prosba-wsparcie-finansowe-firma") {
+    if (maPole(preset, "wnioskodawca") && wies) {
+      fundraising.push({
+        id: "fund-wnioskodawca",
+        etykieta: "Wnioskodawca: sołectwo",
+        wartosc: gmina ? `Sołectwo ${wies}, gmina ${gmina}` : `Sołectwo ${wies}`,
+        poleDocelowe: "wnioskodawca",
+      });
+    }
+    if (maPole(preset, "kwota")) {
+      fundraising.push({
+        id: "fund-kwota-przyklad",
+        etykieta: "Kwota: 3 000 zł",
+        wartosc: "3 000,00 PLN",
+        poleDocelowe: "kwota",
+      });
+    }
+    if (maPole(preset, "korzysci")) {
+      fundraising.push({
+        id: "fund-korzysci",
+        etykieta: "Pakiet korzyści sponsora",
+        wartosc:
+          "1) Publiczne podziękowanie na stronie sołectwa i profilu społecznościowym.\n2) Umieszczenie logo sponsora na plakacie wydarzenia.\n3) Informacja o partnerstwie podczas wydarzenia i w sprawozdaniu końcowym.",
+        poleDocelowe: "korzysci",
+        preferujDopisanie: true,
+      });
+    }
+    if (maPole(preset, "uzasadnienie")) {
+      fundraising.push({
+        id: "fund-uzasadnienie",
+        etykieta: "Uzasadnienie (gotowiec)",
+        wartosc:
+          "Planowana inicjatywa odpowiada na realne potrzeby mieszkańców, w tym rodzin z dziećmi i seniorów. Realizacja zadania zwiększy dostępność infrastruktury lokalnej oraz aktywność społeczną w sołectwie.",
+        poleDocelowe: "uzasadnienie",
+        preferujDopisanie: true,
+      });
+    }
+  }
+  if (preset.id === "prosba-wsparcie-rzeczowe-uslugowe") {
+    if (maPole(preset, "zakres")) {
+      fundraising.push({
+        id: "fund-rzeczowe-zakres",
+        etykieta: "Zakres: materiały + robocizna",
+        wartosc:
+          "1) Materiały budowlane / wykończeniowe do odświeżenia świetlicy.\n2) Transport materiałów na miejsce.\n3) Wsparcie robocizną (minimum 1 dzień prac).",
+        poleDocelowe: "zakres",
+        preferujDopisanie: true,
+      });
+    }
+    if (maPole(preset, "rozliczenie")) {
+      fundraising.push({
+        id: "fund-rzeczowe-rozliczenie",
+        etykieta: "Rozliczenie przekazania",
+        wartosc:
+          "Przekazanie wsparcia zostanie udokumentowane protokołem odbioru darowizny rzeczowej. Po zakończeniu prac przygotujemy krótkie podsumowanie efektów dla darczyńcy.",
+        poleDocelowe: "rozliczenie",
+        preferujDopisanie: true,
+      });
+    }
+  }
+  if (preset.id === "podziekowanie-za-wsparcie") {
+    if (maPole(preset, "wsparcie")) {
+      fundraising.push({
+        id: "fund-podz-wsparcie",
+        etykieta: "Opis wsparcia (szablon)",
+        wartosc:
+          "Dziękujemy za przekazane środki / materiały, które zostały przeznaczone na realizację lokalnego zadania wskazanego przez mieszkańców podczas zebrania wiejskiego.",
+        poleDocelowe: "wsparcie",
+        preferujDopisanie: true,
+      });
+    }
+    if (maPole(preset, "efekt")) {
+      fundraising.push({
+        id: "fund-podz-efekt",
+        etykieta: "Efekt dla mieszkańców",
+        wartosc:
+          "Dzięki wsparciu udało się poprawić warunki korzystania z infrastruktury wiejskiej i zwiększyć dostępność działań społecznych dla wszystkich grup mieszkańców.",
+        poleDocelowe: "efekt",
+        preferujDopisanie: true,
+      });
+    }
+    if (maPole(preset, "publikacja")) {
+      fundraising.push({
+        id: "fund-podz-publikacja",
+        etykieta: "Publikacja: strona + tablica",
+        wartosc: "strona sołectwa, tablica ogłoszeń i profil społecznościowy",
+        poleDocelowe: "publikacja",
+      });
+    }
+  }
+  if (preset.id === "potwierdzenie-darowizny-rzeczowej") {
+    if (maPole(preset, "odbiorca") && wies) {
+      fundraising.push({
+        id: "fund-potw-odbiorca",
+        etykieta: "Odbiorca: sołectwo",
+        wartosc: gmina ? `Sołectwo ${wies}, gmina ${gmina}` : `Sołectwo ${wies}`,
+        poleDocelowe: "odbiorca",
+      });
+    }
+    if (maPole(preset, "cel")) {
+      fundraising.push({
+        id: "fund-potw-cel",
+        etykieta: "Cel: doposażenie świetlicy",
+        wartosc: "doposażenie i bieżące utrzymanie świetlicy wiejskiej",
+        poleDocelowe: "cel",
+      });
+    }
+  }
+  if (preset.id === "przypomnienie-o-wsparcie-sponsora") {
+    if (maPole(preset, "cel")) {
+      fundraising.push({
+        id: "fund-przyp-cel",
+        etykieta: "Cel: świetlica",
+        wartosc: "doposażenie świetlicy wiejskiej",
+        poleDocelowe: "cel",
+      });
+    }
+    if (maPole(preset, "data_pierwszej_prosby")) {
+      fundraising.push({
+        id: "fund-przyp-data",
+        etykieta: "Data pierwszej prośby: dziś",
+        wartosc: dzisDataPl(),
+        poleDocelowe: "data_pierwszej_prosby",
+      });
+    }
+    if (maPole(preset, "tresc")) {
+      fundraising.push({
+        id: "fund-przyp-tresc",
+        etykieta: "Przypomnienie (krótko)",
+        wartosc:
+          "Uprzejmie przypominam o wcześniejszej prośbie o wsparcie. Jeśli jest możliwość krótkiej odpowiedzi lub propozycji innej formy pomocy, będę wdzięczny/a. Pozostaję do dyspozycji.",
+        poleDocelowe: "tresc",
+        preferujDopisanie: true,
+      });
+    }
+  }
+  if (preset.id === "potwierdzenie-wplywu-srodkow-finansowych") {
+    if (maPole(preset, "odbiorca") && wies) {
+      fundraising.push({
+        id: "fund-fin-odbiorca",
+        etykieta: "Odbiorca: sołectwo",
+        wartosc: gmina ? `Sołectwo ${wies}, gmina ${gmina}` : `Sołectwo ${wies}`,
+        poleDocelowe: "odbiorca",
+      });
+    }
+    if (maPole(preset, "data_wplywu")) {
+      fundraising.push({
+        id: "fund-fin-data",
+        etykieta: "Data wpływu: dziś (ISO)",
+        wartosc: dzisIso(),
+        poleDocelowe: "data_wplywu",
+      });
+    }
+    if (maPole(preset, "kwota")) {
+      fundraising.push({
+        id: "fund-fin-kwota",
+        etykieta: "Kwota przykładowa",
+        wartosc: "3 000,00",
+        poleDocelowe: "kwota",
+      });
+    }
+    if (maPole(preset, "cel")) {
+      fundraising.push({
+        id: "fund-fin-cel",
+        etykieta: "Przeznaczenie",
+        wartosc: "realizacja zadania wskazanego w prośbie o wsparcie (świetlica / inicjatywa sołecka)",
+        poleDocelowe: "cel",
+      });
+    }
+  }
+  if (fundraising.length) {
+    grupy.push({
+      grupa: "Fundraising i sponsorzy",
+      opis: "Gotowe fragmenty pism do firm, organizacji i darczyńców.",
+      sugestie: fundraising,
+    });
+  }
+
   return grupy.filter((g) => g.sugestie.length > 0);
 }
 

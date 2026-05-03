@@ -55,6 +55,57 @@ export default async function MieszkaniecPage() {
         </Link>
       </p>
 
+      <section className="mt-8 rounded-2xl border border-sky-200/80 bg-gradient-to-br from-sky-50/50 via-white to-emerald-50/30 p-4 sm:p-5">
+        <h2 className="font-serif text-lg text-green-950">Na co dzień</h2>
+        <p className="mt-1 text-xs text-stone-600">Skróty do modułów mieszkańca — jeden klik zamiast szukania w menu.</p>
+        <div className="mt-4 grid gap-3 sm:grid-cols-2">
+          <Link
+            href="/panel/mieszkaniec/ogloszenia"
+            className="rounded-xl border border-stone-200 bg-white/95 p-4 text-sm shadow-sm transition hover:border-green-800/25 hover:shadow-md"
+          >
+            <span className="font-semibold text-green-950">Ogłoszenia</span>
+            <span className="mt-1 block text-xs text-stone-600">Lokalne ogłoszenia i informacje z Twojej okolicy.</span>
+          </Link>
+          <Link
+            href="/panel/mieszkaniec/lista-zakupow"
+            className="rounded-xl border border-stone-200 bg-white/95 p-4 text-sm shadow-sm transition hover:border-green-800/25 hover:shadow-md"
+          >
+            <span className="font-semibold text-green-950">Lista zakupów</span>
+            <span className="mt-1 block text-xs text-stone-600">Wspólna lista na KGW i sąsiadów — także na profilu wsi.</span>
+          </Link>
+          <Link
+            href="/panel/mieszkaniec/swietlica"
+            className="rounded-xl border border-stone-200 bg-white/95 p-4 text-sm shadow-sm transition hover:border-green-800/25 hover:shadow-md"
+          >
+            <span className="font-semibold text-green-950">Świetlica</span>
+            <span className="mt-1 block text-xs text-stone-600">Rezerwacje sali, układ miejsc i prośby o asortyment.</span>
+          </Link>
+          <Link
+            href="/panel/mieszkaniec/zgloszenia"
+            className="rounded-xl border border-stone-200 bg-white/95 p-4 text-sm shadow-sm transition hover:border-green-800/25 hover:shadow-md"
+          >
+            <span className="font-semibold text-green-950">Zgłoszenia</span>
+            <span className="mt-1 block text-xs text-stone-600">Zgłoś sprawę do sołtysa lub współadministratora.</span>
+          </Link>
+          <Link
+            href="/panel/mieszkaniec/fotokronika"
+            className="rounded-xl border border-stone-200 bg-white/95 p-4 text-sm shadow-sm transition hover:border-green-800/25 hover:shadow-md"
+          >
+            <span className="font-semibold text-green-950">Fotokronika</span>
+            <span className="mt-1 block text-xs text-stone-600">Dodawaj zdjęcia z życia wsi i wydarzeń.</span>
+          </Link>
+          <Link
+            href="/panel/powiadomienia"
+            className="rounded-xl border border-stone-200 bg-white/95 p-4 text-sm shadow-sm transition hover:border-green-800/25 hover:shadow-md sm:col-span-2"
+          >
+            <span className="font-semibold text-green-950">Powiadomienia</span>
+            <span className="mt-1 block text-xs text-stone-600">
+              Odpowiedzi sołtysa, moderacja postów i inne wiadomości z filtrem nieprzeczytanych.
+            </span>
+          </Link>
+        </div>
+      </section>
+
       <section className="mt-8 rounded-2xl border border-stone-200 bg-white p-6 shadow-sm">
         <h2 className="font-serif text-xl text-green-950">Moje role we wsiach</h2>
         {roleList.length === 0 ? (

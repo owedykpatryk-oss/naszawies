@@ -1,8 +1,11 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
+import { odczytajAdresIpZNaglowkow } from "@/lib/api/odczytaj-adres-ip";
 import { htmlSzablonNaszawies, siteUrlDlaSzablonuEmail } from "@/lib/email/szablon-html-naszawies";
 import { wyslijPrzezResend } from "@/lib/email/wyslij-przez-resend";
+import { sprawdzLimitApi } from "@/lib/rate-limit/sprawdz-limit-upstash";
 import { escapeHtml } from "@/lib/tekst/escape-html";
+import { walidujOdpowiedzTurnstile } from "@/lib/turnstile/waliduj-token-serwer";
 import { createPublicSupabaseClient } from "@/lib/supabase/public-client";
 
 const trescZapytania = z
@@ -17,6 +20,8 @@ const trescZapytania = z
       .refine((v) => v === true, {
         message: "Wymagana jest zgoda na przetwarzanie danych.",
       }),
+    /** Token z Cloudflare Turnstile (wymagany, gdy ustawiony `TURNSTILE_SECRET_KEY`). */
+    cfTurnstileResponse: z.string().max(4096).optional(),
     bottrap: z.string().optional(),
   })
   .strict()
@@ -29,17 +34,6 @@ const trescZapytania = z
       });
     }
   });
-
-function odczytajAdresIp(naglowki: Headers): string | null {
-  const xff = naglowki.get("x-forwarded-for");
-  if (xff) {
-    const pierwszy = xff.split(",")[0]?.trim();
-    if (pierwszy) return pierwszy;
-  }
-  const realIp = naglowki.get("x-real-ip");
-  if (realIp?.trim()) return realIp.trim();
-  return null;
-}
 
 export async function POST(request: Request) {
   let json: unknown;
@@ -61,6 +55,14 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: komunikat }, { status: 400 });
   }
 
+  const turnstile = await walidujOdpowiedzTurnstile(sparsowane.data.cfTurnstileResponse);
+  if (!turnstile.ok) {
+    return NextResponse.json(
+      { error: "Weryfikacja antybotowa nie powiodła się. Odśwież stronę i spróbuj ponownie." },
+      { status: 400 },
+    );
+  }
+
   const supabase = createPublicSupabaseClient();
 
   if (!supabase) {
@@ -73,7 +75,20 @@ export async function POST(request: Request) {
   }
 
   const dane = sparsowane.data;
-  const adresIp = odczytajAdresIp(request.headers);
+  const adresIp = odczytajAdresIpZNaglowkow(request.headers);
+
+  const limit = await sprawdzLimitApi("waitlist", adresIp);
+  if (!limit.ok) {
+    return NextResponse.json(
+      {
+        error: "Zbyt wiele zgłoszeń z tego adresu. Spróbuj ponownie później.",
+      },
+      {
+        status: 429,
+        headers: { "Retry-After": String(limit.retryPoSekundach) },
+      },
+    );
+  }
 
   const { error } = await supabase.from("waitlist").insert({
     email: dane.email.toLowerCase(),
@@ -83,7 +98,7 @@ export async function POST(request: Request) {
     role: dane.role,
     source: "landing",
     consent_text_version: "landing-v1-zgoda-checkbox",
-    ip_address: adresIp,
+    ip_address: adresIp === "anonim" ? null : adresIp,
   });
 
   if (error) {
@@ -107,7 +122,7 @@ export async function POST(request: Request) {
         <p><strong>Imię:</strong> ${escapeHtml(dane.fullName)}</p>
         <p><strong>Wieś:</strong> ${escapeHtml(dane.villageName)}</p>
         <p><strong>Gmina:</strong> ${escapeHtml(dane.commune)}</p>
-        <p><strong>IP:</strong> ${escapeHtml(adresIp ?? "—")}</p>`;
+        <p><strong>IP:</strong> ${escapeHtml(adresIp === "anonim" ? "—" : adresIp)}</p>`;
     void wyslijPrzezResend({
       do: powiadomienieDo,
       temat: `[naszawies.pl] Nowy zapis na listę: ${dane.email}`,

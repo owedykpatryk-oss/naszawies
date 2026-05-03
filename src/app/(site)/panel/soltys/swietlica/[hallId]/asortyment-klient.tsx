@@ -1,10 +1,11 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { FormEvent, useState, useTransition } from "react";
+import { FormEvent, useMemo, useState, useTransition } from "react";
 import { ZdjecieAsortymentu } from "@/components/swietlica/zdjecie-asortymentu";
 import {
   aktualizujWyposazenieSwietlicy,
+  dodajPakietWyposazeniaSwietlicy,
   dodajWyposazenieSwietlicy,
   usunWyposazenieSwietlicy,
 } from "../../akcje";
@@ -35,6 +36,12 @@ export function AsortymentSwietlicyKlient({ hallId, nazwaSali, pozycje }: Props)
   const [edycjaId, ustawEdycjaId] = useState<string | null>(null);
   const [komunikat, ustawKomunikat] = useState<{ typ: "ok" | "blad"; tresc: string } | null>(null);
   const [oczekuje, startTransition] = useTransition();
+  const statystyki = useMemo(() => {
+    const lacznie = pozycje.reduce((s, p) => s + p.quantity, 0);
+    const dostepne = pozycje.reduce((s, p) => s + liczbaDostepna(p), 0);
+    const niskieStany = pozycje.filter((p) => liczbaDostepna(p) <= Math.max(1, Math.floor(p.quantity * 0.2))).length;
+    return { lacznie, dostepne, niskieStany };
+  }, [pozycje]);
 
   function odswiezListe() {
     router.refresh();
@@ -134,6 +141,19 @@ export function AsortymentSwietlicyKlient({ hallId, nazwaSali, pozycje }: Props)
     });
   }
 
+  function dodajPakiet(pakiet: "zebranie_wiejskie" | "warsztaty" | "impreza_rodzinna") {
+    ustawKomunikat(null);
+    startTransition(async () => {
+      const wynik = await dodajPakietWyposazeniaSwietlicy({ hallId, pakiet });
+      if ("blad" in wynik) {
+        ustawKomunikat({ typ: "blad", tresc: wynik.blad });
+        return;
+      }
+      ustawKomunikat({ typ: "ok", tresc: "Dodano pakiet asortymentu." });
+      odswiezListe();
+    });
+  }
+
   return (
     <div className="mt-8 space-y-8">
       <p className="text-sm text-stone-600">
@@ -152,6 +172,57 @@ export function AsortymentSwietlicyKlient({ hallId, nazwaSali, pozycje }: Props)
           {komunikat.tresc}
         </p>
       ) : null}
+
+      <section className="rounded-2xl border border-stone-200 bg-white p-6 shadow-sm">
+        <h2 className="font-serif text-xl text-green-950">Szybki start asortymentu</h2>
+        <p className="mt-1 text-xs text-stone-500">
+          Jednym kliknięciem dodasz gotowy pakiet wyposażenia, który potem możesz dopracować.
+        </p>
+        <div className="mt-4 grid gap-2 sm:grid-cols-3">
+          <button
+            type="button"
+            disabled={oczekuje}
+            onClick={() => dodajPakiet("zebranie_wiejskie")}
+            className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-medium text-emerald-900 hover:bg-emerald-100 disabled:opacity-60"
+          >
+            Pakiet: zebranie wiejskie
+          </button>
+          <button
+            type="button"
+            disabled={oczekuje}
+            onClick={() => dodajPakiet("warsztaty")}
+            className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-medium text-emerald-900 hover:bg-emerald-100 disabled:opacity-60"
+          >
+            Pakiet: warsztaty
+          </button>
+          <button
+            type="button"
+            disabled={oczekuje}
+            onClick={() => dodajPakiet("impreza_rodzinna")}
+            className="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs font-medium text-emerald-900 hover:bg-emerald-100 disabled:opacity-60"
+          >
+            Pakiet: impreza rodzinna
+          </button>
+        </div>
+      </section>
+
+      <section className="rounded-2xl border border-stone-200 bg-white p-6 shadow-sm">
+        <h2 className="font-serif text-xl text-green-950">Stan asortymentu</h2>
+        <div className="mt-3 grid gap-2 sm:grid-cols-3">
+          <div className="rounded-lg border border-stone-200 bg-stone-50 px-3 py-2 text-sm">
+            <p className="text-xs text-stone-500">Łącznie sztuk</p>
+            <p className="font-semibold text-stone-900">{statystyki.lacznie}</p>
+          </div>
+          <div className="rounded-lg border border-stone-200 bg-stone-50 px-3 py-2 text-sm">
+            <p className="text-xs text-stone-500">Dostępne teraz</p>
+            <p className="font-semibold text-stone-900">{statystyki.dostepne}</p>
+          </div>
+          <div className="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm">
+            <p className="text-xs text-amber-700">Pozycje z niskim stanem</p>
+            <p className="font-semibold text-amber-900">{statystyki.niskieStany}</p>
+          </div>
+        </div>
+      </section>
 
       <section className="rounded-2xl border border-stone-200 bg-white p-6 shadow-sm">
         <h2 className="font-serif text-xl text-green-950">Dodaj pozycję</h2>

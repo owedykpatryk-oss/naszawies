@@ -760,6 +760,260 @@ export const PRESETY_DOKUMENTOW_SOLTYSA: PresetDokumentu[] = [
         <p class="ramka">Treść pełną włącz w panelu wsi w naszawies i na tablicy informacyjnej — w razie wątpliwości skontaktuj się z urzędem gminy.</p>
       `),
   },
+  {
+    id: "prosba-wsparcie-finansowe-firma",
+    kategoria: "Fundraising i sponsorzy",
+    tytul: "Prośba o wsparcie finansowe (firma / organizacja)",
+    opis: "Gotowe pismo do lokalnej firmy lub fundacji o przekazanie środków.",
+    pola: [
+      { id: "adresat", etykieta: "Adresat (firma / organizacja)", typ: "textarea", wiersze: 2 },
+      { id: "wies", etykieta: "Sołectwo / wieś", typ: "text" },
+      { id: "gmina", etykieta: "Gmina", typ: "text" },
+      { id: "wnioskodawca", etykieta: "Wnioskodawca", typ: "text", placeholder: "np. Sołectwo ..., rada sołecka" },
+      { id: "cel", etykieta: "Cel zbiórki / projektu", typ: "text", placeholder: "np. doposażenie świetlicy wiejskiej" },
+      {
+        id: "kwota",
+        etykieta: "Kwota lub przedział wsparcia",
+        typ: "text",
+        placeholder: "np. 3 000,00 PLN lub dowolna kwota",
+      },
+      {
+        id: "uzasadnienie",
+        etykieta: "Uzasadnienie i wpływ na mieszkańców",
+        typ: "textarea",
+        wiersze: 8,
+        placeholder: "Dlaczego to ważne, ilu mieszkańców skorzysta, co będzie efektem.",
+        szybkieWstawki: [
+          {
+            etykieta: "Wpływ społeczny",
+            wartosc:
+              "Projekt poprawi warunki spotkań mieszkańców, zajęć dla dzieci i seniorów oraz wydarzeń integracyjnych. Z efektów skorzystają mieszkańcy całego sołectwa, a wsparcie przełoży się na trwałe podniesienie jakości życia lokalnej społeczności.",
+          },
+        ],
+      },
+      {
+        id: "korzysci",
+        etykieta: "Forma podziękowania i promocji sponsora",
+        typ: "textarea",
+        wiersze: 4,
+        placeholder: "np. podziękowanie publiczne, logo na materiałach, informacja na stronie.",
+      },
+      { id: "kontakt", etykieta: "Kontakt do koordynatora", typ: "text", placeholder: "telefon / e-mail" },
+      { id: "podpis", etykieta: "Podpis", typ: "text", placeholder: "Sołtys ..." },
+    ],
+    budujHtml: (w, meta) =>
+      otoczenie("Prośba o wsparcie finansowe", meta, `
+        <p style="white-space:pre-wrap">${v(w, "adresat")}</p>
+        <p><strong>Dotyczy:</strong> wsparcia inicjatywy sołeckiej — ${v(w, "cel")}.</p>
+        <p>Szanowni Państwo,</p>
+        <p>działając w imieniu <strong>${v(w, "wnioskodawca")}</strong>, sołectwa <strong>${v(w, "wies")}</strong> (gmina ${v(w, "gmina")}), zwracam się z uprzejmą prośbą o wsparcie finansowe realizacji zadania: <strong>${v(w, "cel")}</strong>.</p>
+        <p><strong>Oczekiwane wsparcie:</strong> ${v(w, "kwota")}.</p>
+        <h2>Uzasadnienie</h2>
+        <div class="ramka"><p style="white-space:pre-wrap">${v(w, "uzasadnienie")}</p></div>
+        <h2>Proponowana forma współpracy i podziękowania</h2>
+        <div class="ramka"><p style="white-space:pre-wrap">${v(w, "korzysci")}</p></div>
+        <p><strong>Kontakt:</strong> ${v(w, "kontakt")}</p>
+        <p class="podpis">Z wyrazami szacunku —<br/><strong>${v(w, "podpis")}</strong></p>
+      `),
+  },
+  {
+    id: "prosba-wsparcie-rzeczowe-uslugowe",
+    kategoria: "Fundraising i sponsorzy",
+    tytul: "Prośba o wsparcie rzeczowe / usługowe",
+    opis: "Pismo o przekazanie materiałów, sprzętu, usług lub roboczogodzin.",
+    pola: [
+      { id: "adresat", etykieta: "Adresat (firma / sklep / wykonawca)", typ: "textarea", wiersze: 2 },
+      { id: "wies", etykieta: "Sołectwo / wieś", typ: "text" },
+      { id: "gmina", etykieta: "Gmina", typ: "text" },
+      { id: "cel", etykieta: "Cel przedsięwzięcia", typ: "text", placeholder: "np. odświeżenie sali świetlicy" },
+      {
+        id: "zakres",
+        etykieta: "Zakres potrzebnego wsparcia",
+        typ: "textarea",
+        wiersze: 7,
+        placeholder: "np. farba 120 l, panele 60 m2, transport, montaż.",
+      },
+      {
+        id: "termin",
+        etykieta: "Termin realizacji / dostawy",
+        typ: "text",
+        placeholder: "np. do 20 czerwca 2026 r.",
+      },
+      {
+        id: "rozliczenie",
+        etykieta: "Sposób rozliczenia i potwierdzenia przekazania",
+        typ: "textarea",
+        wiersze: 4,
+        placeholder: "np. protokół przekazania, podziękowanie, publikacja informacji o wsparciu.",
+      },
+      { id: "kontakt", etykieta: "Kontakt", typ: "text" },
+      { id: "podpis", etykieta: "Podpis", typ: "text", placeholder: "Sołtys ..." },
+    ],
+    budujHtml: (w, meta) =>
+      otoczenie("Prośba o wsparcie rzeczowe / usługowe", meta, `
+        <p style="white-space:pre-wrap">${v(w, "adresat")}</p>
+        <p>Szanowni Państwo,</p>
+        <p>w imieniu mieszkańców sołectwa <strong>${v(w, "wies")}</strong> (gmina ${v(w, "gmina")}) zwracam się z prośbą o wsparcie rzeczowe lub usługowe przedsięwzięcia: <strong>${v(w, "cel")}</strong>.</p>
+        <h2>Zakres potrzeb</h2>
+        <div class="ramka"><p style="white-space:pre-wrap">${v(w, "zakres")}</p></div>
+        <p><strong>Preferowany termin:</strong> ${v(w, "termin")}</p>
+        <h2>Rozliczenie i potwierdzenie</h2>
+        <div class="ramka"><p style="white-space:pre-wrap">${v(w, "rozliczenie")}</p></div>
+        <p><strong>Kontakt:</strong> ${v(w, "kontakt")}</p>
+        <p class="podpis">Z wyrazami szacunku —<br/><strong>${v(w, "podpis")}</strong></p>
+      `),
+  },
+  {
+    id: "podziekowanie-za-wsparcie",
+    kategoria: "Fundraising i sponsorzy",
+    tytul: "Podziękowanie za wsparcie finansowe lub rzeczowe",
+    opis: "Eleganckie podziękowanie dla firmy, instytucji lub darczyńcy.",
+    pola: [
+      { id: "adresat", etykieta: "Adresat podziękowania", typ: "textarea", wiersze: 2 },
+      { id: "wies", etykieta: "Sołectwo / wieś", typ: "text" },
+      { id: "gmina", etykieta: "Gmina", typ: "text" },
+      { id: "projekt", etykieta: "Nazwa projektu / inicjatywy", typ: "text" },
+      { id: "wsparcie", etykieta: "Opis otrzymanego wsparcia", typ: "textarea", wiersze: 4 },
+      {
+        id: "efekt",
+        etykieta: "Efekt dla mieszkańców",
+        typ: "textarea",
+        wiersze: 5,
+        placeholder: "Co udało się zrobić dzięki wsparciu.",
+      },
+      {
+        id: "publikacja",
+        etykieta: "Informacja o publikacji podziękowania",
+        typ: "text",
+        placeholder: "np. strona wsi, Facebook, tablica ogłoszeń",
+      },
+      { id: "podpis", etykieta: "Podpis", typ: "text", placeholder: "Sołtys ..." },
+    ],
+    budujHtml: (w, meta) =>
+      otoczenie("Podziękowanie za okazane wsparcie", meta, `
+        <p style="white-space:pre-wrap">${v(w, "adresat")}</p>
+        <p>Szanowni Państwo,</p>
+        <p>w imieniu mieszkańców sołectwa <strong>${v(w, "wies")}</strong> (gmina ${v(w, "gmina")}) składamy serdeczne podziękowania za wsparcie inicjatywy <strong>${v(w, "projekt")}</strong>.</p>
+        <p><strong>Otrzymane wsparcie:</strong></p>
+        <div class="ramka"><p style="white-space:pre-wrap">${v(w, "wsparcie")}</p></div>
+        <h2>Rezultat dla społeczności</h2>
+        <div class="ramka"><p style="white-space:pre-wrap">${v(w, "efekt")}</p></div>
+        <p>Informacja o podziękowaniu zostanie opublikowana: <strong>${v(w, "publikacja")}</strong>.</p>
+        <p class="podpis">Z wyrazami wdzięczności —<br/><strong>${v(w, "podpis")}</strong></p>
+      `),
+  },
+  {
+    id: "przypomnienie-o-wsparcie-sponsora",
+    kategoria: "Fundraising i sponsorzy",
+    tytul: "Przypomnienie o prośbie o wsparcie (sponsor / firma)",
+    opis: "Krótkie, uprzejme przypomnienie po pierwszej prośbie — bez nacisku, z datą pierwszego pisma.",
+    pola: [
+      { id: "adresat", etykieta: "Adresat", typ: "textarea", wiersze: 2 },
+      { id: "wies", etykieta: "Sołectwo / wieś", typ: "text" },
+      { id: "gmina", etykieta: "Gmina", typ: "text" },
+      { id: "cel", etykieta: "Cel wsparcia (jak w pierwszej prośbie)", typ: "text" },
+      {
+        id: "data_pierwszej_prosby",
+        etykieta: "Data pierwszej prośby / wysłania",
+        typ: "text",
+        placeholder: "np. 3 maja 2026 r.",
+      },
+      {
+        id: "tresc",
+        etykieta: "Treść przypomnienia",
+        typ: "textarea",
+        wiersze: 6,
+        placeholder: "Uprzejmie przypominam o naszej prośbie…",
+        szybkieWstawki: [
+          {
+            etykieta: "Gotowiec",
+            wartosc:
+              "Uprzejmie przypominam o złożonej prośbie o wsparcie inicjatywy sołeckiej. Jeśli jest możliwość krótkiej odpowiedzi (tak/nie lub propozycja innej formy wsparcia), będę wdzięczny/a. W razie pytań pozostaję do dyspozycji.",
+          },
+        ],
+      },
+      { id: "kontakt", etykieta: "Kontakt zwrotny", typ: "text" },
+      { id: "podpis", etykieta: "Podpis", typ: "text", placeholder: "Sołtys ..." },
+    ],
+    budujHtml: (w, meta) =>
+      otoczenie("Przypomnienie", meta, `
+        <p style="white-space:pre-wrap">${v(w, "adresat")}</p>
+        <p>Szanowni Państwo,</p>
+        <p>w imieniu sołectwa <strong>${v(w, "wies")}</strong> (gmina ${v(w, "gmina")}) uprzejmie przypominam o złożonej prośbie o wsparcie przedsięwzięcia: <strong>${v(w, "cel")}</strong>.</p>
+        <p><strong>Pierwsza prośba / wysłanie:</strong> ${v(w, "data_pierwszej_prosby")}</p>
+        <div class="ramka"><p style="white-space:pre-wrap">${v(w, "tresc")}</p></div>
+        <p><strong>Kontakt:</strong> ${v(w, "kontakt")}</p>
+        <p class="podpis">Z wyrazami szacunku —<br/><strong>${v(w, "podpis")}</strong></p>
+      `),
+  },
+  {
+    id: "potwierdzenie-wplywu-srodkow-finansowych",
+    kategoria: "Fundraising i sponsorzy",
+    tytul: "Potwierdzenie wpływu środków finansowych od sponsora",
+    opis: "Notatka potwierdzająca otrzymanie przelewu lub wpłaty — do archiwum i podziękowania.",
+    pola: [
+      { id: "darczyca", etykieta: "Darczyńca / firma", typ: "textarea", wiersze: 2 },
+      { id: "odbiorca", etykieta: "Odbiorca (sołectwo / rachunek)", typ: "textarea", wiersze: 2 },
+      { id: "data_wplywu", etykieta: "Data wpływu", typ: "date" },
+      { id: "kwota", etykieta: "Kwota (PLN)", typ: "text", placeholder: "np. 3 000,00" },
+      {
+        id: "nr_operacji",
+        etykieta: "Nr przelewu / tytuł przelewu (opcjonalnie)",
+        typ: "text",
+        placeholder: "do uzupełnienia z wyciągu",
+      },
+      { id: "cel", etykieta: "Przeznaczenie środków", typ: "text" },
+      { id: "uwagi", etykieta: "Uwagi", typ: "textarea", wiersze: 2 },
+      { id: "podpis", etykieta: "Potwierdza (sołtys / osoba upoważniona)", typ: "text" },
+    ],
+    budujHtml: (w, meta) =>
+      otoczenie("Potwierdzenie wpływu środków", meta, `
+        <p><strong>Darczyńca:</strong></p>
+        <div class="ramka"><p style="white-space:pre-wrap">${v(w, "darczyca")}</p></div>
+        <p><strong>Odbiorca:</strong></p>
+        <div class="ramka"><p style="white-space:pre-wrap">${v(w, "odbiorca")}</p></div>
+        <p><strong>Data wpływu:</strong> ${v(w, "data_wplywu")} · <strong>Kwota:</strong> ${v(w, "kwota")} zł</p>
+        <p><strong>Dane operacji:</strong> ${v(w, "nr_operacji")}</p>
+        <p><strong>Przeznaczenie:</strong> ${v(w, "cel")}</p>
+        <p><strong>Uwagi:</strong></p>
+        <div class="ramka"><p style="white-space:pre-wrap">${v(w, "uwagi")}</p></div>
+        <p class="podpis">Potwierdzam wpływ środków —<br/><strong>${v(w, "podpis")}</strong></p>
+      `),
+  },
+  {
+    id: "potwierdzenie-darowizny-rzeczowej",
+    kategoria: "Fundraising i sponsorzy",
+    tytul: "Potwierdzenie odbioru darowizny / wsparcia rzeczowego",
+    opis: "Dokument do podpisania po przekazaniu wsparcia przez firmę lub osobę.",
+    pola: [
+      { id: "darczyca", etykieta: "Darczyńca (nazwa / dane)", typ: "textarea", wiersze: 2 },
+      { id: "odbiorca", etykieta: "Odbiorca (sołectwo / jednostka)", typ: "textarea", wiersze: 2 },
+      { id: "data", etykieta: "Data przekazania", typ: "date" },
+      {
+        id: "przedmiot",
+        etykieta: "Przedmiot darowizny / wsparcia",
+        typ: "textarea",
+        wiersze: 6,
+        placeholder: "Wyszczególnienie ilości, stanu, wartości orientacyjnej.",
+      },
+      { id: "cel", etykieta: "Cel wykorzystania", typ: "text" },
+      { id: "uwagi", etykieta: "Uwagi dodatkowe", typ: "textarea", wiersze: 3 },
+      { id: "podpis", etykieta: "Podpis odbiorcy (sołtys)", typ: "text", placeholder: "Sołtys ..." },
+    ],
+    budujHtml: (w, meta) =>
+      otoczenie("Potwierdzenie odbioru darowizny", meta, `
+        <p><strong>Darczyńca:</strong></p>
+        <div class="ramka"><p style="white-space:pre-wrap">${v(w, "darczyca")}</p></div>
+        <p><strong>Odbiorca:</strong></p>
+        <div class="ramka"><p style="white-space:pre-wrap">${v(w, "odbiorca")}</p></div>
+        <p><strong>Data przekazania:</strong> ${v(w, "data")}</p>
+        <h2>Przedmiot przekazania</h2>
+        <div class="ramka"><p style="white-space:pre-wrap">${v(w, "przedmiot")}</p></div>
+        <p><strong>Cel wykorzystania:</strong> ${v(w, "cel")}</p>
+        <p><strong>Uwagi:</strong> ${v(w, "uwagi")}</p>
+        <p class="podpis">Potwierdzam odbiór —<br/><strong>${v(w, "podpis")}</strong></p>
+      `),
+  },
 ];
 
 /** Jedna linia pod tytułem dokumentu (druk / archiwum). */

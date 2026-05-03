@@ -3,6 +3,7 @@ import Link from "next/link";
 const podstrony = [
   { href: "/panel/mieszkaniec", label: "Przegląd" },
   { href: "/panel/mieszkaniec/ogloszenia", label: "Ogłoszenia" },
+  { href: "/panel/mieszkaniec/lista-zakupow", label: "Lista zakupów" },
   { href: "/panel/mieszkaniec/swietlica", label: "Świetlica" },
   { href: "/panel/mieszkaniec/zgloszenia", label: "Zgłoszenia" },
   { href: "/panel/mieszkaniec/fotokronika", label: "Fotokronika" },

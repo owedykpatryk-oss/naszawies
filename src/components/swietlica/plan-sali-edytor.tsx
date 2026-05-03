@@ -12,7 +12,14 @@ import {
 } from "react";
 import type { ElementPlanuSali, PlanSaliJson, TypElementuPlanu } from "@/lib/swietlica/plan-sali";
 import { klonPlanuSali, sprobujSparsowacPlanSali, sumaMiejscWPlanie } from "@/lib/swietlica/plan-sali";
-import { generujBankiet2x4, generujKsztaltU, generujRzadOkraglych } from "@/lib/swietlica/plan-sali-presety";
+import {
+  generujBankiet2x4,
+  generujBankietDlaGosci,
+  generujKsztaltU,
+  generujRzadOkraglych,
+  generujUkladTeatralny,
+  generujWyspyWarsztatowe,
+} from "@/lib/swietlica/plan-sali-presety";
 import { zapiszPlanSali } from "@/app/(site)/panel/soltys/akcje";
 import { PlanSaliRysunek } from "./plan-sali-rysunek";
 
@@ -117,6 +124,7 @@ export function PlanSaliEdytor({ hallId, poczatkowyPlan, pojemnoscSali = null }:
 
   const [szablony, ustawSzablony] = useState<SzablonLokalny[]>([]);
   const [nazwaSzablonu, ustawNazwaSzablonu] = useState("");
+  const [docelowiGoscie, ustawDocelowiGoscie] = useState<number>(80);
   const ekranLg = useEkranMinLg();
 
   const sumaMiejsc = useMemo(() => sumaMiejscWPlanie(plan), [plan]);
@@ -1050,6 +1058,31 @@ export function PlanSaliEdytor({ hallId, poczatkowyPlan, pojemnoscSali = null }:
         </div>
         <div>
           <p className="mb-1.5 text-[10px] font-bold uppercase tracking-widest text-stone-500">Szybki układ</p>
+          <div className="mb-2 flex flex-wrap items-end gap-2">
+            <label className="text-xs text-stone-600">
+              Docelowa liczba gości
+              <input
+                type="number"
+                min={8}
+                max={200}
+                value={docelowiGoscie}
+                onChange={(e) => ustawDocelowiGoscie(Math.max(8, Math.min(200, Number(e.target.value) || 8)))}
+                className="mt-0.5 w-28 min-h-[40px] rounded-lg border border-stone-300 px-2.5 py-1.5"
+              />
+            </label>
+            <button
+              type="button"
+              onClick={() =>
+                window.confirm(
+                  `Zastąpić plan układem bankietowym dobranym do ${docelowiGoscie} gości?`
+                ) &&
+                mutujZOstatnimStanie((p) => ({ ...p, elementy: generujBankietDlaGosci(docelowiGoscie) }))
+              }
+              className="min-h-11 touch-manipulation rounded-xl border border-emerald-200/90 bg-emerald-50/90 px-3 py-2.5 text-xs font-medium text-emerald-950 ring-1 ring-emerald-900/10 active:bg-emerald-100/90 sm:min-h-0 sm:py-2"
+            >
+              Auto bankiet
+            </button>
+          </div>
           <div className="flex flex-wrap gap-2">
             <button
               type="button"
@@ -1080,6 +1113,26 @@ export function PlanSaliEdytor({ hallId, poczatkowyPlan, pojemnoscSali = null }:
               className="min-h-11 touch-manipulation rounded-xl border border-amber-200/90 bg-amber-50/90 px-3 py-2.5 text-xs font-medium text-amber-950 ring-1 ring-amber-900/10 active:bg-amber-100/90 sm:min-h-0 sm:py-2"
             >
               Szkic U
+            </button>
+            <button
+              type="button"
+              onClick={() =>
+                window.confirm("Zastąpić plan układem teatralnym (rząd ławek)?") &&
+                mutujZOstatnimStanie((p) => ({ ...p, elementy: generujUkladTeatralny(Math.ceil(docelowiGoscie / 20)) }))
+              }
+              className="min-h-11 touch-manipulation rounded-xl border border-amber-200/90 bg-amber-50/90 px-3 py-2.5 text-xs font-medium text-amber-950 ring-1 ring-amber-900/10 active:bg-amber-100/90 sm:min-h-0 sm:py-2"
+            >
+              Teatralny
+            </button>
+            <button
+              type="button"
+              onClick={() =>
+                window.confirm("Zastąpić plan układem wysp warsztatowych?") &&
+                mutujZOstatnimStanie((p) => ({ ...p, elementy: generujWyspyWarsztatowe(Math.ceil(docelowiGoscie / 6)) }))
+              }
+              className="min-h-11 touch-manipulation rounded-xl border border-amber-200/90 bg-amber-50/90 px-3 py-2.5 text-xs font-medium text-amber-950 ring-1 ring-amber-900/10 active:bg-amber-100/90 sm:min-h-0 sm:py-2"
+            >
+              Wyspy warsztatowe
             </button>
           </div>
         </div>

@@ -6,11 +6,25 @@ import { R2_BUCKET_HALL_INVENTORY } from "@/lib/cloudflare/r2-bucket-znaczniki";
 import { wyciagnijBucketIKluczZUrlaR2 } from "@/lib/cloudflare/r2-url-pomoc";
 import { usunObiektR2JesliUrlNasz } from "@/lib/storage/usun-plik-r2-po-url";
 import { pobierzVillageIdsRoliPaneluSoltysa } from "@/lib/panel/rola-panelu-soltysa";
+import { wyslijWebPushDlaUzytkownika } from "@/lib/pwa/wyslij-web-push";
+import { synchronizujKanalyRssDlaWsi } from "@/lib/rss/synchronizuj-kanaly-rss";
+import { createAdminSupabaseClient } from "@/lib/supabase/admin-client";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
 import { sciezkaProfiluWsi } from "@/lib/wies/sciezka-publiczna";
 import { schemaPlanSali, type PlanSaliJson } from "@/lib/swietlica/plan-sali";
 
 const uuid = z.string().uuid();
+
+function zaplanujWebPushDlaUzytkownika(
+  userId: string,
+  dane: { title: string; body: string; linkUrl?: string | null; tag?: string },
+) {
+  const admin = createAdminSupabaseClient();
+  if (!admin) return;
+  void wyslijWebPushDlaUzytkownika(admin, { userId, ...dane }).catch((e) =>
+    console.warn("[web-push]", e),
+  );
+}
 
 export type WynikProsty = { blad: string } | { ok: true };
 
@@ -66,6 +80,13 @@ export async function zatwierdzWniosekMieszkanca(rolaId: string): Promise<WynikP
 
   if (notifErr) {
     console.warn("[zatwierdzWniosek] powiadomienie:", notifErr.message);
+  } else {
+    zaplanujWebPushDlaUzytkownika(wiersz.user_id, {
+      title: "Zaakceptowano wniosek mieszkańca",
+      body: "Twoja rola we wsi została aktywowana.",
+      linkUrl: "/panel/mieszkaniec",
+      tag: `role-approved-${wiersz.village_id}`,
+    });
   }
 
   revalidatePath("/panel/soltys");
@@ -146,6 +167,127 @@ export async function dodajWyposazenieSwietlicy(
   if (error) {
     console.error("[dodajWyposazenie]", error.message);
     return { blad: "Nie udało się dodać pozycji (sprawdź uprawnienia sołtysa dla tej sali)." };
+  }
+
+  revalidatePath(`/panel/soltys/swietlica/${p.hallId}`);
+  revalidatePath(`/panel/mieszkaniec/swietlica/${p.hallId}`);
+  revalidatePath("/panel/mieszkaniec/swietlica");
+  return { ok: true };
+}
+
+const schemaDodajPakietWyposazenia = z.object({
+  hallId: z.string().uuid(),
+  pakiet: z.enum(["zebranie_wiejskie", "warsztaty", "impreza_rodzinna"]),
+});
+
+export async function dodajPakietWyposazeniaSwietlicy(
+  dane: z.infer<typeof schemaDodajPakietWyposazenia>
+): Promise<WynikProsty> {
+  const parsed = schemaDodajPakietWyposazenia.safeParse(dane);
+  if (!parsed.success) {
+    return { blad: "Niepoprawny pakiet wyposażenia." };
+  }
+
+  const supabase = utworzKlientaSupabaseSerwer();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) {
+    return { blad: "Zaloguj się." };
+  }
+
+  const p = parsed.data;
+  const szablony: Record<
+    z.infer<typeof schemaDodajPakietWyposazenia>["pakiet"],
+    { category: string; name: string; quantity: number; condition: string; description: string }[]
+  > = {
+    zebranie_wiejskie: [
+      {
+        category: "Sala główna",
+        name: "Krzesła składane",
+        quantity: 80,
+        condition: "good",
+        description: "Pakiet startowy do zebrań i spotkań mieszkańców.",
+      },
+      {
+        category: "Sala główna",
+        name: "Stoły prostokątne",
+        quantity: 12,
+        condition: "good",
+        description: "Stoły do układu bankietowego i warsztatowego.",
+      },
+      {
+        category: "Technika",
+        name: "Mikrofon przewodowy",
+        quantity: 2,
+        condition: "good",
+        description: "Mikrofony na zebrania i prezentacje.",
+      },
+    ],
+    warsztaty: [
+      {
+        category: "Sala główna",
+        name: "Stoły warsztatowe",
+        quantity: 8,
+        condition: "good",
+        description: "Pakiet do zajęć grupowych i warsztatów.",
+      },
+      {
+        category: "Magazyn",
+        name: "Krzesła dla uczestników",
+        quantity: 40,
+        condition: "good",
+        description: "Krzesła pod warsztaty i szkolenia.",
+      },
+      {
+        category: "Technika",
+        name: "Przedłużacze",
+        quantity: 6,
+        condition: "good",
+        description: "Zasilanie stanowisk podczas warsztatów.",
+      },
+    ],
+    impreza_rodzinna: [
+      {
+        category: "Sala główna",
+        name: "Stoły okolicznościowe",
+        quantity: 10,
+        condition: "good",
+        description: "Pakiet pod urodziny i przyjęcia rodzinne.",
+      },
+      {
+        category: "Sala główna",
+        name: "Krzesła bankietowe",
+        quantity: 70,
+        condition: "good",
+        description: "Krzesła dla gości wydarzeń rodzinnych.",
+      },
+      {
+        category: "Zaplecze kuchenne",
+        name: "Zestaw naczyń wielorazowych",
+        quantity: 70,
+        condition: "good",
+        description: "Talerze i sztućce dla uczestników wydarzenia.",
+      },
+    ],
+  };
+
+  const wybrane = szablony[p.pakiet];
+  const { error } = await supabase.from("hall_inventory").insert(
+    wybrane.map((it) => ({
+      hall_id: p.hallId,
+      category: it.category,
+      name: it.name,
+      description: it.description,
+      quantity: it.quantity,
+      quantity_available: it.quantity,
+      condition: it.condition,
+    }))
+  );
+
+  if (error) {
+    console.error("[dodajPakietWyposazeniaSwietlicy]", error.message);
+    return { blad: "Nie udało się dodać pakietu wyposażenia (sprawdź uprawnienia)." };
   }
 
   revalidatePath(`/panel/soltys/swietlica/${p.hallId}`);
@@ -418,6 +560,13 @@ export async function zatwierdzRezerwacjeSwietlicy(bookingId: string): Promise<W
     });
     if (notifErr) {
       console.warn("[zatwierdzRezerwacjeSwietlicy] powiadomienie:", notifErr.message);
+    } else {
+      zaplanujWebPushDlaUzytkownika(b.booked_by, {
+        title: "Zatwierdzono rezerwację sali",
+        body: `Termin: ${tStart} – ${tKoniec}. Zobacz status przy swojej rezerwacji w panelu mieszkańca.`,
+        linkUrl: "/panel/mieszkaniec/swietlica",
+        tag: `hall-booking-${b.hall_id}`,
+      });
     }
   }
 
@@ -758,6 +907,13 @@ export async function odrzucPostSoltysa(postId: string, notatka: string): Promis
     });
     if (notifErr) {
       console.warn("[odrzucPostSoltysa] powiadomienie:", notifErr.message);
+    } else {
+      zaplanujWebPushDlaUzytkownika(wiersz.author_id, {
+        title: "Post nie został zaakceptowany",
+        body: nt.data,
+        linkUrl: "/panel/mieszkaniec",
+        tag: `post-rejected-${wiersz.id}`,
+      });
     }
   }
 
@@ -844,4 +1000,964 @@ export async function zapiszProfilPublicznyWsi(
   revalidatePath("/panel/soltys/moja-wies");
   revalidatePath("/mapa");
   return { ok: true };
+}
+
+const schemaVillageScoped = z.object({
+  villageId: z.string().uuid(),
+});
+
+async function czyUzytkownikMozeZarzadzacWsia(
+  supabase: ReturnType<typeof utworzKlientaSupabaseSerwer>,
+  userId: string,
+  villageId: string
+) {
+  const ids = await pobierzVillageIdsRoliPaneluSoltysa(supabase, userId);
+  return ids.includes(villageId);
+}
+
+const schemaBlogger = z.object({
+  villageId: z.string().uuid(),
+  display_name: z.string().trim().min(2).max(120),
+  bio: z.string().trim().max(2000).nullable().optional(),
+  avatar_url: z.string().trim().max(2048).nullable().optional(),
+  specialties_csv: z.string().trim().max(500).optional().default(""),
+});
+
+export async function dodajProfilBlogeraWsi(dane: z.infer<typeof schemaBlogger>): Promise<WynikProsty> {
+  const parsed = schemaBlogger.safeParse(dane);
+  if (!parsed.success) {
+    return { blad: "Sprawdź dane profilu blogera." };
+  }
+  const supabase = utworzKlientaSupabaseSerwer();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { blad: "Zaloguj się." };
+
+  if (!(await czyUzytkownikMozeZarzadzacWsia(supabase, user.id, parsed.data.villageId))) {
+    return { blad: "Brak uprawnień do tej wsi." };
+  }
+
+  const tags = parsed.data.specialties_csv
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean)
+    .slice(0, 12);
+
+  const { error } = await supabase.from("village_bloggers").upsert(
+    {
+      village_id: parsed.data.villageId,
+      user_id: user.id,
+      display_name: parsed.data.display_name,
+      bio: parsed.data.bio?.trim() || null,
+      avatar_url: parsed.data.avatar_url?.trim() || null,
+      specialties: tags,
+      is_active: true,
+    },
+    { onConflict: "village_id,user_id" }
+  );
+
+  if (error) {
+    console.error("[dodajProfilBlogeraWsi]", error.message);
+    return { blad: "Nie udało się zapisać profilu blogera." };
+  }
+
+  revalidatePath("/panel/soltys/spolecznosc");
+  return { ok: true };
+}
+
+const schemaBlogWpis = z.object({
+  villageId: z.string().uuid(),
+  title: z.string().trim().min(5).max(180),
+  excerpt: z.string().trim().max(600).nullable().optional(),
+  body: z.string().trim().min(20).max(60000),
+  slug: z.string().trim().min(2).max(120).regex(/^[a-z0-9-]+$/),
+  cover_image_url: z.string().trim().max(2048).nullable().optional(),
+  tags_csv: z.string().trim().max(600).optional().default(""),
+});
+
+export async function dodajWpisBlogaWsi(dane: z.infer<typeof schemaBlogWpis>): Promise<WynikProsty> {
+  const parsed = schemaBlogWpis.safeParse(dane);
+  if (!parsed.success) {
+    return { blad: "Sprawdź poprawność pól wpisu blogowego." };
+  }
+  const supabase = utworzKlientaSupabaseSerwer();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { blad: "Zaloguj się." };
+  if (!(await czyUzytkownikMozeZarzadzacWsia(supabase, user.id, parsed.data.villageId))) {
+    return { blad: "Brak uprawnień do tej wsi." };
+  }
+
+  const { data: blogger } = await supabase
+    .from("village_bloggers")
+    .select("id")
+    .eq("village_id", parsed.data.villageId)
+    .eq("user_id", user.id)
+    .maybeSingle();
+  if (!blogger?.id) {
+    return { blad: "Najpierw zapisz profil blogera w tej wsi." };
+  }
+
+  const tags = parsed.data.tags_csv
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean)
+    .slice(0, 20);
+
+  const teraz = new Date().toISOString();
+  const { error } = await supabase.from("village_blog_posts").insert({
+    village_id: parsed.data.villageId,
+    blogger_id: blogger.id,
+    author_id: user.id,
+    title: parsed.data.title,
+    slug: parsed.data.slug,
+    excerpt: parsed.data.excerpt?.trim() || null,
+    body: parsed.data.body,
+    cover_image_url: parsed.data.cover_image_url?.trim() || null,
+    tags,
+    status: "approved",
+    published_at: teraz,
+    moderated_by: user.id,
+    moderated_at: teraz,
+  });
+  if (error) {
+    console.error("[dodajWpisBlogaWsi]", error.message);
+    return { blad: "Nie udało się dodać wpisu blogowego." };
+  }
+  revalidatePath("/panel/soltys/spolecznosc");
+  revalidatePath("/mapa");
+  return { ok: true };
+}
+
+const schemaHistoriaWpis = z.object({
+  villageId: z.string().uuid(),
+  title: z.string().trim().min(5).max(180),
+  short_description: z.string().trim().max(500).nullable().optional(),
+  body: z.string().trim().min(20).max(60000),
+  event_date: z.string().trim().max(20).nullable().optional(),
+  era_label: z.string().trim().max(120).nullable().optional(),
+  source_links_csv: z.string().trim().max(1000).optional().default(""),
+});
+
+export async function dodajWpisHistoriiWsi(dane: z.infer<typeof schemaHistoriaWpis>): Promise<WynikProsty> {
+  const parsed = schemaHistoriaWpis.safeParse(dane);
+  if (!parsed.success) {
+    return { blad: "Sprawdź dane wpisu historii." };
+  }
+  const supabase = utworzKlientaSupabaseSerwer();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { blad: "Zaloguj się." };
+  if (!(await czyUzytkownikMozeZarzadzacWsia(supabase, user.id, parsed.data.villageId))) {
+    return { blad: "Brak uprawnień do tej wsi." };
+  }
+
+  const links = parsed.data.source_links_csv
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean)
+    .slice(0, 20);
+  const eventDate = parsed.data.event_date?.trim() ? parsed.data.event_date.trim() : null;
+  const teraz = new Date().toISOString();
+
+  const { error } = await supabase.from("village_history_entries").insert({
+    village_id: parsed.data.villageId,
+    author_id: user.id,
+    title: parsed.data.title,
+    short_description: parsed.data.short_description?.trim() || null,
+    body: parsed.data.body,
+    event_date: eventDate,
+    era_label: parsed.data.era_label?.trim() || null,
+    source_links: links,
+    status: "approved",
+    published_at: teraz,
+    moderated_by: user.id,
+    moderated_at: teraz,
+  });
+  if (error) {
+    console.error("[dodajWpisHistoriiWsi]", error.message);
+    return { blad: "Nie udało się dodać wpisu historii." };
+  }
+  revalidatePath("/panel/soltys/spolecznosc");
+  revalidatePath("/mapa");
+  return { ok: true };
+}
+
+const schemaMarketplaceProfil = z.object({
+  villageId: z.string().uuid(),
+  business_name: z.string().trim().min(2).max(160),
+  short_description: z.string().trim().max(600).nullable().optional(),
+  details: z.string().trim().max(5000).nullable().optional(),
+  phone: z.string().trim().max(40).nullable().optional(),
+  email: z.string().trim().max(200).nullable().optional(),
+  website: z.string().trim().max(2048).nullable().optional(),
+  categories_csv: z.string().trim().max(500).optional().default(""),
+  service_area: z.string().trim().max(200).nullable().optional(),
+});
+
+export async function zapiszMarketplaceProfil(dane: z.infer<typeof schemaMarketplaceProfil>): Promise<WynikProsty> {
+  const parsed = schemaMarketplaceProfil.safeParse(dane);
+  if (!parsed.success) return { blad: "Sprawdź pola profilu usług." };
+  const supabase = utworzKlientaSupabaseSerwer();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { blad: "Zaloguj się." };
+  if (!(await czyUzytkownikMozeZarzadzacWsia(supabase, user.id, parsed.data.villageId))) {
+    return { blad: "Brak uprawnień do tej wsi." };
+  }
+
+  const categories = parsed.data.categories_csv
+    .split(",")
+    .map((s) => s.trim())
+    .filter(Boolean)
+    .slice(0, 15);
+
+  const { error } = await supabase.from("marketplace_profiles").upsert(
+    {
+      village_id: parsed.data.villageId,
+      owner_user_id: user.id,
+      business_name: parsed.data.business_name,
+      short_description: parsed.data.short_description?.trim() || null,
+      details: parsed.data.details?.trim() || null,
+      phone: parsed.data.phone?.trim() || null,
+      email: parsed.data.email?.trim() || null,
+      website: parsed.data.website?.trim() || null,
+      categories,
+      service_area: parsed.data.service_area?.trim() || null,
+      is_active: true,
+    },
+    { onConflict: "village_id,owner_user_id" }
+  );
+  if (error) {
+    console.error("[zapiszMarketplaceProfil]", error.message);
+    return { blad: "Nie udało się zapisać profilu usług." };
+  }
+  revalidatePath("/panel/soltys/spolecznosc");
+  revalidatePath("/mapa");
+  return { ok: true };
+}
+
+const schemaMarketplaceOferta = z.object({
+  villageId: z.string().uuid(),
+  listing_type: z.enum(["sprzedam", "kupie", "oddam", "usluga", "praca"]),
+  title: z.string().trim().min(4).max(200),
+  description: z.string().trim().min(8).max(10000),
+  category: z.string().trim().max(120).nullable().optional(),
+  price_amount: z
+    .union([z.string(), z.number(), z.null(), z.undefined()])
+    .transform((v) => (v == null || String(v).trim() === "" ? null : Number(v))),
+  phone: z.string().trim().max(40).nullable().optional(),
+  location_text: z.string().trim().max(200).nullable().optional(),
+  expires_in_days: z.coerce.number().int().min(1).max(180).optional().default(30),
+});
+
+export async function dodajMarketplaceOferte(dane: z.infer<typeof schemaMarketplaceOferta>): Promise<WynikProsty> {
+  const parsed = schemaMarketplaceOferta.safeParse(dane);
+  if (!parsed.success) return { blad: "Sprawdź dane ogłoszenia marketplace." };
+  const supabase = utworzKlientaSupabaseSerwer();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { blad: "Zaloguj się." };
+  if (!(await czyUzytkownikMozeZarzadzacWsia(supabase, user.id, parsed.data.villageId))) {
+    return { blad: "Brak uprawnień do tej wsi." };
+  }
+  if (parsed.data.price_amount != null && Number.isNaN(parsed.data.price_amount)) {
+    return { blad: "Kwota musi być liczbą albo pozostać pusta." };
+  }
+  const teraz = new Date();
+  const expiresAt = new Date(teraz.getTime() + parsed.data.expires_in_days * 24 * 60 * 60 * 1000).toISOString();
+  const { data: profil } = await supabase
+    .from("marketplace_profiles")
+    .select("id")
+    .eq("village_id", parsed.data.villageId)
+    .eq("owner_user_id", user.id)
+    .maybeSingle();
+  const { error } = await supabase.from("marketplace_listings").insert({
+    village_id: parsed.data.villageId,
+    owner_user_id: user.id,
+    profile_id: profil?.id ?? null,
+    listing_type: parsed.data.listing_type,
+    title: parsed.data.title,
+    description: parsed.data.description,
+    category: parsed.data.category?.trim() || null,
+    price_amount: parsed.data.price_amount,
+    currency: "PLN",
+    phone: parsed.data.phone?.trim() || null,
+    location_text: parsed.data.location_text?.trim() || null,
+    expires_at: expiresAt,
+    status: "approved",
+    published_at: teraz.toISOString(),
+    moderated_by: user.id,
+    moderated_at: teraz.toISOString(),
+  });
+  if (error) {
+    console.error("[dodajMarketplaceOferte]", error.message);
+    return { blad: "Nie udało się dodać oferty." };
+  }
+  revalidatePath("/panel/soltys/spolecznosc");
+  revalidatePath("/mapa");
+  return { ok: true };
+}
+
+const schemaWiadomoscLokalna = z.object({
+  villageId: z.string().uuid(),
+  title: z.string().trim().min(4).max(200),
+  summary: z.string().trim().max(800).nullable().optional(),
+  body: z.string().trim().max(10000).nullable().optional(),
+  category: z.string().trim().max(120).nullable().optional(),
+  source_name: z.string().trim().max(160).nullable().optional(),
+  source_url: z.string().trim().max(2048).nullable().optional(),
+  is_automated: z.boolean().optional().default(false),
+  expires_in_days: z.coerce.number().int().min(1).max(90).optional().default(14),
+});
+
+export async function dodajWiadomoscLokalna(dane: z.infer<typeof schemaWiadomoscLokalna>): Promise<WynikProsty> {
+  const parsed = schemaWiadomoscLokalna.safeParse(dane);
+  if (!parsed.success) return { blad: "Sprawdź dane wiadomości lokalnej." };
+  const supabase = utworzKlientaSupabaseSerwer();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { blad: "Zaloguj się." };
+  if (!(await czyUzytkownikMozeZarzadzacWsia(supabase, user.id, parsed.data.villageId))) {
+    return { blad: "Brak uprawnień do tej wsi." };
+  }
+
+  const teraz = new Date();
+  const expiresAt = new Date(teraz.getTime() + parsed.data.expires_in_days * 24 * 60 * 60 * 1000).toISOString();
+  const { error } = await supabase.from("local_news_items").insert({
+    village_id: parsed.data.villageId,
+    created_by: user.id,
+    title: parsed.data.title,
+    summary: parsed.data.summary?.trim() || null,
+    body: parsed.data.body?.trim() || null,
+    category: parsed.data.category?.trim() || null,
+    source_name: parsed.data.source_name?.trim() || null,
+    source_url: parsed.data.source_url?.trim() || null,
+    is_automated: parsed.data.is_automated ?? false,
+    status: "approved",
+    published_at: teraz.toISOString(),
+    expires_at: expiresAt,
+    moderated_by: user.id,
+    moderated_at: teraz.toISOString(),
+  });
+  if (error) {
+    console.error("[dodajWiadomoscLokalna]", error.message);
+    return { blad: "Nie udało się dodać wiadomości." };
+  }
+  revalidatePath("/panel/soltys/spolecznosc");
+  revalidatePath("/mapa");
+  return { ok: true };
+}
+
+export async function uruchomAutomatyzacjeWsi(dane: z.infer<typeof schemaVillageScoped>): Promise<WynikProsty> {
+  const parsed = schemaVillageScoped.safeParse(dane);
+  if (!parsed.success) {
+    return { blad: "Nieprawidłowe dane." };
+  }
+  const supabase = utworzKlientaSupabaseSerwer();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { blad: "Zaloguj się." };
+  if (!(await czyUzytkownikMozeZarzadzacWsia(supabase, user.id, parsed.data.villageId))) {
+    return { blad: "Brak uprawnień do uruchomienia automatyzacji dla tej wsi." };
+  }
+
+  const { error } = await supabase.rpc("run_village_automation");
+  if (error) {
+    console.error("[uruchomAutomatyzacjeWsi]", error.message);
+    return { blad: "Nie udało się uruchomić automatyzacji." };
+  }
+  revalidatePath("/panel/soltys/spolecznosc");
+  revalidatePath("/mapa");
+  return { ok: true };
+}
+
+async function revalidateProfilWsiDlaWioski(
+  supabase: ReturnType<typeof utworzKlientaSupabaseSerwer>,
+  villageId: string,
+) {
+  const { data: v } = await supabase
+    .from("villages")
+    .select("voivodeship, county, commune, slug")
+    .eq("id", villageId)
+    .maybeSingle();
+  if (v?.slug) {
+    revalidatePath(sciezkaProfiluWsi(v));
+  }
+  revalidatePath("/panel/soltys/spolecznosc");
+  revalidatePath("/panel/soltys/samorzad");
+  revalidatePath("/panel/soltys/kanaly-rss");
+  revalidatePath("/panel/soltys/wiadomosci-lokalne");
+  revalidatePath("/mapa");
+}
+
+const schemaOrganizacjaWsi = z.object({
+  villageId: z.string().uuid(),
+  group_type: z.enum(["kgw", "sport", "taniec", "muzyka", "kolo", "inne"]),
+  name: z.string().trim().min(2).max(160),
+  short_description: z.string().trim().max(800).nullable().optional(),
+  contact_phone: z.string().trim().max(40).nullable().optional(),
+  contact_email: z.string().trim().max(200).nullable().optional(),
+  meeting_place: z.string().trim().max(200).nullable().optional(),
+  schedule_text: z.string().trim().max(500).nullable().optional(),
+});
+
+export async function dodajOrganizacjeWsi(dane: z.infer<typeof schemaOrganizacjaWsi>): Promise<WynikProsty> {
+  const parsed = schemaOrganizacjaWsi.safeParse(dane);
+  if (!parsed.success) {
+    return { blad: "Sprawdź dane organizacji (nazwa, typ)." };
+  }
+  const supabase = utworzKlientaSupabaseSerwer();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { blad: "Zaloguj się." };
+  if (!(await czyUzytkownikMozeZarzadzacWsia(supabase, user.id, parsed.data.villageId))) {
+    return { blad: "Brak uprawnień do tej wsi." };
+  }
+
+  const { error } = await supabase.from("village_community_groups").insert({
+    village_id: parsed.data.villageId,
+    group_type: parsed.data.group_type,
+    name: parsed.data.name,
+    short_description: parsed.data.short_description?.trim() || null,
+    contact_phone: parsed.data.contact_phone?.trim() || null,
+    contact_email: parsed.data.contact_email?.trim() || null,
+    meeting_place: parsed.data.meeting_place?.trim() || null,
+    schedule_text: parsed.data.schedule_text?.trim() || null,
+    is_active: true,
+    created_by: user.id,
+  });
+  if (error) {
+    console.error("[dodajOrganizacjeWsi]", error.message);
+    return { blad: "Nie udało się dodać organizacji." };
+  }
+  await revalidateProfilWsiDlaWioski(supabase, parsed.data.villageId);
+  return { ok: true };
+}
+
+const schemaWydarzenieSpolecznosci = z.object({
+  villageId: z.string().uuid(),
+  group_id: z.string().trim().max(40).optional().default(""),
+  event_kind: z.enum(["mecz", "wyjazd", "proba", "wystep", "spotkanie", "festyn", "inne"]),
+  title: z.string().trim().min(4).max(200),
+  description: z.string().trim().max(8000).nullable().optional(),
+  location_text: z.string().trim().max(240).nullable().optional(),
+  starts_at: z.string().trim().min(4).max(50),
+  ends_at: z.string().trim().max(50).optional().nullable(),
+  expires_in_days: z.coerce.number().int().min(7).max(730).optional().default(365),
+});
+
+export async function dodajWydarzenieSpolecznosciWsi(
+  dane: z.infer<typeof schemaWydarzenieSpolecznosci>,
+): Promise<WynikProsty> {
+  const parsed = schemaWydarzenieSpolecznosci.safeParse(dane);
+  if (!parsed.success) {
+    return { blad: "Sprawdź daty i tytuł wydarzenia." };
+  }
+  const supabase = utworzKlientaSupabaseSerwer();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { blad: "Zaloguj się." };
+  if (!(await czyUzytkownikMozeZarzadzacWsia(supabase, user.id, parsed.data.villageId))) {
+    return { blad: "Brak uprawnień do tej wsi." };
+  }
+
+  const start = new Date(parsed.data.starts_at);
+  const endRaw = parsed.data.ends_at?.trim();
+  const end = endRaw ? new Date(endRaw) : null;
+  if (Number.isNaN(start.getTime())) {
+    return { blad: "Niepoprawna data rozpoczęcia wydarzenia." };
+  }
+  if (end && Number.isNaN(end.getTime())) {
+    return { blad: "Niepoprawna data zakończenia wydarzenia." };
+  }
+  if (end && end < start) {
+    return { blad: "Data zakończenia nie może być wcześniejsza niż rozpoczęcie." };
+  }
+
+  let groupId: string | null = null;
+  const gid = parsed.data.group_id?.trim();
+  if (gid) {
+    const idOk = uuid.safeParse(gid);
+    if (!idOk.success) {
+      return { blad: "Niepoprawny identyfikator grupy." };
+    }
+    const { data: grupa } = await supabase
+      .from("village_community_groups")
+      .select("id, village_id")
+      .eq("id", gid)
+      .maybeSingle();
+    if (!grupa || grupa.village_id !== parsed.data.villageId) {
+      return { blad: "Wybrana grupa nie należy do tej wsi." };
+    }
+    groupId = grupa.id;
+  }
+
+  const teraz = new Date();
+  const expiresAt = new Date(teraz.getTime() + parsed.data.expires_in_days * 24 * 60 * 60 * 1000).toISOString();
+  const terazIso = teraz.toISOString();
+
+  const { error } = await supabase.from("village_community_events").insert({
+    village_id: parsed.data.villageId,
+    group_id: groupId,
+    event_kind: parsed.data.event_kind,
+    title: parsed.data.title,
+    description: parsed.data.description?.trim() || null,
+    location_text: parsed.data.location_text?.trim() || null,
+    starts_at: start.toISOString(),
+    ends_at: end ? end.toISOString() : null,
+    status: "approved",
+    published_at: terazIso,
+    expires_at: expiresAt,
+    moderated_by: user.id,
+    moderated_at: terazIso,
+    created_by: user.id,
+  });
+  if (error) {
+    console.error("[dodajWydarzenieSpolecznosciWsi]", error.message);
+    return { blad: "Nie udało się dodać wydarzenia." };
+  }
+  await revalidateProfilWsiDlaWioski(supabase, parsed.data.villageId);
+  return { ok: true };
+}
+
+const schemaHarmonogramTygodnia = z.object({
+  villageId: z.string().uuid(),
+  day_of_week: z.coerce.number().int().min(0).max(6),
+  time_start: z.string().trim().min(3).max(8),
+  time_end: z.string().trim().max(8).nullable().optional(),
+  title: z.string().trim().min(2).max(200),
+  description: z.string().trim().max(2000).nullable().optional(),
+  group_id: z.string().optional().default(""),
+});
+
+function normalizujGodzineDoTime(s: string): string | null {
+  const t = s.trim();
+  const m = /^(\d{1,2}):(\d{2})$/.exec(t);
+  if (!m) return null;
+  const h = Number(m[1]);
+  const min = Number(m[2]);
+  if (h < 0 || h > 23 || min < 0 || min > 59) return null;
+  return `${String(h).padStart(2, "0")}:${String(min).padStart(2, "0")}:00`;
+}
+
+export async function dodajSlotHarmonogramuTygodniaWsi(
+  dane: z.infer<typeof schemaHarmonogramTygodnia>,
+): Promise<WynikProsty> {
+  const parsed = schemaHarmonogramTygodnia.safeParse(dane);
+  if (!parsed.success) {
+    return { blad: "Sprawdź dzień tygodnia, godziny i tytuł zajęć." };
+  }
+  const supabase = utworzKlientaSupabaseSerwer();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { blad: "Zaloguj się." };
+  if (!(await czyUzytkownikMozeZarzadzacWsia(supabase, user.id, parsed.data.villageId))) {
+    return { blad: "Brak uprawnień do tej wsi." };
+  }
+
+  const ts = normalizujGodzineDoTime(parsed.data.time_start);
+  if (!ts) {
+    return { blad: "Niepoprawna godzina rozpoczęcia (np. 17:30)." };
+  }
+  let te: string | null = null;
+  const endRaw = parsed.data.time_end?.trim();
+  if (endRaw) {
+    te = normalizujGodzineDoTime(endRaw);
+    if (!te) {
+      return { blad: "Niepoprawna godzina zakończenia." };
+    }
+  }
+
+  let groupId: string | null = null;
+  const gid = parsed.data.group_id?.trim();
+  if (gid) {
+    const idOk = uuid.safeParse(gid);
+    if (!idOk.success) {
+      return { blad: "Niepoprawny identyfikator grupy." };
+    }
+    const { data: grupa } = await supabase
+      .from("village_community_groups")
+      .select("id, village_id")
+      .eq("id", gid)
+      .maybeSingle();
+    if (!grupa || grupa.village_id !== parsed.data.villageId) {
+      return { blad: "Wybrana grupa nie należy do tej wsi." };
+    }
+    groupId = grupa.id;
+  }
+
+  const { error } = await supabase.from("village_weekly_schedule_slots").insert({
+    village_id: parsed.data.villageId,
+    day_of_week: parsed.data.day_of_week,
+    time_start: ts,
+    time_end: te,
+    title: parsed.data.title,
+    description: parsed.data.description?.trim() || null,
+    group_id: groupId,
+    is_active: true,
+    created_by: user.id,
+  });
+  if (error) {
+    console.error("[dodajSlotHarmonogramuTygodniaWsi]", error.message);
+    return { blad: "Nie udało się dodać zajęcia do planu." };
+  }
+  await revalidateProfilWsiDlaWioski(supabase, parsed.data.villageId);
+  return { ok: true };
+}
+
+export async function usunSlotHarmonogramuTygodniaWsi(slotId: string): Promise<WynikProsty> {
+  const id = uuid.safeParse(slotId);
+  if (!id.success) return { blad: "Niepoprawny identyfikator." };
+  const supabase = utworzKlientaSupabaseSerwer();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { blad: "Zaloguj się." };
+
+  const { data: row, error: readErr } = await supabase
+    .from("village_weekly_schedule_slots")
+    .select("id, village_id")
+    .eq("id", id.data)
+    .maybeSingle();
+  if (readErr || !row) {
+    return { blad: "Nie znaleziono wpisu harmonogramu." };
+  }
+  if (!(await czyUzytkownikMozeZarzadzacWsia(supabase, user.id, row.village_id))) {
+    return { blad: "Brak uprawnień." };
+  }
+
+  const { error } = await supabase.from("village_weekly_schedule_slots").delete().eq("id", id.data);
+  if (error) {
+    console.error("[usunSlotHarmonogramuTygodniaWsi]", error.message);
+    return { blad: "Nie udało się usunąć wpisu." };
+  }
+  await revalidateProfilWsiDlaWioski(supabase, row.village_id);
+  return { ok: true };
+}
+
+const schemaZrodloDotacji = z.object({
+  villageId: z.string().uuid(),
+  category: z.enum([
+    "fundusz_solecki",
+    "gmina_powiat_woj",
+    "ue_prow",
+    "ngo_fundacja",
+    "sponsor",
+    "inne",
+  ]),
+  title: z.string().trim().min(4).max(220),
+  summary: z.string().trim().max(800).nullable().optional(),
+  body: z.string().trim().max(12000).nullable().optional(),
+  source_url: z.string().trim().max(2048).nullable().optional(),
+  amount_hint: z.string().trim().max(120).nullable().optional(),
+  application_deadline: z.string().trim().max(40).nullable().optional(),
+});
+
+export async function dodajZrodloDotacjiWsi(dane: z.infer<typeof schemaZrodloDotacji>): Promise<WynikProsty> {
+  const parsed = schemaZrodloDotacji.safeParse(dane);
+  if (!parsed.success) {
+    return { blad: "Sprawdź tytuł i kategorię źródła dofinansowania." };
+  }
+  const supabase = utworzKlientaSupabaseSerwer();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { blad: "Zaloguj się." };
+  if (!(await czyUzytkownikMozeZarzadzacWsia(supabase, user.id, parsed.data.villageId))) {
+    return { blad: "Brak uprawnień do tej wsi." };
+  }
+
+  let deadline: string | null = null;
+  const dr = parsed.data.application_deadline?.trim();
+  if (dr) {
+    const d = new Date(dr);
+    if (Number.isNaN(d.getTime())) {
+      return { blad: "Niepoprawny termin naboru." };
+    }
+    deadline = d.toISOString().slice(0, 10);
+  }
+
+  const terazIso = new Date().toISOString();
+  const { error } = await supabase.from("village_funding_sources").insert({
+    village_id: parsed.data.villageId,
+    category: parsed.data.category,
+    title: parsed.data.title,
+    summary: parsed.data.summary?.trim() || null,
+    body: parsed.data.body?.trim() || null,
+    source_url: parsed.data.source_url?.trim() || null,
+    amount_hint: parsed.data.amount_hint?.trim() || null,
+    application_deadline: deadline,
+    status: "approved",
+    published_at: terazIso,
+    created_by: user.id,
+  });
+  if (error) {
+    console.error("[dodajZrodloDotacjiWsi]", error.message);
+    return { blad: "Nie udało się zapisać informacji o dofinansowaniu." };
+  }
+  await revalidateProfilWsiDlaWioski(supabase, parsed.data.villageId);
+  return { ok: true };
+}
+
+export async function usunZrodloDotacjiWsi(sourceId: string): Promise<WynikProsty> {
+  const id = uuid.safeParse(sourceId);
+  if (!id.success) return { blad: "Niepoprawny identyfikator." };
+  const supabase = utworzKlientaSupabaseSerwer();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { blad: "Zaloguj się." };
+
+  const { data: row, error: readErr } = await supabase
+    .from("village_funding_sources")
+    .select("id, village_id")
+    .eq("id", id.data)
+    .maybeSingle();
+  if (readErr || !row) {
+    return { blad: "Nie znaleziono wpisu." };
+  }
+  if (!(await czyUzytkownikMozeZarzadzacWsia(supabase, user.id, row.village_id))) {
+    return { blad: "Brak uprawnień." };
+  }
+
+  const { error } = await supabase.from("village_funding_sources").delete().eq("id", id.data);
+  if (error) {
+    console.error("[usunZrodloDotacjiWsi]", error.message);
+    return { blad: "Nie udało się usunąć wpisu." };
+  }
+  await revalidateProfilWsiDlaWioski(supabase, row.village_id);
+  return { ok: true };
+}
+
+const schemaPrzewodnikSamorzadowy = z.object({
+  villageId: z.string().uuid(),
+  commune_info: z.string().max(8000).nullable().optional(),
+  county_info: z.string().max(8000).nullable().optional(),
+  voivodeship_info: z.string().max(8000).nullable().optional(),
+  roads_info: z.string().max(8000).nullable().optional(),
+  waste_info: z.string().max(8000).nullable().optional(),
+  utilities_info: z.string().max(8000).nullable().optional(),
+  other_info: z.string().max(8000).nullable().optional(),
+});
+
+function oczyscPolePrzewodnika(t: string | null | undefined): string | null {
+  const s = t?.trim();
+  return s && s.length > 0 ? s : null;
+}
+
+export async function zapiszPrzewodnikSamorzadowyWsi(
+  dane: z.infer<typeof schemaPrzewodnikSamorzadowy>,
+): Promise<WynikProsty> {
+  const parsed = schemaPrzewodnikSamorzadowy.safeParse(dane);
+  if (!parsed.success) {
+    return { blad: "Sprawdź długość pól (maks. ok. 8000 znaków na blok)." };
+  }
+  const supabase = utworzKlientaSupabaseSerwer();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { blad: "Zaloguj się." };
+  if (!(await czyUzytkownikMozeZarzadzacWsia(supabase, user.id, parsed.data.villageId))) {
+    return { blad: "Brak uprawnień do tej wsi." };
+  }
+
+  const row = {
+    village_id: parsed.data.villageId,
+    commune_info: oczyscPolePrzewodnika(parsed.data.commune_info),
+    county_info: oczyscPolePrzewodnika(parsed.data.county_info),
+    voivodeship_info: oczyscPolePrzewodnika(parsed.data.voivodeship_info),
+    roads_info: oczyscPolePrzewodnika(parsed.data.roads_info),
+    waste_info: oczyscPolePrzewodnika(parsed.data.waste_info),
+    utilities_info: oczyscPolePrzewodnika(parsed.data.utilities_info),
+    other_info: oczyscPolePrzewodnika(parsed.data.other_info),
+    updated_by: user.id,
+  };
+
+  const { error } = await supabase.from("village_civic_guides").upsert(row, { onConflict: "village_id" });
+  if (error) {
+    console.error("[zapiszPrzewodnikSamorzadowyWsi]", error.message);
+    return { blad: "Nie udało się zapisać przewodnika (czy migracja bazy jest zastosowana?)." };
+  }
+  await revalidateProfilWsiDlaWioski(supabase, parsed.data.villageId);
+  return { ok: true };
+}
+
+export async function zatwierdzWiadomoscLokalnaSoltys(newsId: string): Promise<WynikProsty> {
+  const id = uuid.safeParse(newsId);
+  if (!id.success) return { blad: "Niepoprawny identyfikator." };
+  const supabase = utworzKlientaSupabaseSerwer();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { blad: "Zaloguj się." };
+  const { data: row, error: rErr } = await supabase
+    .from("local_news_items")
+    .select("id, village_id, status")
+    .eq("id", id.data)
+    .maybeSingle();
+  if (rErr || !row) return { blad: "Nie znaleziono wiadomości." };
+  if (!(await czyUzytkownikMozeZarzadzacWsia(supabase, user.id, row.village_id))) {
+    return { blad: "Brak uprawnień." };
+  }
+  const teraz = new Date().toISOString();
+  const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
+  const { error } = await supabase
+    .from("local_news_items")
+    .update({
+      status: "approved",
+      moderated_by: user.id,
+      moderated_at: teraz,
+      published_at: teraz,
+      expires_at: expiresAt,
+    })
+    .eq("id", id.data)
+    .in("status", ["pending", "draft"]);
+  if (error) {
+    console.error("[zatwierdzWiadomoscLokalnaSoltys]", error.message);
+    return { blad: "Nie udało się zatwierdzić." };
+  }
+  await revalidateProfilWsiDlaWioski(supabase, row.village_id);
+  revalidatePath("/panel/soltys/wiadomosci-lokalne");
+  return { ok: true };
+}
+
+export async function odrzucWiadomoscLokalnaSoltys(newsId: string, notatka: string): Promise<WynikProsty> {
+  const id = uuid.safeParse(newsId);
+  if (!id.success) return { blad: "Niepoprawny identyfikator." };
+  const note = notatka.trim().slice(0, 500);
+  const supabase = utworzKlientaSupabaseSerwer();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { blad: "Zaloguj się." };
+  const { data: row, error: rErr } = await supabase
+    .from("local_news_items")
+    .select("id, village_id")
+    .eq("id", id.data)
+    .maybeSingle();
+  if (rErr || !row) return { blad: "Nie znaleziono wiadomości." };
+  if (!(await czyUzytkownikMozeZarzadzacWsia(supabase, user.id, row.village_id))) {
+    return { blad: "Brak uprawnień." };
+  }
+  const teraz = new Date().toISOString();
+  const { error } = await supabase
+    .from("local_news_items")
+    .update({
+      status: "rejected",
+      moderated_by: user.id,
+      moderated_at: teraz,
+      moderation_note: note || "Odrzucono.",
+    })
+    .eq("id", id.data)
+    .in("status", ["pending", "draft"]);
+  if (error) {
+    console.error("[odrzucWiadomoscLokalnaSoltys]", error.message);
+    return { blad: "Nie udało się odrzucić." };
+  }
+  await revalidateProfilWsiDlaWioski(supabase, row.village_id);
+  revalidatePath("/panel/soltys/wiadomosci-lokalne");
+  return { ok: true };
+}
+
+const schemaKanalRss = z.object({
+  villageId: z.string().uuid(),
+  label: z.string().trim().min(2).max(160),
+  feed_url: z
+    .string()
+    .trim()
+    .min(8)
+    .max(2048)
+    .refine((u) => /^https?:\/\//i.test(u), "Podaj adres http lub https."),
+});
+
+export async function dodajKanalRssWsi(dane: z.infer<typeof schemaKanalRss>): Promise<WynikProsty> {
+  const parsed = schemaKanalRss.safeParse(dane);
+  if (!parsed.success) return { blad: "Sprawdź nazwę i adres URL kanału RSS." };
+  const supabase = utworzKlientaSupabaseSerwer();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { blad: "Zaloguj się." };
+  if (!(await czyUzytkownikMozeZarzadzacWsia(supabase, user.id, parsed.data.villageId))) {
+    return { blad: "Brak uprawnień." };
+  }
+  const { error } = await supabase.from("village_news_feed_sources").insert({
+    village_id: parsed.data.villageId,
+    label: parsed.data.label,
+    feed_url: parsed.data.feed_url,
+    is_enabled: true,
+  });
+  if (error) {
+    console.error("[dodajKanalRssWsi]", error.message);
+    return { blad: "Nie udało się dodać kanału." };
+  }
+  revalidatePath("/panel/soltys/kanaly-rss");
+  return { ok: true };
+}
+
+export async function usunKanalRssWsi(sourceId: string): Promise<WynikProsty> {
+  const id = uuid.safeParse(sourceId);
+  if (!id.success) return { blad: "Niepoprawny identyfikator." };
+  const supabase = utworzKlientaSupabaseSerwer();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { blad: "Zaloguj się." };
+  const { data: row, error: rErr } = await supabase
+    .from("village_news_feed_sources")
+    .select("id, village_id")
+    .eq("id", id.data)
+    .maybeSingle();
+  if (rErr || !row) return { blad: "Nie znaleziono kanału." };
+  if (!(await czyUzytkownikMozeZarzadzacWsia(supabase, user.id, row.village_id))) {
+    return { blad: "Brak uprawnień." };
+  }
+  const { error } = await supabase.from("village_news_feed_sources").delete().eq("id", id.data);
+  if (error) {
+    console.error("[usunKanalRssWsi]", error.message);
+    return { blad: "Nie udało się usunąć." };
+  }
+  revalidatePath("/panel/soltys/kanaly-rss");
+  return { ok: true };
+}
+
+export type WynikSyncRssAkcja =
+  | { blad: string }
+  | { ok: true; zrodlaPrzetworzone: number; noweWpisy: number; bledy: string[] };
+
+export async function uruchomSynchronizacjeRssDlaMoichWsi(): Promise<WynikSyncRssAkcja> {
+  const supabase = utworzKlientaSupabaseSerwer();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { blad: "Zaloguj się." };
+  const vids = await pobierzVillageIdsRoliPaneluSoltysa(supabase, user.id);
+  if (vids.length === 0) return { blad: "Brak wsi w panelu sołtysa." };
+  const admin = createAdminSupabaseClient();
+  if (!admin) {
+    return { blad: "Brak SUPABASE_SERVICE_ROLE_KEY — synchronizacja RSS wymaga klienta admin." };
+  }
+  const wynik = await synchronizujKanalyRssDlaWsi(admin, vids);
+  for (const vid of vids) {
+    await revalidateProfilWsiDlaWioski(supabase, vid);
+  }
+  revalidatePath("/panel/soltys/wiadomosci-lokalne");
+  revalidatePath("/panel/soltys/kanaly-rss");
+  return {
+    ok: true,
+    zrodlaPrzetworzone: wynik.zrodlaPrzetworzone,
+    noweWpisy: wynik.noweWpisy,
+    bledy: wynik.bledy,
+  };
 }

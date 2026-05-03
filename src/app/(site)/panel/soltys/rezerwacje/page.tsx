@@ -23,17 +23,22 @@ export default async function SoltysRezerwacjePage() {
 
   const villageIds = await pobierzVillageIdsRoliPaneluSoltysaDlaUzytkownikaCache(user.id);
 
-  type WpisSali = { id: string; name: string; village_id: string };
+  type WpisSali = { id: string; name: string; village_id: string; max_capacity: number | null };
   let sale: WpisSali[] = [];
   if (villageIds.length > 0) {
-    const { data } = await supabase.from("halls").select("id, name, village_id").in("village_id", villageIds);
+    const { data } = await supabase
+      .from("halls")
+      .select("id, name, village_id, max_capacity")
+      .in("village_id", villageIds);
     sale = (data ?? []) as WpisSali[];
   }
 
   const hallIds = sale.map((h) => h.id);
   const nazwaSali: Record<string, string> = {};
+  const maxPojemnoscSali: Record<string, number | null> = {};
   for (const h of sale) {
     nazwaSali[h.id] = h.name;
+    maxPojemnoscSali[h.id] = h.max_capacity ?? null;
   }
 
   type RawRez = {
@@ -47,6 +52,13 @@ export default async function SoltysRezerwacjePage() {
     expected_guests: number;
     has_alcohol: boolean | null;
     contact_phone: string | null;
+    requested_inventory:
+      | {
+          inventoryId?: string;
+          quantity?: number;
+        }[]
+      | null;
+    layout_data: { preset?: string } | null;
     created_at: string;
   };
 
@@ -55,13 +67,52 @@ export default async function SoltysRezerwacjePage() {
     const { data } = await supabase
       .from("hall_bookings")
       .select(
-        "id, hall_id, booked_by, start_at, end_at, event_type, event_title, expected_guests, has_alcohol, contact_phone, created_at"
+        "id, hall_id, booked_by, start_at, end_at, event_type, event_title, expected_guests, has_alcohol, contact_phone, requested_inventory, layout_data, created_at"
       )
       .in("hall_id", hallIds)
       .eq("status", "pending")
       .order("start_at", { ascending: true })
       .limit(80);
     surowe = (data ?? []) as RawRez[];
+  }
+
+  const { data: hallInventoryRaw } =
+    hallIds.length > 0
+      ? await supabase.from("hall_inventory").select("id, hall_id, name, quantity, quantity_available").in("hall_id", hallIds)
+      : { data: [] as { id: string; hall_id: string; name: string; quantity: number; quantity_available: number | null }[] };
+
+  const requestedInventoryIds = Array.from(
+    new Set(
+      surowe
+        .flatMap((r) => (Array.isArray(r.requested_inventory) ? r.requested_inventory : []))
+        .map((x) => x?.inventoryId)
+        .filter((v): v is string => typeof v === "string" && v.length > 0)
+    )
+  );
+  const inventoryNameById: Record<string, string> = {};
+  const inventoryAvailableById: Record<string, number> = {};
+  const chairsAvailableByHall: Record<string, number> = {};
+  const tablesAvailableByHall: Record<string, number> = {};
+  const dishesAvailableByHall: Record<string, number> = {};
+  for (const it of hallInventoryRaw ?? []) {
+    inventoryAvailableById[it.id] = Number(it.quantity_available ?? it.quantity ?? 0);
+    const nazwa = String(it.name).toLowerCase();
+    const available = Number(it.quantity_available ?? it.quantity ?? 0);
+    if (nazwa.includes("krzes")) {
+      chairsAvailableByHall[it.hall_id] = (chairsAvailableByHall[it.hall_id] ?? 0) + available;
+    }
+    if (nazwa.includes("stol")) {
+      tablesAvailableByHall[it.hall_id] = (tablesAvailableByHall[it.hall_id] ?? 0) + available;
+    }
+    if (nazwa.includes("nacz") || nazwa.includes("talerz") || nazwa.includes("sztuc")) {
+      dishesAvailableByHall[it.hall_id] = (dishesAvailableByHall[it.hall_id] ?? 0) + available;
+    }
+  }
+  if (requestedInventoryIds.length > 0) {
+    const invNames = (hallInventoryRaw ?? []).filter((x) => requestedInventoryIds.includes(x.id));
+    for (const it of invNames ?? []) {
+      inventoryNameById[it.id] = it.name;
+    }
   }
 
   type RawKalendarz = {
@@ -149,6 +200,63 @@ export default async function SoltysRezerwacjePage() {
     expected_guests: r.expected_guests,
     has_alcohol: r.has_alcohol,
     contact_phone: r.contact_phone,
+    requested_inventory: Array.isArray(r.requested_inventory)
+      ? r.requested_inventory
+          .map((x) => ({
+            name:
+              (x?.inventoryId && inventoryNameById[x.inventoryId]) ||
+              (x?.inventoryId ? `Pozycja ${x.inventoryId.slice(0, 6)}` : "Pozycja"),
+            quantity: Number(x?.quantity ?? 0),
+            available:
+              x?.inventoryId && inventoryAvailableById[x.inventoryId] != null
+                ? inventoryAvailableById[x.inventoryId]
+                : null,
+          }))
+          .filter((x) => Number.isFinite(x.quantity) && x.quantity > 0)
+      : [],
+    suggested_layout:
+      r.layout_data?.preset === "auto_bankiet"
+        ? "Auto bankiet"
+        : r.layout_data?.preset === "teatralny"
+          ? "Teatralny"
+          : r.layout_data?.preset === "warsztatowy"
+            ? "Warsztatowy (wyspy)"
+            : r.layout_data?.preset === "u_ksztalt"
+              ? "U-kształt"
+              : "Własny / bez zmian",
+    preparation_warnings: [
+      ...(maxPojemnoscSali[r.hall_id] != null && r.expected_guests > Number(maxPojemnoscSali[r.hall_id])
+        ? [`Liczba gości (${r.expected_guests}) przekracza pojemność sali (${maxPojemnoscSali[r.hall_id]}).`]
+        : []),
+      ...(chairsAvailableByHall[r.hall_id] != null && r.expected_guests > chairsAvailableByHall[r.hall_id]
+        ? [`Może brakować krzeseł: goście ${r.expected_guests}, dostępne krzesła ${chairsAvailableByHall[r.hall_id]}.`]
+        : []),
+    ],
+    procurement_recommendations: [
+      `Przygotuj min. ${Math.ceil(r.expected_guests / 8)} stołów i ${r.expected_guests} miejsc siedzących.`,
+      ...(r.event_type === "wesele" || r.event_type === "urodziny"
+        ? [`Na wydarzenie rodzinne przygotuj naczynia/sztućce dla ${r.expected_guests} osób.`]
+        : []),
+      ...(tablesAvailableByHall[r.hall_id] != null && tablesAvailableByHall[r.hall_id] < Math.ceil(r.expected_guests / 8)
+        ? [
+            `Rozważ dokupienie lub wypożyczenie stołów: dostępne ${tablesAvailableByHall[r.hall_id]}, rekomendowane ${Math.ceil(
+              r.expected_guests / 8
+            )}.`,
+          ]
+        : []),
+      ...(chairsAvailableByHall[r.hall_id] != null && chairsAvailableByHall[r.hall_id] < r.expected_guests
+        ? [
+            `Rozważ dokupienie lub wypożyczenie krzeseł: dostępne ${chairsAvailableByHall[r.hall_id]}, potrzebne ${r.expected_guests}.`,
+          ]
+        : []),
+      ...(dishesAvailableByHall[r.hall_id] != null &&
+      (r.event_type === "wesele" || r.event_type === "urodziny") &&
+      dishesAvailableByHall[r.hall_id] < r.expected_guests
+        ? [
+            `Braki w naczyniach: dostępne ${dishesAvailableByHall[r.hall_id]}, potrzebne ${r.expected_guests}.`,
+          ]
+        : []),
+    ],
     created_at: r.created_at,
   }));
 
