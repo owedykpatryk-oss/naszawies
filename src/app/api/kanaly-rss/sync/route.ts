@@ -9,6 +9,13 @@ export const dynamic = "force-dynamic";
 const ENDPOINT = "/api/kanaly-rss/sync";
 const KLUCZ_LEASE_RSS = "rss_sync_global";
 
+function czyTrybMiekkiBrakuAdminaWlaczony(): boolean {
+  const v = process.env.RSS_SYNC_SOFT_SKIP_MISSING_ADMIN?.trim().toLowerCase();
+  if (v === "1" || v === "true" || v === "yes" || v === "on") return true;
+  if (v === "0" || v === "false" || v === "no" || v === "off") return false;
+  return process.env.NODE_ENV !== "production";
+}
+
 async function uruchomSync(request: Request) {
   if (!czyZapytanieCronAutoryzowane(request)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -17,7 +24,23 @@ async function uruchomSync(request: Request) {
   const meta = pobierzIpIUserAgentZRequestu(request);
   const admin = createAdminSupabaseClient();
   if (!admin) {
-    return NextResponse.json({ error: "Brak klienta admin Supabase." }, { status: 500 });
+    if (czyTrybMiekkiBrakuAdminaWlaczony()) {
+      console.warn("[api/kanaly-rss/sync] skipped: missing SUPABASE_SERVICE_ROLE_KEY or NEXT_PUBLIC_SUPABASE_URL");
+      return NextResponse.json({
+        ok: true,
+        skipped: true,
+        powod: "brak_admin_klucza_supabase",
+        wymagane: ["NEXT_PUBLIC_SUPABASE_URL", "SUPABASE_SERVICE_ROLE_KEY"],
+        ranAt: new Date().toISOString(),
+      });
+    }
+    return NextResponse.json(
+      {
+        error:
+          "Brak SUPABASE_SERVICE_ROLE_KEY — synchronizacja RSS wymaga klienta admin. Uzupełnij SUPABASE_SERVICE_ROLE_KEY i NEXT_PUBLIC_SUPABASE_URL w środowisku serwera.",
+      },
+      { status: 500 },
+    );
   }
 
   const { data: leased, error: leaseErr } = await admin.rpc("cron_acquire_lease", {

@@ -15,6 +15,7 @@ import { createAdminSupabaseClient } from "@/lib/supabase/admin-client";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
 import { sciezkaProfiluWsi } from "@/lib/wies/sciezka-publiczna";
 import { schemaPlanSali, type PlanSaliJson } from "@/lib/swietlica/plan-sali";
+import { schemaRzutParteruSali, type RzutParteruSaliJson } from "@/lib/swietlica/rzut-parteru-sali";
 
 const uuid = z.string().uuid();
 
@@ -863,6 +864,44 @@ export async function zapiszPlanSali(hallId: string, plan: PlanSaliJson): Promis
   if (error) {
     console.error("[zapiszPlanSali]", error.message);
     return { blad: "Nie udało się zapisać planu (uprawnienia sołtysa?)." };
+  }
+
+  revalidatePath(`/panel/soltys/swietlica/${idHall.data}`);
+  revalidatePath(`/panel/mieszkaniec/swietlica/${idHall.data}`);
+  revalidatePath(`/panel/soltys/swietlica/${idHall.data}/dokument`);
+  revalidatePath(`/panel/mieszkaniec/swietlica/${idHall.data}/dokument`);
+  return { ok: true };
+}
+
+export async function zapiszRzutParteruSali(
+  hallId: string,
+  plan: RzutParteruSaliJson,
+): Promise<WynikProsty> {
+  const idHall = uuid.safeParse(hallId);
+  if (!idHall.success) {
+    return { blad: "Niepoprawny identyfikator sali." };
+  }
+  const parsed = schemaRzutParteruSali.safeParse(plan);
+  if (!parsed.success) {
+    return { blad: "Niepoprawna struktura rzutu parteru (sprawdź pola i zakresy %)." };
+  }
+
+  const supabase = utworzKlientaSupabaseSerwer();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) {
+    return { blad: "Zaloguj się." };
+  }
+
+  const { error } = await supabase
+    .from("halls")
+    .update({ floor_plan_data: parsed.data as unknown as Record<string, unknown> })
+    .eq("id", idHall.data);
+
+  if (error) {
+    console.error("[zapiszRzutParteruSali]", error.message);
+    return { blad: "Nie udało się zapisać rzutu (uprawnienia sołtysa?)." };
   }
 
   revalidatePath(`/panel/soltys/swietlica/${idHall.data}`);

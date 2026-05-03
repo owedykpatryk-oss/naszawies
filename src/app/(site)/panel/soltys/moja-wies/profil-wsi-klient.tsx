@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { FormEvent, useState, useTransition } from "react";
-import { dodajBrakujacePoiZOpenStreetMap } from "../akcje-mapa-poi";
+import { dodajBrakujacePoiZOpenStreetMap, dodajPunktCzerpaniaWodyOsp } from "../akcje-mapa-poi";
 import { zapiszProfilPublicznyWsi } from "../akcje";
 import { sciezkaProfiluWsi } from "@/lib/wies/sciezka-publiczna";
 
@@ -27,6 +27,9 @@ export function ProfilWsiSoltysKlient({ wies }: { wies: WiesDoEdycji[] }) {
   const [ok, ustawOk] = useState<Record<string, boolean>>({});
   const [bladOsm, ustawBladOsm] = useState<Record<string, string>>({});
   const [okOsm, ustawOkOsm] = useState<Record<string, string>>({});
+  const [czekWoda, startWoda] = useTransition();
+  const [bladWoda, ustawBladWoda] = useState<Record<string, string>>({});
+  const [okWoda, ustawOkWoda] = useState<Record<string, string>>({});
 
   function wyslij(e: FormEvent<HTMLFormElement>, w: WiesDoEdycji) {
     e.preventDefault();
@@ -69,6 +72,33 @@ export function ProfilWsiSoltysKlient({ wies }: { wies: WiesDoEdycji[] }) {
         czesci.push(`Część zapisów nie powiodła się (${wynik.odrzuconoBladZapisu}) — spróbuj ponownie lub zgłoś administratorowi.`);
       }
       ustawOkOsm((o) => ({ ...o, [wId]: czesci.join(" ") }));
+    });
+  }
+
+  function dodajPunktWodyOsp(e: FormEvent<HTMLFormElement>, w: WiesDoEdycji) {
+    e.preventDefault();
+    const fd = new FormData(e.currentTarget);
+    ustawBladWoda((b) => ({ ...b, [w.id]: "" }));
+    ustawOkWoda((o) => ({ ...o, [w.id]: "" }));
+    startWoda(async () => {
+      const wynik = await dodajPunktCzerpaniaWodyOsp({
+        villageId: w.id,
+        name: String(fd.get("name") ?? ""),
+        latitude: Number(fd.get("latitude")),
+        longitude: Number(fd.get("longitude")),
+        sourceType: String(fd.get("source_type") ?? "inne"),
+        capacityLpm:
+          String(fd.get("capacity_lpm") ?? "").trim() === "" ? null : Number(fd.get("capacity_lpm")),
+        winterAccess: fd.get("winter_access") === "on",
+        heavyTruckAccess: fd.get("heavy_truck_access") === "on",
+        note: String(fd.get("note") ?? ""),
+      });
+      if ("blad" in wynik) {
+        ustawBladWoda((b) => ({ ...b, [w.id]: wynik.blad }));
+        return;
+      }
+      ustawOkWoda((o) => ({ ...o, [w.id]: "Dodano punkt czerpania wody OSP do mapy." }));
+      e.currentTarget.reset();
     });
   }
 
@@ -185,6 +215,85 @@ export function ProfilWsiSoltysKlient({ wies }: { wies: WiesDoEdycji[] }) {
               >
                 {czekOsm ? "Pobieram z OpenStreetMap…" : "Dopisz brakujące POI z OpenStreetMap"}
               </button>
+
+              <div className="mt-6 rounded-xl border border-blue-200/80 bg-blue-50/40 p-4">
+                <h4 className="font-medium text-blue-950">OSP v1: punkt czerpania wody</h4>
+                <p className="mt-1 text-xs text-stone-700">
+                  Dodaj punkt operacyjny dla OSP: typ źródła, wydajność, dostęp zimą i dojazd ciężkim wozem.
+                </p>
+                {bladWoda[w.id] ? (
+                  <p className="mt-2 text-sm text-red-800" role="alert">
+                    {bladWoda[w.id]}
+                  </p>
+                ) : null}
+                {okWoda[w.id] ? (
+                  <p className="mt-2 text-sm text-green-800" role="status">
+                    {okWoda[w.id]}
+                  </p>
+                ) : null}
+                <form onSubmit={(e) => dodajPunktWodyOsp(e, w)} className="mt-3 grid gap-3 md:grid-cols-2">
+                  <input
+                    name="name"
+                    required
+                    placeholder="Nazwa punktu (np. Hydrant przy remizie)"
+                    className="rounded border border-stone-300 px-3 py-2 text-sm md:col-span-2"
+                  />
+                  <input
+                    name="latitude"
+                    type="number"
+                    step="0.0000001"
+                    required
+                    defaultValue={w.latitude ?? ""}
+                    placeholder="Szerokość geogr. (lat)"
+                    className="rounded border border-stone-300 px-3 py-2 text-sm"
+                  />
+                  <input
+                    name="longitude"
+                    type="number"
+                    step="0.0000001"
+                    required
+                    defaultValue={w.longitude ?? ""}
+                    placeholder="Długość geogr. (lon)"
+                    className="rounded border border-stone-300 px-3 py-2 text-sm"
+                  />
+                  <select name="source_type" className="rounded border border-stone-300 px-3 py-2 text-sm">
+                    <option value="hydrant">Hydrant</option>
+                    <option value="staw">Staw</option>
+                    <option value="zbiornik">Zbiornik</option>
+                    <option value="rzeka">Rzeka / ciek</option>
+                    <option value="inne">Inne</option>
+                  </select>
+                  <input
+                    name="capacity_lpm"
+                    type="number"
+                    min={0}
+                    max={50000}
+                    placeholder="Wydajność l/min (opcjonalnie)"
+                    className="rounded border border-stone-300 px-3 py-2 text-sm"
+                  />
+                  <label className="inline-flex items-center gap-2 text-sm text-stone-700">
+                    <input name="winter_access" type="checkbox" />
+                    Dostęp zimą
+                  </label>
+                  <label className="inline-flex items-center gap-2 text-sm text-stone-700">
+                    <input name="heavy_truck_access" type="checkbox" />
+                    Dojazd ciężkim wozem
+                  </label>
+                  <textarea
+                    name="note"
+                    rows={2}
+                    placeholder="Uwagi operacyjne (opcjonalnie)"
+                    className="rounded border border-stone-300 px-3 py-2 text-sm md:col-span-2"
+                  />
+                  <button
+                    type="submit"
+                    disabled={czekWoda}
+                    className="rounded-lg bg-blue-800 px-4 py-2 text-sm font-medium text-white hover:bg-blue-900 disabled:opacity-60 md:col-span-2"
+                  >
+                    {czekWoda ? "Dodaję punkt…" : "Dodaj punkt czerpania wody OSP"}
+                  </button>
+                </form>
+              </div>
             </div>
           </li>
         );

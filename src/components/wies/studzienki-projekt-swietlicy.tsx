@@ -1,4 +1,3 @@
-import Image from "next/image";
 import Link from "next/link";
 import { StudzienkiProjektNarzedziaKlient } from "./studzienki-projekt-narzedzia-klient";
 import { StudzienkiRzutInteraktywny } from "./studzienki-rzut-interaktywny-klient";
@@ -61,52 +60,6 @@ const SPIS = [
   { id: "#faq", label: "FAQ" },
   { id: "#prawne", label: "Uwagi" },
 ] as const;
-
-function RysunekRamka({
-  src,
-  alt,
-  priority,
-  aspectClass,
-  sizes,
-  plikPng,
-}: {
-  src: string;
-  alt: string;
-  priority?: boolean;
-  aspectClass: string;
-  sizes: string;
-  plikPng: string;
-}) {
-  return (
-    <div className="group relative">
-      <div className="pointer-events-none absolute -inset-1 rounded-2xl bg-gradient-to-br from-emerald-400/25 via-transparent to-teal-600/15 opacity-0 blur-sm transition duration-500 group-hover:opacity-100" />
-      <div className="pointer-events-none absolute inset-0 rounded-xl border-2 border-dashed border-stone-300/50 transition group-hover:border-emerald-300/40" />
-      <div className="relative overflow-hidden rounded-xl border border-stone-200/90 bg-gradient-to-b from-white to-stone-50 shadow-[0_1px_0_rgba(0,0,0,0.04),0_12px_40px_-12px_rgba(21,50,30,0.18)] ring-1 ring-black/[0.03] transition duration-500 group-hover:-translate-y-0.5 group-hover:shadow-[0_20px_50px_-18px_rgba(21,83,48,0.28)] group-hover:ring-emerald-900/10">
-        <div className={`relative w-full bg-[repeating-linear-gradient(0deg,transparent,transparent_11px,rgba(120,113,108,0.06)_12px)] ${aspectClass}`}>
-          <Image
-            src={src}
-            alt={alt}
-            fill
-            className="object-contain p-3 transition duration-500 ease-out group-hover:scale-[1.02]"
-            sizes={sizes}
-            priority={priority}
-          />
-        </div>
-        <div className="flex flex-wrap items-center justify-between gap-2 border-t border-stone-200/80 bg-stone-50/90 px-3 py-2.5 text-xs text-stone-600">
-          <span className="font-mono text-[10px] uppercase tracking-wider text-stone-500">Skala 1:100 · PNG</span>
-          <a
-            href={plikPng}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="font-medium text-green-800 underline decoration-green-800/40 underline-offset-2 hover:text-green-950"
-          >
-            Otwórz w pełnym rozmiarze →
-          </a>
-        </div>
-      </div>
-    </div>
-  );
-}
 
 export function StudzienkiProjektSwietlicy({
   sciezkaWsi,
@@ -347,18 +300,11 @@ export function StudzienkiProjektSwietlicy({
                   Cztery ściany budynku: przeszklenia sali, zadaszenie od południa, wejście główne i detale tarasów.
                 </p>
               </div>
-              <figure className="mt-8">
-                <RysunekRamka
-                  src="/wies/studzienki/elewacje.png"
-                  alt="Cztery elewacje projektowanej świetlicy w Studzienkach z legendą materiałów i kolorów"
-                  aspectClass="aspect-[16/10] min-h-[240px] sm:min-h-[360px]"
-                  sizes="(max-width: 1024px) 100vw, min(960px, 85vw)"
-                  plikPng="/wies/studzienki/elewacje.png"
-                />
-                <figcaption className="mt-3 text-center text-xs text-stone-500">
-                  Rysunek z 10.04.2024 — szczegóły warstw ścian i kolorystyki na oryginalnej legendzie.
-                </figcaption>
-              </figure>
+              <div className="mt-8 rounded-xl border border-stone-200 bg-stone-50/70 p-5 text-sm text-stone-700 shadow-sm">
+                Rzuty i elewacje PNG są wykorzystywane jako podkład techniczny do warstwy interaktywnej i nie są
+                publikowane tutaj jako osobne zdjęcia. Opisy materiałów i kolorystyki poniżej pochodzą z dokumentacji
+                projektowej z dnia 10.04.2024.
+              </div>
             </section>
 
             <section id="materialy" className="scroll-mt-28">

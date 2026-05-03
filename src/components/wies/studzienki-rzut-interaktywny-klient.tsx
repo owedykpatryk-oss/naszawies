@@ -545,19 +545,8 @@ export function StudzienkiRzutInteraktywny() {
             <span className="inline-flex items-center gap-1.5">
               <span className="h-2.5 w-2.5 rounded-sm bg-amber-300/90 ring-1 ring-amber-800/20" /> Stół
             </span>
-            <span className="font-mono text-stone-400 sm:ml-2">1:100 oryginał = PDF/DWG</span>
+            <span className="font-mono text-stone-400 sm:ml-2">Podkład techniczny = dokumentacja projektowa</span>
           </div>
-          <a
-            href={OBRAZ}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="inline-flex min-h-[44px] items-center justify-center rounded-2xl border-2 border-emerald-200/60 bg-gradient-to-b from-white to-stone-50/90 px-4 text-sm font-semibold text-emerald-900 shadow-sm transition hover:border-emerald-400/50 hover:from-emerald-50/80 sm:min-h-0"
-          >
-            Pełny rysunek
-            <span className="ml-1" aria-hidden>
-              →
-            </span>
-          </a>
         </div>
       </div>
     </div>

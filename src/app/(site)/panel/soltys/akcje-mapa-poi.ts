@@ -16,6 +16,20 @@ export type WynikOsmPoi =
   | { ok: true; dodano: number; pominietoDuplikaty: number; odrzuconoBladZapisu: number }
   | { blad: string };
 
+const schemaPunktCzerpaniaWodyOsp = z.object({
+  villageId: z.string().uuid(),
+  name: z.string().trim().min(3).max(200),
+  latitude: z.coerce.number().min(-90).max(90),
+  longitude: z.coerce.number().min(-180).max(180),
+  sourceType: z.enum(["hydrant", "staw", "zbiornik", "rzeka", "inne"]),
+  capacityLpm: z.coerce.number().int().min(0).max(50000).nullable().optional(),
+  winterAccess: z.boolean().optional().default(false),
+  heavyTruckAccess: z.boolean().optional().default(false),
+  note: z.string().trim().max(1200).nullable().optional(),
+});
+
+export type WynikDodaniaPunktuWodyOsp = { ok: true } | { blad: string };
+
 function odlegloscMetry(lat1: number, lon1: number, lat2: number, lon2: number): number {
   const R = 6371000;
   const toRad = (d: number) => (d * Math.PI) / 180;
@@ -132,4 +146,82 @@ export async function dodajBrakujacePoiZOpenStreetMap(niesprawdzone: unknown): P
   revalidatePath("/panel/soltys/moja-wies");
 
   return { ok: true, dodano, pominietoDuplikaty, odrzuconoBladZapisu };
+}
+
+export async function dodajPunktCzerpaniaWodyOsp(
+  niesprawdzone: unknown,
+): Promise<WynikDodaniaPunktuWodyOsp> {
+  const p = schemaPunktCzerpaniaWodyOsp.safeParse(niesprawdzone);
+  if (!p.success) {
+    return { blad: "Sprawdź dane punktu czerpania wody OSP." };
+  }
+
+  const supabase = utworzKlientaSupabaseSerwer();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) {
+    return { blad: "Zaloguj się." };
+  }
+
+  const vids = await pobierzVillageIdsRoliPaneluSoltysa(supabase, user.id);
+  if (!vids.includes(p.data.villageId)) {
+    return { blad: "Nie możesz zarządzać mapą tej wsi." };
+  }
+
+  const sourceLabelMap: Record<"hydrant" | "staw" | "zbiornik" | "rzeka" | "inne", string> = {
+    hydrant: "Hydrant",
+    staw: "Staw",
+    zbiornik: "Zbiornik",
+    rzeka: "Rzeka / ciek",
+    inne: "Inne",
+  };
+
+  const detale = [
+    `Typ źródła: ${sourceLabelMap[p.data.sourceType]}`,
+    p.data.capacityLpm != null ? `Wydajność orientacyjna: ${p.data.capacityLpm} l/min` : null,
+    `Dostęp zimą: ${p.data.winterAccess ? "tak" : "nie/ograniczony"}`,
+    `Dojazd ciężkim wozem: ${p.data.heavyTruckAccess ? "tak" : "nie/utrudniony"}`,
+    p.data.note?.trim() ? `Uwagi: ${p.data.note.trim()}` : null,
+  ]
+    .filter(Boolean)
+    .join(" | ");
+
+  const { data: village, error: vErr } = await supabase
+    .from("villages")
+    .select("voivodeship, county, commune, slug")
+    .eq("id", p.data.villageId)
+    .maybeSingle();
+  if (vErr || !village) {
+    return { blad: "Nie znaleziono wsi." };
+  }
+
+  const { error } = await supabase.from("pois").insert({
+    village_id: p.data.villageId,
+    category: "osp_punkt_czerpania_wody",
+    name: p.data.name,
+    description: detale,
+    latitude: p.data.latitude,
+    longitude: p.data.longitude,
+    source: "local_corrected",
+    confidence: 0.95,
+    verified_at: new Date().toISOString(),
+    is_local_override: true,
+    osp_water_source_type: p.data.sourceType,
+    osp_water_capacity_lpm: p.data.capacityLpm ?? null,
+    osp_winter_access: p.data.winterAccess,
+    osp_heavy_truck_access: p.data.heavyTruckAccess,
+    osp_note: p.data.note?.trim() || null,
+  });
+
+  if (error) {
+    console.error("[dodajPunktCzerpaniaWodyOsp]", error.message);
+    return { blad: "Nie udało się zapisać punktu czerpania wody OSP." };
+  }
+
+  revalidatePath("/mapa");
+  revalidatePath(sciezkaProfiluWsi(village));
+  revalidatePath("/panel/soltys/moja-wies");
+  revalidatePath("/panel/mieszkaniec/zgloszenia");
+  return { ok: true };
 }

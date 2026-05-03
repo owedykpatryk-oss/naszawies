@@ -37,6 +37,7 @@ export function WiesProfilPubliczny({
   organizacje = [],
   wydarzenia = [],
   listaZakupow = [],
+  mozeZobaczycListeZakupow = false,
   mozeEdytowacListeZakupow = false,
   harmonogramTygodnia = [],
   dotacjeSkrot = [],
@@ -104,6 +105,7 @@ export function WiesProfilPubliczny({
     nazwa_grupy: string | null;
   }[];
   listaZakupow?: PozycjaListyZakupow[];
+  mozeZobaczycListeZakupow?: boolean;
   mozeEdytowacListeZakupow?: boolean;
   harmonogramTygodnia?: {
     id: string;
@@ -687,20 +689,22 @@ export function WiesProfilPubliczny({
         )}
       </section>
 
-      <section className="mt-10">
-        <h2 className="font-serif text-xl text-green-950">Lista zakupów (KGW i sąsiedzi)</h2>
-        <p className="mt-1 text-sm text-stone-600">
-          Wspólna lista na imprezy i codzienne gotowanie — każdy może dopisać produkt i zaznaczyć, co już kupiono.
-        </p>
-        <ListaZakupowWsiKlient
-          villageId={wies.id}
-          pozycje={listaZakupow}
-          edytowalna={Boolean(mozeEdytowacListeZakupow)}
-          pokazSzablony={Boolean(mozeEdytowacListeZakupow)}
-          pokazDruk={listaZakupow.length > 0}
-          nazwaWsi={wies.name}
-        />
-      </section>
+      {mozeZobaczycListeZakupow ? (
+        <section className="mt-10">
+          <h2 className="font-serif text-xl text-green-950">Lista zakupów KGW</h2>
+          <p className="mt-1 text-sm text-stone-600">
+            Wewnętrzna lista zakupów dostępna dla osób zapisanych do KGW oraz sołtysa.
+          </p>
+          <ListaZakupowWsiKlient
+            villageId={wies.id}
+            pozycje={listaZakupow}
+            edytowalna={Boolean(mozeEdytowacListeZakupow)}
+            pokazSzablony={Boolean(mozeEdytowacListeZakupow)}
+            pokazDruk={listaZakupow.length > 0}
+            nazwaWsi={wies.name}
+          />
+        </section>
+      ) : null}
 
       <section className="mt-10">
         <h2 className="font-serif text-xl text-green-950">Plan stałych zajęć (tydzień)</h2>

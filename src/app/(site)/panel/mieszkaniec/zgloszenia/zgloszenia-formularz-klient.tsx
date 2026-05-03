@@ -13,7 +13,14 @@ const MIME = ["image/jpeg", "image/png", "image/webp"] as const;
 type WiesOpcja = { id: string; name: string };
 type UserRef = { id: string };
 
-type Props = { wiesOpcje: WiesOpcja[]; uzytkownik: UserRef };
+type PrefillZgloszenia = {
+  villageId?: string;
+  category?: string;
+  title?: string;
+  locationText?: string;
+};
+
+type Props = { wiesOpcje: WiesOpcja[]; uzytkownik: UserRef; prefill?: PrefillZgloszenia };
 
 function domyslnaLokalnaDataCzas() {
   const d = new Date();
@@ -22,7 +29,7 @@ function domyslnaLokalnaDataCzas() {
   return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
 }
 
-export function ZgloszeniaFormularzKlient({ wiesOpcje, uzytkownik }: Props) {
+export function ZgloszeniaFormularzKlient({ wiesOpcje, uzytkownik, prefill }: Props) {
   const router = useRouter();
   const [blad, ustawBlad] = useState("");
   const [oczekuje, startT] = useTransition();
@@ -31,7 +38,10 @@ export function ZgloszeniaFormularzKlient({ wiesOpcje, uzytkownik }: Props) {
   const [szybkie, ustawSzybkie] = useState<Record<string, boolean>>({});
   const [pliki, ustawPliki] = useState<File[]>([]);
 
-  const wies = useMemo(() => wiesOpcje[0]?.id ?? "", [wiesOpcje]);
+  const wies = useMemo(() => {
+    if (prefill?.villageId && wiesOpcje.some((w) => w.id === prefill.villageId)) return prefill.villageId;
+    return wiesOpcje[0]?.id ?? "";
+  }, [prefill?.villageId, wiesOpcje]);
 
   if (wiesOpcje.length === 0) {
     return (
@@ -169,7 +179,7 @@ export function ZgloszeniaFormularzKlient({ wiesOpcje, uzytkownik }: Props) {
           <label className="mb-1 block" htmlFor="zgl-kat">
             Kategoria
           </label>
-          <select id="zgl-kat" name="category">
+          <select id="zgl-kat" name="category" defaultValue={prefill?.category ?? "inne"}>
             {kategorieZgloszen.map((k) => (
               <option key={k.value} value={k.value}>
                 {k.label}
@@ -188,6 +198,7 @@ export function ZgloszeniaFormularzKlient({ wiesOpcje, uzytkownik }: Props) {
             minLength={3}
             maxLength={200}
             placeholder="np. Dziura przy skrzyżowaniu"
+            defaultValue={prefill?.title ?? ""}
           />
         </div>
         <div className="sm:col-span-2">
@@ -207,7 +218,13 @@ export function ZgloszeniaFormularzKlient({ wiesOpcje, uzytkownik }: Props) {
           <label className="mb-1 block" htmlFor="zgl-miejsce">
             Miejsce (opcjonalnie)
           </label>
-          <input id="zgl-miejsce" name="location_text" maxLength={500} placeholder="np. droga do lasu, za sklepem, nr lampy" />
+          <input
+            id="zgl-miejsce"
+            name="location_text"
+            maxLength={500}
+            placeholder="np. droga do lasu, za sklepem, nr lampy"
+            defaultValue={prefill?.locationText ?? ""}
+          />
         </div>
       </div>
 

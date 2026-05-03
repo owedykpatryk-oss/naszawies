@@ -2,6 +2,7 @@ import type { ReactNode } from "react";
 import type { DaneDokumentuWynajmu } from "@/lib/swietlica/pobierz-dane-dokumentu-wynajmu";
 import { escapeHtml } from "@/lib/tekst/escape-html";
 import { PlanSaliRysunek } from "./plan-sali-rysunek";
+import { RzutParteruSaliSvg } from "./rzut-parteru-sali-svg";
 import { PrzyciskDrukuDokumentu } from "./przycisk-druku-dokumentu";
 
 type Props = {
@@ -345,15 +346,45 @@ export function DokumentWynajmuWidok({ dane }: Props) {
 
           <Sekcja
             nr="5"
-            tytul="Schemat ustawienia stołów"
+            tytul="Schematy obiektu"
             dzieci={
-              dane.plan && dane.plan.elementy.length > 0 ? (
-                <div className="max-w-xl rounded-xl border border-stone-200 bg-[#faf8f3] p-4 shadow-inner print:border">
-                  <PlanSaliRysunek plan={dane.plan} className="h-56 w-full" />
-                </div>
-              ) : (
-                <p className="text-sm text-stone-600">Brak zapisanego planu sali w systemie.</p>
-              )
+              <>
+                <h3 className="text-sm font-semibold text-stone-800">5.1. Rzut parteru (pomieszczenia)</h3>
+                <p className="mt-1 text-xs text-stone-500">
+                  Orientacyjny podział od sołtysa — nie zastępuje projektu budowlanego.
+                </p>
+                {dane.rzutParteru ? (
+                  <div className="mt-3 space-y-3">
+                    <p className="text-sm text-stone-700">
+                      <strong className="text-stone-900">{escapeHtml(dane.rzutParteru.tytul)}</strong>
+                      {" · "}
+                      bryła ok. {dane.rzutParteru.bryla_szer_m} × {dane.rzutParteru.bryla_gleb_m} m
+                    </p>
+                    <div className="max-w-2xl rounded-xl border border-stone-200 bg-[#faf8f3] p-4 shadow-inner print:border">
+                      <div className="aspect-[4/3] w-full max-h-80">
+                        <RzutParteruSaliSvg plan={dane.rzutParteru} className="h-full w-full" />
+                      </div>
+                    </div>
+                    {dane.rzutParteru.notatka?.trim() ? (
+                      <div className="whitespace-pre-wrap rounded-lg border border-stone-200 bg-stone-50/90 p-3 text-sm text-stone-800">
+                        {escapeHtml(dane.rzutParteru.notatka.trim())}
+                      </div>
+                    ) : null}
+                  </div>
+                ) : (
+                  <p className="mt-2 text-sm text-stone-600">Brak zapisanego rzutu parteru w systemie.</p>
+                )}
+
+                <h3 className="mt-8 text-sm font-semibold text-stone-800">5.2. Układ stołów (plan sali)</h3>
+                <p className="mt-1 text-xs text-stone-500">Rozmieszczenie stołów i krzeseł — osobno od pomieszczeń.</p>
+                {dane.plan && dane.plan.elementy.length > 0 ? (
+                  <div className="mt-3 max-w-xl rounded-xl border border-stone-200 bg-[#faf8f3] p-4 shadow-inner print:border">
+                    <PlanSaliRysunek plan={dane.plan} className="h-56 w-full" />
+                  </div>
+                ) : (
+                  <p className="mt-2 text-sm text-stone-600">Brak zapisanego planu stołów w systemie.</p>
+                )}
+              </>
             }
           />
 

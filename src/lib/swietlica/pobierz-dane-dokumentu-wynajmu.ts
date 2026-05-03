@@ -1,6 +1,7 @@
 import { pojedynczaWies } from "@/lib/supabase/wies-z-zapytania";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
 import { parsujPlanZJsonb, type PlanSaliJson } from "./plan-sali";
+import { parsujRzutParteruZJsonb, type RzutParteruSaliJson } from "./rzut-parteru-sali";
 
 export type DaneDokumentuWynajmu = {
   wygenerowano: string;
@@ -30,6 +31,8 @@ export type DaneDokumentuWynajmu = {
   cenaObcy: number | null;
   asortyment: { kategoria: string; nazwa: string; ilosc: number; opis: string | null; image_url: string | null }[];
   plan: PlanSaliJson | null;
+  /** Schemat pomieszczeń od sołtysa (druk / PDF razem z dokumentem). */
+  rzutParteru: RzutParteruSaliJson | null;
   dokumentacjaZniszczen: {
     start_at: string;
     end_at: string;
@@ -47,7 +50,7 @@ export async function pobierzDaneDokumentuWynajmu(hallId: string): Promise<DaneD
   const { data: sala, error } = await supabase
     .from("halls")
     .select(
-      "name, description, address, max_capacity, area_m2, contact_phone, contact_email, caretaker_name, rules_text, deposit, price_resident, price_external, layout_data, villages(name, commune, county, voivodeship, playground_rules_text, soltys_user_id)"
+      "name, description, address, max_capacity, area_m2, contact_phone, contact_email, caretaker_name, rules_text, deposit, price_resident, price_external, layout_data, floor_plan_data, villages(name, commune, county, voivodeship, playground_rules_text, soltys_user_id)"
     )
     .eq("id", hallId)
     .maybeSingle();
@@ -146,6 +149,7 @@ export async function pobierzDaneDokumentuWynajmu(hallId: string): Promise<DaneD
     cenaObcy: sala.price_external != null ? Number(sala.price_external) : null,
     asortyment,
     plan: parsujPlanZJsonb(sala.layout_data),
+    rzutParteru: parsujRzutParteruZJsonb(sala.floor_plan_data),
     dokumentacjaZniszczen,
   };
 }

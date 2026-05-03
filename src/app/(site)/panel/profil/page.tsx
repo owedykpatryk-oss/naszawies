@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 import { redirect } from "next/navigation";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
 import { ProfilFormularz } from "./profil-formularz";
@@ -38,8 +39,23 @@ export default async function PanelProfilPage() {
     phone_visible_public: Boolean(profil?.phone_visible_public),
   };
 
+  const nickStartuOk = (profil?.display_name ?? poczatkowe.display_name).trim().length >= 2;
+
   return (
     <main>
+      {!nickStartuOk ? (
+        <div className="mb-6 rounded-xl border border-amber-300/80 bg-amber-50/90 px-4 py-3 text-sm text-amber-950 shadow-sm">
+          <p className="font-medium text-amber-950">Uzupełnij nazwę wyświetlaną (min. 2 znaki)</p>
+          <p className="mt-1 text-amber-900/95">
+            To pierwszy krok przewodnika po zalogowaniu — inni użytkownicy zobaczą Cię pod tą nazwą w wiosce i w
+            powiadomieniach.{" "}
+            <Link href="/panel/pierwsze-kroki#krok-profil" className="font-medium text-green-900 underline">
+              Jak to działa — pierwsze kroki
+            </Link>
+            .
+          </p>
+        </div>
+      ) : null}
       <h1 className="mb-2 font-serif text-3xl text-green-950">Mój profil</h1>
       <p className="mb-8 text-sm text-stone-600">
         Te dane widać u innych użytkowników zgodnie z ustawieniami i polityką prywatności.

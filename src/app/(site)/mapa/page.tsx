@@ -9,7 +9,7 @@ import { sciezkaProfiluWsi } from "@/lib/wies/sciezka-publiczna";
 export const metadata: Metadata = {
   title: "Mapa wsi",
   description:
-    "Mapa wsi: granice sołectwa, punkt wsi oraz miejsca w miejscowości (m.in. kościół, szkoła, świetlica, stacja kolejowa) — gdy sołectwo doda dane w serwisie.",
+    "Mapa wsi: granice sołectwa, punkt wsi oraz miejsca w miejscowości (m.in. OSP i punkt czerpania wody, kościół, szkoła, świetlica, stacja kolejowa) — gdy sołectwo doda dane w serwisie.",
 };
 
 type WierszRpc = {
@@ -57,6 +57,11 @@ type WierszPoi = {
   confidence: number | string | null;
   verified_at: string | null;
   is_local_override: boolean | null;
+  osp_water_source_type: string | null;
+  osp_water_capacity_lpm: number | null;
+  osp_winter_access: boolean | null;
+  osp_heavy_truck_access: boolean | null;
+  osp_note: string | null;
 };
 
 const KATEGORIE_WYMAGAJACE_WERYFIKACJI = new Set(["szkola", "kosciol"]);
@@ -65,7 +70,13 @@ function czyPoiPubliczny(r: WierszPoi): boolean {
   const kat = r.category.trim().toLowerCase();
   if (!KATEGORIE_WYMAGAJACE_WERYFIKACJI.has(kat)) return true;
   if (r.is_local_override === true) return true;
-  if (r.source === "manual" || r.source === "local_corrected" || r.source === "osm_manual") return true;
+  if (
+    r.source === "manual" ||
+    r.source === "local_corrected" ||
+    r.source === "osm_manual" ||
+    r.source === "osm_auto"
+  )
+    return true;
   if (r.verified_at) return true;
   const confidence = r.confidence != null ? Number(r.confidence) : 0;
   return Number.isFinite(confidence) && confidence >= 0.8;
@@ -94,6 +105,11 @@ function mapujPoiDlaMapy(
       description: r.description,
       lat,
       lon,
+      ospWaterSourceType: r.osp_water_source_type,
+      ospWaterCapacityLpm: r.osp_water_capacity_lpm,
+      ospWinterAccess: r.osp_winter_access,
+      ospHeavyTruckAccess: r.osp_heavy_truck_access,
+      ospNote: r.osp_note,
     });
   }
   return out;
@@ -183,7 +199,9 @@ export default async function MapaPage() {
     const idsWsi = znaczniki.map((z) => z.id);
     const { data: wierszePoi, error: errPoi } = await supabase
       .from("pois")
-      .select("id, village_id, category, name, description, latitude, longitude, source, confidence, verified_at, is_local_override")
+      .select(
+        "id, village_id, category, name, description, latitude, longitude, source, confidence, verified_at, is_local_override, osp_water_source_type, osp_water_capacity_lpm, osp_winter_access, osp_heavy_truck_access, osp_note",
+      )
       .in("village_id", idsWsi);
     if (!errPoi && wierszePoi) {
       punktyPoi = mapujPoiDlaMapy(wierszePoi as WierszPoi[], wiesPoId);
@@ -239,7 +257,7 @@ export default async function MapaPage() {
             aria-hidden="true"
           />
           <p className="mt-5 max-w-2xl text-sm leading-relaxed text-stone-600">
-            Przy każdej wsi: granica (jeśli wgrana), punkt odniesienia (GPS wsi w bazie) oraz <strong>oznaczenia w sołectwie</strong> — m.in. kościół, szkoła, świetlica, OSP, stacja kolejowa: dane w tabeli punktów mapy. Sołtys może w panelu{" "}
+            Przy każdej wsi: granica (jeśli wgrana), punkt odniesienia (GPS wsi w bazie) oraz <strong>oznaczenia w sołectwie</strong> — m.in. kościół, szkoła, świetlica, OSP, <strong>punkt czerpania wody OSP</strong>, stacja kolejowa. Sołtys może w panelu{" "}
             <Link href="/panel/soltys/moja-wies" className="font-medium text-green-900 underline decoration-green-800/35 underline-offset-2">
               Profil wsi
             </Link>{" "}

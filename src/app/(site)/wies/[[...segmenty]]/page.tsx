@@ -178,7 +178,6 @@ export default async function WiesCatchAllPage({ params, searchParams }: Props) 
       { data: profileRaw },
       { data: orgRaw },
       { data: wydRaw },
-      { data: zakupyRaw },
       { data: slotyRaw },
       { data: dotacjeSkrotRaw },
       { data: przewodnikRaw },
@@ -242,12 +241,6 @@ export default async function WiesCatchAllPage({ params, searchParams }: Props) 
         .gte("starts_at", odWydarzen)
         .order("starts_at", { ascending: true })
         .limit(12),
-      supabase
-        .from("village_shopping_list_items")
-        .select("id, title, note, quantity_text, is_done, created_by")
-        .eq("village_id", wies.id)
-        .order("is_done", { ascending: true })
-        .order("created_at", { ascending: true }),
       supabase
         .from("village_weekly_schedule_slots")
         .select(
@@ -321,6 +314,7 @@ export default async function WiesCatchAllPage({ params, searchParams }: Props) 
 
     const userSesji = authRes.data.user;
     let mozeEdytowacListeZakupow = false;
+    let mozeZobaczycListeZakupow = false;
     if (userSesji) {
       const { data: uvr } = await supabaseSerwer
         .from("user_village_roles")
@@ -328,8 +322,9 @@ export default async function WiesCatchAllPage({ params, searchParams }: Props) 
         .eq("user_id", userSesji.id)
         .eq("village_id", wies.id)
         .eq("status", "active")
-        .in("role", [...roleDlaUprawnienia("dostep_podstawowy")])
+        .in("role", [...roleDlaUprawnienia("zarzadzanie_kgw")])
         .maybeSingle();
+      mozeZobaczycListeZakupow = !!uvr;
       mozeEdytowacListeZakupow = !!uvr;
     }
 
@@ -396,6 +391,14 @@ export default async function WiesCatchAllPage({ params, searchParams }: Props) 
       nazwa_grupy: nazwaPowiazanejGrupy(r.village_community_groups),
     }));
 
+    const { data: zakupyRaw } = mozeZobaczycListeZakupow
+      ? await supabaseSerwer
+          .from("village_shopping_list_items")
+          .select("id, title, note, quantity_text, is_done, created_by")
+          .eq("village_id", wies.id)
+          .order("is_done", { ascending: true })
+          .order("created_at", { ascending: true })
+      : { data: [] };
     const listaZakupow = (zakupyRaw ?? []) as {
       id: string;
       title: string;
@@ -505,6 +508,7 @@ export default async function WiesCatchAllPage({ params, searchParams }: Props) 
           organizacje={organizacje}
           wydarzenia={wydarzenia}
           listaZakupow={listaZakupow}
+          mozeZobaczycListeZakupow={mozeZobaczycListeZakupow}
           mozeEdytowacListeZakupow={mozeEdytowacListeZakupow}
           harmonogramTygodnia={harmonogramTygodnia}
           dotacjeSkrot={dotacjeSkrot}

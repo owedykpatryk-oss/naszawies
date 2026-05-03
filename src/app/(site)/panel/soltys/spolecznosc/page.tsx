@@ -128,6 +128,10 @@ export default async function SoltysSpolecznoscPage({
         <Link href="/panel/soltys/pomoc" className="text-green-800 underline">
           pomoc krok po kroku
         </Link>
+        {" · "}
+        <Link href="/panel/soltys/spolecznosc/moderacja" className="text-green-800 underline">
+          moderacja zgłoszeń
+        </Link>
         .
       </p>
       <div className="mt-6 rounded-xl border border-teal-200/90 bg-teal-50/50 p-4 text-sm text-teal-950">

@@ -4,10 +4,12 @@ import { notFound, redirect } from "next/navigation";
 import { czyUzytkownikJestSoltysemDlaSali } from "@/lib/panel/rola-panelu-soltysa";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
 import { NawigacjaSali } from "@/components/swietlica/nawigacja-sali";
+import { GeneratorRzutuParteruSaliKlient } from "@/components/swietlica/generator-rzutu-parteru-sali-klient";
 import { PlanSaliEdytor } from "@/components/swietlica/plan-sali-edytor";
 import { RegulaminPlacuZabawKlient } from "@/components/swietlica/regulamin-placu-zabaw-klient";
 import { RegulaminSaliKlient } from "@/components/swietlica/regulamin-sali-klient";
 import { parsujPlanZJsonb } from "@/lib/swietlica/plan-sali";
+import { parsujRzutParteruZJsonb } from "@/lib/swietlica/rzut-parteru-sali";
 import { pojedynczaWies } from "@/lib/supabase/wies-z-zapytania";
 import { AsortymentSwietlicyKlient, type PozycjaWyposazenia } from "./asortyment-klient";
 
@@ -35,7 +37,7 @@ export default async function SoltysSwietlicaHallPage({ params }: Props) {
   const { data: sala, error: salaErr } = await supabase
     .from("halls")
     .select(
-      "id, name, description, address, max_capacity, village_id, layout_data, rules_text, deposit, price_resident, price_external, contact_phone, contact_email, caretaker_name, villages(id, name, playground_rules_text)"
+      "id, name, description, address, max_capacity, village_id, layout_data, floor_plan_data, rules_text, deposit, price_resident, price_external, contact_phone, contact_email, caretaker_name, villages(id, name, playground_rules_text)"
     )
     .eq("id", hallId)
     .maybeSingle();
@@ -65,6 +67,7 @@ export default async function SoltysSwietlicaHallPage({ params }: Props) {
 
   const pozycje = (inv ?? []) as PozycjaWyposazenia[];
   const plan = parsujPlanZJsonb(sala.layout_data);
+  const rzutParteru = parsujRzutParteruZJsonb(sala.floor_plan_data);
   const dep = sala.deposit != null ? Number(sala.deposit) : null;
   const pr = sala.price_resident != null ? Number(sala.price_resident) : null;
   const pe = sala.price_external != null ? Number(sala.price_external) : null;
@@ -111,6 +114,8 @@ export default async function SoltysSwietlicaHallPage({ params }: Props) {
           </ul>
         </div>
       ) : null}
+
+      <GeneratorRzutuParteruSaliKlient hallId={hallId} poczatkowyRzut={rzutParteru} />
 
       <PlanSaliEdytor hallId={hallId} poczatkowyPlan={plan} pojemnoscSali={sala.max_capacity} />
 

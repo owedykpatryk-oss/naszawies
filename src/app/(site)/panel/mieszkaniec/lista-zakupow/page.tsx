@@ -28,7 +28,7 @@ export default async function MieszkaniecListaZakupowPage({
     .select("village_id, villages(id, name, is_active)")
     .eq("user_id", user.id)
     .eq("status", "active")
-    .in("role", [...roleDlaUprawnienia("dostep_podstawowy")]);
+    .in("role", [...roleDlaUprawnienia("zarzadzanie_kgw")]);
 
   const wsie = (roleRows ?? [])
     .map((r) => {
@@ -42,7 +42,9 @@ export default async function MieszkaniecListaZakupowPage({
     return (
       <main>
         <h1 className="tytul-sekcji-panelu">Lista zakupów wsi</h1>
-        <p className="mt-2 text-sm text-stone-600">Nie masz aktywnej roli mieszkańca ani sołtysa w żadnej wsi.</p>
+        <p className="mt-2 text-sm text-stone-600">
+          Ta sekcja jest dostępna tylko dla osób zapisanych do KGW oraz sołtysa.
+        </p>
         <p className="mt-4 text-sm">
           <Link href="/panel/mieszkaniec" className="text-green-800 underline">
             ← Panel mieszkańca
@@ -78,8 +80,7 @@ export default async function MieszkaniecListaZakupowPage({
     <main>
       <h1 className="tytul-sekcji-panelu">Lista zakupów wsi</h1>
       <p className="mt-2 text-sm text-stone-600">
-        Wspólna lista na KGW i sąsiadów — dopisuj produkty i zaznaczaj kupione. To samo widać na publicznym profilu
-        wsi.
+        Wspólna lista KGW do planowania zakupów. Dostęp mają osoby z rolą KGW oraz sołtys/współadmin.
       </p>
       <div className="mt-6 flex flex-wrap gap-2">
         {wsie.map((w) => (

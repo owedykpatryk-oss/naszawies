@@ -46,6 +46,11 @@ export type ZnacznikPoi = {
   description: string | null;
   lat: number;
   lon: number;
+  ospWaterSourceType?: string | null;
+  ospWaterCapacityLpm?: number | null;
+  ospWinterAccess?: boolean | null;
+  ospHeavyTruckAccess?: boolean | null;
+  ospNote?: string | null;
 };
 
 export type MapaWsiLeafletRef = {
@@ -219,17 +224,44 @@ function htmlPopupPoi(z: ZnacznikPoi): string {
   const opis = z.description?.trim();
   const osm = `https://www.openstreetmap.org/?mlat=${encodeURIComponent(String(z.lat))}&mlon=${encodeURIComponent(String(z.lon))}&zoom=17`;
   const czyStacja = z.category.trim().toLowerCase() === "stacja_kolejowa";
+  const czyOspWoda = z.category.trim().toLowerCase() === "osp_punkt_czerpania_wody";
   const stacjaLink = `/transport/rozklad?stacja=${encodeURIComponent(z.name)}`;
+  const typZrodlaMap: Record<string, string> = {
+    hydrant: "Hydrant",
+    staw: "Staw",
+    zbiornik: "Zbiornik",
+    rzeka: "Rzeka / ciek",
+    inne: "Inne",
+  };
+  const typZrodla = z.ospWaterSourceType ? (typZrodlaMap[z.ospWaterSourceType] ?? z.ospWaterSourceType) : null;
+  const zglosAktualizacjeLink = `/panel/mieszkaniec/zgloszenia?category=woda&villageId=${encodeURIComponent(z.villageId)}&title=${encodeURIComponent(`Aktualizacja punktu OSP: ${z.name}`)}&location=${encodeURIComponent(`${z.villageName}: ${z.name}`)}`;
   return `
     <div class="mapa-wsi-popup">
       <p class="mapa-wsi-popup-meta">${escapeHtml(kat)}${z.villageName ? ` · ${escapeHtml(z.villageName)}` : ""}</p>
       <h3>${escapeHtml(z.name)}</h3>
       ${opis ? `<p>${escapeHtml(opis)}</p>` : ""}
+      ${
+        czyOspWoda
+          ? `<p>${
+              [
+                typZrodla ? `Typ: ${escapeHtml(typZrodla)}` : null,
+                z.ospWaterCapacityLpm != null ? `Wydajność: ${escapeHtml(String(z.ospWaterCapacityLpm))} l/min` : null,
+                z.ospWinterAccess != null ? `Dostęp zimą: ${z.ospWinterAccess ? "tak" : "nie/ograniczony"}` : null,
+                z.ospHeavyTruckAccess != null
+                  ? `Dojazd ciężkim wozem: ${z.ospHeavyTruckAccess ? "tak" : "nie/utrudniony"}`
+                  : null,
+              ]
+                .filter(Boolean)
+                .join(" · ")
+            }</p>${z.ospNote ? `<p>${escapeHtml(z.ospNote)}</p>` : ""}`
+          : ""
+      }
       <p class="mapa-wsi-popup-foot">
         <a href="${z.sciezkaWsi.replace(/"/g, "")}">Strona wsi →</a>
         <span aria-hidden="true"> · </span>
         <a href="${osm}" target="_blank" rel="noopener noreferrer">Punkt w OSM ↗</a>
         ${czyStacja ? `<span aria-hidden="true"> · </span><a href="${stacjaLink}">Rozkład stacji 🚆</a>` : ""}
+        ${czyOspWoda ? `<span aria-hidden="true"> · </span><a href="${zglosAktualizacjeLink}">Zgłoś aktualizację punktu</a>` : ""}
       </p>
     </div>
   `;
@@ -429,7 +461,7 @@ export const MapaWsiLeaflet = forwardRef<
             </li>
             <li>
               <span className="font-medium text-stone-800">Kolorowa pinezka (emoji)</span> — miejsca w sołectwie: kościół,
-              szkoła, świetlica, OSP, sklep, przystanek, stacja kolejowa… (dane w serwisie)
+              szkoła, świetlica, OSP, punkt czerpania wody OSP, sklep, przystanek, stacja kolejowa… (dane w serwisie)
             </li>
             <li>
               <span className="font-medium text-stone-800">Kółko z liczbą</span> — kilka punktów w obszarze

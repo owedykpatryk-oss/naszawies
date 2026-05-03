@@ -172,8 +172,10 @@ export default async function MieszkaniecPage() {
             href="/panel/mieszkaniec/lista-zakupow"
             className="rounded-xl border border-stone-200 bg-white/95 p-4 text-sm shadow-sm transition hover:border-green-800/25 hover:shadow-md"
           >
-            <span className="font-semibold text-green-950">Lista zakupów</span>
-            <span className="mt-1 block text-xs text-stone-600">Wspólna lista na KGW i sąsiadów — także na profilu wsi.</span>
+            <span className="font-semibold text-green-950">Lista zakupów KGW</span>
+            <span className="mt-1 block text-xs text-stone-600">
+              Wewnętrzna lista zakupów dla osób zapisanych do KGW oraz sołtysa.
+            </span>
           </Link>
           <Link
             href="/panel/mieszkaniec/swietlica"
@@ -195,6 +197,15 @@ export default async function MieszkaniecPage() {
           >
             <span className="font-semibold text-green-950">Fotokronika</span>
             <span className="mt-1 block text-xs text-stone-600">Dodawaj zdjęcia z życia wsi i wydarzeń.</span>
+          </Link>
+          <Link
+            href="/panel/mieszkaniec/spolecznosc"
+            className="rounded-xl border border-stone-200 bg-white/95 p-4 text-sm shadow-sm transition hover:border-green-800/25 hover:shadow-md"
+          >
+            <span className="font-semibold text-green-950">Społeczność mieszkańców</span>
+            <span className="mt-1 block text-xs text-stone-600">
+              Wątki dyskusji, komentarze i blog mieszkańca z moderacją.
+            </span>
           </Link>
           <Link
             href="/panel/powiadomienia"

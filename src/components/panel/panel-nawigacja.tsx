@@ -5,6 +5,7 @@ import { usePathname } from "next/navigation";
 
 const linki: { href: string; label: string }[] = [
   { href: "/panel", label: "Start" },
+  { href: "/panel/pierwsze-kroki", label: "Pierwsze kroki" },
   { href: "/panel/profil", label: "Mój profil" },
   { href: "/panel/powiadomienia", label: "Powiadomienia" },
   { href: "/panel/mieszkaniec", label: "Mieszkaniec" },

@@ -11,7 +11,11 @@ export const metadata: Metadata = {
   title: "Zgłoszenia",
 };
 
-export default async function MieszkaniecZgloszeniaPage() {
+export default async function MieszkaniecZgloszeniaPage({
+  searchParams,
+}: {
+  searchParams?: { [key: string]: string | string[] | undefined };
+}) {
   const supabase = utworzKlientaSupabaseSerwer();
   const {
     data: { user },
@@ -62,6 +66,15 @@ export default async function MieszkaniecZgloszeniaPage() {
   }[];
 
   const etykietKat = (c: string) => kategorieZgloszen.find((x) => x.value === c)?.label ?? c;
+  const prefillVillageIdRaw = searchParams?.villageId;
+  const prefillCategoryRaw = searchParams?.category;
+  const prefillTitleRaw = searchParams?.title;
+  const prefillLocationRaw = searchParams?.location;
+
+  const prefillVillageId = typeof prefillVillageIdRaw === "string" ? prefillVillageIdRaw : undefined;
+  const prefillCategory = typeof prefillCategoryRaw === "string" ? prefillCategoryRaw : undefined;
+  const prefillTitle = typeof prefillTitleRaw === "string" ? prefillTitleRaw : undefined;
+  const prefillLocation = typeof prefillLocationRaw === "string" ? prefillLocationRaw : undefined;
 
   return (
     <main>
@@ -77,7 +90,16 @@ export default async function MieszkaniecZgloszeniaPage() {
         władz sołectwa.
       </p>
 
-      <ZgloszeniaFormularzKlient wiesOpcje={wiesOpcje} uzytkownik={{ id: user.id }} />
+      <ZgloszeniaFormularzKlient
+        wiesOpcje={wiesOpcje}
+        uzytkownik={{ id: user.id }}
+        prefill={{
+          villageId: prefillVillageId,
+          category: prefillCategory,
+          title: prefillTitle,
+          locationText: prefillLocation,
+        }}
+      />
 
       <section className="mt-12" aria-label="Moje zgłoszenia">
         <h2 className="font-serif text-xl text-green-950">Moje ostatnie zgłoszenia</h2>

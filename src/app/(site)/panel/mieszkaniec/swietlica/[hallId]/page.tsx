@@ -4,7 +4,9 @@ import { notFound, redirect } from "next/navigation";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
 import { NawigacjaSali } from "@/components/swietlica/nawigacja-sali";
 import { PlanSaliRysunek } from "@/components/swietlica/plan-sali-rysunek";
+import { RzutParteruSaliSvg } from "@/components/swietlica/rzut-parteru-sali-svg";
 import { parsujPlanZJsonb } from "@/lib/swietlica/plan-sali";
+import { parsujRzutParteruZJsonb } from "@/lib/swietlica/rzut-parteru-sali";
 import { pojedynczaWies } from "@/lib/supabase/wies-z-zapytania";
 import { DokumentacjaZniszczenRezerwacji } from "@/components/swietlica/dokumentacja-zniszczen-rezerwacji";
 import {
@@ -47,7 +49,9 @@ export default async function MieszkaniecSwietlicaHallPage({ params }: Props) {
 
   const { data: sala, error: salaErr } = await supabase
     .from("halls")
-    .select("id, name, description, address, max_capacity, village_id, layout_data, villages(name, playground_rules_text)")
+    .select(
+      "id, name, description, address, max_capacity, village_id, layout_data, floor_plan_data, villages(name, playground_rules_text)"
+    )
     .eq("id", hallId)
     .maybeSingle();
 
@@ -92,6 +96,7 @@ export default async function MieszkaniecSwietlicaHallPage({ params }: Props) {
     .limit(15);
   const rezerwacje = (mojeRezerwacje ?? []) as WpisRezerwacji[];
   const plan = parsujPlanZJsonb(sala.layout_data);
+  const rzutParteru = parsujRzutParteruZJsonb(sala.floor_plan_data);
   const zajeteTerminy = await pobierzKalendarzZajetosciDlaHali(supabase, hallId);
 
   function dostepne(p: PozycjaWyposazenia) {
@@ -127,7 +132,7 @@ export default async function MieszkaniecSwietlicaHallPage({ params }: Props) {
           ← Lista sal
         </Link>
       </p>
-      <NawigacjaSali hallId={hallId} rola="mieszkaniec" />
+      <NawigacjaSali hallId={hallId} rola="mieszkaniec" pokazRzutParteruMieszkaniec={rzutParteru != null} />
       <h1 className="tytul-sekcji-panelu">{sala.name}</h1>
       <p className="mt-1 text-sm text-stone-600">
         {wies?.name ?? "Wieś"}
@@ -159,6 +164,27 @@ export default async function MieszkaniecSwietlicaHallPage({ params }: Props) {
         }
         pustyKomunikat="Brak wstępnych ani zatwierdzonych rezerwacji w kalendarzu (w tym widoku). Gdy będą, zobaczysz tylko przedział czasowy, bez cudzego imienia."
       />
+
+      {rzutParteru ? (
+        <section
+          id="rzut-parteru-sali-podglad"
+          className="scroll-mt-24 mt-10 rounded-2xl border border-stone-200 bg-white p-5 shadow-sm"
+        >
+          <h2 className="font-serif text-xl text-green-950">Rzut parteru (pomieszczenia)</h2>
+          <p className="mt-1 text-sm text-stone-600">
+            Schemat od sołtysa — orientacja, nie dokumentacja techniczna. Bryła ok. {rzutParteru.bryla_szer_m} ×{" "}
+            {rzutParteru.bryla_gleb_m} m.
+          </p>
+          <div className="mt-4 max-w-2xl rounded-lg border border-stone-100 bg-[#faf8f3] p-4">
+            <RzutParteruSaliSvg plan={rzutParteru} className="aspect-[4/3] h-auto w-full max-h-[420px]" />
+          </div>
+          {rzutParteru.notatka?.trim() ? (
+            <div className="mt-4 whitespace-pre-wrap rounded-lg border border-stone-200 bg-stone-50/80 p-3 text-sm text-stone-800">
+              {rzutParteru.notatka.trim()}
+            </div>
+          ) : null}
+        </section>
+      ) : null}
 
       {plan.elementy.length > 0 ? (
         <section className="mt-10 rounded-2xl border border-stone-200 bg-white p-5 shadow-sm">

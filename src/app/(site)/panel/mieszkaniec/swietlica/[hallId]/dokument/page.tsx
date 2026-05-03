@@ -33,11 +33,11 @@ export default async function DokumentWynajmuMieszkaniecPage({ params }: Props) 
           ← Wróć do sali
         </Link>
       </p>
-      <NawigacjaSali hallId={hallId} rola="mieszkaniec" />
+      <NawigacjaSali hallId={hallId} rola="mieszkaniec" pokazRzutParteruMieszkaniec={dane.rzutParteru != null} />
       <h1 className="tytul-sekcji-panelu">Dokument informacyjny</h1>
       <p className="mt-1 text-sm text-stone-600">
-        Ten sam zestaw informacji co dla sołtysa: regulamin, kaucja, ceny, wyposażenie i plan stołów (jeśli został
-        zapisany).
+        Ten sam zestaw informacji co dla sołtysa: regulamin, kaucja, ceny, wyposażenie, rzut parteru i plan stołów (jeśli
+        sołtys je zapisał).
       </p>
       <div className="mt-8">
         <DokumentWynajmuWidok dane={dane} />

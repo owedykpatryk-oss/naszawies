@@ -27,22 +27,6 @@ export function StudzienkiProjektNarzedziaKlient() {
       <button type="button" onClick={() => void kopiuj()} className={klasaPrzycisku}>
         {stan === "ok" ? "Skopiowano link" : stan === "err" ? "Nie udało się skopiować" : "Kopiuj link do strony"}
       </button>
-      <a
-        href="/wies/studzienki/rzut-parteru.png"
-        className={klasaPrzycisku}
-        target="_blank"
-        rel="noopener noreferrer"
-      >
-        Rzut (PNG)
-      </a>
-      <a
-        href="/wies/studzienki/elewacje.png"
-        className={klasaPrzycisku}
-        target="_blank"
-        rel="noopener noreferrer"
-      >
-        Elewacje (PNG)
-      </a>
     </div>
   );
 }

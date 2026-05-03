@@ -579,7 +579,7 @@ export async function zapiszOpisPoWydarzeniuSwietlica(
   return { ok: true };
 }
 
-async function czyAktywnyUczestnikWsi(
+async function czyMaDostepDoListyZakupowKgw(
   supabase: ReturnType<typeof utworzKlientaSupabaseSerwer>,
   userId: string,
   villageId: string,
@@ -590,7 +590,7 @@ async function czyAktywnyUczestnikWsi(
     .eq("user_id", userId)
     .eq("village_id", villageId)
     .eq("status", "active")
-    .in("role", [...roleDlaUprawnienia("dostep_podstawowy")])
+    .in("role", [...roleDlaUprawnienia("zarzadzanie_kgw")])
     .maybeSingle();
   return !!data;
 }
@@ -614,8 +614,8 @@ export async function dodajPozycjeListyZakupowWsi(
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return { blad: "Zaloguj się." };
-  if (!(await czyAktywnyUczestnikWsi(supabase, user.id, parsed.data.villageId))) {
-    return { blad: "Brak aktywnej roli mieszkańca w tej wsi." };
+  if (!(await czyMaDostepDoListyZakupowKgw(supabase, user.id, parsed.data.villageId))) {
+    return { blad: "Lista zakupów jest dostępna tylko dla KGW oraz sołtysa." };
   }
 
   const { error } = await supabase.from("village_shopping_list_items").insert({
@@ -659,8 +659,8 @@ export async function przelaczPozycjeListyZakupow(itemId: string): Promise<Wynik
   if (readErr || !row) {
     return { blad: "Nie znaleziono pozycji." };
   }
-  if (!(await czyAktywnyUczestnikWsi(supabase, user.id, row.village_id))) {
-    return { blad: "Możesz oznaczać tylko listę swojej wsi." };
+  if (!(await czyMaDostepDoListyZakupowKgw(supabase, user.id, row.village_id))) {
+    return { blad: "Brak dostępu do listy zakupów tej wsi." };
   }
 
   const { error } = await supabase
@@ -701,11 +701,8 @@ export async function usunPozycjeListyZakupowWsi(itemId: string): Promise<WynikP
   if (readErr || !row) {
     return { blad: "Nie znaleziono pozycji." };
   }
-  const czySoltys = await pobierzVillageIdsRoliPaneluSoltysa(supabase, user.id);
-  const jestSoltysem = czySoltys.includes(row.village_id);
-  const wlasna = row.created_by === user.id;
-  if (!jestSoltysem && !wlasna) {
-    return { blad: "Możesz usunąć tylko pozycje, które sam dodałeś (sołtys może usunąć dowolną)." };
+  if (!(await czyMaDostepDoListyZakupowKgw(supabase, user.id, row.village_id))) {
+    return { blad: "Brak dostępu do listy zakupów tej wsi." };
   }
 
   const { error } = await supabase.from("village_shopping_list_items").delete().eq("id", id.data);
@@ -741,8 +738,8 @@ export async function wczytajSzablonListyZakupowWsi(
     data: { user },
   } = await supabase.auth.getUser();
   if (!user) return { blad: "Zaloguj się." };
-  if (!(await czyAktywnyUczestnikWsi(supabase, user.id, v.data))) {
-    return { blad: "Brak aktywnej roli we wsi." };
+  if (!(await czyMaDostepDoListyZakupowKgw(supabase, user.id, v.data))) {
+    return { blad: "Lista zakupów jest dostępna tylko dla KGW oraz sołtysa." };
   }
 
   const wiersze = szablon.pozycje.map((p) => ({

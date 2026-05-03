@@ -82,7 +82,7 @@ export function MieszkaniecKlient() {
         </div>
       </section>
 
-      <section className="rounded-2xl border border-stone-200 bg-white p-6 shadow-sm">
+      <section id="obserwuj-wies" className="scroll-mt-24 rounded-2xl border border-stone-200 bg-white p-6 shadow-sm">
         <h2 className="font-serif text-xl text-green-950">Obserwuj wieś</h2>
         <p className="mt-1 text-sm text-stone-600">
           Dodaj wieś do obserwowanych, aby szybciej dostawać informacje i powiadomienia.

@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { pobierzStanPrzewodnikaStartu } from "@/lib/panel/stan-przewodnika-startu";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
+import { PanelPrzewodnikStartu } from "./panel-przewodnik-startu";
 
 export const metadata: Metadata = {
   title: "Panel",
@@ -40,8 +42,16 @@ export default async function PanelPage() {
     .eq("id", user.id)
     .maybeSingle();
 
+  const signupVillageIdRaw =
+    user.user_metadata && typeof user.user_metadata === "object" ? user.user_metadata.signup_village_id : null;
+  const maWyborWsiZRejestracji =
+    typeof signupVillageIdRaw === "string" && signupVillageIdRaw.trim().length > 0;
+
+  const stanStartu = await pobierzStanPrzewodnikaStartu(supabase, user.id, maWyborWsiZRejestracji);
+
   return (
     <main>
+      <PanelPrzewodnikStartu stan={stanStartu} />
       <header className="relative mb-10 overflow-hidden rounded-2xl border border-stone-200/80 bg-gradient-to-br from-white via-white to-emerald-50/40 p-6 shadow-sm ring-1 ring-stone-900/[0.04] sm:p-7">
         <div
           className="pointer-events-none absolute -right-12 -top-12 h-40 w-40 rounded-full bg-emerald-400/15 blur-3xl"
@@ -60,6 +70,13 @@ export default async function PanelPage() {
           ) : null}
         </p>
       </header>
+
+      <p className="mb-6 text-sm text-stone-600">
+        <Link href="/panel/pierwsze-kroki" className="font-medium text-green-800 underline">
+          Pierwsze kroki po rejestracji
+        </Link>{" "}
+        — pełniejszy opis: profil, wybór wsi, różnice mieszkaniec / sołtys.
+      </p>
 
       <h2 className="sr-only">Skróty do modułów</h2>
       <ul className="mb-10 grid gap-4 text-sm sm:grid-cols-2">

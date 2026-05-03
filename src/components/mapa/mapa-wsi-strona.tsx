@@ -12,6 +12,7 @@ import {
   useState,
   type ReactNode,
 } from "react";
+import { etykietaKategoriiPoi } from "@/lib/mapa/kategorie-poi";
 import {
   MapaWsiLeaflet,
   type MapaWsiLeafletRef,
@@ -81,6 +82,7 @@ export function MapaWsiStrona({
   const mapRef = useRef<MapaWsiLeafletRef>(null);
 
   const [szukaj, setSzukaj] = useState(() => searchParams.get("q") ?? "");
+  const [filtrPoi, setFiltrPoi] = useState(() => searchParams.get("poi") ?? "wszystkie");
   const szukajOdroczone = useDeferredValue(szukaj);
   const [pozycjaUzytkownika, setPozycjaUzytkownika] = useState<{ lat: number; lon: number } | null>(
     null,
@@ -102,10 +104,25 @@ export function MapaWsiStrona({
     });
   }, [znaczniki, szukajOdroczone]);
 
+  const kategoriePoi = useMemo(
+    () => Array.from(new Set(punktyPoi.map((p) => p.category))).sort((a, b) => a.localeCompare(b, "pl")),
+    [punktyPoi],
+  );
+
+  const filtrPoiEfektywny = useMemo(() => {
+    if (!filtrPoi || filtrPoi === "wszystkie") return "wszystkie";
+    return kategoriePoi.includes(filtrPoi) ? filtrPoi : "wszystkie";
+  }, [filtrPoi, kategoriePoi]);
+
+  const punktyPoiPoKategorii = useMemo(() => {
+    if (filtrPoiEfektywny === "wszystkie") return punktyPoi;
+    return punktyPoi.filter((p) => p.category === filtrPoiEfektywny);
+  }, [punktyPoi, filtrPoiEfektywny]);
+
   const punktyPoiFiltrowane = useMemo(() => {
     const idWsi = new Set(odfiltrowane.map((z) => z.id));
-    return punktyPoi.filter((p) => idWsi.has(p.villageId));
-  }, [punktyPoi, odfiltrowane]);
+    return punktyPoiPoKategorii.filter((p) => idWsi.has(p.villageId));
+  }, [punktyPoiPoKategorii, odfiltrowane]);
 
   const wierszeListy = useMemo(() => {
     if (!pozycjaUzytkownika) return odfiltrowane;
@@ -121,12 +138,15 @@ export function MapaWsiStrona({
   useEffect(() => {
     const zapisz = () => {
       const q = szukaj.trim();
-      const url = q ? `${pathname}?q=${encodeURIComponent(q)}` : pathname;
+      const params = new URLSearchParams();
+      if (q) params.set("q", q);
+      if (filtrPoiEfektywny !== "wszystkie") params.set("poi", filtrPoiEfektywny);
+      const url = params.toString() ? `${pathname}?${params.toString()}` : pathname;
       router.replace(url, { scroll: false });
     };
     const t = window.setTimeout(zapisz, 400);
     return () => window.clearTimeout(t);
-  }, [szukaj, pathname, router]);
+  }, [szukaj, filtrPoiEfektywny, pathname, router]);
 
   const wyczysc = useCallback(() => {
     setSzukaj("");
@@ -190,10 +210,33 @@ export function MapaWsiStrona({
               </button>
             ) : null}
           </div>
+          <div className="mt-2">
+            <label htmlFor="mapa-filtr-poi" className="sr-only">
+              Filtr kategorii punktów POI
+            </label>
+            <select
+              id="mapa-filtr-poi"
+              value={filtrPoiEfektywny}
+              onChange={(e) => setFiltrPoi(e.target.value)}
+              className="w-full rounded-xl border border-stone-200/90 bg-white/90 px-3 py-2 text-sm text-stone-800 shadow-sm outline-none ring-green-800/20 transition focus:border-green-600 focus:ring-2 focus:ring-green-700/25"
+            >
+              <option value="wszystkie">Wszystkie punkty POI</option>
+              {kategoriePoi.map((k) => (
+                <option key={k} value={k}>
+                  {etykietaKategoriiPoi(k)}
+                </option>
+              ))}
+            </select>
+          </div>
           <p className="mt-2 text-xs text-stone-500">
             Wpisana fraza wybiera wsi z listy (nazwa, gmina, powiat, województwo, fragment adresu strony). Wyszukiwanie
             widać też w adresie strony, żeby można było wysłać komuś link.
           </p>
+          {filtrPoiEfektywny !== "wszystkie" && punktyPoiFiltrowane.length === 0 ? (
+            <p className="mt-2 rounded-lg border border-amber-200 bg-amber-50 px-2.5 py-1.5 text-[11px] text-amber-900">
+              Brak punktów w tej kategorii dla aktualnie widocznych wsi. Granice i wsie są nadal pokazane na mapie.
+            </p>
+          ) : null}
           <div className="mt-3 flex flex-wrap items-center gap-2">
             {pozycjaUzytkownika ? (
               <button

@@ -42,8 +42,8 @@ export default async function DokumentWynajmuSoltysPage({ params }: Props) {
       <NawigacjaSali hallId={hallId} rola="soltys" />
       <h1 className="tytul-sekcji-panelu">Dokument wynajmu</h1>
       <p className="mt-1 text-sm text-stone-600">
-        Podgląd z aktualnych danych sali, regulaminu, kaucji, cen i asortymentu. Użyj druku, by zapisać PDF lub
-        wydrukować dla najemcy.
+        Podgląd z aktualnych danych sali, regulaminu, kaucji, cen, asortymentu, rzutu parteru i planu stołów. Użyj
+        druku, by zapisać PDF lub wydrukować dla najemcy.
       </p>
       <div className="mt-8">
         <DokumentWynajmuWidok dane={dane} />
