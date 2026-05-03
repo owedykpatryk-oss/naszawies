@@ -65,12 +65,15 @@ export async function synchronizujGranicePrgAutomatycznie(supabase: SupabaseClie
     errors: [],
   };
 
-  const { data: wsie, error: errWsie } = await supabase
-    .from("villages")
-    .select("id, name, teryt_id, boundary_geojson")
-    .eq("is_active", true)
-    .order("updated_at", { ascending: true })
-    .limit(maxScanned);
+  /** Bez force: tylko brakujące granice, kolejka „żywe wsie” (RPC). Przy force — ponowny PRG także tam, gdzie już jest granica. */
+  const { data: wsie, error: errWsie } = forceRefresh
+    ? await supabase
+        .from("villages")
+        .select("id, name, teryt_id, boundary_geojson")
+        .eq("is_active", true)
+        .order("updated_at", { ascending: true })
+        .limit(maxScanned)
+    : await supabase.rpc("villages_kolejka_sync_granic_prg", { p_limit: maxScanned });
 
   if (errWsie) {
     throw new Error(`Nie udało się pobrać listy wsi do sync granic: ${errWsie.message}`);
