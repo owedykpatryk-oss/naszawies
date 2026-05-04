@@ -66,6 +66,27 @@ function escapeHtml(s: string): string {
     .replace(/'/g, "&#039;");
 }
 
+/** Zamknięty pierścień jako LineString → Polygon (czasem eksport PRG/OSM). */
+function lineStringZamknietyJakoPolygon(raw: object): GeoJsonObject | null {
+  const o = raw as { type?: string; coordinates?: unknown };
+  if (o.type !== "LineString" || !Array.isArray(o.coordinates)) return null;
+  const ring = o.coordinates as [number, number][];
+  if (ring.length < 4) return null;
+  const first = ring[0];
+  const last = ring[ring.length - 1];
+  if (
+    !first ||
+    !last ||
+    typeof first[0] !== "number" ||
+    typeof first[1] !== "number" ||
+    first[0] !== last[0] ||
+    first[1] !== last[1]
+  ) {
+    return null;
+  }
+  return { type: "Polygon", coordinates: [ring] } as GeoJsonObject;
+}
+
 function granicaJakoGeoJson(raw: unknown): GeoJsonObject | null {
   if (raw == null) return null;
   if (typeof raw === "string") {
@@ -78,13 +99,20 @@ function granicaJakoGeoJson(raw: unknown): GeoJsonObject | null {
     }
   }
   if (typeof raw !== "object") return null;
-  const o = raw as { type?: string; features?: unknown[] };
+  const o = raw as { type?: string; features?: unknown[]; geometry?: unknown };
   if (o.type === "FeatureCollection" && Array.isArray(o.features) && o.features.length === 0) {
     return null;
+  }
+  const jakoLinia = lineStringZamknietyJakoPolygon(raw);
+  if (jakoLinia) return jakoLinia;
+  if (o.type === "Feature" && o.geometry != null && typeof o.geometry === "object") {
+    const polyZLinii = lineStringZamknietyJakoPolygon(o.geometry as object);
+    if (polyZLinii) return { ...o, geometry: polyZLinii } as GeoJsonObject;
   }
   if (
     o.type === "Polygon" ||
     o.type === "MultiPolygon" ||
+    o.type === "GeometryCollection" ||
     o.type === "Feature" ||
     o.type === "FeatureCollection"
   ) {
@@ -148,9 +176,9 @@ function htmlPopup(z: ZnacznikWsi, wariant: WariantGranicyWPopup): string {
   `;
 }
 
-/** Rozszerza bbox o wszystkie wierzchołki GeoJSON (Polygon / MultiPolygon / Feature / FeatureCollection). */
+/** Rozszerza bbox o wierzchołki GeoJSON (w tym GeometryCollection i zagnieżdżone Feature). */
 function rozszerzBboxZOGeojson(gj: GeoJsonObject, visit: (lat: number, lon: number) => void) {
-  const walk = (node: unknown): void => {
+  const walkCoords = (node: unknown): void => {
     if (!Array.isArray(node)) return;
     if (
       node.length >= 2 &&
@@ -163,27 +191,40 @@ function rozszerzBboxZOGeojson(gj: GeoJsonObject, visit: (lat: number, lon: numb
       visit(lat, lon);
       return;
     }
-    for (const x of node) walk(x);
+    for (const x of node) walkCoords(x);
   };
-  const o = gj as {
-    type?: string;
-    coordinates?: unknown;
-    geometry?: { coordinates?: unknown };
-    features?: { geometry?: { coordinates?: unknown } }[];
-  };
-  if (o.type === "Feature" && o.geometry?.coordinates) {
-    walk(o.geometry.coordinates);
-    return;
-  }
-  if (o.type === "FeatureCollection" && Array.isArray(o.features)) {
-    for (const f of o.features) {
-      if (f.geometry?.coordinates) walk(f.geometry.coordinates);
+
+  const dispatch = (geo: unknown): void => {
+    if (!geo || typeof geo !== "object") return;
+    const o = geo as {
+      type?: string;
+      coordinates?: unknown;
+      geometries?: unknown[];
+      geometry?: unknown;
+      features?: unknown[];
+    };
+    if (o.type === "FeatureCollection" && Array.isArray(o.features)) {
+      for (const f of o.features) dispatch(f);
+      return;
     }
-    return;
-  }
-  if (o.type === "Polygon" || o.type === "MultiPolygon") {
-    walk(o.coordinates);
-  }
+    if (o.type === "Feature") {
+      dispatch(o.geometry);
+      return;
+    }
+    if (o.type === "GeometryCollection" && Array.isArray(o.geometries)) {
+      for (const g of o.geometries) dispatch(g);
+      return;
+    }
+    if (o.type === "Polygon" || o.type === "MultiPolygon") {
+      if (o.coordinates != null) walkCoords(o.coordinates);
+      return;
+    }
+    if (o.type === "LineString" || o.type === "MultiLineString") {
+      if (o.coordinates != null) walkCoords(o.coordinates);
+    }
+  };
+
+  dispatch(gj);
 }
 
 function bboxDlaPunktowMapy(
@@ -541,16 +582,17 @@ function syncWarstwy(
         const warstwa = L.geoJSON(gj, {
           pane: PANE_GRANICE,
           interactive: false,
+          renderer: L.svg({ padding: 0.55 }),
           style: {
-            color: "#0f3d12",
-            weight: 4,
-            fillColor: "#2d6a24",
-            fillOpacity: 0.2,
+            color: "#06290a",
+            weight: 5,
+            fillColor: "#256620",
+            fillOpacity: 0.22,
             opacity: 1,
             lineCap: "round",
             lineJoin: "round",
           },
-        });
+        } as import("leaflet").GeoJSONOptions);
         warstwa.bindPopup(htmlPopup(z, "geojson"));
         boundaryGroup.addLayer(warstwa);
         mamyPrawdziwaGranice = true;

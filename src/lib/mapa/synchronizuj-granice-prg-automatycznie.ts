@@ -6,6 +6,8 @@ type VillageRow = {
   name: string;
   teryt_id: string | null;
   boundary_geojson: unknown | null;
+  latitude: number | null;
+  longitude: number | null;
 };
 
 type SyncStateRow = {
@@ -69,7 +71,7 @@ export async function synchronizujGranicePrgAutomatycznie(supabase: SupabaseClie
   const { data: wsie, error: errWsie } = forceRefresh
     ? await supabase
         .from("villages")
-        .select("id, name, teryt_id, boundary_geojson")
+        .select("id, name, teryt_id, boundary_geojson, latitude, longitude")
         .eq("is_active", true)
         .order("updated_at", { ascending: true })
         .limit(maxScanned)
@@ -118,7 +120,10 @@ export async function synchronizujGranicePrgAutomatycznie(supabase: SupabaseClie
     }
 
     summary.attemptedVillages += 1;
-    const wynik = await pobierzGraniceWsiZPrgWfs(village.teryt_id);
+    const wynik = await pobierzGraniceWsiZPrgWfs(village.teryt_id, {
+      lat: village.latitude,
+      lon: village.longitude,
+    });
     const nowIso = new Date().toISOString();
 
     if (!wynik.ok) {
