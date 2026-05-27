@@ -111,6 +111,14 @@ export function KreatorGrafikiKlient({
     });
   }, [dostepneSzablony, filtr, kategoria]);
 
+  const ukonczoneZakladki = useMemo(
+    (): Partial<Record<ZakladkaKreatora, boolean>> => ({
+      szablon: Boolean(szablonId),
+      edycja: Object.values(wartosci).some((v) => v?.trim()),
+    }),
+    [szablonId, wartosci],
+  );
+
   const wczytajProjekty = useCallback(async () => {
     if (zapisDoBazy) {
       const r = await wczytajProjektyGrafiki(villageId ?? undefined);
@@ -344,14 +352,6 @@ export function KreatorGrafikiKlient({
     ustawTryb(t);
     if (t === "zaproszenie") ustawZakladke("szablon");
   };
-
-  const ukonczoneZakladki = useMemo(
-    (): Partial<Record<ZakladkaKreatora, boolean>> => ({
-      szablon: Boolean(szablonId),
-      edycja: Object.values(wartosci).some((v) => v?.trim()),
-    }),
-    [szablonId, wartosci],
-  );
 
   const maProfil = Boolean(profilWsi || kontekst.telefon || kontekst.email);
 

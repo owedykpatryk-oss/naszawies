@@ -109,8 +109,6 @@ export function RezerwacjaSwietlicyFormularz({
   function onSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const fd = new FormData(e.currentTarget);
-    const startAtVal = startAt;
-    const endAtVal = endAt;
     const eventType = String(fd.get("event_type") || "inne");
     const seatingPreset = String(fd.get("seating_preset") || "wlasny");
     const eventTitle = String(fd.get("event_title") || "").trim();
