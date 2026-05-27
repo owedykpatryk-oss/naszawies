@@ -10,7 +10,7 @@ import { CzatZaproszeniaKlient, type MieszkaniecDoZaproszenia } from "../czat-za
 type Props = { params: { conversationId: string } };
 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
-  return { title: "Rozmowa" };
+  return { title: `Rozmowa · ${params.conversationId.slice(0, 8)}` };
 }
 
 export default async function CzatKonwersacjaPage({ params }: Props) {

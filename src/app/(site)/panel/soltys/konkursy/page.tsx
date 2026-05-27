@@ -29,7 +29,7 @@ export default async function SoltysKonkursyPage() {
     }
   }
 
-  let konkursy: WierszKonkursuSoltys[] = [];
+  const konkursy: WierszKonkursuSoltys[] = [];
   if (villageIds.length > 0) {
     const { data: rows } = await supabase
       .from("village_photo_contests")

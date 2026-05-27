@@ -21,8 +21,6 @@ import { SoltysKolejkaPracy, type PozycjaKolejki } from "./soltys-kolejka-pracy"
 import { SoltysPodsumowanieWsi } from "./soltys-podsumowanie-wsi";
 import { SoltysKpiKafel } from "@/components/panel/soltys-kpi-kafel";
 import { SoltysEksportPodsumowania } from "@/components/panel/soltys-eksport-podsumowania";
-import { SoltysSekcjaZwijana } from "@/components/panel/soltys-sekcja-zwijana";
-
 export const metadata: Metadata = {
   title: "Panel sołtysa",
 };
@@ -207,7 +205,6 @@ export default async function SoltysPage() {
 
   let liczbaWiadomosciDoAkceptu = 0;
   let liczbaKanaalowRss = 0;
-  let liczbaRezerwacjiDoDecyzji = 0;
   let liczbaWydarzen7Dni = 0;
   let liczbaGrupKgw = 0;
   let liczbaGrupOsp = 0;
@@ -299,7 +296,7 @@ export default async function SoltysPage() {
     const terazIso = teraz.toISOString();
     const za7dniIso = new Date(teraz.getTime() + 7 * 24 * 60 * 60 * 1000).toISOString();
 
-    const [{ count: cNews }, { count: cFeeds }, { data: hallsRows }, { count: cEvents7Dni }, { data: grupyRows }, { data: linkiRows }] =
+    const [{ count: cNews }, { count: cFeeds }, { count: cEvents7Dni }, { data: grupyRows }, { data: linkiRows }] =
       await Promise.all([
         supabase
           .from("local_news_items")
@@ -310,7 +307,6 @@ export default async function SoltysPage() {
           .from("village_news_feed_sources")
           .select("id", { count: "exact", head: true })
           .in("village_id", villageIds),
-        supabase.from("halls").select("id").in("village_id", villageIds).limit(500),
         supabase
           .from("village_community_events")
           .select("id", { count: "exact", head: true })
@@ -336,7 +332,6 @@ export default async function SoltysPage() {
     liczbaKanaalowRss = cFeeds ?? 0;
     liczbaWydarzen7Dni = cEvents7Dni ?? 0;
 
-    const hallIds = (hallsRows ?? []).map((h) => h.id).filter(Boolean) as string[];
     const grupy = (grupyRows ?? []) as { id: string; group_type: string }[];
     const idsKgw = grupy.filter((g) => g.group_type === "kgw").map((g) => g.id);
     const idsOsp = grupy.filter((g) => g.group_type === "sport" || g.group_type === "osp").map((g) => g.id);
@@ -347,14 +342,7 @@ export default async function SoltysPage() {
       (l) => !l.url?.trim() && !l.phone?.trim() && !l.email?.trim(),
     ).length;
 
-    const [bookingsRes, kgwRes, ospRes] = await Promise.all([
-      hallIds.length > 0
-        ? supabase
-            .from("hall_bookings")
-            .select("id", { count: "exact", head: true })
-            .in("hall_id", hallIds)
-            .eq("status", "pending")
-        : Promise.resolve({ count: 0 }),
+    const [kgwRes, ospRes] = await Promise.all([
       idsKgw.length > 0
         ? supabase
             .from("village_community_events")
@@ -374,7 +362,6 @@ export default async function SoltysPage() {
             .lte("starts_at", za7dniIso)
         : Promise.resolve({ count: 0 }),
     ]);
-    liczbaRezerwacjiDoDecyzji = bookingsRes.count ?? 0;
     liczbaWydarzenKgw7Dni = kgwRes.count ?? 0;
     liczbaWydarzenOsp7Dni = ospRes.count ?? 0;
   }

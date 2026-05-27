@@ -3,7 +3,6 @@ import { MARKA_SCIEZKI } from "./sciezki";
 /** Style znaku wodnego i logo w rogu — HTML drukowany / PDF z generatora. */
 export function cssMarkiNaDokumencieHtml(): string {
   const znak = MARKA_SCIEZKI.znakOkrag;
-  const rog = MARKA_SCIEZKI.znakOkrag64;
   return `
     .marka-doc-znak-wodny {
       position: absolute;
@@ -46,7 +45,6 @@ export function cssMarkiNaDokumencieHtml(): string {
 
 /** Znak wodny + małe logo w prawym górnym rogu (wstrzyknij wewnątrz kontenera dokumentu). */
 export function htmlMarkiNaDokumencie(): string {
-  const znak = MARKA_SCIEZKI.znakOkrag;
   const rog = MARKA_SCIEZKI.znakOkrag64;
   return `<div class="marka-doc-znak-wodny" aria-hidden="true"></div>
 <div class="marka-doc-rog" aria-hidden="true"><img src="${rog}" alt="naszawies.pl" width="52" height="52" /></div>`;
