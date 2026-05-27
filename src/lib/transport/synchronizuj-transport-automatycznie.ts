@@ -1,12 +1,27 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { czyscStaryCacheTransportu } from "@/lib/transport/czysc-stare-odjazdy";
+import { frazaStacjiDlaPowiatu, odjazdPasujeDoCelu } from "@/lib/transport/huby-powiatowe";
 import { pobierzOdjazdyDlaStacjiPkp, wyszukajStacjePkpPoNazwie } from "@/lib/transport/pkp-plk-api";
 import { wyslijWebPushDlaUzytkownika } from "@/lib/pwa/wyslij-web-push";
+import { sciezkaProfiluWsi } from "@/lib/wies/sciezka-publiczna";
 
 type VillageRow = {
   id: string;
   name: string;
+  slug: string;
+  voivodeship: string;
+  county: string;
+  commune: string;
+  soltys_user_id: string | null;
   latitude: number | string | null;
   longitude: number | string | null;
+};
+
+export type OpcjeSynchronizacjiTransportu = {
+  /** Tylko wskazane wsi (np. ręczne odświeżenie z panelu sołtysa). */
+  tylkoVillageIds?: string[];
+  /** Pomiń cooldown — wymuś pobranie odjazdów. */
+  wymus?: boolean;
 };
 
 type StationPoiRow = {
@@ -67,21 +82,26 @@ async function wyslijAlertyTransportowe(
   args: {
     villageId: string;
     villageName: string;
+    linkProfilWsi: string;
+    county: string;
     delayedCount: number;
     cancelledCount: number;
+    delayPowiatCount: number;
     delayThreshold: number;
     maxDelayMin: number;
   },
 ) {
+  const linkTransport = `${args.linkProfilWsi}#sekcja-transport`;
   const { data: favRaw, error: favErr } = await supabase
     .from("user_transport_favorite_relations")
-    .select("user_id, notify_delay_min, notify_cancelled, notify_disruptions")
+    .select("user_id, relation_key, notify_delay_min, notify_cancelled, notify_disruptions")
     .eq("village_id", args.villageId)
     .eq("is_active", true);
   if (favErr) return;
 
   const favorites = (favRaw ?? []) as {
     user_id: string;
+    relation_key: string;
     notify_delay_min: number;
     notify_cancelled: boolean;
     notify_disruptions: boolean;
@@ -94,7 +114,7 @@ async function wyslijAlertyTransportowe(
     .select("user_id, type")
     .eq("related_id", args.villageId)
     .gte("created_at", recentSince)
-    .in("type", ["transport_delay_alert", "transport_cancelled_alert"]);
+    .in("type", ["transport_delay_alert", "transport_cancelled_alert", "transport_powiat_delay_alert"]);
 
   const recentSet = new Set(
     ((recentRaw ?? []) as { user_id: string; type: string }[]).map((r) => `${r.user_id}|${r.type}`),
@@ -112,7 +132,7 @@ async function wyslijAlertyTransportowe(
         type: "transport_cancelled_alert",
         title: "Odwołane połączenia",
         body: `${args.villageName}: wykryto odwołane kursy kolejowe.`,
-        link_url: "/panel/powiadomienia",
+        link_url: linkTransport,
         related_id: args.villageId,
         related_type: "village",
         channel: "in_app",
@@ -121,8 +141,33 @@ async function wyslijAlertyTransportowe(
         userId: fav.user_id,
         title: "Transport: odwołane połączenia",
         body: `${args.villageName}: sprawdź najbliższe odjazdy.`,
-        linkUrl: "/panel/powiadomienia",
+        linkUrl: linkTransport,
         tag: `transport-cancelled-${args.villageId}`,
+      });
+    }
+
+    if (
+      args.delayPowiatCount > 0 &&
+      fav.relation_key === "powiat_default" &&
+      fav.notify_disruptions &&
+      !recentSet.has(`${fav.user_id}|transport_powiat_delay_alert`)
+    ) {
+      await supabase.from("notifications").insert({
+        user_id: fav.user_id,
+        type: "transport_powiat_delay_alert",
+        title: "Opóźnienie do miasta powiatowego",
+        body: `${args.villageName}: opóźnione połączenie w kierunku powiatu (${args.county}).`,
+        link_url: linkTransport,
+        related_id: args.villageId,
+        related_type: "village",
+        channel: "in_app",
+      });
+      await wyslijWebPushDlaUzytkownika(supabase, {
+        userId: fav.user_id,
+        title: "Transport: opóźnienie do powiatu",
+        body: `${args.villageName}: sprawdź połączenie do miasta powiatowego.`,
+        linkUrl: linkTransport,
+        tag: `transport-powiat-${args.villageId}`,
       });
     }
 
@@ -132,7 +177,7 @@ async function wyslijAlertyTransportowe(
         type: "transport_delay_alert",
         title: "Opóźnienia w odjazdach",
         body: `${args.villageName}: opóźnienie do ${args.maxDelayMin} min (Twój próg: ${progOpoznienia} min).`,
-        link_url: "/panel/moje",
+        link_url: linkTransport,
         related_id: args.villageId,
         related_type: "village",
         channel: "in_app",
@@ -141,7 +186,7 @@ async function wyslijAlertyTransportowe(
         userId: fav.user_id,
         title: "Transport: opóźnienia",
         body: `${args.villageName}: są opóźnione kursy.`,
-        linkUrl: "/panel/moje",
+        linkUrl: linkTransport,
         tag: `transport-delay-${args.villageId}`,
       });
     }
@@ -150,6 +195,7 @@ async function wyslijAlertyTransportowe(
 
 export async function synchronizujTransportAutomatycznie(
   supabase: SupabaseClient,
+  opcje?: OpcjeSynchronizacjiTransportu,
 ): Promise<TransportAutoSyncSummary> {
   const summary: TransportAutoSyncSummary = {
     enabled: syncEnabled(),
@@ -165,20 +211,35 @@ export async function synchronizujTransportAutomatycznie(
 
   if (!summary.enabled) return summary;
 
+  if (opcje?.tylkoVillageIds?.length) {
+    await czyscStaryCacheTransportu(supabase, opcje.tylkoVillageIds);
+  }
+
   const delayThreshold = realtimeDelayThreshold();
   const plannedCooldownMs = plannedSyncHours() * 60 * 60 * 1000;
   const realtimeCooldownMs = realtimeMinutes() * 60 * 1000;
 
-  const { data: wsie, error: wErr } = await supabase
+  let zapytanieWsi = supabase
     .from("villages")
-    .select("id, name, latitude, longitude")
+    .select("id, name, slug, voivodeship, county, commune, latitude, longitude, soltys_user_id")
     .eq("is_active", true)
     .not("latitude", "is", null)
-    .not("longitude", "is", null)
-    .limit(40);
+    .not("longitude", "is", null);
+
+  if (opcje?.tylkoVillageIds?.length) {
+    zapytanieWsi = zapytanieWsi.in("id", opcje.tylkoVillageIds);
+  } else {
+    zapytanieWsi = zapytanieWsi.limit(40);
+  }
+
+  const { data: wsie, error: wErr } = await zapytanieWsi;
   if (wErr) throw new Error(`Transport sync: villages: ${wErr.message}`);
 
-  const villages = (wsie ?? []) as VillageRow[];
+  const villages = ((wsie ?? []) as VillageRow[]).sort((a, b) => {
+    const aPri = a.soltys_user_id ? 1 : 0;
+    const bPri = b.soltys_user_id ? 1 : 0;
+    return bPri - aPri;
+  });
   if (villages.length === 0) return summary;
   const villageIds = villages.map((v) => v.id);
 
@@ -225,7 +286,7 @@ export async function synchronizujTransportAutomatycznie(
     const lastRealtime = sync?.last_realtime_sync_at ? Date.parse(sync.last_realtime_sync_at) : 0;
     const plannedDue = !Number.isFinite(lastPlanned) || now - lastPlanned >= plannedCooldownMs;
     const realtimeDue = !Number.isFinite(lastRealtime) || now - lastRealtime >= realtimeCooldownMs;
-    if (!plannedDue && !realtimeDue) continue;
+    if (!opcje?.wymus && !plannedDue && !realtimeDue) continue;
 
     const candidates = (poiByVillage.get(v.id) ?? [])
       .map((p) => {
@@ -240,10 +301,52 @@ export async function synchronizujTransportAutomatycznie(
       .sort((a, b) => a.distKm - b.distKm)
       .slice(0, 5);
 
-    if (candidates.length === 0) continue;
+    const { data: reczneStacje } = await supabase
+      .from("village_transport_stations")
+      .select("station_id, station_name, poi_id, is_manual_override")
+      .eq("village_id", v.id)
+      .eq("is_active", true)
+      .eq("is_manual_override", true);
+
+    if (candidates.length === 0 && (reczneStacje ?? []).length === 0) continue;
     summary.villagesProcessed += 1;
 
     let allDepartures: Awaited<ReturnType<typeof pobierzOdjazdyDlaStacjiPkp>> = [];
+
+    for (const ms of reczneStacje ?? []) {
+      try {
+        const departures = await pobierzOdjazdyDlaStacjiPkp(ms.station_id, { hoursAhead: 24 });
+        allDepartures = allDepartures.concat(departures);
+        summary.stationsObserved += 1;
+        if (departures.length > 0) {
+          const payload = departures.map((d) => ({
+            village_id: v.id,
+            station_id: ms.station_id,
+            station_name: ms.station_name,
+            departure_uid: d.departureUid,
+            train_label: d.trainLabel,
+            destination: d.destination,
+            carrier: d.carrier,
+            platform: d.platform,
+            planned_at: d.plannedWhenIso,
+            realtime_at: d.realtimeWhenIso,
+            delay_min: d.delayMinutes,
+            status: d.status,
+            is_cancelled: d.isCancelled,
+            source_updated_at: d.sourceUpdatedAtIso,
+            fetched_at: new Date().toISOString(),
+            raw: d,
+          }));
+          const { error: depErr } = await supabase
+            .from("transport_departures_cache")
+            .upsert(payload, { onConflict: "village_id,station_id,departure_uid" });
+          if (!depErr) summary.departuresUpserted += payload.length;
+        }
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        summary.errors.push(`${v.name} (ręczna): ${msg}`);
+      }
+    }
 
     for (const c of candidates) {
       const stationNameGuess = c.poi.name?.trim();
@@ -254,19 +357,29 @@ export async function synchronizujTransportAutomatycznie(
         if (!station) continue;
 
         summary.stationsObserved += 1;
-        await supabase.from("village_transport_stations").upsert(
-          {
-            village_id: v.id,
-            poi_id: c.poi.id,
-            station_id: station.id,
-            station_name: station.name,
-            station_name_source: stationNameGuess,
-            distance_km: Number.isFinite(c.distKm) ? Number(c.distKm.toFixed(3)) : null,
-            is_active: true,
-            synced_at: new Date().toISOString(),
-          },
-          { onConflict: "village_id,station_id" },
-        );
+        const { data: istniejaca } = await supabase
+          .from("village_transport_stations")
+          .select("is_manual_override")
+          .eq("village_id", v.id)
+          .eq("poi_id", c.poi.id)
+          .maybeSingle();
+
+        if (!istniejaca?.is_manual_override) {
+          await supabase.from("village_transport_stations").upsert(
+            {
+              village_id: v.id,
+              poi_id: c.poi.id,
+              station_id: station.id,
+              station_name: station.name,
+              station_name_source: stationNameGuess,
+              distance_km: Number.isFinite(c.distKm) ? Number(c.distKm.toFixed(3)) : null,
+              is_active: true,
+              is_manual_override: false,
+              synced_at: new Date().toISOString(),
+            },
+            { onConflict: "village_id,station_id" },
+          );
+        }
 
         const departures = await pobierzOdjazdyDlaStacjiPkp(station.id, { hoursAhead: 24 });
         allDepartures = allDepartures.concat(departures);
@@ -310,8 +423,14 @@ export async function synchronizujTransportAutomatycznie(
       .sort((a, b) => Date.parse(a.whenIso) - Date.parse(b.whenIso))
       .slice(0, 10);
 
+    const frazaPowiat = frazaStacjiDlaPowiatu(v.county ?? "");
     const cancelledCount = upcoming.filter((d) => d.isCancelled).length;
     const delayedCount = upcoming.filter((d) => (d.delayMinutes ?? 0) >= delayThreshold).length;
+    const delayPowiatCount = upcoming.filter(
+      (d) =>
+        (d.delayMinutes ?? 0) >= delayThreshold &&
+        odjazdPasujeDoCelu(d.destination, frazaPowiat, null),
+    ).length;
     const maxDelayMin = upcoming.reduce((max, d) => Math.max(max, d.delayMinutes ?? 0), 0);
     const observed = upcoming.length;
     const maxRealtimeAgeMs = Math.max(
@@ -362,11 +481,23 @@ export async function synchronizujTransportAutomatycznie(
     await wyslijAlertyTransportowe(supabase, {
       villageId: v.id,
       villageName: v.name,
+      linkProfilWsi: sciezkaProfiluWsi({
+        slug: v.slug,
+        voivodeship: v.voivodeship,
+        county: v.county,
+        commune: v.commune,
+      }),
+      county: v.county ?? "powiat",
       delayedCount,
       cancelledCount,
+      delayPowiatCount,
       delayThreshold,
       maxDelayMin,
     });
+  }
+
+  if (!opcje?.tylkoVillageIds?.length) {
+    await czyscStaryCacheTransportu(supabase);
   }
 
   return summary;

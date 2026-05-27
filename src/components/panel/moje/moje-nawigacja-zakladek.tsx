@@ -9,6 +9,7 @@ const ZAKLADKI = [
   { href: "/panel/moje/samorzad", label: "Moja gmina", dokladnie: false },
   { href: "/panel/moje/organizacje", label: "Parafia / KGW / OSP", dokladnie: false },
   { href: "/panel/moje/ulubione", label: "Ulubione", dokladnie: false },
+  { href: "/panel/moje/transport", label: "Transport", dokladnie: false },
 ] as const;
 
 export function MojeNawigacjaZakladek() {

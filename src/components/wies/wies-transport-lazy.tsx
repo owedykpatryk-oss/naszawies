@@ -9,16 +9,16 @@ import {
 
 type StanLadowania = "laduje" | "ok" | "blad";
 
-function TransportTresc({ sciezkaWsi, villageId }: { sciezkaWsi: string; villageId: string }) {
+function TransportTresc({ villageId }: { villageId: string }) {
   const [stan, setStan] = useState<StanLadowania>("laduje");
   const [dane, setDane] = useState<TransportDaneWsi | null>(null);
 
   useEffect(() => {
     let anuluj = false;
-    setStan("laduje");
-    void (async () => {
+
+    async function pobierz() {
       try {
-        const res = await fetch(`/api/wies/${villageId}/transport`);
+        const res = await fetch(`/api/wies/${villageId}/transport`, { credentials: "include" });
         if (anuluj) return;
         if (!res.ok) {
           setStan("blad");
@@ -29,9 +29,20 @@ function TransportTresc({ sciezkaWsi, villageId }: { sciezkaWsi: string; village
       } catch {
         if (!anuluj) setStan("blad");
       }
-    })();
+    }
+
+    setStan("laduje");
+    void pobierz();
+
+    const coMs = 90_000;
+    const timer = window.setInterval(() => {
+      if (document.visibilityState !== "visible") return;
+      void pobierz();
+    }, coMs);
+
     return () => {
       anuluj = true;
+      window.clearInterval(timer);
     };
   }, [villageId]);
 
@@ -49,7 +60,6 @@ function TransportTresc({ sciezkaWsi, villageId }: { sciezkaWsi: string; village
   if (stan === "blad" || !dane) {
     return (
       <WiesTransportWidget
-        sciezkaWsi={sciezkaWsi}
         status={null}
         odjazdy={[]}
         przystanki={[]}
@@ -64,10 +74,10 @@ function TransportTresc({ sciezkaWsi, villageId }: { sciezkaWsi: string; village
     );
   }
 
-  return <WiesTransportWidget sciezkaWsi={sciezkaWsi} {...dane} />;
+  return <WiesTransportWidget {...dane} />;
 }
 
-export function WiesTransportLazy({ sciezkaWsi, villageId }: { sciezkaWsi: string; villageId: string }) {
+export function WiesTransportLazy({ villageId }: { villageId: string }) {
   return (
     <LazyWidoczny
       placeholder={
@@ -78,7 +88,7 @@ export function WiesTransportLazy({ sciezkaWsi, villageId }: { sciezkaWsi: strin
         />
       }
     >
-      <TransportTresc sciezkaWsi={sciezkaWsi} villageId={villageId} />
+      <TransportTresc villageId={villageId} />
     </LazyWidoczny>
   );
 }

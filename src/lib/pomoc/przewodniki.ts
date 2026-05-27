@@ -39,8 +39,8 @@ export const PRZEWODNIKI: Record<RolaPrzewodnika, SekcjaPrzewodnika[]> = {
         },
         {
           tytul: "Transport (PKP, PKS)",
-          opis: "Na profilu wsi: odjazdy pociągów i linki do rozkładów autobusów.",
-          link: { href: "/transport", label: "Centrum transportu" },
+          opis: "Na profilu wsi: odjazdy, sekcja „Do miasta powiatowego” i linki PKS. Po roli mieszkańca — alerty w ustawieniach transportu.",
+          link: { href: "/panel/moje/transport", label: "Ustawienia transportu" },
         },
         {
           tytul: "Załóż konto",
@@ -113,8 +113,8 @@ export const PRZEWODNIKI: Record<RolaPrzewodnika, SekcjaPrzewodnika[]> = {
         },
         {
           tytul: "Transport (pociąg i autobus)",
-          opis: "Na profilu wsi sekcja Transport: PKP z opóźnieniami oraz linki PKS/bus. Ustaw relacje w panelu, by dostawać alerty.",
-          link: { href: "/transport", label: "Centrum transportu" },
+          opis: "Sekcja Transport na profilu wsi: live PKP, połączenia do powiatu, cache autobusów. Progi alertów ustawiasz osobno.",
+          link: { href: "/panel/moje/transport", label: "Ustawienia transportu" },
         },
       ],
     },
@@ -143,6 +143,11 @@ export const PRZEWODNIKI: Record<RolaPrzewodnika, SekcjaPrzewodnika[]> = {
           tytul: "Ostrzeżenia o polowaniu",
           opis: "Podaj rejon i termin (od–do) — mieszkańcy zobaczą alert na profilu wsi i w kalendarzu.",
           link: { href: "/panel/soltys/lowiectwo", label: "Polowania" },
+        },
+        {
+          tytul: "Mapowanie stacji PKP",
+          opis: "Gdy OSM nie pasuje do PKP — wybierz właściwą stację i odśwież rozkład dla wsi.",
+          link: { href: "/panel/soltys/transport", label: "Transport PKP" },
         },
       ],
     },

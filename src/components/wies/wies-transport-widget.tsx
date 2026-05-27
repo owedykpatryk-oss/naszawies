@@ -29,6 +29,16 @@ export type PrzystanekPubliczny = {
   description: string | null;
 };
 
+export type OdjazdAutobusuPubliczny = {
+  id: string;
+  stop_name: string | null;
+  line_label: string;
+  destination: string | null;
+  planned_at: string;
+  provider: string;
+  fetched_at?: string;
+};
+
 export type TransportDaneWsi = {
   status: {
     status_color: string;
@@ -39,6 +49,13 @@ export type TransportDaneWsi = {
     updated_at: string;
   } | null;
   odjazdy: TransportOdjazdPubliczny[];
+  odjazdyAutobus?: OdjazdAutobusuPubliczny[];
+  odjazdyAutobusPoPrzystanku?: { przystanek: string; odjazdy: OdjazdAutobusuPubliczny[] }[];
+  polaczeniaDoPowiatu?: TransportOdjazdPubliczny[];
+  polaczeniaDoWojewodztwa?: TransportOdjazdPubliczny[];
+  hubPowiatu?: { fraza: string; county: string | null; stacjaPkp?: string | null };
+  hubWojewodztwa?: { fraza: string; voivodeship: string | null; stacjaPkp?: string | null };
+  ostatniaAktualizacja?: { kolej: string | null; autobus: string | null };
   przystanki: PrzystanekPubliczny[];
   stacjeKolejowe: PrzystanekPubliczny[];
   stacjePkp: { station_name: string; distance_km: number | null }[];
@@ -58,9 +75,14 @@ function colorClass(status: string): string {
 type Zakladka = "kolej" | "autobus";
 
 export function WiesTransportWidget({
-  sciezkaWsi,
   status,
   odjazdy,
+  odjazdyAutobus = [],
+  odjazdyAutobusPoPrzystanku = [],
+  polaczeniaDoPowiatu = [],
+  polaczeniaDoWojewodztwa = [],
+  hubPowiatu,
+  ostatniaAktualizacja,
   przystanki,
   stacjeKolejowe,
   stacjePkp,
@@ -72,7 +94,6 @@ export function WiesTransportWidget({
   delayAlertMin = 15,
   walkingMarginMin = 8,
 }: TransportDaneWsi & {
-  sciezkaWsi: string;
   delayAlertMin?: number;
   walkingMarginMin?: number;
 }) {
@@ -228,6 +249,62 @@ export function WiesTransportWidget({
                 })}
               </ul>
 
+              {polaczeniaDoPowiatu.length > 0 ? (
+                <div className="mt-4 rounded-xl border border-sky-200 bg-sky-50/80 p-3">
+                  <p className="text-xs font-medium uppercase tracking-wide text-sky-900">
+                    Do miasta powiatowego
+                    {hubPowiatu?.stacjaPkp
+                      ? ` → ${hubPowiatu.stacjaPkp}`
+                      : hubPowiatu?.fraza
+                        ? ` (${hubPowiatu.fraza})`
+                        : ""}
+                  </p>
+                  <ul className="mt-2 space-y-1.5 text-sm text-stone-800">
+                    {polaczeniaDoPowiatu.slice(0, 4).map((d) => (
+                      <li key={`pow-${d.id}`}>
+                        {new Date(d.planned_at).toLocaleString("pl-PL", {
+                          dateStyle: "short",
+                          timeStyle: "short",
+                        })}
+                        {" · "}
+                        {d.train_label}
+                        {d.destination ? ` → ${d.destination}` : ""}
+                        {d.delay_min != null && d.delay_min > 0 ? ` (+${d.delay_min} min)` : ""}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ) : hubPowiatu?.fraza && odjazdy.length > 0 ? (
+                <p className="mt-3 text-xs text-stone-600">
+                  Brak bezpośrednich połączeń w cache do stacji „{hubPowiatu.fraza}” — sprawdź{" "}
+                  <Link href={linkRozklad} className="text-green-800 underline">
+                    rozkład PKP
+                  </Link>
+                  .
+                </p>
+              ) : null}
+
+              {polaczeniaDoWojewodztwa.filter((d) => !polaczeniaDoPowiatu.some((p) => p.id === d.id)).length > 0 ? (
+                <div className="mt-3 rounded-xl border border-stone-200 bg-white/80 p-3">
+                  <p className="text-xs font-medium uppercase tracking-wide text-stone-600">Do województwa</p>
+                  <ul className="mt-2 space-y-1 text-xs text-stone-700">
+                    {polaczeniaDoWojewodztwa
+                      .filter((d) => !polaczeniaDoPowiatu.some((p) => p.id === d.id))
+                      .slice(0, 3)
+                      .map((d) => (
+                      <li key={`woj-${d.id}`}>
+                        {new Date(d.planned_at).toLocaleTimeString("pl-PL", {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
+                        {` · ${d.train_label}`}
+                        {d.destination ? ` → ${d.destination}` : ""}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ) : null}
+
               <div className="mt-4 grid gap-3 sm:grid-cols-2">
                 <div className={KARTA_LISTY_WIES}>
                   <p className="text-xs uppercase tracking-wide text-stone-500">Rano</p>
@@ -274,6 +351,47 @@ export function WiesTransportWidget({
 
       {zakladka === "autobus" ? (
         <div className="mt-3">
+          {odjazdyAutobusPoPrzystanku.length > 0 ? (
+            <div className="mb-4 space-y-3">
+              {odjazdyAutobusPoPrzystanku.map((grupa) => (
+                <div key={grupa.przystanek} className={KARTA_LISTY_WIES}>
+                  <p className="text-xs font-medium uppercase tracking-wide text-stone-500">{grupa.przystanek}</p>
+                  <ul className="mt-2 space-y-1.5">
+                    {grupa.odjazdy.map((b) => (
+                      <li key={b.id} className="text-sm text-stone-800">
+                        {new Date(b.planned_at).toLocaleTimeString("pl-PL", {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
+                        {" · "}
+                        {b.line_label}
+                        {b.destination ? ` → ${b.destination}` : ""}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              ))}
+            </div>
+          ) : odjazdyAutobus.length > 0 ? (
+            <ul className="mb-4 space-y-2">
+              {odjazdyAutobus.slice(0, 10).map((b) => (
+                <li key={b.id} className={KARTA_LISTY_WIES}>
+                  <p className="font-medium text-stone-900">
+                    {b.line_label}
+                    {b.destination ? ` → ${b.destination}` : ""}
+                  </p>
+                  <p className="mt-1 text-sm text-stone-700">
+                    {new Date(b.planned_at).toLocaleString("pl-PL", {
+                      dateStyle: "short",
+                      timeStyle: "short",
+                    })}
+                    {b.stop_name ? ` · ${b.stop_name}` : ""}
+                  </p>
+                </li>
+              ))}
+            </ul>
+          ) : null}
+
           {przystanki.length > 0 ? (
             <ul className="space-y-2">
               {przystanki.slice(0, 12).map((p) => (
@@ -317,6 +435,18 @@ export function WiesTransportWidget({
         </div>
       ) : null}
 
+      {ostatniaAktualizacja?.kolej || ostatniaAktualizacja?.autobus ? (
+        <p className="mt-3 text-xs text-stone-500">
+          Dane z cache
+          {ostatniaAktualizacja.kolej
+            ? ` · PKP: ${new Date(ostatniaAktualizacja.kolej).toLocaleString("pl-PL", { dateStyle: "short", timeStyle: "short" })}`
+            : ""}
+          {ostatniaAktualizacja.autobus
+            ? ` · autobus: ${new Date(ostatniaAktualizacja.autobus).toLocaleString("pl-PL", { dateStyle: "short", timeStyle: "short" })}`
+            : ""}
+        </p>
+      ) : null}
+
       <div className="mt-4 flex flex-wrap gap-4 text-xs">
         <Link href={linkRozklad} className="font-medium text-green-800 underline">
           Rozkład PKP (stacja)
@@ -324,8 +454,8 @@ export function WiesTransportWidget({
         <Link href="/transport" className="font-medium text-green-800 underline">
           Centrum transportu
         </Link>
-        <Link href="/panel/mieszkaniec" className="font-medium text-green-800 underline">
-          Powiadomienia o opóźnieniach
+        <Link href="/panel/moje/transport" className="font-medium text-green-800 underline">
+          Ustawienia transportu
         </Link>
       </div>
 

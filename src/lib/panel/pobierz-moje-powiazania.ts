@@ -51,7 +51,9 @@ export type RelacjaTransportowa = {
   id: string;
   title: string;
   target_label: string | null;
+  target_station_name: string | null;
   village_id: string;
+  notify_delay_min: number;
 };
 
 /** Obserwowana gmina bez przypisanej wsi (osobna tabela). */
@@ -165,7 +167,7 @@ export async function pobierzMojePowiazania(): Promise<MojePowiazania | null> {
 
   const { data: transportRaw } = await supabase
     .from("user_transport_favorite_relations")
-    .select("id, title, target_label, village_id")
+    .select("id, title, target_label, target_station_name, village_id, notify_delay_min")
     .eq("user_id", user.id)
     .order("title");
 

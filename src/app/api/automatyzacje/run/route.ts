@@ -6,6 +6,7 @@ import { synchronizujKontekstGeoportalAutomatycznie } from "@/lib/mapa/synchroni
 import { synchronizujPoiOsmAutomatycznie } from "@/lib/mapa/synchronizuj-poi-osm-automatycznie";
 import { synchronizujGranicePrgAutomatycznie } from "@/lib/mapa/synchronizuj-granice-prg-automatycznie";
 import { sprawdzJakoscDanychMapy } from "@/lib/mapa/sprawdz-jakosc-danych-mapy";
+import { synchronizujAutobusyAutomatycznie } from "@/lib/transport/synchronizuj-autobusy-automatycznie";
 import { synchronizujTransportAutomatycznie } from "@/lib/transport/synchronizuj-transport-automatycznie";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin-client";
 
@@ -300,6 +301,15 @@ async function runAutomation(request: Request) {
       console.error("[api/automatyzacje/run] transport auto sync", msg);
       transportAuto = { ok: false, error: msg };
       rows.push({ action: "sync_auto_transport_failed", affected_rows: 0 });
+    }
+
+    try {
+      const busSummary = await synchronizujAutobusyAutomatycznie(supabase);
+      rows.push({ action: "sync_auto_bus", affected_rows: busSummary.departuresUpserted });
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      console.error("[api/automatyzacje/run] bus auto sync", msg);
+      rows.push({ action: "sync_auto_bus_failed", affected_rows: 0 });
     }
 
     try {

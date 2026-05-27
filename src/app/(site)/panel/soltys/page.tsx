@@ -18,6 +18,10 @@ import {
 import { mapujAgendeNaWydarzenia, pobierzAgende7DniSoltysa } from "@/lib/kalendarz/pobierz-agende-7-dni";
 import { SoltysAgendaTygodnia, type WydarzenieAgenda } from "./soltys-agenda-tygodnia";
 import { SoltysKolejkaPracy, type PozycjaKolejki } from "./soltys-kolejka-pracy";
+import {
+  SoltysTransportPodglad,
+  type StatusTransportuWsi,
+} from "@/components/panel/soltys/soltys-transport-podglad";
 import { SoltysPodsumowanieWsi } from "./soltys-podsumowanie-wsi";
 import { SoltysKpiKafel } from "@/components/panel/soltys-kpi-kafel";
 import { SoltysEksportPodsumowania } from "@/components/panel/soltys-eksport-podsumowania";
@@ -368,6 +372,24 @@ export default async function SoltysPage() {
 
   const listaNazwWsi = Object.values(nazwyWsi);
 
+  let statusTransportu: StatusTransportuWsi[] = [];
+  if (villageIds.length > 0) {
+    const { data: linie } = await supabase
+      .from("village_transport_line_status")
+      .select("village_id, status_color, status_label, delayed_count, cancelled_count, fallback_mode, updated_at")
+      .in("village_id", villageIds);
+    statusTransportu = (linie ?? []).map((l) => ({
+      villageId: l.village_id,
+      wiesNazwa: nazwyWsi[l.village_id] ?? "Wieś",
+      statusColor: l.status_color,
+      statusLabel: l.status_label,
+      delayedCount: l.delayed_count ?? 0,
+      cancelledCount: l.cancelled_count ?? 0,
+      fallbackMode: Boolean(l.fallback_mode),
+      lastRealtime: l.updated_at,
+    }));
+  }
+
   return (
     <main>
       <header className="panel-informacji-hero">
@@ -466,6 +488,19 @@ export default async function SoltysPage() {
               liczba={agendaTygodnia.length || liczbaWydarzen7Dni}
               opis="Wydarzenia, świetlica, terminy"
             />
+            <SoltysKpiKafel
+              href="/panel/soltys/transport"
+              etykieta="Transport PKP"
+              liczba={statusTransportu.filter((s) => s.statusColor !== "green").length}
+              opis="Opóźnienia / odwołania"
+              priorytet={
+                statusTransportu.some((s) => s.statusColor === "red")
+                  ? "uwaga"
+                  : statusTransportu.some((s) => s.statusColor === "orange")
+                    ? "uwaga"
+                    : "neutral"
+              }
+            />
           </div>
           <div className="mt-3 flex flex-wrap gap-2 text-xs text-stone-600">
             <span className="rounded-full border border-stone-200 bg-white px-2.5 py-1">
@@ -491,6 +526,7 @@ export default async function SoltysPage() {
             </Link>
           </div>
           <SoltysPodsumowanieWsi wiersze={licznikiPerWies} nazwyWsi={nazwyWsi} />
+          <SoltysTransportPodglad wiersze={statusTransportu} />
           <SoltysAgendaTygodnia wydarzenia={agendaTygodnia} />
         </section>
       ) : null}

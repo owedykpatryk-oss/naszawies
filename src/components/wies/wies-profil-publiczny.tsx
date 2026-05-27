@@ -400,7 +400,7 @@ export function WiesProfilPubliczny({
         />
       ) : null}
 
-      <WiesTransportLazy sciezkaWsi={sciezka} villageId={wies.id} />
+      <WiesTransportLazy villageId={wies.id} />
 
       <OslonaSekcjiWies id="kontakty-urzedowe-wsi" pusta={kontaktyUrzedowe.length === 0}>
         <TytulSekcjiWies

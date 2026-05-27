@@ -28,6 +28,7 @@ function grupyZLiczbami(
         { href: "/panel/soltys/fotokronika", label: "Fotokronika", badge: l.zdjecia || undefined },
         { href: "/panel/soltys/konkursy", label: "Konkursy zdjęć" },
         { href: "/panel/soltys/lowiectwo", label: "Polowania" },
+        { href: "/panel/soltys/transport", label: "Transport PKP" },
       ],
     },
     {

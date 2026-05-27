@@ -61,10 +61,18 @@ export default async function MojeUlubionePage() {
               <li key={r.id} className="rounded-lg border border-stone-200 bg-white px-3 py-2 text-sm text-stone-700">
                 <strong>{r.title}</strong>
                 {r.target_label ? ` · ${r.target_label}` : ""}
+                {r.target_station_name ? (
+                  <span className="block text-xs text-stone-500">PKP: {r.target_station_name}</span>
+                ) : null}
               </li>
             ))}
           </ul>
         )}
+        <p className="mt-3 text-sm">
+          <Link href="/panel/moje/transport" className="font-medium text-green-800 underline">
+            Edytuj progi i stacje docelowe →
+          </Link>
+        </p>
       </section>
 
       <p className="mt-8 text-sm text-stone-500">

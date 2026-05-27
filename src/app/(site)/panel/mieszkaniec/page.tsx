@@ -97,11 +97,15 @@ export default async function MieszkaniecPage() {
       onConflict: "user_id,village_id,relation_key",
       ignoreDuplicates: true,
     });
+    const { uzupelnijRelacjeTransportoweUzytkownika } = await import(
+      "@/lib/transport/uzupelnij-relacje-transportowe"
+    );
+    await uzupelnijRelacjeTransportoweUzytkownika(supabase, user.id);
   }
 
   const { data: ulubioneRelacjeRaw } = await supabase
     .from("user_transport_favorite_relations")
-    .select("id, village_id, title, target_label, is_active")
+    .select("id, village_id, title, target_label, target_station_name, notify_delay_min, is_active")
     .eq("user_id", user.id)
     .eq("is_active", true)
     .order("created_at", { ascending: true });
@@ -110,6 +114,8 @@ export default async function MieszkaniecPage() {
     village_id: string;
     title: string;
     target_label: string | null;
+    target_station_name: string | null;
+    notify_delay_min: number;
     is_active: boolean;
   }[];
 
@@ -230,6 +236,15 @@ export default async function MieszkaniecPage() {
             <span className="font-semibold text-green-950">Pomoc sąsiedzka</span>
             <span className="mt-1 block text-xs text-stone-600">Transport, zakupy, opieka — oferta lub prośba.</span>
           </Link>
+          <Link
+            href="/panel/moje/transport"
+            className="rounded-xl border border-sky-200 bg-sky-50/50 p-4 text-sm shadow-sm transition hover:border-green-800/25 hover:shadow-md"
+          >
+            <span className="font-semibold text-green-950">Transport i kolej</span>
+            <span className="mt-1 block text-xs text-stone-600">
+              Powiadomienia o opóźnieniach, relacje do miasta powiatowego.
+            </span>
+          </Link>
           {pierwszaAktywnaSciezkaWsi ? (
             <Link
               href={`${pierwszaAktywnaSciezkaWsi}#informacje-mieszkancow`}
@@ -314,10 +329,28 @@ export default async function MieszkaniecPage() {
               <li key={r.id} className="rounded-lg border border-stone-200 bg-white px-3 py-2 text-sm text-stone-700">
                 <strong>{r.title}</strong>
                 {r.target_label ? ` · ${r.target_label}` : ""}
+                {r.target_station_name ? (
+                  <span className="mt-1 block text-xs text-stone-500">Stacja PKP: {r.target_station_name}</span>
+                ) : (
+                  <span className="mt-1 block text-xs text-amber-800">
+                    Brak stacji docelowej —{" "}
+                    <Link href="/panel/moje/transport" className="underline">
+                      odśwież w ustawieniach
+                    </Link>
+                  </span>
+                )}
+                <span className="mt-1 block text-xs text-stone-500">
+                  Alert od {r.notify_delay_min} min opóźnienia
+                </span>
               </li>
             ))}
           </ul>
         )}
+        <p className="mt-3 text-sm">
+          <Link href="/panel/moje/transport" className="font-medium text-green-800 underline">
+            Pełne ustawienia transportu →
+          </Link>
+        </p>
       </section>
 
       <ObserwowaneWsiPreferencje obserwacje={obserwacjeDoEdycji} />

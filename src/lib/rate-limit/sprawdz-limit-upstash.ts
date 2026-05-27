@@ -7,7 +7,8 @@ export type NazwaLimituApi =
   | "zglos_naruszenie"
   | "szukaj_wies"
   | "logowanie"
-  | "api_publiczne";
+  | "api_publiczne"
+  | "transport_pkp_szukaj";
 
 let redisInstancja: Redis | null | undefined;
 
@@ -73,6 +74,12 @@ function pobierzLubUtworzLimitery(): SlownikLimitow | null {
       redis,
       limiter: Ratelimit.slidingWindow(120, "1 m"),
       prefix: "rl:api",
+      analytics: true,
+    }),
+    transport_pkp_szukaj: new Ratelimit({
+      redis,
+      limiter: Ratelimit.slidingWindow(20, "10 m"),
+      prefix: "rl:transport-pkp",
       analytics: true,
     }),
   };

@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { RozkladSzukajFormularz } from "@/components/transport/rozklad-szukaj-formularz";
+import { epodroznikSkonfigurowany } from "@/lib/transport/epodroznik-api";
+import { gtfsCsvSkonfigurowany } from "@/lib/transport/gtfs-csv";
 
 export const metadata: Metadata = {
   title: "Transport — kolej i autobusy",
@@ -8,6 +10,15 @@ export const metadata: Metadata = {
 };
 
 export default function TransportHubPage() {
+  const pkpWlaczone =
+    String(process.env.TRANSPORT_SYNC_ENABLED ?? "0") === "1" && !!process.env.PKP_PLK_API_KEY?.trim();
+  const autobusWlaczone = String(process.env.TRANSPORT_BUS_SYNC_ENABLED ?? "0") === "1";
+  const autobusZrodlo = gtfsCsvSkonfigurowany()
+    ? "GTFS CSV"
+    : epodroznikSkonfigurowany()
+      ? "e-podróżnik API"
+      : null;
+
   return (
     <main className="page-shell py-10 sm:py-14">
       <p className="mb-4 text-sm text-stone-500">
@@ -22,9 +33,22 @@ export default function TransportHubPage() {
 
       <h1 className="font-serif text-3xl text-green-950">Transport publiczny</h1>
       <p className="mt-2 max-w-2xl text-sm text-stone-600">
-        Na profilach wsi zobaczysz najbliższe odjazdy pociągów (PKP PLK, po synchronizacji). Rozkłady PKS i autobusów
-        sprawdzisz w zewnętrznych wyszukiwarkach — linki są też przy każdej wsi.
+        Na profilach wsi zobaczysz najbliższe odjazdy pociągów (PKP PLK, po synchronizacji) oraz sekcję „Do miasta
+        powiatowego” z realnymi połączeniami. Autobusy: cache po włączeniu GTFS lub e-podróżnika.
       </p>
+
+      <ul className="mt-4 flex flex-wrap gap-2 text-xs">
+        <li
+          className={`rounded-full border px-2.5 py-1 ${pkpWlaczone ? "border-emerald-300 bg-emerald-50 text-emerald-900" : "border-stone-200 bg-stone-50 text-stone-600"}`}
+        >
+          PKP live: {pkpWlaczone ? "włączone" : "wyłączone"}
+        </li>
+        <li
+          className={`rounded-full border px-2.5 py-1 ${autobusWlaczone && autobusZrodlo ? "border-emerald-300 bg-emerald-50 text-emerald-900" : "border-stone-200 bg-stone-50 text-stone-600"}`}
+        >
+          Autobusy: {autobusWlaczone && autobusZrodlo ? autobusZrodlo : "tylko linki zewnętrzne"}
+        </li>
+      </ul>
 
       <section className="mt-8 rounded-2xl border border-stone-200 bg-white p-5 shadow-sm">
         <h2 className="font-serif text-xl text-green-950">Kolej — rozkład stacji</h2>
@@ -62,11 +86,15 @@ export default function TransportHubPage() {
       </section>
 
       <p className="mt-8 text-sm text-stone-600">
-        Jesteś mieszkańcem? Ustaw{" "}
-        <Link href="/panel/mieszkaniec" className="text-green-800 underline">
-          ulubione relacje transportowe
+        Jesteś mieszkańcem?{" "}
+        <Link href="/panel/moje/transport" className="text-green-800 underline">
+          Ustawienia transportu
         </Link>{" "}
-        i włącz powiadomienia o opóźnieniach kolei.
+        (progi opóźnień, stacje docelowe). Sołtys:{" "}
+        <Link href="/panel/soltys/transport" className="text-green-800 underline">
+          mapowanie stacji PKP
+        </Link>
+        .
       </p>
     </main>
   );
