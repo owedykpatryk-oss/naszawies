@@ -85,8 +85,20 @@ export default function RootLayout({
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL?.replace(/\/$/, "");
+
   return (
     <html lang="pl" className={`${fraunces.variable} ${inter.variable}`}>
+      <head>
+        {supabaseUrl ? (
+          <>
+            <link rel="preconnect" href={supabaseUrl} crossOrigin="anonymous" />
+            <link rel="dns-prefetch" href={supabaseUrl} />
+          </>
+        ) : null}
+        <link rel="preconnect" href="https://tile.openstreetmap.org" crossOrigin="anonymous" />
+        <link rel="dns-prefetch" href="https://tile.openstreetmap.org" />
+      </head>
       <body className={inter.className}>
         {domenaPlausible ? (
           <Script

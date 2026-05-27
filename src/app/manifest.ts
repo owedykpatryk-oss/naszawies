@@ -35,13 +35,13 @@ export default function manifest(): MetadataRoute.Manifest {
     ],
     icons: [
       {
-        src: `${baza}/api/pwa/icon/192`,
+        src: `${baza}/marka/znak-okrag-192.png`,
         sizes: "192x192",
         type: "image/png",
         purpose: "any",
       },
       {
-        src: `${baza}/api/pwa/icon/512`,
+        src: `${baza}/marka/znak-okrag-512.png`,
         sizes: "512x512",
         type: "image/png",
         purpose: "maskable",

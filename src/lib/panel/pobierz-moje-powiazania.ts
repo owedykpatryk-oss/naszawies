@@ -67,7 +67,7 @@ export type GminaObserwowana = {
 
 export type ZapisanaTresc = {
   id: string;
-  content_type: "post" | "event";
+  content_type: "post" | "event" | "listing";
   content_id: string;
   title_cache: string;
   href_cache: string;
@@ -296,7 +296,7 @@ export async function pobierzMojePowiazania(): Promise<MojePowiazania | null> {
     const v = pojedynczaWies<{ name: string }>(r.villages);
     return {
       id: r.id,
-      content_type: r.content_type as "post" | "event",
+      content_type: r.content_type as "post" | "event" | "listing",
       content_id: r.content_id,
       title_cache: r.title_cache,
       href_cache: r.href_cache,

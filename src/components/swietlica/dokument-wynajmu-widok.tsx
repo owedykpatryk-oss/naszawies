@@ -8,6 +8,7 @@ import {
 } from "@/lib/swietlica/protokol-odbioru";
 import { PlanSaliRysunek } from "./plan-sali-rysunek";
 import { RzutParteruSaliSvg } from "./rzut-parteru-sali-svg";
+import { NaglowekMarkiDokumentu, RamkaMarkiDokument } from "@/components/marka/ramka-marki-dokument";
 import { PrzyciskDrukuDokumentu } from "./przycisk-druku-dokumentu";
 
 type Props = {
@@ -85,6 +86,7 @@ export function DokumentWynajmuWidok({ dane }: Props) {
           aria-hidden
         />
         <div className="min-w-0 p-4 sm:p-10 print:p-0">
+          <RamkaMarkiDokument>
           <div className="no-print mb-8">
             <PrzyciskDrukuDokumentu
               elementId="dokument-wynajmu-root"
@@ -92,20 +94,21 @@ export function DokumentWynajmuWidok({ dane }: Props) {
             />
           </div>
 
-          <header className="border-b-2 border-green-900/85 pb-6">
-            <div className="flex flex-col justify-between gap-4 sm:flex-row sm:items-start">
-              <div className="min-w-0">
-                <p className="font-serif text-2xl font-semibold tracking-tight text-green-950">naszawies.pl</p>
-                <h1 className="mt-2 break-words font-serif text-xl font-normal leading-tight tracking-tight text-green-950 sm:max-w-2xl sm:text-2xl sm:text-[1.65rem]">
-                  {dane.rezerwacja
-                    ? "Załącznik informacyjny — rezerwacja świetlicy"
-                    : "Załącznik informacyjny do wynajmu świetlicy"}
-                </h1>
-                <p className="mt-3 max-w-prose text-sm leading-relaxed text-stone-600">
+          <div className="border-b-2 border-green-900/85 pb-6">
+            <NaglowekMarkiDokumentu
+              tytul={
+                dane.rezerwacja
+                  ? "Załącznik informacyjny — rezerwacja świetlicy"
+                  : "Załącznik informacyjny do wynajmu świetlicy"
+              }
+              podtytul={
+                <>
                   Dokument zestawia dane z panelu sołtysa i rezerwacji. <strong>Nie zastępuje</strong> umowy
                   cywilnoprawnej — strony mogą sporządzić odrębną umowę najmu lub regulamin wydarzenia.
-                </p>
-              </div>
+                </>
+              }
+            />
+            <div className="mt-4 flex justify-end sm:mt-2">
               <div className="w-full shrink-0 rounded-xl border border-green-200 bg-gradient-to-br from-green-50 to-emerald-50/80 px-3 py-3 text-right shadow-sm sm:w-auto sm:px-4 print:border-stone-300 print:bg-white">
                 <p className="text-[10px] font-bold uppercase tracking-widest text-green-800/80">Nr ref.</p>
                 <p className="mt-1 break-all font-mono text-sm font-semibold text-green-950 sm:break-normal">
@@ -124,7 +127,7 @@ export function DokumentWynajmuWidok({ dane }: Props) {
                 <dd className="mt-1 text-sm font-medium capitalize text-stone-900">{dataDnia}</dd>
               </div>
             </dl>
-          </header>
+          </div>
 
           {dane.rezerwacja ? (
             <Sekcja
@@ -633,6 +636,7 @@ export function DokumentWynajmuWidok({ dane }: Props) {
             </p>
             <p className="mt-1 font-mono text-[10px] opacity-80">UTC: {escapeHtml(dane.wygenerowano)}</p>
           </footer>
+          </RamkaMarkiDokument>
         </div>
       </div>
     </>

@@ -4,6 +4,7 @@ import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
 import { PlanSaliRysunek } from "@/components/swietlica/plan-sali-rysunek";
 import { parsujPlanZJsonb } from "@/lib/swietlica/plan-sali";
+import { otoczenieHtmlDoDruku } from "@/lib/marka/html-marki-druku";
 import { odrzucRezerwacjeSwietlicy, zatwierdzRezerwacjeSwietlicy } from "../akcje";
 
 export type WierszRezerwacji = {
@@ -83,10 +84,9 @@ export function SoltysRezerwacjeKlient({ wiersze: poczatkowe }: Props) {
     const rekomendacje = r.procurement_recommendations.length
       ? `<ul>${r.procurement_recommendations.map((x) => `<li>${x}</li>`).join("")}</ul>`
       : "<p>Brak dodatkowych rekomendacji zakupowych.</p>";
-    const html = `
-      <html><head><meta charset="utf-8"/><title>Checklista przygotowania</title>
-      <style>body{font-family:Arial,sans-serif;padding:24px;line-height:1.5} h1{margin:0 0 10px} h2{margin:18px 0 8px} .muted{color:#555}</style>
-      </head><body>
+    const html = otoczenieHtmlDoDruku({
+      tytul: "Checklista przygotowania wydarzenia",
+      body: `
       <h1>Checklista przygotowania wydarzenia</h1>
       <p class="muted">${r.sala_nazwa} · ${new Date(r.start_at).toLocaleString("pl-PL")} — ${new Date(r.end_at).toLocaleString("pl-PL")}</p>
       <p><strong>Mieszkaniec:</strong> ${r.mieszkaniec}</p>
@@ -105,8 +105,8 @@ export function SoltysRezerwacjeKlient({ wiersze: poczatkowe }: Props) {
         <li>Potwierdź kontakt z organizatorem wydarzenia.</li>
         <li>Przygotuj protokół po wydarzeniu (stan sali / ewentualne szkody).</li>
       </ul>
-      </body></html>
-    `;
+    `,
+    });
     const w = window.open("", "_blank");
     if (!w) return;
     w.document.open();

@@ -1,4 +1,5 @@
 import { PanelNaglowekZLogo } from "@/components/panel/panel-naglowek-z-logo";
+import { pobierzLiczbeNieprzeczytanychCzatu } from "@/lib/czat/pobierz-nieprzeczytane";
 import { pobierzVillageIdsRoliPaneluSoltysaDlaUzytkownikaCache } from "@/lib/panel/rola-panelu-soltysa";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
 
@@ -11,16 +12,21 @@ export default async function PanelLayout({ children }: { children: React.ReactN
     data: { user },
   } = await supabase.auth.getUser();
   let pokazLinkSoltysa = false;
+  let liczbaWiadomosciNieprzeczytanych = 0;
   if (user) {
     const wsi = await pobierzVillageIdsRoliPaneluSoltysaDlaUzytkownikaCache(user.id);
     pokazLinkSoltysa = wsi.length > 0;
+    liczbaWiadomosciNieprzeczytanych = await pobierzLiczbeNieprzeczytanychCzatu(supabase, user.id);
   }
 
   return (
     <div className="panel-tlo min-h-[100dvh] min-w-0 overflow-x-hidden">
       <div className="panel-shell w-full min-w-0 py-6 text-stone-800 sm:py-8 lg:py-10">
         <div className="no-print">
-          <PanelNaglowekZLogo pokazLinkSoltysa={pokazLinkSoltysa} />
+          <PanelNaglowekZLogo
+            pokazLinkSoltysa={pokazLinkSoltysa}
+            liczbaWiadomosciNieprzeczytanych={liczbaWiadomosciNieprzeczytanych}
+          />
         </div>
         <div className="min-w-0">{children}</div>
       </div>

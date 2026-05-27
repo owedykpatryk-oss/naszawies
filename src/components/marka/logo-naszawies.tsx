@@ -57,11 +57,20 @@ export function LogoNaszawies({ kompakt, wariant = "jasny", className = "", bezL
   );
 }
 
-/** Logo wyśrodkowane na stronach logowania / rejestracji. */
+/** Logo wyśrodkowane na stronach logowania / rejestracji (pełny znak z napisem). */
 export function LogoNaszawiesWycentrowane({ className = "" }: { className?: string }) {
   return (
     <div className={`flex justify-center pb-6 ${className}`}>
-      <LogoNaszawies />
+      <Link href="/" className="block no-underline outline-none" aria-label="naszawies.pl — strona główna">
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img
+          src="/marka/logo-naszawies.png"
+          alt="naszawies.pl"
+          width={220}
+          height={220}
+          className="mx-auto h-auto w-[min(220px,72vw)] max-w-full object-contain"
+        />
+      </Link>
     </div>
   );
 }

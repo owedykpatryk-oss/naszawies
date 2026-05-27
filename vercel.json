@@ -5,6 +5,10 @@
       "schedule": "0 */4 * * *"
     },
     {
+      "path": "/api/mapa/sync-granice",
+      "schedule": "20 */2 * * *"
+    },
+    {
       "path": "/api/kanaly-rss/sync",
       "schedule": "25 */6 * * *"
     }

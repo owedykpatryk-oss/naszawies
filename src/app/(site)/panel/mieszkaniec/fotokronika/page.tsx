@@ -3,6 +3,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
 import { pojedynczaWies } from "@/lib/supabase/wies-z-zapytania";
+import { pobierzOtwarteKonkursyDlaWsi } from "@/lib/konkurs-foto/pobierz-konkurs-publiczny";
 import { FotokronikaDodajKlient } from "./fotokronika-dodaj-klient";
 import { FotokronikaUsunKlient } from "./fotokronika-usun-klient";
 
@@ -58,6 +59,8 @@ export default async function MieszkaniecFotokronikaPage() {
     .eq("uploaded_by", user.id)
     .order("created_at", { ascending: false });
 
+  const konkursyOtwarte = vids.length > 0 ? await pobierzOtwarteKonkursyDlaWsi(supabase, vids) : [];
+
   const wierszeMoje = (mojeZdj ?? []).map((p) => {
     const wn = pojedynczaWies<{ name: string }>(p.villages);
     return {
@@ -90,6 +93,7 @@ export default async function MieszkaniecFotokronikaPage() {
       <FotokronikaDodajKlient
         wies={wies}
         albumy={albumy}
+        konkursy={konkursyOtwarte}
         uzytkownik={{ id: user.id }}
       />
 

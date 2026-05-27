@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { FormEvent, useMemo, useState, useTransition } from "react";
 import { dodajZgloszenieProblemu } from "../akcje-zgloszenia";
+import { WyborPunktuMapyKlient } from "@/components/zgloszenia/wybor-punktu-mapy-klient";
 import { kategorieZgloszen, SZYBKIE_OZNACZENIA } from "@/lib/zgloszenia/szybkie-etykiety";
 import { utworzKlientaSupabasePrzegladarka } from "@/lib/supabase/przegladarka";
 
@@ -37,6 +38,8 @@ export function ZgloszeniaFormularzKlient({ wiesOpcje, uzytkownik, prefill }: Pr
   const [terminWidmo, ustawTerminWidmo] = useState(domyslnaLokalnaDataCzas);
   const [szybkie, ustawSzybkie] = useState<Record<string, boolean>>({});
   const [pliki, ustawPliki] = useState<File[]>([]);
+  const [lat, ustawLat] = useState<number | null>(null);
+  const [lng, ustawLng] = useState<number | null>(null);
 
   const wies = useMemo(() => {
     if (prefill?.villageId && wiesOpcje.some((w) => w.id === prefill.villageId)) return prefill.villageId;
@@ -130,6 +133,8 @@ export function ZgloszeniaFormularzKlient({ wiesOpcje, uzytkownik, prefill }: Pr
         observedAt,
         imageUrls,
         quickFlags: Object.keys(quickFlags).length ? quickFlags : undefined,
+        latitude: lat,
+        longitude: lng,
       });
       if ("blad" in w) {
         ustawBlad(w.blad);
@@ -227,6 +232,8 @@ export function ZgloszeniaFormularzKlient({ wiesOpcje, uzytkownik, prefill }: Pr
           />
         </div>
       </div>
+
+      <WyborPunktuMapyKlient onChange={(la, ln) => { ustawLat(la); ustawLng(ln); }} />
 
       <div className="space-y-2">
         <p className="text-sm font-medium text-stone-800">Szybkie zaznaczenia (opcjonalne)</p>

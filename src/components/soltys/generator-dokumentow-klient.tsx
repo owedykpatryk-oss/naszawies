@@ -12,8 +12,12 @@ import {
 } from "@/lib/dokumenty-soltysa/presety";
 import { zbudujSugestieKontekstowe } from "@/lib/dokumenty-soltysa/sugestie-kontekstowe";
 import type { PresetDokumentu } from "@/lib/dokumenty-soltysa/typy";
+import { wczytajSzkicPresetu, zapiszSzkicPresetu } from "@/lib/dokumenty-soltysa/szkic-presetu-local";
+
+type WiesGeneratora = { id: string; name: string; commune?: string };
 
 type Props = {
+  wsie?: WiesGeneratora[];
   /** Pierwsza wieś sołtysa — wstawiana w pole „wies” / „sołectwo”, jeśli puste */
   domyslnaWies?: string;
   domyslnaGmina?: string;
@@ -66,10 +70,15 @@ function presetPasujeDoFiltra(p: PresetDokumentu, frazaSurowa: string): boolean 
 }
 
 export function GeneratorDokumentowSoltysaKlient({
+  wsie = [],
   domyslnaWies = "",
   domyslnaGmina = "",
   domyslnySoltysNazwa = "",
 }: Props) {
+  const [wybranaWiesId, ustawWybranaWiesId] = useState(wsie[0]?.id ?? "");
+  const aktywnaWies = wsie.find((w) => w.id === wybranaWiesId) ?? wsie[0];
+  const wiesEfektywna = aktywnaWies?.name?.trim() || domyslnaWies;
+  const gminaEfektywna = aktywnaWies?.commune?.trim() || domyslnaGmina;
   const pierwszy = PRESETY_DOKUMENTOW_SOLTYSA[0];
   const [presetId, ustawPresetId] = useState(pierwszy?.id ?? "");
   const [filtrSzukaj, ustawFiltrSzukaj] = useState("");
@@ -85,11 +94,11 @@ export function GeneratorDokumentowSoltysaKlient({
 
   const opcjeDomyslne = useMemo(
     () => ({
-      domyslnaWies,
-      domyslnaGmina,
+      domyslnaWies: wiesEfektywna,
+      domyslnaGmina: gminaEfektywna,
       domyslnySoltysNazwa,
     }),
-    [domyslnaWies, domyslnaGmina, domyslnySoltysNazwa],
+    [wiesEfektywna, gminaEfektywna, domyslnySoltysNazwa],
   );
 
   const scenariuszeWow = useMemo<ScenariuszDokumentu[]>(() => {
@@ -354,13 +363,25 @@ export function GeneratorDokumentowSoltysaKlient({
       ustawPresetId(id);
       const p = znajdzPreset(id);
       if (!p) return;
+      const szkic = wczytajSzkicPresetu(id);
+      if (szkic) {
+        ustawWartosci(uzupelnijDomyslnePresetu(p, szkic, opcjeDomyslne));
+        return;
+      }
       const w = domyslneWartosciPol(p);
-      if (domyslnaWies && p.pola.some((x) => x.id === "wies")) w.wies = w.wies || domyslnaWies;
-      if (domyslnaGmina && p.pola.some((x) => x.id === "gmina")) w.gmina = w.gmina || domyslnaGmina;
+      if (wiesEfektywna && p.pola.some((x) => x.id === "wies")) w.wies = w.wies || wiesEfektywna;
+      if (gminaEfektywna && p.pola.some((x) => x.id === "gmina")) w.gmina = w.gmina || gminaEfektywna;
       ustawWartosci(uzupelnijDomyslnePresetu(p, w, opcjeDomyslne));
     },
-    [domyslnaWies, domyslnaGmina, opcjeDomyslne],
+    [wiesEfektywna, gminaEfektywna, opcjeDomyslne],
   );
+
+  useEffect(() => {
+    const t = window.setTimeout(() => {
+      if (presetId) zapiszSzkicPresetu(presetId, wartosci);
+    }, 600);
+    return () => window.clearTimeout(t);
+  }, [wartosci, presetId]);
 
   const uruchomScenariusz = useCallback(
     (scenariusz: ScenariuszDokumentu) => {
@@ -831,12 +852,36 @@ export function GeneratorDokumentowSoltysaKlient({
             </div>
           ) : null}
 
-          <div className="space-y-4 rounded-xl border border-stone-200 bg-white p-4 shadow-sm">
+          {wsie.length > 1 ? (
+            <div className="no-print panel-karta mb-4">
+              <label htmlFor="gen-wies">Sołectwo / wieś w dokumencie</label>
+              <select
+                id="gen-wies"
+                className="mt-2 max-w-md"
+                value={wybranaWiesId}
+                onChange={(e) => ustawWybranaWiesId(e.target.value)}
+              >
+                {wsie.map((w) => (
+                  <option key={w.id} value={w.id}>
+                    {w.name}
+                    {w.commune ? ` (gmina ${w.commune})` : ""}
+                  </option>
+                ))}
+              </select>
+              <p className="mt-2 text-xs text-stone-500">
+                Zmiana wsi uzupełnia pola „wies” i „gmina” przy następnym wyborze szablonu.
+              </p>
+            </div>
+          ) : null}
+
+          <p className="no-print mb-2 text-xs text-emerald-800">
+            Szkic pól zapisuje się automatycznie w tej przeglądarce (per szablon).
+          </p>
+
+          <div className="forms-premium space-y-4 rounded-xl border border-stone-200 bg-white p-4 shadow-sm">
             {preset.pola.map((pole) => (
               <div key={pole.id}>
-                <label className="block text-xs font-medium text-stone-600" htmlFor={`pole-${pole.id}`}>
-                  {pole.etykieta}
-                </label>
+                <label htmlFor={`pole-${pole.id}`}>{pole.etykieta}</label>
                 {pole.typ === "textarea" ? (
                   <textarea
                     id={`pole-${pole.id}`}
@@ -845,7 +890,6 @@ export function GeneratorDokumentowSoltysaKlient({
                     onFocus={() => ustawAktywnieEdytowanePole(pole.id)}
                     rows={pole.wiersze ?? 4}
                     placeholder={pole.placeholder}
-                    className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2.5 text-base sm:py-2 sm:text-sm"
                   />
                 ) : (
                   <input
@@ -855,7 +899,6 @@ export function GeneratorDokumentowSoltysaKlient({
                     onChange={(e) => ustawWartosci((prev) => ({ ...prev, [pole.id]: e.target.value }))}
                     onFocus={() => ustawAktywnieEdytowanePole(pole.id)}
                     placeholder={pole.placeholder}
-                    className="mt-1 w-full min-h-[48px] rounded-lg border border-stone-300 px-3 py-2.5 text-base sm:min-h-0 sm:py-2 sm:text-sm"
                   />
                 )}
                 {pole.podpowiedz ? (
@@ -886,7 +929,7 @@ export function GeneratorDokumentowSoltysaKlient({
             ))}
           </div>
 
-          <div className="no-print flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-stretch">
+          <div className="soltys-pasek-akcji no-print flex flex-col gap-3 sm:flex-row sm:flex-wrap sm:items-stretch">
             <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap sm:items-start">
               <PrzyciskPobierzPdf
                 elementId="soltys-generator-dokument-html"
@@ -896,7 +939,7 @@ export function GeneratorDokumentowSoltysaKlient({
               <button
                 type="button"
                 onClick={() => window.print()}
-                className="min-h-[48px] w-full touch-manipulation rounded-lg border-2 border-green-900/35 bg-white px-4 py-3 text-base font-medium text-green-950 shadow-sm transition hover:bg-green-50 sm:w-auto sm:min-h-[44px] sm:py-2.5 sm:text-sm"
+                className="btn-panel-secondary w-full sm:w-auto"
               >
                 Drukuj / PDF z systemu
               </button>

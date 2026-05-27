@@ -53,9 +53,26 @@ export type ZnacznikPoi = {
   ospNote?: string | null;
 };
 
+/** Ogłoszenie rynku lokalnego z GPS (zatwierdzone). */
+export type ZnacznikRynek = {
+  id: string;
+  title: string;
+  listingType: string;
+  listingTypeLabel: string;
+  lat: number;
+  lon: number;
+  villageName: string;
+  sciezkaWsi: string;
+  href: string;
+};
+
 export type MapaWsiLeafletRef = {
   /** Przybliża mapę i otwiera popup dla wsi o podanym `id`. */
   pokazNaMapie: (idWsi: string) => boolean;
+  /** Przybliża mapę do pozycji użytkownika (jeśli przekazano). */
+  przyblizDoUzytkownika: () => boolean;
+  /** Przybliża mapę do współrzędnych (np. ogłoszenie rynku). */
+  pokazPunkt: (lat: number, lon: number, zoom?: number) => boolean;
 };
 
 function escapeHtml(s: string): string {
@@ -154,9 +171,9 @@ function htmlPopup(z: ZnacznikWsi, wariant: WariantGranicyWPopup): string {
       : `${oferty} publiczn${oferty === 1 ? "a oferta" : oferty < 5 ? "e oferty" : "ych ofert"} na targu lokalnym.`;
   const granicaTxt =
     wariant === "geojson"
-      ? "Granica sołectwa (dane w bazie jako rysunek wielokątny, WGS84)."
+      ? "Obrys z bazy (PRG / GeoJSON, WGS84). To zwykle obręb ewidencyjny wokół punktu wsi — może nie pokrywać się w 100% z granicą sołectwa administracyjnego."
       : wariant === "pozor"
-        ? "Przerywany obrys: przybliżenie terytorium (brak oficjalnej polilinii w bazie). Prawdziwą granicę można wgrać w GeoJSON m.in. z PRG / otwartych danych."
+        ? "Przerywany obrys: szacunkowe terytorium (brak wgranego wielokąta w bazie)."
         : "Lokalizacja: punkt GPS; brak wgranego obrysu wsi.";
   const meta = lokalizacjaPopup(z);
 
@@ -230,8 +247,9 @@ function rozszerzBboxZOGeojson(gj: GeoJsonObject, visit: (lat: number, lon: numb
 function bboxDlaPunktowMapy(
   znaczniki: ZnacznikWsi[],
   pois: ZnacznikPoi[],
+  rynek: ZnacznikRynek[] = [],
 ): [[number, number], [number, number]] | null {
-  if (znaczniki.length === 0 && pois.length === 0) return null;
+  if (znaczniki.length === 0 && pois.length === 0 && rynek.length === 0) return null;
   let minLat = 90;
   let maxLat = -90;
   let minLon = 180;
@@ -250,6 +268,9 @@ function bboxDlaPunktowMapy(
   for (const p of pois) {
     visit(p.lat, p.lon);
   }
+  for (const r of rynek) {
+    visit(r.lat, r.lon);
+  }
   const pad = 0.12;
   return [
     [minLat - pad, minLon - pad],
@@ -261,6 +282,7 @@ type InstancjaLeaflet = {
   map: import("leaflet").Map;
   cluster: import("leaflet").Layer;
   boundaryGroup: import("leaflet").LayerGroup;
+  userLayer: import("leaflet").LayerGroup;
   baseTileLayer: import("leaflet").TileLayer;
   geoportalWmsLayer: import("leaflet").TileLayer.WMS | null;
   markersById: Map<string, import("leaflet").Marker>;
@@ -299,6 +321,27 @@ function zbudujIkonePoi(L: LeafletNs, z: ZnacznikPoi) {
     iconAnchor: [18, 20],
     popupAnchor: [0, -20],
   });
+}
+
+function zbudujIkoneRynek(L: LeafletNs) {
+  const html = `<div class="naszawies-marker-poi-inner" style="border-color:#c2410c;font-size:16px">🛒</div>`;
+  return L.divIcon({
+    className: "naszawies-leaflet-divicon",
+    html,
+    iconSize: [34, 34],
+    iconAnchor: [17, 19],
+    popupAnchor: [0, -18],
+  });
+}
+
+function htmlPopupRynek(z: ZnacznikRynek): string {
+  return `
+    <div class="mapa-wsi-popup">
+      <p class="mapa-wsi-popup-meta">Rynek lokalny · ${escapeHtml(z.listingTypeLabel)} · ${escapeHtml(z.villageName)}</p>
+      <h3>${escapeHtml(z.title)}</h3>
+      <p><a href="${escapeHtml(z.href)}">Zobacz ogłoszenie</a></p>
+    </div>
+  `;
 }
 
 function htmlPopupPoi(z: ZnacznikPoi): string {
@@ -351,20 +394,63 @@ function htmlPopupPoi(z: ZnacznikPoi): string {
 
 export const MapaWsiLeaflet = forwardRef<
   MapaWsiLeafletRef,
-  { znaczniki: ZnacznikWsi[]; punktyPoi?: ZnacznikPoi[] }
->(function MapaWsiLeaflet({ znaczniki, punktyPoi = [] }, ref) {
+  {
+    znaczniki: ZnacznikWsi[];
+    punktyPoi?: ZnacznikPoi[];
+    punktyRynek?: ZnacznikRynek[];
+    pozycjaUzytkownika?: { lat: number; lon: number } | null;
+    promienKm?: number | null;
+    pokazGranice?: boolean;
+    pokazPoi?: boolean;
+    pokazRynek?: boolean;
+  }
+>(function MapaWsiLeaflet(
+  {
+    znaczniki,
+    punktyPoi = [],
+    punktyRynek = [],
+    pozycjaUzytkownika = null,
+    promienKm = null,
+    pokazGranice = true,
+    pokazPoi = true,
+    pokazRynek = true,
+  },
+  ref,
+) {
     const refMapa = useRef<HTMLDivElement>(null);
+    const refShell = useRef<HTMLDivElement>(null);
     const instancja = useRef<InstancjaLeaflet | null>(null);
     const leafletRef = useRef<LeafletNs | null>(null);
+    const pozycjaRef = useRef(pozycjaUzytkownika);
+    pozycjaRef.current = pozycjaUzytkownika;
     const [pokazWarstweReferencyjna, setPokazWarstweReferencyjna] = useState(false);
+    const [pokazGraniceStan, setPokazGraniceStan] = useState(pokazGranice);
+    const [pokazPoiStan, setPokazPoiStan] = useState(pokazPoi);
+    const [pokazRynekStan, setPokazRynekStan] = useState(pokazRynek);
+    const [pelnyEkran, setPelnyEkran] = useState(false);
     const znacznikiRef = useRef(znaczniki);
     znacznikiRef.current = znaczniki;
     const punktyPoiRef = useRef(punktyPoi);
     punktyPoiRef.current = punktyPoi;
+    const punktyRynekRef = useRef(punktyRynek);
+    punktyRynekRef.current = punktyRynek;
+    const pokazGraniceRef = useRef(pokazGraniceStan);
+    pokazGraniceRef.current = pokazGraniceStan;
+    const pokazPoiRef = useRef(pokazPoiStan);
+    pokazPoiRef.current = pokazPoiStan;
+    const pokazRynekRef = useRef(pokazRynekStan);
+    pokazRynekRef.current = pokazRynekStan;
+    const promienRef = useRef(promienKm);
+    promienRef.current = promienKm;
 
     const bboxPoczatkowy = useMemo(
-      () => bboxDlaPunktowMapy(znaczniki, punktyPoi),
-      [znaczniki, punktyPoi],
+      () =>
+        bboxDlaPunktowMapy(
+          znaczniki,
+          pokazPoiStan ? punktyPoi : [],
+          pokazRynekStan ? punktyRynek : [],
+        ),
+      [znaczniki, punktyPoi, punktyRynek, pokazPoiStan, pokazRynekStan],
     );
 
     useImperativeHandle(ref, () => ({
@@ -382,6 +468,19 @@ export const MapaWsiLeaflet = forwardRef<
           inst.map.setView(marker.getLatLng(), Math.max(inst.map.getZoom(), 14));
           marker.openPopup();
         }
+        return true;
+      },
+      przyblizDoUzytkownika() {
+        const inst = instancja.current;
+        const pos = pozycjaRef.current;
+        if (!inst || !pos) return false;
+        inst.map.setView([pos.lat, pos.lon], Math.max(inst.map.getZoom(), 13));
+        return true;
+      },
+      pokazPunkt(lat: number, lon: number, zoom = 14) {
+        const inst = instancja.current;
+        if (!inst || !Number.isFinite(lat) || !Number.isFinite(lon)) return false;
+        inst.map.setView([lat, lon], zoom);
         return true;
       },
     }));
@@ -433,6 +532,7 @@ export const MapaWsiLeaflet = forwardRef<
         });
 
         const boundaryGroup = L.layerGroup().addTo(map);
+        const userLayer = L.layerGroup().addTo(map);
         map.addLayer(cluster);
 
         const container = map.getContainer();
@@ -455,6 +555,7 @@ export const MapaWsiLeaflet = forwardRef<
           map,
           cluster,
           boundaryGroup,
+          userLayer,
           baseTileLayer,
           geoportalWmsLayer,
           markersById: new Map(),
@@ -463,9 +564,13 @@ export const MapaWsiLeaflet = forwardRef<
         };
 
         const z0 = znacznikiRef.current;
-        const p0 = punktyPoiRef.current;
-        const bb0 = bboxDlaPunktowMapy(z0, p0);
-        syncWarstwy(L, instancja.current, z0, p0, ikona, bb0);
+        const p0 = pokazPoiRef.current ? punktyPoiRef.current : [];
+        const r0 = pokazRynekRef.current ? punktyRynekRef.current : [];
+        const bb0 = bboxDlaPunktowMapy(z0, p0, r0);
+        syncWarstwy(L, instancja.current, z0, p0, r0, ikona, bb0, {
+          pokazGranice: pokazGraniceRef.current,
+        });
+        syncWarstwaUzytkownika(L, instancja.current, pozycjaRef.current, promienRef.current);
       })();
 
       return () => {
@@ -490,8 +595,53 @@ export const MapaWsiLeaflet = forwardRef<
       const L = leafletRef.current;
       if (!inst || !L || znaczniki.length === 0) return;
       const ikona = zbudujIkone(L);
-      syncWarstwy(L, inst, znaczniki, punktyPoi, ikona, bboxPoczatkowy);
-    }, [znaczniki, punktyPoi, bboxPoczatkowy]);
+      syncWarstwy(
+        L,
+        inst,
+        znaczniki,
+        pokazPoiStan ? punktyPoi : [],
+        pokazRynekStan ? punktyRynek : [],
+        ikona,
+        bboxPoczatkowy,
+        { pokazGranice: pokazGraniceStan },
+      );
+    }, [znaczniki, punktyPoi, punktyRynek, bboxPoczatkowy, pokazGraniceStan, pokazPoiStan, pokazRynekStan]);
+
+    useEffect(() => {
+      const inst = instancja.current;
+      const L = leafletRef.current;
+      if (!inst || !L) return;
+      syncWarstwaUzytkownika(L, inst, pozycjaUzytkownika, promienKm);
+    }, [pozycjaUzytkownika, promienKm]);
+
+    useEffect(() => {
+      const inst = instancja.current;
+      if (!inst) return;
+      if (pokazGraniceStan) {
+        if (!inst.map.hasLayer(inst.boundaryGroup)) inst.boundaryGroup.addTo(inst.map);
+      } else if (inst.map.hasLayer(inst.boundaryGroup)) {
+        inst.map.removeLayer(inst.boundaryGroup);
+      }
+    }, [pokazGraniceStan]);
+
+    useEffect(() => {
+      const onChange = () => {
+        setPelnyEkran(!!document.fullscreenElement);
+        instancja.current?.map.invalidateSize();
+      };
+      document.addEventListener("fullscreenchange", onChange);
+      return () => document.removeEventListener("fullscreenchange", onChange);
+    }, []);
+
+    const togglePelnyEkran = () => {
+      const el = refShell.current;
+      if (!el) return;
+      if (!document.fullscreenElement) {
+        void el.requestFullscreen?.();
+      } else {
+        void document.exitFullscreen?.();
+      }
+    };
 
     useEffect(() => {
       const inst = instancja.current;
@@ -506,7 +656,12 @@ export const MapaWsiLeaflet = forwardRef<
     }, [pokazWarstweReferencyjna]);
 
     return (
-      <div className="mapa-wsi-map-shell relative h-[min(72dvh,560px)] w-full min-h-[320px] md:h-[min(78dvh,640px)]">
+      <div
+        ref={refShell}
+        className={`mapa-wsi-map-shell relative w-full min-h-[320px] bg-stone-100 ${
+          pelnyEkran ? "h-[100dvh] max-h-[100dvh]" : "h-[min(72dvh,560px)] md:h-[min(78dvh,640px)]"
+        }`}
+      >
         <div
           ref={refMapa}
           className="z-0 h-full w-full rounded-xl border border-stone-200/80 bg-stone-100 shadow-inner ring-1 ring-green-950/5 transition-shadow duration-500 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-700/40"
@@ -514,17 +669,45 @@ export const MapaWsiLeaflet = forwardRef<
           aria-label="Mapa interaktywna — wsie naszawies.pl"
           tabIndex={0}
         />
-        {CZY_GEO_WMS_DOSTEPNY ? (
-          <div className="absolute right-3 top-3 z-[410]">
+        <div className="absolute right-3 top-3 z-[410] flex max-w-[min(100%,220px)] flex-col items-end gap-1.5">
+          <button
+            type="button"
+            onClick={() => setPokazGraniceStan((v) => !v)}
+            className="rounded-lg border border-stone-200/80 bg-white/90 px-3 py-1.5 text-[11px] font-medium text-stone-700 shadow-sm backdrop-blur hover:bg-white"
+          >
+            {pokazGraniceStan ? "Ukryj obrysy wsi" : "Pokaż obrysy wsi"}
+          </button>
+          <button
+            type="button"
+            onClick={() => setPokazPoiStan((v) => !v)}
+            className="rounded-lg border border-stone-200/80 bg-white/90 px-3 py-1.5 text-[11px] font-medium text-stone-700 shadow-sm backdrop-blur hover:bg-white"
+          >
+            {pokazPoiStan ? "Ukryj punkty POI" : "Pokaż punkty POI"}
+          </button>
+          <button
+            type="button"
+            onClick={() => setPokazRynekStan((v) => !v)}
+            className="rounded-lg border border-orange-200/80 bg-orange-50/90 px-3 py-1.5 text-[11px] font-medium text-orange-950 shadow-sm backdrop-blur hover:bg-white"
+          >
+            {pokazRynekStan ? "Ukryj rynek lokalny" : "Pokaż rynek lokalny"}
+          </button>
+          {CZY_GEO_WMS_DOSTEPNY ? (
             <button
               type="button"
               onClick={() => setPokazWarstweReferencyjna((v) => !v)}
               className="rounded-lg border border-stone-200/80 bg-white/90 px-3 py-1.5 text-[11px] font-medium text-stone-700 shadow-sm backdrop-blur hover:bg-white"
             >
-              {pokazWarstweReferencyjna ? "Ukryj warstwę Geoportal WMS" : "Pokaż warstwę Geoportal WMS"}
+              {pokazWarstweReferencyjna ? "Ukryj Geoportal WMS" : "Geoportal WMS"}
             </button>
-          </div>
-        ) : null}
+          ) : null}
+          <button
+            type="button"
+            onClick={togglePelnyEkran}
+            className="rounded-lg border border-green-800/30 bg-green-50/95 px-3 py-1.5 text-[11px] font-semibold text-green-900 shadow-sm backdrop-blur hover:bg-green-100"
+          >
+            {pelnyEkran ? "Wyjdź z pełnego ekranu" : "Pełny ekran"}
+          </button>
+        </div>
         <div
           className="mapa-wsi-legenda-wow pointer-events-none absolute left-3 top-3 z-[400] max-w-[min(100%,300px)] rounded-xl border border-stone-200/80 bg-white/90 px-3 py-2.5 text-[11px] leading-snug text-stone-700 shadow-lg shadow-green-950/5 backdrop-blur-md"
           aria-hidden="true"
@@ -532,11 +715,12 @@ export const MapaWsiLeaflet = forwardRef<
           <p className="font-semibold text-stone-800">Legenda</p>
           <ul className="mt-1 list-inside list-disc space-y-0.5 text-stone-600">
             <li>
-              <span className="font-medium text-[#1d4d1d]">Ciągła zielona linia</span> — granica z bazy (GeoJSON)
+              <span className="font-medium text-[#1d4d1d]">Ciągła zielona linia</span> — obrys z bazy (PRG / GeoJSON,
+              zwykle obręb ewidencyjny)
             </li>
             <li>
-              <span className="font-medium text-[#3d6b4a]">Przerywany obrys</span> — tylko przybliżenie, gdy w bazie nie
-              ma jeszcze wielokąta
+              <span className="font-medium text-[#3d6b4a]">Przerywany obrys</span> — szacunek, gdy w bazie nie ma
+              wgranego wielokąta
             </li>
             <li>
               <span className="font-medium text-[#5a9c3e]">Pinezka (chałupa)</span> — środek wsi (GPS w profilu)
@@ -544,6 +728,9 @@ export const MapaWsiLeaflet = forwardRef<
             <li>
               <span className="font-medium text-stone-800">Kolorowa pinezka (emoji)</span> — miejsca w sołectwie: kościół,
               szkoła, świetlica, OSP, punkt czerpania wody OSP, sklep, przystanek, stacja kolejowa… (dane w serwisie)
+            </li>
+            <li>
+              <span className="font-medium text-[#2563eb]">Niebieski punkt</span> — Twoja lokalizacja (gdy włączysz GPS)
             </li>
             <li>
               <span className="font-medium text-stone-800">Kółko z liczbą</span> — kilka punktów w obszarze
@@ -558,14 +745,48 @@ export const MapaWsiLeaflet = forwardRef<
   },
 );
 
+function syncWarstwaUzytkownika(
+  L: LeafletNs,
+  inst: InstancjaLeaflet,
+  pozycja: { lat: number; lon: number } | null | undefined,
+  promienKm: number | null | undefined,
+) {
+  inst.userLayer.clearLayers();
+  if (!pozycja) return;
+  const marker = L.circleMarker([pozycja.lat, pozycja.lon], {
+    radius: 9,
+    color: "#1d4ed8",
+    weight: 3,
+    fillColor: "#3b82f6",
+    fillOpacity: 0.9,
+  });
+  marker.bindPopup("Twoja lokalizacja (przybliżona)");
+  inst.userLayer.addLayer(marker);
+  if (promienKm != null && promienKm > 0) {
+    const kolo = L.circle([pozycja.lat, pozycja.lon], {
+      radius: promienKm * 1000,
+      color: "#2563eb",
+      weight: 2,
+      dashArray: "6 6",
+      fillColor: "#3b82f6",
+      fillOpacity: 0.07,
+      interactive: false,
+    });
+    inst.userLayer.addLayer(kolo);
+  }
+}
+
 function syncWarstwy(
   L: LeafletNs,
   inst: InstancjaLeaflet,
   znaczniki: ZnacznikWsi[],
   punktyPoi: ZnacznikPoi[],
+  punktyRynek: ZnacznikRynek[],
   ikona: import("leaflet").DivIcon,
   bbox: [[number, number], [number, number]] | null,
+  opts?: { pokazGranice?: boolean },
 ) {
+  const pokazGranice = opts?.pokazGranice !== false;
   const { map, cluster, boundaryGroup, markersById } = inst;
   ustawPaneWarstwicyGranicy(map);
 
@@ -577,7 +798,7 @@ function syncWarstwy(
     const gj = granicaJakoGeoJson(z.boundary_geojson);
     let wariant: WariantGranicyWPopup = "pozor";
     let mamyPrawdziwaGranice = false;
-    if (gj) {
+    if (pokazGranice && gj) {
       try {
         const warstwa = L.geoJSON(gj, {
           pane: PANE_GRANICE,
@@ -601,7 +822,7 @@ function syncWarstwy(
         mamyPrawdziwaGranice = false;
       }
     }
-    if (!mamyPrawdziwaGranice) {
+    if (pokazGranice && !mamyPrawdziwaGranice) {
       const prom = promienPrzyblizonyMetrow(z);
       const kolo = L.circle([z.lat, z.lon], {
         radius: prom,
@@ -618,6 +839,9 @@ function syncWarstwy(
       boundaryGroup.addLayer(kolo);
       wariant = "pozor";
     }
+    if (!pokazGranice) {
+      wariant = gj ? "geojson" : "punkt";
+    }
 
     const marker = L.marker([z.lat, z.lon], { icon: ikona, title: z.name });
     marker.bindPopup(htmlPopup(z, wariant));
@@ -628,6 +852,13 @@ function syncWarstwy(
   for (const p of punktyPoi) {
     const pin = L.marker([p.lat, p.lon], { icon: zbudujIkonePoi(L, p), zIndexOffset: 450, title: p.name });
     pin.bindPopup(htmlPopupPoi(p));
+    (cluster as import("leaflet").LayerGroup).addLayer(pin);
+  }
+
+  const ikonaRynek = zbudujIkoneRynek(L);
+  for (const r of punktyRynek) {
+    const pin = L.marker([r.lat, r.lon], { icon: ikonaRynek, zIndexOffset: 500, title: r.title });
+    pin.bindPopup(htmlPopupRynek(r));
     (cluster as import("leaflet").LayerGroup).addLayer(pin);
   }
 

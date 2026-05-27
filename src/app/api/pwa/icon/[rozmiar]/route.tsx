@@ -1,18 +1,13 @@
-import { ImageResponse } from "next/og";
-import { PwaIkonaOgGrafika } from "@/lib/pwa/pwa-ikona-og";
+import { NextResponse } from "next/server";
 
-export const runtime = "edge";
-
-/** Ikony PNG dla manifestu PWA (192 / 512 itd.). */
+/** Kompatybilność wsteczna — przekierowanie na statyczne pliki marki. */
 export async function GET(
-  _request: Request,
+  request: Request,
   { params }: { params: { rozmiar: string } },
 ) {
   const n = Number.parseInt(params.rozmiar, 10);
   const rozmiar = Number.isFinite(n) ? Math.min(512, Math.max(64, n)) : 192;
-
-  return new ImageResponse(<PwaIkonaOgGrafika rozmiar={rozmiar} />, {
-    width: rozmiar,
-    height: rozmiar,
-  });
+  const plik =
+    rozmiar >= 400 ? "/marka/znak-okrag-512.png" : rozmiar >= 128 ? "/marka/znak-okrag-192.png" : "/marka/znak-okrag-64.png";
+  return NextResponse.redirect(new URL(plik, request.url), 308);
 }

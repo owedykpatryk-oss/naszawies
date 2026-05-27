@@ -30,6 +30,8 @@ const schemaDodaj = z.object({
   observedAt: z.union([z.string().min(1), z.null()]).optional(),
   imageUrls: z.array(z.string().url().max(2048)).max(6),
   quickFlags: z.record(z.string(), z.boolean()).optional(),
+  latitude: z.number().min(-90).max(90).optional().nullable(),
+  longitude: z.number().min(-180).max(180).optional().nullable(),
 });
 
 export type WynikZgloszenia = { blad: string } | { ok: true; id: string };
@@ -83,6 +85,8 @@ export async function dodajZgloszenieProblemu(body: z.infer<typeof schemaDodaj>)
       observed_at: observedAt,
       image_urls: d.imageUrls.length ? d.imageUrls : null,
       quick_flags: oczyscQuickFlags(d.quickFlags),
+      latitude: d.latitude ?? null,
+      longitude: d.longitude ?? null,
       status: "nowe",
     })
     .select("id")

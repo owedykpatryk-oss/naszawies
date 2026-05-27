@@ -1,3 +1,4 @@
+import { cssMarkiNaDokumencieHtml, htmlMarkiNaDokumencie } from "@/lib/marka/html-marki-druku";
 import { escapeHtml as e } from "@/lib/tekst/escape-html";
 import type { OpcjeDomyslneGeneratoraSoltysa, PresetDokumentu } from "./typy";
 
@@ -12,21 +13,8 @@ function stylDruku(): string {
     .doc-soltys.doc-styl-elegancki { --akcent: #7c2d12; --tlo-pasa: #fff7ed; --ramka: #e7d8c9; --tlo-ramki: #fffaf4; font-family: "Palatino Linotype", "Book Antiqua", Garamond, serif; }
     .doc-soltys.doc-styl-nowoczesny { --akcent: #1d4ed8; --tlo-pasa: #eff6ff; --ramka: #cbd5e1; --tlo-ramki: #f8fafc; font-family: "Inter", "Segoe UI", "Helvetica Neue", Arial, sans-serif; }
     .doc-soltys[data-rozmiar="duzy"] { font-size: 1.06rem; line-height: 1.62; }
-    .doc-soltys[data-znak-wodny="subtelny"]::before {
-      content: "naszawies.pl";
-      position: absolute;
-      inset: 42% 0 auto 0;
-      text-align: center;
-      transform: rotate(-18deg);
-      font-size: 2.6rem;
-      font-weight: 700;
-      letter-spacing: 0.08em;
-      color: rgba(17, 94, 89, 0.06);
-      pointer-events: none;
-      z-index: -1;
-      user-select: none;
-      font-family: "Inter", "Segoe UI", Arial, sans-serif;
-    }
+    .doc-soltys[data-znak-wodny="brak"] .marka-doc-znak-wodny { display: none; }
+    ${cssMarkiNaDokumencieHtml()}
     .doc-soltys h1 { font-size: 1.42rem; margin: 0 0 0.6rem; text-align: center; border-bottom: 2px solid var(--akcent); padding-bottom: 0.5rem; letter-spacing: 0.02em; }
     .doc-soltys .pas-nadtytul { font-size: 0.72rem; color: #44403c; text-align: center; margin: 0 0 0.75rem; padding: 0.45rem 0.65rem; background: var(--tlo-pasa); border: 1px solid var(--ramka); border-radius: 6px; line-height: 1.35; }
     .doc-soltys .pas-nadtytul .nr-ref { font-family: ui-monospace, monospace; font-weight: 600; color: var(--akcent); letter-spacing: 0.03em; }
@@ -105,7 +93,8 @@ function otoczenie(
             <div class="podpis-kolumna"><p>....................................................</p><p><strong>Protokolant / Sekretarz</strong></p></div>
           </div>`;
   return `${stylDruku()}
-<div class="doc-soltys doc-styl-${e(styl)}" data-rozmiar="${e(rozmiar)}" data-znak-wodny="${e(znakWodny)}">
+<div class="doc-soltys doc-styl-${e(styl)} marka-doc-tresc" data-rozmiar="${e(rozmiar)}" data-znak-wodny="${e(znakWodny)}">
+  ${znakWodny === "subtelny" ? htmlMarkiNaDokumencie() : ""}
   ${pasNad}
   <h1>${e(tytul)}</h1>
   <p class="meta">Wygenerowano w naszawies.pl · ${e(meta.dataWygenerowania)}</p>

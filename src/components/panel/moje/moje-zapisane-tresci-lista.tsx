@@ -13,8 +13,8 @@ export function MojeZapisaneTresciLista({ tresci }: { tresci: ZapisanaTresc[] })
   if (tresci.length === 0) {
     return (
       <p className="text-sm text-stone-600">
-        Nie masz jeszcze zapisanych ogłoszeń ani wydarzeń. Na profilu wsi użyj przycisku „Zapisz w ulubionych” przy
-        wybranej treści.
+        Nie masz jeszcze zapisanych treści. Na profilu wsi użyj „Zapisz w ulubionych” przy ogłoszeniu, wydarzeniu lub
+        ofercie na rynku lokalnym.
       </p>
     );
   }
@@ -25,7 +25,12 @@ export function MojeZapisaneTresciLista({ tresci }: { tresci: ZapisanaTresc[] })
         <li key={t.id} className="karta-wow flex flex-wrap items-start justify-between gap-2 rounded-xl border border-stone-200 bg-white px-4 py-3 shadow-sm">
           <div className="min-w-0">
             <p className="text-[10px] font-bold uppercase tracking-wide text-stone-500">
-              {t.content_type === "post" ? "Ogłoszenie" : "Wydarzenie"} · {t.nazwaWsi}
+              {t.content_type === "post"
+                ? "Ogłoszenie"
+                : t.content_type === "event"
+                  ? "Wydarzenie"
+                  : "Rynek lokalny"}{" "}
+              · {t.nazwaWsi}
             </p>
             <Link href={t.href_cache} className="mt-1 block font-medium text-green-950 hover:underline">
               {t.title_cache}

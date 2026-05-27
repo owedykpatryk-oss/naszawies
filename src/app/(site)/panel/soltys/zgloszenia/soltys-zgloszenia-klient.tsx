@@ -1,9 +1,11 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState, useTransition } from "react";
+import { useMemo, useState, useTransition } from "react";
 import { zaktualizujZgloszenieSoltys } from "../akcje-zgloszenia";
 import { etykietkiSzybkich, etykietaStanuZgloszenia, kategorieZgloszen } from "@/lib/zgloszenia/szybkie-etykiety";
+import { SZABLONY_ODPOWIEDZI_ZGLOSZEN } from "@/lib/zgloszenia/szablony-odpowiedzi";
+import { EksportZgloszenPdf } from "@/components/panel/eksport-zgloszen-pdf";
 
 export type WierszZgloszenia = {
   id: string;
@@ -35,13 +37,91 @@ function etykietKat(c: string) {
   return kategorieZgloszen.find((x) => x.value === c)?.label ?? c;
 }
 
+type FiltrStatusu = "otwarte" | "wszystkie" | "nowe" | "w_trakcie" | "rozwiazane" | "odrzucone";
+
 export function SoltysZgloszeniaKlient({ wiersze: poczatkowe }: Props) {
   const router = useRouter();
   const [blad, ustawBlad] = useState("");
   const [czeka, startT] = useTransition();
+  const [filtrStatus, ustawFiltrStatus] = useState<FiltrStatusu>("otwarte");
+  const [filtrWies, ustawFiltrWies] = useState("");
+  const [tylkoPilne, ustawTylkoPilne] = useState(false);
+  const [szukaj, ustawSzukaj] = useState("");
+
+  const wiesOpcje = useMemo(() => Array.from(new Set(poczatkowe.map((r) => r.wies_nazwa))).sort(), [poczatkowe]);
+
+  const widoczne = useMemo(() => {
+    const q = szukaj.trim().toLowerCase();
+    return poczatkowe.filter((r) => {
+      if (filtrWies && r.wies_nazwa !== filtrWies) return false;
+      if (tylkoPilne && !r.is_urgent) return false;
+      if (filtrStatus === "otwarte" && !["nowe", "w_trakcie"].includes(r.status)) return false;
+      if (filtrStatus !== "otwarte" && filtrStatus !== "wszystkie" && r.status !== filtrStatus) return false;
+      if (q && !r.title.toLowerCase().includes(q) && !r.description.toLowerCase().includes(q)) return false;
+      return true;
+    });
+  }, [poczatkowe, filtrStatus, filtrWies, tylkoPilne, szukaj]);
+
+  const liczbaOtwartych = useMemo(
+    () => poczatkowe.filter((r) => ["nowe", "w_trakcie"].includes(r.status)).length,
+    [poczatkowe],
+  );
 
   return (
     <div className="mt-6 space-y-4">
+      <div className="flex flex-wrap items-center gap-2 rounded-xl border border-stone-200 bg-stone-50/80 p-3 text-sm">
+        <span className="text-xs font-medium text-stone-600">
+          Otwarte: <strong className="text-green-900">{liczbaOtwartych}</strong> / {poczatkowe.length}
+        </span>
+        <EksportZgloszenPdf
+          wiersze={widoczne.map((r) => ({
+            title: r.title,
+            wies_nazwa: r.wies_nazwa,
+            category: r.category,
+            status: r.status,
+            is_urgent: r.is_urgent,
+            created_at: r.created_at,
+            description: r.description,
+          }))}
+          tytulRaportu={`Zgłoszenia (${filtrStatus === "otwarte" ? "otwarte" : filtrStatus})`}
+        />
+        <select
+          value={filtrStatus}
+          onChange={(e) => ustawFiltrStatus(e.target.value as FiltrStatusu)}
+          className="rounded-lg border border-stone-300 px-2 py-1 text-xs"
+        >
+          <option value="otwarte">Tylko otwarte (nowe + w trakcie)</option>
+          <option value="wszystkie">Wszystkie statusy</option>
+          <option value="nowe">Nowe</option>
+          <option value="w_trakcie">W trakcie</option>
+          <option value="rozwiazane">Rozwiązane</option>
+          <option value="odrzucone">Odrzucone</option>
+        </select>
+        <select
+          value={filtrWies}
+          onChange={(e) => ustawFiltrWies(e.target.value)}
+          className="rounded-lg border border-stone-300 px-2 py-1 text-xs"
+        >
+          <option value="">Wszystkie wsie</option>
+          {wiesOpcje.map((w) => (
+            <option key={w} value={w}>
+              {w}
+            </option>
+          ))}
+        </select>
+        <label className="flex items-center gap-1 text-xs">
+          <input type="checkbox" checked={tylkoPilne} onChange={(e) => ustawTylkoPilne(e.target.checked)} />
+          Tylko pilne
+        </label>
+        <input
+          type="search"
+          value={szukaj}
+          onChange={(e) => ustawSzukaj(e.target.value)}
+          placeholder="Szukaj w tytule lub opisie…"
+          className="min-w-[10rem] flex-1 rounded-lg border border-stone-300 px-2 py-1 text-xs"
+        />
+      </div>
+
       {blad ? (
         <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-800" role="alert">
           {blad}
@@ -50,8 +130,11 @@ export function SoltysZgloszeniaKlient({ wiersze: poczatkowe }: Props) {
       {poczatkowe.length === 0 ? (
         <p className="text-sm text-stone-600">Brak zgłoszeń w Twoich sołectwach.</p>
       ) : null}
+      {widoczne.length === 0 && poczatkowe.length > 0 ? (
+        <p className="text-sm text-stone-500">Brak zgłoszeń pasujących do filtrów.</p>
+      ) : null}
       <ul className="space-y-6">
-        {poczatkowe.map((r) => (
+        {widoczne.map((r) => (
           <Wiersz
             key={r.id}
             r={r}
@@ -80,8 +163,16 @@ function Wiersz({
   onOk: () => void;
 }) {
   const [notatka, ustawNotatke] = useState(r.resolution_note ?? "");
+  const duplikat = Boolean(
+    r.quick_flags && typeof r.quick_flags === "object" && (r.quick_flags as Record<string, unknown>).mozliwy_duplikat,
+  );
   return (
-    <li className="rounded-xl border border-stone-200 bg-white p-4 shadow-sm">
+    <li className="panel-karta !p-4">
+      {duplikat ? (
+        <p className="mb-2 rounded-lg bg-amber-50 px-2 py-1 text-xs font-medium text-amber-950 ring-1 ring-amber-200">
+          Możliwy duplikat — podobny tytuł w ostatnich 14 dniach
+        </p>
+      ) : null}
       <p className="text-xs text-stone-500">
         {r.wies_nazwa} · {etykietKat(r.category)} · wysłano {new Date(r.created_at).toLocaleString("pl-PL")} · status:{" "}
         {etykietaStanuZgloszenia(r.status)}
@@ -119,8 +210,21 @@ function Wiersz({
 
       <div className="mt-4 flex flex-col gap-3 border-t border-stone-100 pt-4 sm:flex-row sm:items-end sm:flex-wrap">
         <div className="min-w-0 flex-1">
-          <label className="block text-xs text-stone-600" htmlFor={`notatka-${r.id}`}>
-            Uwaga / odpowiedź dla kroniki (opcjonalnie)
+          <p className="text-xs font-medium text-stone-600">Szablony</p>
+          <div className="mt-1 flex flex-wrap gap-1">
+            {SZABLONY_ODPOWIEDZI_ZGLOSZEN.map((s) => (
+              <button
+                key={s.id}
+                type="button"
+                className="rounded-full border border-stone-200 bg-stone-50 px-2 py-0.5 text-[11px] hover:bg-stone-100"
+                onClick={() => ustawNotatke(s.body)}
+              >
+                {s.label}
+              </button>
+            ))}
+          </div>
+          <label className="mt-2 block text-xs text-stone-600" htmlFor={`notatka-${r.id}`}>
+            Uwaga publiczna po „Rozwiązane”
           </label>
           <textarea
             id={`notatka-${r.id}`}

@@ -1,7 +1,13 @@
 import { Ratelimit } from "@upstash/ratelimit";
 import { Redis } from "@upstash/redis";
 
-export type NazwaLimituApi = "waitlist" | "kontakt" | "zglos_naruszenie" | "szukaj_wies";
+export type NazwaLimituApi =
+  | "waitlist"
+  | "kontakt"
+  | "zglos_naruszenie"
+  | "szukaj_wies"
+  | "logowanie"
+  | "api_publiczne";
 
 let redisInstancja: Redis | null | undefined;
 
@@ -57,8 +63,27 @@ function pobierzLubUtworzLimitery(): SlownikLimitow | null {
       prefix: "rl:szukaj_wies",
       analytics: true,
     }),
+    logowanie: new Ratelimit({
+      redis,
+      limiter: Ratelimit.slidingWindow(30, "10 m"),
+      prefix: "rl:logowanie",
+      analytics: true,
+    }),
+    api_publiczne: new Ratelimit({
+      redis,
+      limiter: Ratelimit.slidingWindow(120, "1 m"),
+      prefix: "rl:api",
+      analytics: true,
+    }),
   };
   return limitery;
+}
+
+/** IP z nagłówków Vercel / reverse proxy. */
+export function ipZRequestu(naglowki: Headers): string {
+  const forwarded = naglowki.get("x-forwarded-for");
+  if (forwarded) return forwarded.split(",")[0]?.trim() || "unknown";
+  return naglowki.get("x-real-ip")?.trim() || "unknown";
 }
 
 /**

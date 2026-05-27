@@ -3,6 +3,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
 import { PowiadomieniaPushKlient } from "@/components/pwa/powiadomienia-push-klient";
+import { IosPushOnboarding } from "@/components/pwa/ios-push-onboarding";
 import { PowiadomieniaLista, type PowiadomienieWiersz } from "./powiadomienia-lista";
 
 export const metadata: Metadata = {
@@ -50,6 +51,7 @@ export default async function PowiadomieniaPage() {
           </>
         ) : null}
       </p>
+      <IosPushOnboarding />
       <PowiadomieniaPushKlient />
       <div className="mt-8">
         <PowiadomieniaLista wpisy={wpisy} />

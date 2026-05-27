@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { PanelStronaSoltysa } from "@/components/panel/panel-strona-soltysa";
 import { GeneratorDokumentowSoltysaKlient } from "@/components/soltys/generator-dokumentow-klient";
 import { PRESETY_DOKUMENTOW_SOLTYSA } from "@/lib/dokumenty-soltysa/presety";
 import { pobierzVillageIdsRoliPaneluSoltysaDlaUzytkownikaCache } from "@/lib/panel/rola-panelu-soltysa";
@@ -23,51 +24,39 @@ export default async function SoltysDokumentyPage() {
 
   if (villageIds.length === 0) {
     return (
-      <main>
-        <p className="mb-4 text-sm text-stone-500">
-          <Link href="/panel/soltys" className="text-green-800 underline">
-            ← Panel sołtysa
-          </Link>
-        </p>
-        <h1 className="tytul-sekcji-panelu">Generator dokumentów</h1>
-        <div className="mt-6 max-w-xl rounded-xl border border-amber-200 bg-amber-50 p-5 text-sm text-amber-950">
+      <PanelStronaSoltysa
+        tytul="Generator dokumentów"
+        dzieci={
+        <div className="rounded-xl border border-amber-200 bg-amber-50 p-5 text-sm text-amber-950">
           <p className="font-medium">Brak uprawnień do generatora</p>
           <p className="mt-2 leading-relaxed">
-            Szablony i eksport PDF są dostępne tylko dla użytkowników z{" "}
-            <strong>aktywną rolą sołtysa albo współadministratora wsi</strong> (zgodnie z uprawnieniami w
-            systemie). Zalogowanie bez tej roli — tak jak konto mieszkańca —{" "}
-            <strong>nie wystarcza</strong>.
+            Szablony i eksport PDF są dostępne tylko dla użytkowników z aktywną rolą sołtysa albo współadministratora
+            wsi.
           </p>
-          <p className="mt-3 leading-relaxed">
-            Jeśli prowadzisz sołectwo: po nadaniu roli sołtysa wróć tutaj z{" "}
-            <Link href="/panel/soltys" className="text-green-900 underline">
-              panelu sołtysa
+          <p className="mt-3">
+            <Link href="/panel/soltys" className="link-panel">
+              Panel sołtysa
             </Link>
-            . W innych przypadkach skorzystaj z{" "}
-            <Link href="/panel/mieszkaniec" className="text-green-900 underline">
-              panelu mieszkańca
-            </Link>{" "}
-            (wniosek o akceptację we wsi).
           </p>
         </div>
-      </main>
+        }
+      />
     );
   }
 
-  let domyslnaWies = "";
-  let domyslnaGmina = "";
-  {
-    const { data: v } = await supabase
-      .from("villages")
-      .select("name, commune")
-      .eq("id", villageIds[0])
-      .maybeSingle();
-    if (v) {
-      domyslnaWies = v.name ?? "";
-      domyslnaGmina = v.commune ?? "";
-    }
-  }
+  const { data: wsieRows } = await supabase
+    .from("villages")
+    .select("id, name, commune")
+    .in("id", villageIds)
+    .order("name");
 
+  const wsie = (wsieRows ?? []).map((v) => ({
+    id: v.id,
+    name: v.name ?? "",
+    commune: v.commune ?? "",
+  }));
+
+  const pierwsza = wsie[0];
   const { data: profilUzytkownika } = await supabase
     .from("users")
     .select("display_name")
@@ -76,30 +65,25 @@ export default async function SoltysDokumentyPage() {
   const domyslnySoltysNazwa = profilUzytkownika?.display_name?.trim() ?? "";
 
   return (
-    <main>
-      <p className="mb-4 text-sm text-stone-500">
-        <Link href="/panel/soltys" className="text-green-800 underline">
-          ← Panel sołtysa
-        </Link>
-      </p>
-      <h1 className="tytul-sekcji-panelu">Generator dokumentów</h1>
-      <p className="mt-2 max-w-3xl text-sm text-stone-600">
-        {PRESETY_DOKUMENTOW_SOLTYSA.length} gotowych szablonów (zebrania, fundusz sołecki, fundraising i sponsorzy, pisma
-        do gminy, świetlica, pełnomocnictwa, RODO, a także dokumenty dla <strong>KGW i OSP</strong>). U góry generatora:
-        <strong> scenariusze 1‑klik</strong> oraz <strong>lejek sponsora</strong> (prośba → przypomnienie → potwierdzenie
-        wpływu → podziękowanie). Dodatkowo możesz wybrać styl wydruku (urzędowy, elegancki, nowoczesny), rozmiar tekstu
-        oraz subtelny znak wodny. Wieś, gmina i podpis mogą wypełnić się z panelu; uzupełnij resztę, sprawdź podgląd —
-        przycisk „Pobierz PDF” zapisuje plik (także na telefonie), a „Drukuj / PDF z systemu” korzysta z okna drukowania
-        przeglądarki.
-      </p>
-
-      <div className="mt-10">
+    <PanelStronaSoltysa
+      szeroki
+      tytul="Generator dokumentów"
+      opis={
+        <>
+          {PRESETY_DOKUMENTOW_SOLTYSA.length} gotowych szablonów (zebrania, fundusz sołecki, sponsorzy, pisma do gminy,
+          KGW, OSP). U góry: <strong>scenariusze 1‑klik</strong> i <strong>lejek sponsora</strong>. Pola zapisują się
+          automatycznie w przeglądarce — możesz wrócić do szkicu później. Eksport: <strong>Pobierz PDF</strong> lub
+          druk systemowy.
+        </>
+      }
+      dzieci={
         <GeneratorDokumentowSoltysaKlient
-          domyslnaWies={domyslnaWies}
-          domyslnaGmina={domyslnaGmina}
+          wsie={wsie}
+          domyslnaWies={pierwsza?.name ?? ""}
+          domyslnaGmina={pierwsza?.commune ?? ""}
           domyslnySoltysNazwa={domyslnySoltysNazwa}
         />
-      </div>
-    </main>
+      }
+    />
   );
 }

@@ -8,6 +8,7 @@ import {
   usunPozycjeListyZakupowWsi,
   wczytajSzablonListyZakupowWsi,
 } from "@/app/(site)/panel/mieszkaniec/akcje";
+import { RamkaMarkiDokument } from "@/components/marka/ramka-marki-dokument";
 import { listaKluczySzablonow } from "@/lib/zakupy/szablony-listy-zakupow";
 
 export type PozycjaListyZakupow = {
@@ -93,7 +94,11 @@ export function ListaZakupowWsiKlient({
   const szablonyOpcje = listaKluczySzablonow();
 
   return (
-    <div id="lista-zakupow-wsi-print" className="mt-4 space-y-3 print:text-black">
+    <RamkaMarkiDokument className="mt-4">
+    <div id="lista-zakupow-wsi-print" className="space-y-3 print:text-black">
+      <p className="hidden print:block font-serif text-lg font-semibold text-green-950">
+        {nazwaWsi?.trim() ? `${nazwaWsi.trim()} — lista zakupów` : "Lista zakupów"} · naszawies.pl
+      </p>
       {blad ? <p className="rounded border border-red-200 bg-red-50 px-3 py-2 text-xs text-red-900">{blad}</p> : null}
       {pozycje.length > 0 ? (
         <div className="no-print flex flex-wrap gap-2 border-b border-stone-200 pb-3">
@@ -272,5 +277,6 @@ export function ListaZakupowWsiKlient({
         </p>
       )}
     </div>
+    </RamkaMarkiDokument>
   );
 }

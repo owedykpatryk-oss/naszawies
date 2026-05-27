@@ -216,6 +216,20 @@ export default async function MieszkaniecPage() {
               Wątki dyskusji, komentarze i blog mieszkańca z moderacją.
             </span>
           </Link>
+          <Link
+            href="/panel/mieszkaniec/marketplace"
+            className="rounded-xl border border-stone-200 bg-white/95 p-4 text-sm shadow-sm transition hover:border-green-800/25 hover:shadow-md"
+          >
+            <span className="font-semibold text-green-950">Rynek lokalny</span>
+            <span className="mt-1 block text-xs text-stone-600">Dodaj ogłoszenie kupna, sprzedaży lub usługi.</span>
+          </Link>
+          <Link
+            href="/panel/mieszkaniec/pomoc-sasiedzka"
+            className="rounded-xl border border-stone-200 bg-white/95 p-4 text-sm shadow-sm transition hover:border-green-800/25 hover:shadow-md"
+          >
+            <span className="font-semibold text-green-950">Pomoc sąsiedzka</span>
+            <span className="mt-1 block text-xs text-stone-600">Transport, zakupy, opieka — oferta lub prośba.</span>
+          </Link>
           {pierwszaAktywnaSciezkaWsi ? (
             <Link
               href={`${pierwszaAktywnaSciezkaWsi}#informacje-mieszkancow`}

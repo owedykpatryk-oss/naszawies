@@ -3,6 +3,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
 import { AdminNowaWiesKlient } from "./admin-nowa-wies-klient";
+import { pobierzJakoscKatalogu } from "@/lib/admin/pobierz-jakosc-katalogu";
 
 export const metadata: Metadata = {
   title: "Admin",
@@ -17,7 +18,7 @@ export default async function AdminPage() {
     redirect("/logowanie?next=/panel/admin");
   }
 
-  const [{ data: wpisy, error }, { data: cronWpisy, error: cronErr }] = await Promise.all([
+  const [{ data: wpisy, error }, { data: cronWpisy, error: cronErr }, raportKatalogu] = await Promise.all([
     supabase
       .from("waitlist")
       .select("id, email, full_name, village_name, commune, role, created_at")
@@ -28,6 +29,7 @@ export default async function AdminPage() {
       .select("id, endpoint, started_at, finished_at, status, error_message, source_ip")
       .order("started_at", { ascending: false })
       .limit(50),
+    pobierzJakoscKatalogu(supabase),
   ]);
 
   const cronBladTabeli =
@@ -91,6 +93,39 @@ export default async function AdminPage() {
             </tbody>
           </table>
         </div>
+      ) : null}
+
+      {!brakDostepu && raportKatalogu ? (
+        <section className="mt-10 rounded-xl border border-stone-200 bg-white p-5 shadow-sm">
+          <h2 className="font-serif text-xl text-green-950">Jakość katalogu wsi</h2>
+          <ul className="mt-4 grid gap-2 text-sm sm:grid-cols-2 lg:grid-cols-3">
+            <li>
+              Wszystkie wsie: <strong>{raportKatalogu.wszystkie}</strong>
+            </li>
+            <li>
+              Aktywne profile: <strong>{raportKatalogu.aktywne}</strong>
+            </li>
+            <li>
+              Z granicą mapy: <strong>{raportKatalogu.zGranica}</strong>
+            </li>
+            <li>
+              Ze współrzędnymi: <strong>{raportKatalogu.zWspolrzednymi}</strong>
+            </li>
+            <li>
+              Z przypisanym sołtysem: <strong>{raportKatalogu.zSoltysem}</strong>
+            </li>
+            <li className="text-amber-900">
+              Bez granicy: <strong>{raportKatalogu.bezGranicy}</strong>
+            </li>
+            <li className="text-amber-900">
+              Bez współrzędnych: <strong>{raportKatalogu.bezWspolrzednych}</strong>
+            </li>
+          </ul>
+          <p className="mt-3 text-xs text-stone-500">
+            Uzupełnianie: <code className="font-mono">npm run sync:granice</code>,{" "}
+            <code className="font-mono">npm run automatyzuj:katalog</code>
+          </p>
+        </section>
       ) : null}
 
       {!brakDostepu ? <AdminNowaWiesKlient /> : null}

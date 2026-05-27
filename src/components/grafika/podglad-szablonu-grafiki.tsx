@@ -2,6 +2,7 @@
 
 import { useDeferredValue, useEffect, useState } from "react";
 import type { FormatSocialGrafiki, MotywGrafiki, SzablonGrafiki, WartosciPolGrafiki } from "@/lib/grafika/typy";
+import { RamkaMarkiDokument } from "@/components/marka/ramka-marki-dokument";
 import { WYMIARY_SOCIAL } from "@/lib/grafika/eksport-social";
 import { formatDatyPolskiej } from "@/lib/grafika/szablony";
 import { generujQrDataUrl } from "@/lib/grafika/qr-kod";
@@ -580,7 +581,9 @@ export function PodgladSzablonuGrafiki({
       {backgroundDataUrl ? (
         <div className="absolute inset-0 bg-white/75" aria-hidden />
       ) : null}
-      <div className="relative z-[1]">{renderLayout({ szablon, motyw, wartosci, logoDataUrl })}</div>
+      <RamkaMarkiDokument className="relative z-[1] min-h-[120px]">
+        {renderLayout({ szablon, motyw, wartosci, logoDataUrl })}
+      </RamkaMarkiDokument>
       {qrObraz ? (
         <div className="absolute bottom-3 right-3 z-[2] rounded-lg bg-white/95 p-1.5 shadow-md">
           {/* eslint-disable-next-line @next/next/no-img-element */}

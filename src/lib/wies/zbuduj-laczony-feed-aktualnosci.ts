@@ -40,6 +40,14 @@ type WydSkrot = {
   nazwa_grupy: string | null;
 };
 
+type RynekSkrot = {
+  id: string;
+  title: string;
+  listing_type: string;
+  published_at: string | null;
+  created_at: string;
+};
+
 function formatPl(ts: number) {
   return new Date(ts).toLocaleString("pl-PL", { dateStyle: "short", timeStyle: "short" });
 }
@@ -52,6 +60,8 @@ export function zbudujLaczonyFeedAktualnosci(
   historia: HistoriaSkrot[],
   wiadomosci: WiadSkrot[],
   wydarzenia: WydSkrot[],
+  rynek: RynekSkrot[] = [],
+  villageId?: string,
   limit = 14,
 ): ElementLaczonegoFeedu[] {
   const out: ElementLaczonegoFeedu[] = [];
@@ -124,6 +134,19 @@ export function zbudujLaczonyFeedAktualnosci(
       ]
         .filter(Boolean)
         .join(" · "),
+    });
+  }
+
+  for (const r of rynek) {
+    const raw = r.published_at ?? r.created_at;
+    const t = Date.parse(raw);
+    if (!Number.isFinite(t)) continue;
+    out.push({
+      sortAt: t,
+      etykieta: "Rynek",
+      tytul: r.title,
+      href: `${sciezka}#sekcja-rynek-lokalny`,
+      podpis: [r.listing_type, formatPl(t)].filter(Boolean).join(" · "),
     });
   }
 

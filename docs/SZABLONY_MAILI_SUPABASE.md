@@ -11,7 +11,7 @@ Maile **logowania / rejestracji / resetu hasła** wysyła **Supabase Auth**, nie
 | `supabase/templates/email/zaproszenie.html` | Invite user |
 | `supabase/templates/email/potwierdz-dzialanie.html` | Reauthentication |
 
-**Logo w mailu** ładuje się z Twojej strony: `{{ .SiteURL }}/email/znak-naszawies.svg` (plik `public/email/znak-naszawies.svg`). Dlatego w Supabase **Site URL** musi być publiczny adres produkcji (np. `https://naszawies.pl`), a deploy na Vercel musi zawierać ten plik w `public/`.
+**Logo w mailu** ładuje się z Twojej strony: `{{ .SiteURL }}/email/znak-naszawies.png` (plik `public/email/znak-naszawies.png`). Dlatego w Supabase **Site URL** musi być publiczny adres produkcji (np. `https://naszawies.pl`), a deploy na Vercel musi zawierać ten plik w `public/`.
 
 ## Produkcja — automatyczne wgranie (zalecane)
 

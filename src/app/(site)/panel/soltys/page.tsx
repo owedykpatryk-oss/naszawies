@@ -9,6 +9,19 @@ import {
   type PostDoModeracjiWiersz,
 } from "./soltys-moderacja-postow-klient";
 import { SoltysWnioskiKlient, type WniosekWiersz } from "./soltys-wnioski-klient";
+import { SoltysModeracjaRynekKlient } from "./soltys-moderacja-rynek-klient";
+import { SoltysProfileRynekKlient } from "./soltys-profile-rynek-klient";
+import {
+  pobierzLicznikiOczekujacychSoltysa,
+  pobierzLicznikiPerWiesSoltysa,
+} from "@/lib/panel/liczniki-oczekujacych-soltysa";
+import { mapujAgendeNaWydarzenia, pobierzAgende7DniSoltysa } from "@/lib/kalendarz/pobierz-agende-7-dni";
+import { SoltysAgendaTygodnia, type WydarzenieAgenda } from "./soltys-agenda-tygodnia";
+import { SoltysKolejkaPracy, type PozycjaKolejki } from "./soltys-kolejka-pracy";
+import { SoltysPodsumowanieWsi } from "./soltys-podsumowanie-wsi";
+import { SoltysKpiKafel } from "@/components/panel/soltys-kpi-kafel";
+import { SoltysEksportPodsumowania } from "@/components/panel/soltys-eksport-podsumowania";
+import { SoltysSekcjaZwijana } from "@/components/panel/soltys-sekcja-zwijana";
 
 export const metadata: Metadata = {
   title: "Panel sołtysa",
@@ -102,6 +115,96 @@ export default async function SoltysPage() {
     hrefWsi: hrefWsi[p.village_id] ?? null,
   }));
 
+  type WierszModeracjiRynek = {
+    id: string;
+    title: string;
+    typ: "marketplace" | "pomoc";
+    wies: string;
+    listing_type?: string | null;
+    equipment_category?: string | null;
+    description?: string | null;
+    image_urls?: string[] | null;
+  };
+  let doModeracjiRynek: WierszModeracjiRynek[] = [];
+  if (villageIds.length > 0) {
+    const [{ data: mkRaw }, { data: psRaw }] = await Promise.all([
+      supabase
+        .from("marketplace_listings")
+        .select("id, title, village_id, listing_type, equipment_category, description, image_urls")
+        .in("village_id", villageIds)
+        .eq("status", "pending")
+        .limit(15),
+      supabase
+        .from("neighbor_help_offers")
+        .select("id, title, village_id")
+        .in("village_id", villageIds)
+        .eq("status", "pending")
+        .limit(15),
+    ]);
+    doModeracjiRynek = [
+      ...((mkRaw ?? []) as {
+        id: string;
+        title: string;
+        village_id: string;
+        listing_type: string;
+        equipment_category: string | null;
+        description: string;
+        image_urls: string[] | null;
+      }[]).map((r) => ({
+        id: r.id,
+        title: r.title,
+        typ: "marketplace" as const,
+        wies: nazwyWsi[r.village_id] ?? "—",
+        listing_type: r.listing_type,
+        equipment_category: r.equipment_category,
+        description: r.description,
+        image_urls: r.image_urls,
+      })),
+      ...((psRaw ?? []) as { id: string; title: string; village_id: string }[]).map((r) => ({
+        id: r.id,
+        title: r.title,
+        typ: "pomoc" as const,
+        wies: nazwyWsi[r.village_id] ?? "—",
+      })),
+    ];
+  }
+
+  let profileRynek: { id: string; business_name: string; is_verified: boolean; wies: string }[] = [];
+  if (villageIds.length > 0) {
+    const { data: profileRaw } = await supabase
+      .from("marketplace_profiles")
+      .select("id, business_name, is_verified, village_id")
+      .in("village_id", villageIds)
+      .order("business_name")
+      .limit(40);
+    profileRynek = ((profileRaw ?? []) as {
+      id: string;
+      business_name: string;
+      is_verified: boolean;
+      village_id: string;
+    }[]).map((p) => ({
+      id: p.id,
+      business_name: p.business_name,
+      is_verified: p.is_verified,
+      wies: nazwyWsi[p.village_id] ?? "—",
+    }));
+  }
+
+  let liczniki = {
+    wnioski: 0,
+    rezerwacje: 0,
+    posty: 0,
+    wiadomosci: 0,
+    rynek: 0,
+    pomoc: 0,
+    zgloszenia: 0,
+    zdjecia: 0,
+    raportySpolecznosci: 0,
+  };
+  let licznikiPerWies: Awaited<ReturnType<typeof pobierzLicznikiPerWiesSoltysa>> = [];
+  let kolejkaPracy: PozycjaKolejki[] = [];
+  let agendaTygodnia: WydarzenieAgenda[] = [];
+
   let liczbaWiadomosciDoAkceptu = 0;
   let liczbaKanaalowRss = 0;
   let liczbaRezerwacjiDoDecyzji = 0;
@@ -112,6 +215,86 @@ export default async function SoltysPage() {
   let liczbaWydarzenOsp7Dni = 0;
   let liczbaLinkowNiekompletnych = 0;
   if (villageIds.length > 0) {
+    liczniki = await pobierzLicznikiOczekujacychSoltysa(supabase, villageIds);
+    licznikiPerWies = await pobierzLicznikiPerWiesSoltysa(supabase, villageIds);
+
+    const [{ data: zgloszeniaKolejka }, { data: zdjeciaKolejka }] = await Promise.all([
+      supabase
+        .from("issues")
+        .select("id, title, village_id, created_at, is_urgent, status")
+        .in("village_id", villageIds)
+        .in("status", ["nowe", "w_trakcie"])
+        .order("is_urgent", { ascending: false })
+        .order("created_at", { ascending: false })
+        .limit(5),
+      supabase
+        .from("photos")
+        .select("id, caption, village_id, created_at")
+        .in("village_id", villageIds)
+        .eq("status", "pending")
+        .order("created_at", { ascending: false })
+        .limit(5),
+    ]);
+
+    agendaTygodnia = mapujAgendeNaWydarzenia(await pobierzAgende7DniSoltysa(supabase, villageIds));
+
+    kolejkaPracy = [
+      ...wnioski.slice(0, 4).map((w) => ({
+        id: w.id,
+        typ: "wniosek" as const,
+        tytul: `${w.mieszkaniec} — ${w.rola}`,
+        wies: w.wies,
+        data: w.created_at,
+        href: "/panel/soltys#wnioski-o-role",
+      })),
+      ...postyDoModeracji.slice(0, 4).map((p) => ({
+        id: p.id,
+        typ: "post" as const,
+        tytul: p.title,
+        wies: p.wies,
+        data: p.created_at,
+        href: "/panel/soltys#posty-do-moderacji",
+      })),
+      ...doModeracjiRynek.slice(0, 4).map((r) => ({
+        id: r.id,
+        typ: r.typ === "marketplace" ? ("rynek" as const) : ("pomoc" as const),
+        tytul: r.title,
+        wies: r.wies,
+        data: new Date().toISOString(),
+        href: "/panel/soltys#moderacja-mieszkancow",
+      })),
+      ...((zgloszeniaKolejka ?? []) as {
+        id: string;
+        title: string;
+        village_id: string;
+        created_at: string;
+        is_urgent: boolean;
+      }[]).map((z) => ({
+        id: z.id,
+        typ: "zgloszenie" as const,
+        tytul: z.title,
+        wies: nazwyWsi[z.village_id] ?? "—",
+        data: z.created_at,
+        href: "/panel/soltys/zgloszenia",
+        pilne: z.is_urgent,
+      })),
+      ...((zdjeciaKolejka ?? []) as {
+        id: string;
+        caption: string | null;
+        village_id: string;
+        created_at: string;
+      }[]).map((z) => ({
+        id: z.id,
+        typ: "zdjecie" as const,
+        tytul: z.caption?.trim() || "Zdjęcie do akceptacji",
+        wies: nazwyWsi[z.village_id] ?? "—",
+        data: z.created_at,
+        href: "/panel/soltys/fotokronika",
+      })),
+    ]
+      .sort((a, b) => new Date(b.data).getTime() - new Date(a.data).getTime())
+      .slice(0, 12);
+
     const teraz = new Date();
     const terazIso = teraz.toISOString();
     const za7dniIso = new Date(teraz.getTime() + 7 * 24 * 60 * 60 * 1000).toISOString();
@@ -196,80 +379,136 @@ export default async function SoltysPage() {
     liczbaWydarzenOsp7Dni = ospRes.count ?? 0;
   }
 
+  const listaNazwWsi = Object.values(nazwyWsi);
+
   return (
     <main>
-      <h1 className="tytul-sekcji-panelu">Sołtys</h1>
-      <p className="mt-2 text-sm text-stone-600">
-        Wnioski o role (mieszkaniec, OSP, KGW, rada) oraz posty oczekujące na moderację.
-      </p>
-      <p className="mt-1 text-sm text-stone-600">
-        Zaczynasz pracę? Otwórz{" "}
-        <Link href="/panel/soltys/pomoc" className="text-green-800 underline">
-          pomoc krok po kroku
-        </Link>
-        .
-      </p>
+      <header className="panel-informacji-hero">
+        <div className="relative flex flex-wrap items-start justify-between gap-3">
+          <div>
+            <h1 className="tytul-sekcji-panelu">Panel sołtysa</h1>
+            <p className="mt-2 max-w-2xl text-sm leading-relaxed text-stone-600">
+              Moderacja, rezerwacje, dokumenty i komunikacja z mieszkańcami — w jednym miejscu. Zacznij od{" "}
+              <Link href="/panel/soltys#kolejka-pracy" className="link-panel">
+                kolejki pracy
+              </Link>{" "}
+              lub{" "}
+              <Link href="/panel/soltys/pomoc" className="link-panel">
+                pomocy krok po kroku
+              </Link>
+              .
+            </p>
+          </div>
+          {villageIds.length > 0 ? (
+            <SoltysEksportPodsumowania
+              liczniki={liczniki}
+              kolejka={kolejkaPracy}
+              nazwyWsi={listaNazwWsi}
+            />
+          ) : null}
+        </div>
+      </header>
 
       {villageIds.length > 0 ? (
-        <section className="mt-8 rounded-2xl border border-amber-200/80 bg-gradient-to-br from-amber-50/40 via-white to-orange-50/30 p-4 sm:p-5">
+        <section className="soltys-sekcja mt-8 border-amber-200/60 bg-gradient-to-br from-amber-50/30 via-white to-stone-50/50">
           <h2 className="font-serif text-lg text-green-950">Dziś do zrobienia</h2>
           <p className="mt-1 text-xs text-stone-600">
-            Jedno miejsce z najważniejszymi decyzjami i najbliższymi działaniami dla Twoich wsi.
+            Kafelki z liczbą oczekujących — kliknij, aby przejść do modułu. Zaznacz wiele pozycji i zatwierdź masowo w
+            sekcjach poniżej.
           </p>
-          <div className="siatka-kafli-responsywna mt-4 lg:grid-cols-5">
-            <Link
+          <div className="siatka-kafli-responsywna mt-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+            <SoltysKpiKafel
               href="/panel/soltys#wnioski-o-role"
-              className="rounded-xl border border-stone-200 bg-white/95 p-3 shadow-sm transition hover:border-amber-400"
-            >
-              <p className="text-xs text-stone-500">Wnioski o role</p>
-              <p className="mt-1 text-2xl font-semibold text-green-950">{wnioski.length}</p>
-              <p className="mt-1 text-xs text-stone-600">Do akceptacji lub odrzucenia</p>
-            </Link>
-            <Link
+              etykieta="Wnioski o role"
+              liczba={liczniki.wnioski}
+              opis="Akceptacja lub odrzucenie"
+              priorytet={liczniki.wnioski > 0 ? "uwaga" : "neutral"}
+            />
+            <SoltysKpiKafel
               href="/panel/soltys/rezerwacje"
-              className="rounded-xl border border-stone-200 bg-white/95 p-3 shadow-sm transition hover:border-amber-400"
-            >
-              <p className="text-xs text-stone-500">Rezerwacje sal</p>
-              <p className="mt-1 text-2xl font-semibold text-green-950">{liczbaRezerwacjiDoDecyzji}</p>
-              <p className="mt-1 text-xs text-stone-600">Wnioski oczekujące na decyzję</p>
-            </Link>
-            <Link
+              etykieta="Rezerwacje sal"
+              liczba={liczniki.rezerwacje}
+              opis="Wnioski do decyzji"
+              priorytet={liczniki.rezerwacje > 0 ? "uwaga" : "neutral"}
+            />
+            <SoltysKpiKafel
+              href="/panel/soltys/zgloszenia"
+              etykieta="Zgłoszenia"
+              liczba={liczniki.zgloszenia}
+              opis="Nowe i w trakcie"
+              priorytet={liczniki.zgloszenia > 0 ? "pilne" : "neutral"}
+            />
+            <SoltysKpiKafel
               href="/panel/soltys/wiadomosci-lokalne"
-              className="rounded-xl border border-stone-200 bg-white/95 p-3 shadow-sm transition hover:border-amber-400"
-            >
-              <p className="text-xs text-stone-500">Moderacja treści</p>
-              <p className="mt-1 text-2xl font-semibold text-green-950">{postyDoModeracji.length + liczbaWiadomosciDoAkceptu}</p>
-              <p className="mt-1 text-xs text-stone-600">Posty + wiadomości lokalne do przejrzenia</p>
-            </Link>
-            <Link
+              etykieta="Posty + wiadomości"
+              liczba={liczniki.posty + liczniki.wiadomosci}
+              opis="Moderacja profilu wsi"
+              priorytet={liczniki.posty + liczniki.wiadomosci > 0 ? "uwaga" : "neutral"}
+            />
+            <SoltysKpiKafel
+              href="/panel/soltys#moderacja-mieszkancow"
+              etykieta="Rynek + pomoc"
+              liczba={liczniki.rynek + liczniki.pomoc}
+              opis={`${liczniki.rynek} ogłoszeń · ${liczniki.pomoc} pomocy`}
+              priorytet={liczniki.rynek + liczniki.pomoc > 0 ? "uwaga" : "neutral"}
+            />
+            <SoltysKpiKafel
+              href="/panel/soltys/fotokronika"
+              etykieta="Fotokronika"
+              liczba={liczniki.zdjecia}
+              opis="Zdjęcia do akceptacji"
+              priorytet={liczniki.zdjecia > 0 ? "uwaga" : "neutral"}
+            />
+            <SoltysKpiKafel
+              href="/panel/soltys/spolecznosc/moderacja"
+              etykieta="Raporty treści"
+              liczba={liczniki.raportySpolecznosci}
+              opis="Dyskusje i blog"
+              priorytet={liczniki.raportySpolecznosci > 0 ? "uwaga" : "neutral"}
+            />
+            <SoltysKpiKafel
               href="/panel/soltys/informacje-lokalne"
-              className={`rounded-xl border bg-white/95 p-3 shadow-sm transition ${
-                liczbaLinkowNiekompletnych > 0 ? "border-amber-300 hover:border-amber-500" : "border-stone-200 hover:border-amber-400"
-              }`}
+              etykieta="Linki mieszkańców"
+              liczba={liczbaLinkowNiekompletnych}
+              opis="Bez kontaktu / URL"
+              priorytet={liczbaLinkowNiekompletnych > 0 ? "uwaga" : "neutral"}
+            />
+            <SoltysKpiKafel
+              href="/panel/soltys/kalendarz"
+              etykieta="Kalendarz 7 dni"
+              liczba={agendaTygodnia.length || liczbaWydarzen7Dni}
+              opis="Wydarzenia, świetlica, terminy"
+            />
+          </div>
+          <div className="mt-3 flex flex-wrap gap-2 text-xs text-stone-600">
+            <span className="rounded-full border border-stone-200 bg-white px-2.5 py-1">
+              RSS: <strong>{liczbaKanaalowRss}</strong>
+            </span>
+            <Link
+              href="/panel/soltys/dokumenty"
+              className="rounded-full border border-green-200 bg-green-50 px-2.5 py-1 font-medium text-green-900 hover:bg-green-100"
             >
-              <p className="text-xs text-stone-500">Linki mieszkańców</p>
-              <p className="mt-1 text-2xl font-semibold text-green-950">{liczbaLinkowNiekompletnych}</p>
-              <p className="mt-1 text-xs text-stone-600">Bez URL, telefonu i e-maila</p>
+              Generator PDF →
             </Link>
             <Link
-              href="/panel/soltys/spolecznosc"
-              className="rounded-xl border border-stone-200 bg-white/95 p-3 shadow-sm transition hover:border-amber-400"
+              href="/panel/soltys/grafika"
+              className="rounded-full border border-stone-200 bg-white px-2.5 py-1 hover:bg-stone-50"
             >
-              <p className="text-xs text-stone-500">Wydarzenia 7 dni</p>
-              <p className="mt-1 text-2xl font-semibold text-green-950">{liczbaWydarzen7Dni}</p>
-              <p className="mt-1 text-xs text-stone-600">Zaplanowane w najbliższym tygodniu</p>
+              Kreator grafiki →
+            </Link>
+            <Link
+              href="/panel/soltys/kalendarz"
+              className="rounded-full border border-blue-200 bg-blue-50 px-2.5 py-1 font-medium text-blue-950 hover:bg-blue-100"
+            >
+              Kalendarz organizacyjny →
             </Link>
           </div>
-          <div className="mt-3 flex flex-wrap gap-3 text-xs text-stone-600">
-            <span className="rounded-full border border-stone-200 bg-white px-2 py-1">
-              Kanały RSS podpięte: <strong>{liczbaKanaalowRss}</strong>
-            </span>
-            <span className="rounded-full border border-stone-200 bg-white px-2 py-1">
-              Wiadomości (pending/draft): <strong>{liczbaWiadomosciDoAkceptu}</strong>
-            </span>
-          </div>
+          <SoltysPodsumowanieWsi wiersze={licznikiPerWies} nazwyWsi={nazwyWsi} />
+          <SoltysAgendaTygodnia wydarzenia={agendaTygodnia} />
         </section>
       ) : null}
+
+      {villageIds.length > 0 ? <SoltysKolejkaPracy pozycje={kolejkaPracy} liczniki={liczniki} /> : null}
 
       {villageIds.length > 0 ? (
         <section className="mt-8 rounded-2xl border border-indigo-200/80 bg-gradient-to-br from-indigo-50/60 via-white to-fuchsia-50/40 p-4 sm:p-5">
@@ -440,14 +679,14 @@ export default async function SoltysPage() {
         </p>
       ) : null}
 
-      <section id="wnioski-o-role" className="scroll-mt-24 mt-10">
+      <section id="wnioski-o-role" className="soltys-sekcja scroll-mt-24 mt-10">
         <h2 className="font-serif text-xl text-green-950">Wnioski o role we wsi</h2>
         <div className="mt-4">
           <SoltysWnioskiKlient wnioski={wnioski} />
         </div>
       </section>
 
-      <section className="mt-12">
+      <section id="posty-do-moderacji" className="soltys-sekcja scroll-mt-24 mt-8">
         <h2 className="font-serif text-xl text-green-950">Posty do moderacji</h2>
         <p className="mt-1 text-sm text-stone-600">
           Zatwierdzone trafiają na publiczny profil wsi. Przy odrzuceniu autor dostaje krótką notatkę w
@@ -456,6 +695,10 @@ export default async function SoltysPage() {
         <div className="mt-4">
           <SoltysModeracjaPostowKlient posty={postyDoModeracji} />
         </div>
+        <div id="moderacja-mieszkancow" className="scroll-mt-24">
+          <SoltysModeracjaRynekKlient wiersze={doModeracjiRynek} />
+        </div>
+        <SoltysProfileRynekKlient profile={profileRynek} />
       </section>
 
       <p className="mt-10 flex flex-wrap gap-x-4 gap-y-2 text-sm text-stone-500">

@@ -8,6 +8,7 @@ const STYL_ETYKIETY: Record<string, string> = {
   "Historia wsi": "bg-stone-200/80 text-stone-800 ring-stone-300/60",
   "Wiadomość lokalna": "bg-sky-100 text-sky-950 ring-sky-200/80",
   Wydarzenie: "bg-emerald-100 text-emerald-950 ring-emerald-200/80",
+  Rynek: "bg-orange-100 text-orange-950 ring-orange-200/80",
 };
 
 function EtykietaFeedu({ tekst }: { tekst: string }) {

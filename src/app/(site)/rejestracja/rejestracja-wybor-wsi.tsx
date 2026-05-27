@@ -1,6 +1,8 @@
 "use client";
 
 import { useState } from "react";
+import { odczytajJsonOdpowiedzi } from "@/lib/api/odczytaj-json-odpowiedzi";
+import { WybierzWiesKaskada } from "@/components/wies/wybierz-wies-kaskada";
 import type { WpisWsi } from "@/components/wies/wyszukiwarka-wsi";
 
 type Props = {
@@ -8,14 +10,24 @@ type Props = {
   onZmiana: (w: WpisWsi | null) => void;
 };
 
+type Tryb = "katalog" | "szukaj";
+
 /**
- * Wyszukiwarka miejscowości z katalogu (do metadanych rejestracji — orientacja, nie nadaje roli we wsi).
+ * Wybór miejscowości z katalogu (do metadanych rejestracji — orientacja, nie nadaje roli we wsi).
  */
 export function RejestracjaWyborWsi({ wybrana, onZmiana }: Props) {
+  const [tryb, ustawTryb] = useState<Tryb>("katalog");
   const [fraza, ustawFraze] = useState("");
   const [laduje, ustawLaduje] = useState(false);
   const [wyniki, ustawWyniki] = useState<WpisWsi[]>([]);
   const [podpowiedz, ustawPodpowiedz] = useState("");
+
+  function wybierz(w: WpisWsi) {
+    onZmiana(w);
+    ustawWyniki([]);
+    ustawFraze("");
+    ustawPodpowiedz("");
+  }
 
   async function szukaj(e: React.FormEvent) {
     e.preventDefault();
@@ -29,21 +41,19 @@ export function RejestracjaWyborWsi({ wybrana, onZmiana }: Props) {
     ustawPodpowiedz("");
     try {
       const res = await fetch(`/api/wies/szukaj?q=${encodeURIComponent(q)}`);
-      const d = (await res.json()) as { wyniki?: WpisWsi[]; blad?: string };
-      if (!res.ok) {
-        ustawPodpowiedz(d.blad ?? "Nie udało się wyszukać. Spróbuj za chwilę.");
+      const wynik = await odczytajJsonOdpowiedzi<{ wyniki?: WpisWsi[]; blad?: string }>(res);
+      if (!wynik.ok) {
+        ustawPodpowiedz(wynik.komunikat);
         ustawWyniki([]);
         return;
       }
-      const lista = d.wyniki ?? [];
+      const lista = wynik.dane.wyniki ?? [];
       ustawWyniki(lista);
       if (lista.length === 0) {
-        ustawPodpowiedz(
-          "Brak wyników. Spróbuj innej pisowni albo skontaktuj się z nami, jeśli miejscowości nie ma jeszcze w katalogu."
-        );
+        ustawPodpowiedz("Brak wyników. Wybierz miejscowość z katalogu albo spróbuj innej pisowni.");
       }
     } catch {
-      ustawPodpowiedz("Brak połączenia.");
+      ustawPodpowiedz("Nie udało się wysłać zapytania. Sprawdź połączenie z internetem.");
       ustawWyniki([]);
     } finally {
       ustawLaduje(false);
@@ -75,45 +85,70 @@ export function RejestracjaWyborWsi({ wybrana, onZmiana }: Props) {
         </div>
       ) : (
         <>
-          <form onSubmit={szukaj} className="flex flex-col gap-2 sm:flex-row">
-            <input
-              value={fraza}
-              onChange={(e) => ustawFraze(e.target.value)}
-              placeholder="np. Studzienki, Sipiory…"
-              className="min-h-[44px] flex-1 rounded-lg border border-stone-300 bg-white px-3 py-2 text-stone-900 outline-none ring-green-800 focus:ring-2"
-            />
+          <div className="mb-3 flex flex-wrap gap-2">
             <button
-              type="submit"
-              disabled={laduje}
-              className="rounded-lg bg-stone-200 px-4 py-2 text-sm font-medium text-stone-900 hover:bg-stone-300 disabled:opacity-60"
+              type="button"
+              className={`rounded-full px-3 py-1 text-xs font-medium ${
+                tryb === "katalog" ? "bg-green-800 text-white" : "border border-stone-300 bg-white text-stone-700"
+              }`}
+              onClick={() => ustawTryb("katalog")}
             >
-              {laduje ? "Szukam…" : "Szukaj"}
+              Katalog
             </button>
-          </form>
-          {podpowiedz ? <p className="mt-2 text-xs text-amber-800">{podpowiedz}</p> : null}
-          {wyniki.length > 0 ? (
-            <ul className="mt-3 max-h-48 divide-y divide-stone-200 overflow-y-auto rounded-lg border border-stone-200 bg-white text-sm">
-              {wyniki.map((w) => (
-                <li key={w.id}>
-                  <button
-                    type="button"
-                    className="w-full px-3 py-2.5 text-left hover:bg-green-50"
-                    onClick={() => {
-                      onZmiana(w);
-                      ustawWyniki([]);
-                      ustawFraze("");
-                      ustawPodpowiedz("");
-                    }}
-                  >
-                    <span className="font-medium text-stone-900">{w.nazwa}</span>
-                    <span className="block text-xs text-stone-600">
-                      {w.gmina}, {w.powiat} · {w.wojewodztwo}
-                    </span>
-                  </button>
-                </li>
-              ))}
-            </ul>
-          ) : null}
+            <button
+              type="button"
+              className={`rounded-full px-3 py-1 text-xs font-medium ${
+                tryb === "szukaj" ? "bg-green-800 text-white" : "border border-stone-300 bg-white text-stone-700"
+              }`}
+              onClick={() => ustawTryb("szukaj")}
+            >
+              Szukaj po nazwie
+            </button>
+          </div>
+
+          {tryb === "katalog" ? (
+            <WybierzWiesKaskada
+              tekstPrzycisku="Wybierz"
+              onWybor={(w) => wybierz(w)}
+            />
+          ) : (
+            <>
+              <form onSubmit={szukaj} className="flex flex-col gap-2 sm:flex-row">
+                <input
+                  value={fraza}
+                  onChange={(e) => ustawFraze(e.target.value)}
+                  placeholder="np. Studzienki, Sipiory…"
+                  className="min-h-[44px] flex-1 rounded-lg border border-stone-300 bg-white px-3 py-2 text-stone-900 outline-none ring-green-800 focus:ring-2"
+                />
+                <button
+                  type="submit"
+                  disabled={laduje}
+                  className="rounded-lg bg-stone-200 px-4 py-2 text-sm font-medium text-stone-900 hover:bg-stone-300 disabled:opacity-60"
+                >
+                  {laduje ? "Szukam…" : "Szukaj"}
+                </button>
+              </form>
+              {podpowiedz ? <p className="mt-2 text-xs text-amber-800">{podpowiedz}</p> : null}
+              {wyniki.length > 0 ? (
+                <ul className="mt-3 max-h-48 divide-y divide-stone-200 overflow-y-auto rounded-lg border border-stone-200 bg-white text-sm">
+                  {wyniki.map((w) => (
+                    <li key={w.id}>
+                      <button
+                        type="button"
+                        className="w-full px-3 py-2.5 text-left hover:bg-green-50"
+                        onClick={() => wybierz(w)}
+                      >
+                        <span className="font-medium text-stone-900">{w.nazwa}</span>
+                        <span className="block text-xs text-stone-600">
+                          {w.gmina}, {w.powiat} · {w.wojewodztwo}
+                        </span>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              ) : null}
+            </>
+          )}
         </>
       )}
     </div>

@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
 import { pojedynczaWies } from "@/lib/supabase/wies-z-zapytania";
 import { pobierzVillageIdsRoliPaneluSoltysaDlaUzytkownikaCache } from "@/lib/panel/rola-panelu-soltysa";
+import { PanelStronaSoltysa } from "@/components/panel/panel-strona-soltysa";
 import { type WierszZgloszenia, SoltysZgloszeniaKlient } from "./soltys-zgloszenia-klient";
 
 export const metadata: Metadata = {
@@ -99,26 +100,26 @@ export default async function SoltysZgloszeniaPage() {
   }));
 
   return (
-    <main>
-      <p className="mb-4 text-sm text-stone-500">
-        <Link href="/panel/soltys" className="text-green-800 underline">
-          ← Panel sołtysa
-        </Link>
-      </p>
-      <h1 className="tytul-sekcji-panelu">Zgłoszenia i usterki</h1>
-      <p className="mt-3 max-w-2xl text-sm leading-relaxed text-stone-600">
-        Widzisz <strong>z kim jest problem</strong> (imię z profilu), dane opisowe, zdjęcia i szybkie zaznaczenia. Na
-        publicznych ekranach tych danych nie ma — tylko Ty i zgłaszający widzicie własny wątek w całości, zgodnie z
-        uprawnieniami w serwisie.
-      </p>
-      <SoltysZgloszeniaKlient wiersze={wiersze} />
-      <p className="mt-8 text-sm text-stone-500">
-        Mieszkaniec składa zgłoszenie w{" "}
-        <Link href="/panel/mieszkaniec/zgloszenia" className="text-green-800 underline">
-          panelu mieszkańca
-        </Link>
-        .
-      </p>
-    </main>
+    <PanelStronaSoltysa
+      tytul="Zgłoszenia i usterki"
+      opis={
+        <>
+          Widzisz <strong>z kim jest problem</strong> (imię z profilu), dane opisowe, zdjęcia i szybkie zaznaczenia.
+          Domyślnie pokazujemy tylko otwarte zgłoszenia. Listę możesz wyeksportować do PDF.
+        </>
+      }
+      dzieci={
+        <>
+          <SoltysZgloszeniaKlient wiersze={wiersze} />
+          <p className="mt-8 text-sm text-stone-500">
+            Mieszkaniec składa zgłoszenie w{" "}
+            <Link href="/panel/mieszkaniec/zgloszenia" className="link-panel">
+              panelu mieszkańca
+            </Link>
+            .
+          </p>
+        </>
+      }
+    />
   );
 }

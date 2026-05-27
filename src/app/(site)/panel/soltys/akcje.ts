@@ -2924,3 +2924,254 @@ export async function dodajPakietLinkowPrzydatnych(
   revalidatePath("/panel/soltys/informacje-lokalne");
   return { ok: true, dodano: doWstawienia.length };
 }
+
+export async function zatwierdzMarketplaceOferteMieszkanca(listingId: string): Promise<WynikProsty> {
+  const id = uuid.safeParse(listingId);
+  if (!id.success) return { blad: "Niepoprawny identyfikator." };
+  const supabase = utworzKlientaSupabaseSerwer();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { blad: "Zaloguj się." };
+  const { data: row } = await supabase
+    .from("marketplace_listings")
+    .select("id, village_id, status, owner_user_id, title")
+    .eq("id", id.data)
+    .maybeSingle();
+  if (!row || row.status !== "pending") return { blad: "Oferta nie oczekuje na moderację." };
+  if (!(await czyUzytkownikMozeZarzadzacWsia(supabase, user.id, row.village_id))) {
+    return { blad: "Brak uprawnień." };
+  }
+  const teraz = new Date().toISOString();
+  const { error } = await supabase
+    .from("marketplace_listings")
+    .update({
+      status: "approved",
+      moderated_by: user.id,
+      moderated_at: teraz,
+      published_at: teraz,
+      moderation_note: null,
+      seller_verified: true,
+    })
+    .eq("id", id.data);
+  if (error) return { blad: "Nie udało się zatwierdzić." };
+
+  const { data: wies } = await supabase
+    .from("villages")
+    .select("voivodeship, county, commune, slug")
+    .eq("id", row.village_id)
+    .maybeSingle();
+
+  const { data: pelny } = await supabase
+    .from("marketplace_listings")
+    .select("equipment_category")
+    .eq("id", row.id)
+    .maybeSingle();
+
+  if (row.owner_user_id) {
+    const { powiadomOStatusieOgloszeniaMarketplace } = await import(
+      "@/lib/powiadomienia/powiadom-o-markecie"
+    );
+    await powiadomOStatusieOgloszeniaMarketplace({
+      ownerUserId: row.owner_user_id,
+      listingId: row.id,
+      title: row.title,
+      status: "approved",
+      wies: wies ?? null,
+    });
+  }
+
+  if (wies?.slug) {
+    const { powiadomSubskrybentowNowegoOgloszenia } = await import(
+      "@/lib/powiadomienia/powiadom-subskrybentow-rynku"
+    );
+    await powiadomSubskrybentowNowegoOgloszenia({
+      listingId: row.id,
+      villageId: row.village_id,
+      title: row.title,
+      equipmentCategory: pelny?.equipment_category ?? null,
+      ownerUserId: row.owner_user_id,
+      wies,
+    });
+  }
+
+  await revalidateProfilWsiDlaWioski(supabase, row.village_id);
+  revalidatePath("/panel/soltys");
+  revalidatePath("/panel/soltys/spolecznosc");
+  revalidatePath("/panel/mieszkaniec/marketplace");
+  revalidatePath("/mapa");
+  return { ok: true };
+}
+
+export async function odrzucMarketplaceOferteMieszkanca(
+  listingId: string,
+  notatka: string,
+): Promise<WynikProsty> {
+  const id = uuid.safeParse(listingId);
+  const note = z.string().trim().min(3).max(500).safeParse(notatka);
+  if (!id.success || !note.success) return { blad: "Podaj powód odrzucenia (min. 3 znaki)." };
+
+  const supabase = utworzKlientaSupabaseSerwer();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { blad: "Zaloguj się." };
+
+  const { data: row } = await supabase
+    .from("marketplace_listings")
+    .select("id, village_id, status, owner_user_id, title")
+    .eq("id", id.data)
+    .maybeSingle();
+
+  if (!row || row.status !== "pending") return { blad: "Oferta nie oczekuje na moderację." };
+  if (!(await czyUzytkownikMozeZarzadzacWsia(supabase, user.id, row.village_id))) {
+    return { blad: "Brak uprawnień." };
+  }
+
+  const teraz = new Date().toISOString();
+  const { error } = await supabase
+    .from("marketplace_listings")
+    .update({
+      status: "rejected",
+      moderated_by: user.id,
+      moderated_at: teraz,
+      moderation_note: note.data,
+    })
+    .eq("id", id.data);
+
+  if (error) return { blad: "Nie udało się odrzucić." };
+
+  if (row.owner_user_id) {
+    const { powiadomOStatusieOgloszeniaMarketplace } = await import(
+      "@/lib/powiadomienia/powiadom-o-markecie"
+    );
+    await powiadomOStatusieOgloszeniaMarketplace({
+      ownerUserId: row.owner_user_id,
+      listingId: row.id,
+      title: row.title,
+      status: "rejected",
+      moderationNote: note.data,
+    });
+  }
+
+  revalidatePath("/panel/soltys");
+  revalidatePath("/panel/mieszkaniec/marketplace");
+  return { ok: true };
+}
+
+export async function ustawWeryfikacjeProfiluRynek(
+  profileId: string,
+  zweryfikowany: boolean,
+): Promise<WynikProsty> {
+  const id = uuid.safeParse(profileId);
+  if (!id.success) return { blad: "Niepoprawny identyfikator profilu." };
+
+  const supabase = utworzKlientaSupabaseSerwer();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { blad: "Zaloguj się." };
+
+  const { data: profil } = await supabase
+    .from("marketplace_profiles")
+    .select("id, village_id")
+    .eq("id", id.data)
+    .maybeSingle();
+
+  if (!profil) return { blad: "Nie znaleziono profilu." };
+  if (!(await czyUzytkownikMozeZarzadzacWsia(supabase, user.id, profil.village_id))) {
+    return { blad: "Brak uprawnień do tej wsi." };
+  }
+
+  const { error } = await supabase
+    .from("marketplace_profiles")
+    .update({ is_verified: zweryfikowany, updated_at: new Date().toISOString() })
+    .eq("id", id.data);
+
+  if (error) {
+    console.error("[ustawWeryfikacjeProfiluRynek]", error.message);
+    return { blad: "Nie udało się zapisać weryfikacji." };
+  }
+
+  await revalidateProfilWsiDlaWioski(supabase, profil.village_id);
+  revalidatePath("/panel/soltys");
+  return { ok: true };
+}
+
+export async function zatwierdzOfertePomocySasiedzkiej(offerId: string): Promise<WynikProsty> {
+  const id = uuid.safeParse(offerId);
+  if (!id.success) return { blad: "Niepoprawny identyfikator." };
+  const supabase = utworzKlientaSupabaseSerwer();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { blad: "Zaloguj się." };
+  const { data: row } = await supabase
+    .from("neighbor_help_offers")
+    .select("id, village_id, status")
+    .eq("id", id.data)
+    .maybeSingle();
+  if (!row || row.status !== "pending") return { blad: "Oferta nie oczekuje na moderację." };
+  if (!(await czyUzytkownikMozeZarzadzacWsia(supabase, user.id, row.village_id))) {
+    return { blad: "Brak uprawnień." };
+  }
+  const teraz = new Date().toISOString();
+  const { error } = await supabase
+    .from("neighbor_help_offers")
+    .update({ status: "approved", moderated_at: teraz, moderation_note: null })
+    .eq("id", id.data);
+  if (error) return { blad: "Nie udało się zatwierdzić." };
+  revalidatePath("/panel/soltys");
+  return { ok: true };
+}
+
+export async function odrzucOfertePomocySasiedzkiej(
+  offerId: string,
+  notatka: string,
+): Promise<WynikProsty> {
+  const id = uuid.safeParse(offerId);
+  const note = z.string().trim().min(3).max(500).safeParse(notatka);
+  if (!id.success || !note.success) return { blad: "Podaj powód odrzucenia (min. 3 znaki)." };
+
+  const supabase = utworzKlientaSupabaseSerwer();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { blad: "Zaloguj się." };
+
+  const { data: row } = await supabase
+    .from("neighbor_help_offers")
+    .select("id, village_id, status, author_user_id, title")
+    .eq("id", id.data)
+    .maybeSingle();
+
+  if (!row || row.status !== "pending") return { blad: "Oferta nie oczekuje na moderację." };
+  if (!(await czyUzytkownikMozeZarzadzacWsia(supabase, user.id, row.village_id))) {
+    return { blad: "Brak uprawnień." };
+  }
+
+  const teraz = new Date().toISOString();
+  const { error } = await supabase
+    .from("neighbor_help_offers")
+    .update({
+      status: "rejected",
+      moderated_at: teraz,
+      moderation_note: note.data,
+    })
+    .eq("id", id.data);
+
+  if (error) return { blad: "Nie udało się odrzucić." };
+
+  if (row.author_user_id) {
+    await supabase.from("notifications").insert({
+      user_id: row.author_user_id,
+      type: "neighbor_help_rejected",
+      title: "Oferta pomocy odrzucona",
+      body: `${row.title}: ${note.data}`,
+      link: "/panel/mieszkaniec",
+    });
+  }
+
+  revalidatePath("/panel/soltys");
+  return { ok: true };
+}

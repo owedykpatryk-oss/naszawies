@@ -3,6 +3,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { pobierzVillageIdsRoliPaneluSoltysaDlaUzytkownikaCache } from "@/lib/panel/rola-panelu-soltysa";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
+import { PanelStronaSoltysa } from "@/components/panel/panel-strona-soltysa";
 import { SoltysSamorzadKlient, type PrzewodnikWiersz, type WiesDoSamorzadu } from "./samorzad-klient";
 
 export const metadata: Metadata = {
@@ -44,18 +45,15 @@ export default async function SoltysSamorzadPage() {
   const wpisy = (guideRows ?? []) as PrzewodnikWiersz[];
 
   return (
-    <main>
-      <p className="mb-4 text-sm text-stone-500">
-        <Link href="/panel/soltys" className="text-green-800 underline">
-          ← Panel sołtysa
-        </Link>
-      </p>
-      <h1 className="tytul-sekcji-panelu">Przewodnik: gmina, powiat, województwo</h1>
-      <p className="mt-2 max-w-2xl text-sm text-stone-600">
-        Uzupełnij kontakty i lokalne zasady — na profilu wsi mieszkańcy zobaczą je obok ogólnego skrótu kompetencji
-        (nie zastępuje porady prawnej ani aktów urzędowych).
-      </p>
-      <SoltysSamorzadKlient wsie={wsie} wpisy={wpisy} />
-    </main>
+    <PanelStronaSoltysa
+      tytul="Przewodnik: gmina, powiat, województwo"
+      opis={
+        <>
+          Uzupełnij kontakty i lokalne zasady — na profilu wsi mieszkańcy zobaczą je obok ogólnego skrótu kompetencji
+          (nie zastępuje porady prawnej ani aktów urzędowych).
+        </>
+      }
+      dzieci={<SoltysSamorzadKlient wsie={wsie} wpisy={wpisy} />}
+    />
   );
 }

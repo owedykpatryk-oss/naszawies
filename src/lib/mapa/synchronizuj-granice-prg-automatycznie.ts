@@ -1,10 +1,11 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { pobierzGraniceWsiZPrgWfs } from "@/lib/geoportal/prg-wfs-client";
+import { aplikujGranicePrgDlaWsi } from "@/lib/mapa/aplikuj-granice-prg-dla-wsi";
 
 type VillageRow = {
   id: string;
   name: string;
   teryt_id: string | null;
+  gmina_teryt_kod?: string | null;
   boundary_geojson: unknown | null;
   latitude: number | null;
   longitude: number | null;
@@ -36,11 +37,32 @@ export type PrgBoundarySyncSummary = {
   errors: string[];
 };
 
+type TrybSync = "cron" | "mapa";
+
+type OpcjeSync = {
+  tryb?: TrybSync;
+};
+
 function parseIntEnv(name: string, fallback: number, min: number, max: number): number {
   const raw = process.env[name]?.trim();
   const n = raw ? Number.parseInt(raw, 10) : NaN;
   if (!Number.isFinite(n)) return fallback;
   return Math.min(max, Math.max(min, n));
+}
+
+function limityDlaTrybu(tryb: TrybSync): { maxPerRun: number; maxScanned: number; minDays: number } {
+  if (tryb === "mapa") {
+    return {
+      maxPerRun: parseIntEnv("GEOPORTAL_BOUNDARY_SYNC_MAPA_PER_RUN", 20, 1, 60),
+      maxScanned: parseIntEnv("GEOPORTAL_BOUNDARY_SYNC_MAPA_SCANNED", 150, 10, 400),
+      minDays: parseIntEnv("GEOPORTAL_BOUNDARY_SYNC_MAPA_MIN_DAYS", 3, 0, 30),
+    };
+  }
+  return {
+    maxPerRun: parseIntEnv("GEOPORTAL_BOUNDARY_SYNC_VILLAGES_PER_RUN", 8, 1, 30),
+    maxScanned: parseIntEnv("GEOPORTAL_BOUNDARY_SYNC_VILLAGES_SCANNED", 60, 10, 300),
+    minDays: parseIntEnv("GEOPORTAL_BOUNDARY_SYNC_MIN_DAYS", 14, 1, 180),
+  };
 }
 
 function msFromIso(iso: string | null | undefined): number {
@@ -49,10 +71,13 @@ function msFromIso(iso: string | null | undefined): number {
   return Number.isFinite(t) ? t : 0;
 }
 
-export async function synchronizujGranicePrgAutomatycznie(supabase: SupabaseClient): Promise<PrgBoundarySyncSummary> {
-  const maxPerRun = parseIntEnv("GEOPORTAL_BOUNDARY_SYNC_VILLAGES_PER_RUN", 2, 1, 20);
-  const maxScanned = parseIntEnv("GEOPORTAL_BOUNDARY_SYNC_VILLAGES_SCANNED", 20, 5, 200);
-  const minDays = parseIntEnv("GEOPORTAL_BOUNDARY_SYNC_MIN_DAYS", 30, 1, 180);
+
+export async function synchronizujGranicePrgAutomatycznie(
+  supabase: SupabaseClient,
+  opcje: OpcjeSync = {},
+): Promise<PrgBoundarySyncSummary> {
+  const tryb = opcje.tryb ?? "cron";
+  const { maxPerRun, maxScanned, minDays } = limityDlaTrybu(tryb);
   const forceRefresh = process.env.GEOPORTAL_BOUNDARY_FORCE_REFRESH?.trim() === "1";
   const minSyncMs = minDays * 24 * 60 * 60 * 1000;
 
@@ -67,12 +92,13 @@ export async function synchronizujGranicePrgAutomatycznie(supabase: SupabaseClie
     errors: [],
   };
 
-  /** Bez force: tylko brakujące granice, kolejka „żywe wsie” (RPC). Przy force — ponowny PRG także tam, gdzie już jest granica. */
   const { data: wsie, error: errWsie } = forceRefresh
     ? await supabase
         .from("villages")
-        .select("id, name, teryt_id, boundary_geojson, latitude, longitude")
+        .select("id, name, teryt_id, gmina_teryt_kod, boundary_geojson, latitude, longitude, boundary_source")
         .eq("is_active", true)
+        .not("teryt_id", "is", null)
+        .or("boundary_geojson.is.null,boundary_source.is.null,boundary_source.eq.demo")
         .order("updated_at", { ascending: true })
         .limit(maxScanned)
     : await supabase.rpc("villages_kolejka_sync_granic_prg", { p_limit: maxScanned });
@@ -103,28 +129,30 @@ export async function synchronizujGranicePrgAutomatycznie(supabase: SupabaseClie
   for (const village of villages) {
     if (summary.attemptedVillages >= maxPerRun) break;
 
-    if (!village.teryt_id) {
+    if (!village.teryt_id?.trim()) {
       summary.skippedMissingTeryt += 1;
       continue;
     }
-    if (!forceRefresh && village.boundary_geojson != null) {
-      summary.skippedAlreadyHasBoundary += 1;
-      continue;
-    }
+
 
     const state = syncByVillage.get(village.id);
     const lastSyncMs = msFromIso(state?.last_boundary_sync_at);
-    if (lastSyncMs > 0 && Date.now() - lastSyncMs < minSyncMs) {
+    if (!forceRefresh && lastSyncMs > 0 && Date.now() - lastSyncMs < minSyncMs) {
       summary.skippedRecentSync += 1;
       continue;
     }
 
     summary.attemptedVillages += 1;
-    const wynik = await pobierzGraniceWsiZPrgWfs(village.teryt_id, {
-      lat: village.latitude,
-      lon: village.longitude,
-    });
     const nowIso = new Date().toISOString();
+
+    const wynik = await aplikujGranicePrgDlaWsi(supabase, {
+      id: village.id,
+      name: village.name,
+      teryt_id: village.teryt_id.trim(),
+      gmina_teryt_kod: village.gmina_teryt_kod ?? null,
+      latitude: village.latitude,
+      longitude: village.longitude,
+    });
 
     if (!wynik.ok) {
       summary.errors.push(`${village.name}: ${wynik.reason}`);
@@ -138,29 +166,6 @@ export async function synchronizujGranicePrgAutomatycznie(supabase: SupabaseClie
         updated_at: nowIso,
       };
       await supabase.from("geoportal_boundary_sync_state").upsert(syncUpdate);
-      if (!wynik.retryable) {
-        // Dla błędów konfiguracyjnych/formatu nie ma sensu obciążać API kolejnymi próbami w tej samej iteracji.
-        break;
-      }
-      continue;
-    }
-
-    const { error: updateErr } = await supabase
-      .from("villages")
-      .update({ boundary_geojson: wynik.boundaryGeojson })
-      .eq("id", village.id);
-    if (updateErr) {
-      summary.errors.push(`${village.name}: update villages ${updateErr.message}`);
-      const syncUpdate: SyncStateUpsert = {
-        village_id: village.id,
-        last_boundary_sync_at: nowIso,
-        last_status: "error",
-        last_error_message: `update villages: ${updateErr.message}`.slice(0, 1000),
-        last_source_name: wynik.sourceName,
-        last_source_type_name: wynik.sourceTypeName,
-        updated_at: nowIso,
-      };
-      await supabase.from("geoportal_boundary_sync_state").upsert(syncUpdate);
       continue;
     }
 
@@ -169,14 +174,16 @@ export async function synchronizujGranicePrgAutomatycznie(supabase: SupabaseClie
       last_boundary_sync_at: nowIso,
       last_status: "success",
       last_error_message: null,
-      last_source_name: wynik.sourceName,
-      last_source_type_name: wynik.sourceTypeName,
+      last_source_name: "ustaw_granice_wsi",
+      last_source_type_name: wynik.source,
       updated_at: nowIso,
     };
     await supabase.from("geoportal_boundary_sync_state").upsert(syncUpdate);
 
     summary.processedVillages += 1;
     summary.updatedBoundaries += 1;
+
+    await new Promise((r) => setTimeout(r, tryb === "mapa" ? 200 : 350));
   }
 
   return summary;

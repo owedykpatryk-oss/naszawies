@@ -18,7 +18,7 @@ function normalizujSiteUrl(url: string): string {
 
 export function htmlSzablonNaszawies(opcje: OpcjeSzablonuNaszawies): string {
   const base = normalizujSiteUrl(opcje.siteUrl);
-  const logoUrl = `${base}/email/znak-naszawies.svg`;
+  const logoUrl = `${base}/email/znak-naszawies.png`;
 
   return `<!DOCTYPE html>
 <html lang="pl">

@@ -2,6 +2,8 @@
 -- Dzięki temu importer może odrzucić błędny obiekt z filtra kodu i dobrać granicę,
 -- która faktycznie zawiera punkt wsi.
 
+DROP FUNCTION IF EXISTS public.villages_kolejka_sync_granic_prg(integer);
+
 CREATE OR REPLACE FUNCTION public.villages_kolejka_sync_granic_prg(p_limit integer)
 RETURNS TABLE (
   id uuid,

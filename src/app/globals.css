@@ -2,6 +2,13 @@
 @tailwind components;
 @tailwind utilities;
 
+:root {
+  --nasza-zielen: #2d5a2d;
+  --nasza-zielen-jasna: #5a9c3e;
+  --nasza-tlo-panel: #f4f0e6;
+  --nasza-szklo: rgba(255, 255, 255, 0.72);
+}
+
 html {
   -webkit-text-size-adjust: 100%;
 }
@@ -10,6 +17,27 @@ body {
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+/* Tryb uproszczony (senior) — większa czcionka i wyraźniejsze przyciski */
+html.tryb-senior {
+  font-size: 112.5%;
+}
+
+html.tryb-senior .kontakt-szybki-pasek {
+  display: flex;
+}
+
+html:not(.tryb-senior) .kontakt-szybki-pasek {
+  display: none;
+}
+
+html.tryb-senior button,
+html.tryb-senior a.rounded-lg,
+html.tryb-senior input,
+html.tryb-senior select,
+html.tryb-senior textarea {
+  min-height: 2.75rem;
 }
 
 /* Formularz waitlist (fragment HTML z landingu) */
@@ -139,7 +167,26 @@ body {
     @apply border-emerald-200/70 ring-emerald-800/[0.06];
   }
   .panel-tlo {
-    @apply min-h-screen bg-gradient-to-b from-[#f4f0e6] via-stone-50 to-stone-100/95;
+    @apply relative isolate min-h-screen overflow-x-hidden;
+    background-color: var(--nasza-tlo-panel);
+    background-image:
+      radial-gradient(ellipse 80% 50% at 10% -10%, rgba(90, 156, 62, 0.14), transparent 55%),
+      radial-gradient(ellipse 60% 40% at 95% 5%, rgba(45, 90, 45, 0.08), transparent 50%),
+      linear-gradient(180deg, #f4f0e6 0%, #faf9f7 38%, #f5f4f2 100%);
+  }
+
+  .panel-tlo::before {
+    content: "";
+    position: fixed;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    opacity: 0.35;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
+  }
+
+  .panel-nawigacja-szklo {
+    @apply rounded-2xl border border-white/60 bg-white/55 p-1.5 shadow-[0_8px_32px_rgba(45,90,45,0.08)] ring-1 ring-stone-900/[0.04] backdrop-blur-md;
   }
   .link-panel {
     @apply font-medium text-green-900 underline decoration-emerald-700/35 underline-offset-[3px] transition hover:decoration-emerald-800 hover:text-green-950;
@@ -167,19 +214,55 @@ body {
   }
 
   .panel-informacji-hero {
-    @apply relative overflow-hidden rounded-2xl border border-emerald-800/15 bg-[#f5f9f0] p-5 sm:p-6;
+    @apply wow-wejscie relative overflow-hidden rounded-2xl border border-emerald-800/15 bg-gradient-to-br from-[#f5f9f0] via-white/90 to-emerald-50/30 p-5 sm:p-6;
     box-shadow:
-      0 1px 0 rgba(255, 255, 255, 0.8) inset,
-      0 8px 32px rgba(45, 90, 45, 0.06);
+      0 1px 0 rgba(255, 255, 255, 0.85) inset,
+      0 12px 40px rgba(45, 90, 45, 0.08);
   }
 
   .panel-informacji-hero::before {
     content: "";
     position: absolute;
     inset: -40% -20% auto;
-    height: 120px;
-    background: radial-gradient(ellipse at center, rgba(90, 156, 62, 0.12), transparent 70%);
+    height: 140px;
+    background: radial-gradient(ellipse at center, rgba(90, 156, 62, 0.16), transparent 68%);
     pointer-events: none;
+  }
+
+  .panel-informacji-hero::after {
+    content: "";
+    position: absolute;
+    right: -2rem;
+    bottom: -2rem;
+    width: 8rem;
+    height: 8rem;
+    border-radius: 9999px;
+    background: radial-gradient(circle, rgba(45, 90, 45, 0.06), transparent 70%);
+    pointer-events: none;
+  }
+
+  .btn-panel-primary {
+    @apply inline-flex min-h-[44px] touch-manipulation items-center justify-center rounded-xl bg-green-800 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-green-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-green-800 disabled:cursor-not-allowed disabled:opacity-50;
+  }
+
+  .btn-panel-secondary {
+    @apply inline-flex min-h-[44px] touch-manipulation items-center justify-center rounded-xl border border-stone-300 bg-white px-4 py-2.5 text-sm font-medium text-stone-800 shadow-sm transition hover:border-green-800/30 hover:bg-green-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-green-800 disabled:opacity-50;
+  }
+
+  .btn-panel-danger {
+    @apply inline-flex min-h-[44px] items-center justify-center rounded-xl border border-red-300 bg-red-50 px-4 py-2.5 text-sm font-medium text-red-900 transition hover:bg-red-100 disabled:opacity-50;
+  }
+
+  .soltys-sekcja {
+    @apply scroll-mt-24 rounded-2xl border border-stone-200/90 bg-white p-4 shadow-sm ring-1 ring-stone-900/[0.03] sm:p-5;
+  }
+
+  .soltys-lista-moderacji {
+    @apply divide-y divide-stone-100 overflow-hidden rounded-xl border border-stone-200 bg-white shadow-sm;
+  }
+
+  .soltys-pasek-akcji {
+    @apply no-print sticky bottom-0 z-20 -mx-1 border-t border-green-200/80 bg-gradient-to-t from-white via-white/95 to-white/80 px-1 py-3 backdrop-blur sm:static sm:mx-0 sm:border-0 sm:bg-transparent sm:p-0 sm:backdrop-blur-none;
   }
 }
 
@@ -201,5 +284,19 @@ body {
 
   .karta-wow:hover {
     transform: none;
+  }
+}
+
+@media print {
+  .no-print {
+    display: none !important;
+  }
+
+  body {
+    background: white !important;
+  }
+
+  .panel-tlo::before {
+    display: none;
   }
 }

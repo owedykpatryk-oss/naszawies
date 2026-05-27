@@ -9,6 +9,7 @@ const uuid = z.string().uuid();
 const schemaDodaj = z.object({
   villageId: uuid,
   albumId: z.string().uuid().nullish(),
+  contestId: z.string().uuid().nullish(),
   url: z.string().url().max(2048),
   caption: z.string().trim().max(2000).optional().nullable(),
   takenAt: z.string().nullish(),
@@ -29,6 +30,29 @@ export async function zapiszZdjecieFotokroniki(dane: z.infer<typeof schemaDodaj>
     return { blad: "Zaloguj się." };
   }
   const x = p.data;
+
+  if (x.contestId) {
+    const { data: konkurs } = await supabase
+      .from("village_photo_contests")
+      .select("id, village_id, status, max_entries_per_user, submissions_end")
+      .eq("id", x.contestId)
+      .maybeSingle();
+    if (!konkurs || konkurs.village_id !== x.villageId || konkurs.status !== "submissions") {
+      return { blad: "Ten konkurs nie przyjmuje już zgłoszeń." };
+    }
+    if (new Date(konkurs.submissions_end).getTime() < Date.now()) {
+      return { blad: "Termin zgłoszeń minął." };
+    }
+    const { count } = await supabase
+      .from("photos")
+      .select("id", { count: "exact", head: true })
+      .eq("contest_id", x.contestId)
+      .eq("uploaded_by", user.id);
+    if ((count ?? 0) >= konkurs.max_entries_per_user) {
+      return { blad: `Limit zgłoszeń w konkursie: ${konkurs.max_entries_per_user} zdjęć na osobę.` };
+    }
+  }
+
   let takenAt: string | null = null;
   if (x.takenAt) {
     const t = new Date(x.takenAt);
@@ -41,6 +65,7 @@ export async function zapiszZdjecieFotokroniki(dane: z.infer<typeof schemaDodaj>
       village_id: x.villageId,
       uploaded_by: user.id,
       album_id: x.albumId ?? null,
+      contest_id: x.contestId ?? null,
       url: x.url,
       caption: x.caption?.length ? x.caption : null,
       taken_at: takenAt,
@@ -59,6 +84,8 @@ export async function zapiszZdjecieFotokroniki(dane: z.infer<typeof schemaDodaj>
   }
   revalidatePath("/panel/mieszkaniec/fotokronika");
   revalidatePath("/panel/soltys/fotokronika");
+  revalidatePath("/panel/soltys/konkursy");
+  if (x.contestId) revalidatePath("/wies");
   return { ok: true, id: row.id };
 }
 

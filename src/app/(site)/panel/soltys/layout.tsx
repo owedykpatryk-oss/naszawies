@@ -1,59 +1,12 @@
 import Link from "next/link";
-import {
-  NawigacjaPaneluGrupowana,
-  type GrupaNawigacjiPanelu,
-} from "@/components/panel/nawigacja-panelu-grupowana";
-
-const GRUPY: GrupaNawigacjiPanelu[] = [
-  {
-    id: "start",
-    tytul: "Start",
-    linki: [{ href: "/panel/soltys", label: "Przegląd" }],
-  },
-  {
-    id: "promocja",
-    tytul: "Wieś i promocja",
-    linki: [
-      { href: "/panel/soltys/moja-wies", label: "Profil wsi" },
-      { href: "/panel/soltys/grafika", label: "Kreator grafiki", highlight: true },
-      { href: "/panel/soltys/fotokronika", label: "Fotokronika" },
-    ],
-  },
-  {
-    id: "spolecznosc",
-    tytul: "Społeczność",
-    linki: [
-      { href: "/panel/soltys/spolecznosc", label: "Społeczność i WOW" },
-      { href: "/panel/soltys/wiadomosci-lokalne", label: "Wiadomości lokalne" },
-      { href: "/panel/soltys/kanaly-rss", label: "Kanały RSS" },
-    ],
-  },
-  {
-    id: "organizacja",
-    tytul: "Organizacja",
-    linki: [
-      { href: "/panel/soltys/rezerwacje", label: "Rezerwacje sal" },
-      { href: "/panel/soltys/swietlica", label: "Świetlica" },
-      { href: "/panel/soltys/dokumenty", label: "Generator dokumentów" },
-    ],
-  },
-  {
-    id: "admin",
-    tytul: "Administracja",
-    linki: [
-      { href: "/panel/soltys/zgloszenia", label: "Zgłoszenia" },
-      { href: "/panel/soltys/samorzad", label: "Przewodnik samorządowy" },
-      { href: "/panel/soltys/informacje-lokalne", label: "Informacje dla mieszkańców" },
-      { href: "/panel/soltys/pomoc", label: "Pomoc krok po kroku" },
-    ],
-  },
-];
+import { Suspense } from "react";
+import { SoltysNawigacja } from "./soltys-nawigacja";
 
 export default function SoltysLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-w-0">
-      <div className="no-print mb-4 rounded-xl border border-emerald-200/80 bg-emerald-50/40 px-3 py-2 text-xs text-stone-700">
-        <span className="font-semibold text-emerald-900">Szybki rytm pracy:</span>{" "}
+      <div className="no-print mb-4 flex flex-wrap items-center gap-x-3 gap-y-1 rounded-xl border border-emerald-200/80 bg-emerald-50/40 px-3 py-2.5 text-xs text-stone-700">
+        <span className="font-semibold text-emerald-900">Szybki rytm:</span>{" "}
         <Link href="/panel/soltys/grafika" className="font-medium text-green-800 underline">
           plakat w 3 zakładkach
         </Link>
@@ -77,8 +30,18 @@ export default function SoltysLayout({ children }: { children: React.ReactNode }
         <Link href="/panel/soltys/spolecznosc?tryb=osp" className="text-green-800 underline">
           OSP
         </Link>
+        {" · "}
+        <Link href="/panel/soltys#kolejka-pracy" className="font-medium text-green-800 underline">
+          kolejka pracy
+        </Link>
       </div>
-      <NawigacjaPaneluGrupowana grupy={GRUPY} ariaLabel="Panel sołtysa" />
+      <Suspense
+        fallback={
+          <div className="no-print mb-8 h-24 animate-pulse rounded-2xl border border-stone-200/60 bg-stone-100/50" />
+        }
+      >
+        <SoltysNawigacja />
+      </Suspense>
       {children}
     </div>
   );

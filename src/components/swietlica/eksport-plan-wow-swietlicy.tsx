@@ -1,6 +1,7 @@
 "use client";
 
 import type { PozycjaWyposazenia } from "@/components/swietlica/asortyment-swietlicy-klient";
+import { RamkaMarkiDokument } from "@/components/marka/ramka-marki-dokument";
 import { PrzyciskPobierzPdf } from "@/components/dokumenty/przycisk-pobierz-pdf";
 import { normalizujAkcjeInwentarza } from "@/lib/swietlica/inwentarz-status";
 
@@ -36,6 +37,7 @@ export function EksportPlanWowSwietlicy({ nazwaSali, nazwaWsi, pozycje }: Props)
         className="pointer-events-none fixed -left-[9999px] top-0 w-[210mm] bg-white p-8 text-stone-900"
         aria-hidden
       >
+        <RamkaMarkiDokument>
         <h1 className="font-serif text-2xl text-green-950">Plan wyposażenia świetlicy</h1>
         <p className="mt-2 text-sm">
           {nazwaSali}
@@ -84,6 +86,7 @@ export function EksportPlanWowSwietlicy({ nazwaSali, nazwaWsi, pozycje }: Props)
         ) : null}
 
         <p className="mt-8 text-xs text-stone-500">Dokument z panelu naszawies.pl — do dyskusji na zebraniu sołectwa.</p>
+        </RamkaMarkiDokument>
       </div>
     </section>
   );

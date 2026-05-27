@@ -1,6 +1,8 @@
 import type { CookieOptions } from "@supabase/ssr";
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { dolaczNaglowkiBezpieczenstwa } from "@/lib/bezpieczenstwo/naglowki-odpowiedzi";
+import { ipZRequestu, sprawdzLimitApi } from "@/lib/rate-limit/sprawdz-limit-upstash";
 
 type CiasteczkaDoUstawienia = {
   name: string;
@@ -8,18 +10,48 @@ type CiasteczkaDoUstawienia = {
   options: CookieOptions;
 }[];
 
+const METODY_DOZWOLONE = new Set(["GET", "HEAD", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"]);
+
+function odpowiedzZBazowymiNaglowkami(odpowiedz: NextResponse): NextResponse {
+  return dolaczNaglowkiBezpieczenstwa(odpowiedz);
+}
+
 export async function middleware(request: NextRequest) {
+  if (!METODY_DOZWOLONE.has(request.method)) {
+    return odpowiedzZBazowymiNaglowkami(new NextResponse(null, { status: 405 }));
+  }
+
   if (request.nextUrl.pathname === "/favicon.ico") {
-    return NextResponse.rewrite(new URL("/icon", request.url));
+    return odpowiedzZBazowymiNaglowkami(NextResponse.rewrite(new URL("/icon", request.url)));
+  }
+
+  const sciezka = request.nextUrl.pathname;
+  const ip = ipZRequestu(request.headers);
+
+  if (sciezka.startsWith("/logowanie")) {
+    const limit = await sprawdzLimitApi("logowanie", ip);
+    if (!limit.ok) {
+      return odpowiedzZBazowymiNaglowkami(
+        new NextResponse("Zbyt wiele prób logowania. Spróbuj za chwilę.", { status: 429 }),
+      );
+    }
+  }
+
+  if (sciezka.startsWith("/api/") && !sciezka.startsWith("/api/health")) {
+    const limit = await sprawdzLimitApi("api_publiczne", ip);
+    if (!limit.ok) {
+      return odpowiedzZBazowymiNaglowkami(
+        NextResponse.json({ blad: "Zbyt wiele żądań. Odczekaj chwilę." }, { status: 429 }),
+      );
+    }
   }
 
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
   if (!url || !anonKey) {
-    return NextResponse.next({ request });
+    return odpowiedzZBazowymiNaglowkami(NextResponse.next({ request }));
   }
 
-  /** Przekazywanie `request` + ponowne tworzenie odpowiedzi przy `setAll` — wymagane do zapisu odświeżonej sesji Supabase (PKCE / OAuth). */
   let odpowiedz = NextResponse.next({ request });
 
   const supabase = createServerClient(url, anonKey, {
@@ -30,9 +62,7 @@ export async function middleware(request: NextRequest) {
       setAll(cookiesToSet: CiasteczkaDoUstawienia) {
         cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
         odpowiedz = NextResponse.next({ request });
-        cookiesToSet.forEach(({ name, value, options }) =>
-          odpowiedz.cookies.set(name, value, options)
-        );
+        cookiesToSet.forEach(({ name, value, options }) => odpowiedz.cookies.set(name, value, options));
       },
     },
   });
@@ -41,20 +71,18 @@ export async function middleware(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  const sciezka = request.nextUrl.pathname;
   if (sciezka.startsWith("/panel") && !user) {
     const przekierowanie = request.nextUrl.clone();
     przekierowanie.pathname = "/logowanie";
     przekierowanie.searchParams.set("next", sciezka + request.nextUrl.search);
-    return NextResponse.redirect(przekierowanie);
+    return odpowiedzZBazowymiNaglowkami(NextResponse.redirect(przekierowanie));
   }
 
-  return odpowiedz;
+  return odpowiedzZBazowymiNaglowkami(odpowiedz);
 }
 
 export const config = {
   matcher: [
-    /* favicon.ico: bez wykluczenia — rewrite na /icon zamiast domyślnej ikony Next/Vercel */
     "/((?!_next/static|_next/image|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico|js|css|woff2?)$).*)",
   ],
 };

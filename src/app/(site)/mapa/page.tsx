@@ -1,8 +1,10 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
-import { MapaWsiStrona } from "@/components/mapa/mapa-wsi-strona";
-import type { ZnacznikPoi, ZnacznikWsi } from "@/components/mapa/mapa-wsi-leaflet";
+import { MapaSyncGraniceKlient } from "@/components/mapa/mapa-sync-granice-klient";
+import { MapaWsiStronaDynamic } from "@/components/mapa/mapa-wsi-strona-dynamic";
+import type { ZnacznikPoi, ZnacznikRynek, ZnacznikWsi } from "@/components/mapa/mapa-wsi-leaflet";
+import { mapujOgloszeniaRynekDlaMapy } from "@/lib/mapa/rynek-na-mapie";
 import { createPublicSupabaseClient } from "@/lib/supabase/public-client";
 import { sciezkaProfiluWsi } from "@/lib/wies/sciezka-publiczna";
 
@@ -194,6 +196,7 @@ export default async function MapaPage() {
   }
 
   let punktyPoi: ZnacznikPoi[] = [];
+  let punktyRynek: ZnacznikRynek[] = [];
   if (supabase && znaczniki.length > 0) {
     const wiesPoId = new Map(znaczniki.map((z) => [z.id, { name: z.name, sciezka: z.sciezka } as const]));
     const idsWsi = znaczniki.map((z) => z.id);
@@ -206,6 +209,15 @@ export default async function MapaPage() {
     if (!errPoi && wierszePoi) {
       punktyPoi = mapujPoiDlaMapy(wierszePoi as WierszPoi[], wiesPoId);
     }
+    const { data: wierszeRynek } = await supabase
+      .from("marketplace_listings")
+      .select("id, title, listing_type, latitude, longitude, village_id")
+      .in("village_id", idsWsi)
+      .eq("status", "approved")
+      .not("latitude", "is", null)
+      .not("longitude", "is", null)
+      .limit(400);
+    punktyRynek = mapujOgloszeniaRynekDlaMapy((wierszeRynek ?? []) as Parameters<typeof mapujOgloszeniaRynekDlaMapy>[0], wiesPoId);
   }
 
   const liczbaWsi = znaczniki.length;
@@ -257,7 +269,10 @@ export default async function MapaPage() {
             aria-hidden="true"
           />
           <p className="mt-5 max-w-2xl text-sm leading-relaxed text-stone-600">
-            Przy każdej wsi: granica (jeśli wgrana), punkt odniesienia (GPS wsi w bazie) oraz <strong>oznaczenia w sołectwie</strong> — m.in. kościół, szkoła, świetlica, OSP, <strong>punkt czerpania wody OSP</strong>, stacja kolejowa. Sołtys może w panelu{" "}
+            Wybierz wsi z <strong>katalogu</strong> (województwo → powiat → gmina) albo wyszukaj po nazwie. Przy każdej wsi:
+            obrys z PRG (gdy jest w bazie), punkt GPS oraz <strong>miejsca w sołectwie</strong> — kościół, szkoła, świetlica, OSP,
+            punkt czerpania wody, stacja kolejowa. Włącz <strong>lokalizację</strong>, żeby sortować listę i zobaczyć wsie w promieniu km.
+            Sołtys może w panelu{" "}
             <Link href="/panel/soltys/moja-wies" className="font-medium text-green-900 underline decoration-green-800/35 underline-offset-2">
               Profil wsi
             </Link>{" "}
@@ -316,7 +331,8 @@ export default async function MapaPage() {
                 </div>
               }
             >
-              <MapaWsiStrona znaczniki={znaczniki} punktyPoi={punktyPoi} />
+              <MapaSyncGraniceKlient znaczniki={znaczniki} />
+              <MapaWsiStronaDynamic znaczniki={znaczniki} punktyPoi={punktyPoi} punktyRynek={punktyRynek} />
             </Suspense>
           </div>
         ) : null}

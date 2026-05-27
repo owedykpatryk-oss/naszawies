@@ -6,7 +6,7 @@ import { zapiszTresc, usunZapisanaTresc } from "@/app/(site)/panel/moje/akcje";
 
 type Props = {
   villageId: string;
-  contentType: "post" | "event";
+  contentType: "post" | "event" | "listing";
   contentId: string;
   title: string;
   href: string;

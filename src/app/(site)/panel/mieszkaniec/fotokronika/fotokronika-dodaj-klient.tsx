@@ -10,16 +10,18 @@ const MIME = ["image/jpeg", "image/png", "image/webp"] as const;
 
 type Wies = { id: string; name: string };
 type Album = { id: string; title: string; village_id: string };
+type Konkurs = { id: string; villageId: string; title: string; maxEntriesPerUser: number };
 type Uzytk = { id: string };
 
-type Props = { wies: Wies[]; albumy: Album[]; uzytkownik: Uzytk };
+type Props = { wies: Wies[]; albumy: Album[]; konkursy?: Konkurs[]; uzytkownik: Uzytk };
 
-export function FotokronikaDodajKlient({ wies, albumy, uzytkownik }: Props) {
+export function FotokronikaDodajKlient({ wies, albumy, konkursy = [], uzytkownik }: Props) {
   const router = useRouter();
   const [blad, ustawBlad] = useState("");
   const [czek, startT] = useTransition();
   const [vId, ustawVId] = useState(wies[0]?.id ?? "");
   const albumyFilt = useMemo(() => albumy.filter((a) => a.village_id === vId), [albumy, vId]);
+  const konkursyFilt = useMemo(() => konkursy.filter((k) => k.villageId === vId), [konkursy, vId]);
 
   if (wies.length === 0) {
     return (
@@ -41,6 +43,7 @@ export function FotokronikaDodajKlient({ wies, albumy, uzytkownik }: Props) {
     const taken = String(fd.get("taken_at") || "");
     const plik = (fd.get("plik") as File) ?? null;
     const albumWyb = String(fd.get("album_id") || "").trim();
+    const contestWyb = String(fd.get("contest_id") || "").trim();
     if (!vId) {
       ustawBlad("Wybierz wieś.");
       return;
@@ -84,6 +87,7 @@ export function FotokronikaDodajKlient({ wies, albumy, uzytkownik }: Props) {
       const w: WynikFoto = await zapiszZdjecieFotokroniki({
         villageId: vId,
         albumId: albumWyb || null,
+        contestId: contestWyb || null,
         url: publicUrl,
         caption: caption || null,
         takenAt: takenIso,
@@ -124,6 +128,24 @@ export function FotokronikaDodajKlient({ wies, albumy, uzytkownik }: Props) {
           ))}
         </select>
       </div>
+      {konkursyFilt.length > 0 ? (
+        <div className="rounded-xl border border-amber-200/80 bg-amber-50/50 p-3">
+          <label className="mb-1 block font-medium text-amber-950" htmlFor="foto-konkurs">
+            Konkurs zdjęć (opcjonalnie)
+          </label>
+          <select id="foto-konkurs" name="contest_id" className="w-full">
+            <option value="">— zwykłe zdjęcie do fotokroniki —</option>
+            {konkursyFilt.map((k) => (
+              <option key={k.id} value={k.id}>
+                {k.title} (max {k.maxEntriesPerUser} / osoba)
+              </option>
+            ))}
+          </select>
+          <p className="mt-1 text-xs text-amber-900/80">
+            Zdjęcie konkursowe też przechodzi moderację sołtysa przed głosowaniem na profilu wsi.
+          </p>
+        </div>
+      ) : null}
       <div>
         <label className="mb-1 block" htmlFor="foto-album">
           Album (opcjonalnie)

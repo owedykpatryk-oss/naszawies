@@ -2,6 +2,8 @@
 
 import { useRouter } from "next/navigation";
 import { FormEvent, useState, useTransition } from "react";
+import { PasekMasowychAkcji } from "@/components/panel/pasek-masowych-akcji";
+import { zatwierdzZdjeciaMasowoSoltys } from "../akcje-masowe";
 import { ustawOkladkeAlbumu, utworzAlbumFotokroniki, zmoderujZdjecieFotokroniki } from "../akcje-fotokronika";
 
 type Wies = { id: string; name: string };
@@ -44,6 +46,7 @@ export function FotokronikaSoltysKlient({ wies, oczekujace, albumy, okladki }: P
   const [bladF, ustawBladF] = useState("");
   const [czek, startT] = useTransition();
   const [vNew, ustawVNew] = useState(wies[0]?.id ?? "");
+  const [zaznaczone, ustawZaznaczone] = useState<Set<string>>(new Set());
 
   function onAlbum(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -169,9 +172,40 @@ export function FotokronikaSoltysKlient({ wies, oczekujace, albumy, okladki }: P
         {oczekujace.length === 0 ? (
           <p className="mt-2 text-sm text-stone-600">Brak zdjęć oczekujących.</p>
         ) : (
+          <>
+          <div className="mt-2 flex gap-2">
+            <button
+              type="button"
+              onClick={() => ustawZaznaczone(new Set(oczekujace.map((z) => z.id)))}
+              className="rounded-lg border border-stone-300 px-2 py-1 text-xs hover:bg-stone-50"
+            >
+              Zaznacz wszystkie
+            </button>
+            <button
+              type="button"
+              onClick={() => ustawZaznaczone(new Set())}
+              className="rounded-lg border border-stone-300 px-2 py-1 text-xs hover:bg-stone-50"
+            >
+              Odznacz
+            </button>
+          </div>
           <ul className="mt-4 space-y-4">
             {oczekujace.map((z) => (
               <li key={z.id} className="flex flex-col gap-2 rounded-xl border border-stone-200 bg-stone-50/50 p-3 sm:flex-row sm:items-start sm:gap-4">
+                <input
+                  type="checkbox"
+                  checked={zaznaczone.has(z.id)}
+                  onChange={() =>
+                    ustawZaznaczone((prev) => {
+                      const n = new Set(prev);
+                      if (n.has(z.id)) n.delete(z.id);
+                      else n.add(z.id);
+                      return n;
+                    })
+                  }
+                  className="mt-2 h-4 w-4 shrink-0 rounded border-stone-300 sm:mt-4"
+                  aria-label="Zaznacz zdjęcie"
+                />
                 {/* eslint-disable-next-line @next/next/no-img-element */}
                 <img
                   src={z.url}
@@ -206,6 +240,20 @@ export function FotokronikaSoltysKlient({ wies, oczekujace, albumy, okladki }: P
               </li>
             ))}
           </ul>
+          <PasekMasowychAkcji
+            liczbaZaznaczonych={zaznaczone.size}
+            etykietaAkcji="Zatwierdź zaznaczone zdjęcia"
+            onZatwierdz={async () => {
+              const w = await zatwierdzZdjeciaMasowoSoltys(Array.from(zaznaczone));
+              if ("blad" in w) return { blad: w.blad };
+              return { zatwierdzono: w.zatwierdzono, pominieto: w.pominieto };
+            }}
+            onPoSukcesie={() => {
+              ustawZaznaczone(new Set());
+              router.refresh();
+            }}
+          />
+          </>
         )}
         {bladF ? <p className="mt-2 text-sm text-red-800">{bladF}</p> : null}
       </section>

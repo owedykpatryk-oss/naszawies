@@ -4,6 +4,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMemo, useState, useTransition } from "react";
 import { zapiszProtokolOdbioruSali } from "@/app/(site)/panel/soltys/akcje";
+import { otoczenieHtmlDoDruku } from "@/lib/marka/html-marki-druku";
 import {
   DECYZJE_KAUCJI,
   ETYKIETY_DECYZJI_KAUCJI,
@@ -313,11 +314,11 @@ function drukujProtokol(protokol: ProtokolOdbioruSali, bookingId: string) {
     </table>`
       : "<p>Brak pozycji asortymentu do weryfikacji.</p>";
 
-  const html = `<html><head><meta charset="utf-8"/><title>Protokół odbioru sali</title>
-  <style>body{font-family:Georgia,serif;padding:24px;line-height:1.5;color:#1c1917} h1{font-size:20px} .meta{color:#57534e;font-size:13px}</style>
-  </head><body>
+  const html = otoczenieHtmlDoDruku({
+    tytul: "Protokół odbioru sali",
+    body: `
   <h1>Protokół odbioru / zdania sali świetlicy</h1>
-  <p class="meta">Rezerwacja: ${bookingId.slice(0, 8)}… · ${new Date(protokol.wykonanoAt).toLocaleString("pl-PL")}</p>
+  <p class="muted">Rezerwacja: ${bookingId.slice(0, 8)}… · ${new Date(protokol.wykonanoAt).toLocaleString("pl-PL")}</p>
   <p><strong>Wykonał:</strong> ${protokol.wykonanoPrzez}</p>
   <p><strong>Stan sali:</strong> ${
     protokol.salaPorzadek === "ok" ? "Porządek OK" : protokol.salaPorzadek === "do_sprzatania" ? "Do sprzątania" : "Poważny problem"
@@ -327,7 +328,8 @@ function drukujProtokol(protokol: ProtokolOdbioruSali, bookingId: string) {
   ${protokol.uwagiOgolne ? `<h2>Uwagi</h2><p style="white-space:pre-wrap">${protokol.uwagiOgolne}</p>` : ""}
   <p style="margin-top:40px">Podpis odbierającego (sołtys): _________________________</p>
   <p>Podpis wynajmującego: _________________________</p>
-  </body></html>`;
+  `,
+  });
   const w = window.open("", "_blank");
   if (!w) return;
   w.document.open();

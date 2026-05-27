@@ -16,7 +16,13 @@ import {
   type PrzewodnikSamorzadowyZapis,
 } from "@/components/wies/sekcja-przewodnik-samorzadowy";
 import { WiesLaczonyFeedAktualnosci } from "@/components/wies/wies-laczony-feed-aktualnosci";
+import { WiesPilneAlerty } from "@/components/wies/wies-pilne-alerty";
+import { WiesZgloszeniaPubliczne } from "@/components/wies/wies-zgloszenia-publiczne";
+import { PomocSasiedzkaSekcja } from "@/components/wies/pomoc-sasiedzka-sekcja";
+import { filtrujPilneAlerty } from "@/lib/wies/filtruj-pilne-alerty";
 import { zbudujLaczonyFeedAktualnosci } from "@/lib/wies/zbuduj-laczony-feed-aktualnosci";
+import { PrzelacznikTrybuSeniora } from "@/components/ui/tryb-senior-provider";
+import { WiesKontaktSzybkiPasek } from "@/components/wies/wies-kontakt-szybki-pasek";
 import { LazyWidoczny } from "@/components/ui/lazy-widoczny";
 import type { PlakatPubliczny } from "@/components/grafika/galeria-plakatow-wsi";
 import { PanelInformacjiMieszkancow } from "@/components/wies/panel-informacji-mieszkancow";
@@ -28,6 +34,12 @@ import { TytulSekcjiWies } from "@/components/wies/tytul-sekcji-wies";
 import { SekcjaDaneGeoWsiLazy } from "@/components/wies/sekcja-dane-geo-wsi-lazy";
 import { WiesTransportLazy } from "@/components/wies/wies-transport-lazy";
 import { SwietliceWsiLazy } from "@/components/wies/swietlice-wsi-lazy";
+import { KonkursFotoWsiKlient } from "@/components/wies/konkurs-foto-wsi-klient";
+import { FotokronikaPublicznaWsi } from "@/components/wies/fotokronika-publiczna-wsi";
+import { OstrzezeniaLowieckieWsi } from "@/components/wies/ostrzezenia-lowieckie-wsi";
+import type { KonkursFotoPubliczny, ZdjecieKonkursu } from "@/lib/konkurs-foto/fazy-konkursu";
+import type { OstrzezenieLowieckie } from "@/lib/lowiectwo/pobierz-ostrzezenia-publiczne";
+import type { ZdjeciePubliczne } from "@/lib/fotokronika/pobierz-fotokronike-publiczna";
 
 const GaleriaPlakatowWsi = dynamic(
   () => import("@/components/grafika/galeria-plakatow-wsi").then((m) => ({ default: m.GaleriaPlakatowWsi })),
@@ -43,6 +55,8 @@ type WpisPostu = {
   title: string;
   type: string;
   created_at: string;
+  is_pinned?: boolean | null;
+  event_end_at?: string | null;
 };
 
 export function WiesProfilPubliczny({
@@ -55,6 +69,8 @@ export function WiesProfilPubliczny({
   profileUslug = [],
   organizacje = [],
   wydarzenia = [],
+  pomocSasiedzka = [],
+  zgloszeniaPubliczne = [],
   listaZakupow = [],
   mozeZobaczycListeZakupow = false,
   mozeEdytowacListeZakupow = false,
@@ -65,6 +81,9 @@ export function WiesProfilPubliczny({
   kontaktyUrzedowe = [],
   kadencjeFunkcyjne = [],
   plakatyPubliczne = [],
+  konkursFoto = null,
+  fotokronikaPubliczna = [],
+  ostrzezeniaLowieckie = [],
   zalogowany = false,
   zapisaneTresci = {},
 }: {
@@ -73,6 +92,13 @@ export function WiesProfilPubliczny({
   kalendarzZajetosci?: WierszKalendarzaPublicznego[];
   saleSwietlicy?: SalaPublicznaWsi[];
   plakatyPubliczne?: PlakatPubliczny[];
+  konkursFoto?: {
+    konkurs: KonkursFotoPubliczny;
+    zdjecia: ZdjecieKonkursu[];
+    mojGlosPhotoId: string | null;
+  } | null;
+  fotokronikaPubliczna?: ZdjeciePubliczne[];
+  ostrzezeniaLowieckie?: OstrzezenieLowieckie[];
   blog?: {
     id: string;
     title: string;
@@ -171,13 +197,26 @@ export function WiesProfilPubliczny({
     note: string | null;
     is_current: boolean;
   }[];
+  pomocSasiedzka?: import("@/components/wies/pomoc-sasiedzka-sekcja").OfertaPomocyPubliczna[];
+  zgloszeniaPubliczne?: import("@/components/wies/wies-zgloszenia-publiczne").ZgloszeniePubliczne[];
   zalogowany?: boolean;
   /** Klucz `post:id` lub `event:id` → ID wiersza w user_saved_content. */
   zapisaneTresci?: Record<string, string>;
 }) {
   const sciezka = sciezkaProfiluWsi(wies);
   const prefixOgloszenia = `${sciezka}/ogloszenie`;
-  const laczonyFeed = zbudujLaczonyFeedAktualnosci(sciezka, posty, blog, historia, wiadomosci, wydarzenia, 14);
+  const pilneAlerty = filtrujPilneAlerty(posty);
+  const laczonyFeed = zbudujLaczonyFeedAktualnosci(
+    sciezka,
+    posty,
+    blog,
+    historia,
+    wiadomosci,
+    wydarzenia,
+    rynek,
+    wies.id,
+    16,
+  );
 
   const maPrzewodnik =
     !!przewodnikSamorzadowy &&
@@ -300,7 +339,14 @@ export function WiesProfilPubliczny({
             commune: wies.commune,
           }}
         />
+        <div className="mt-4 flex flex-wrap items-center gap-3">
+          <PrzelacznikTrybuSeniora />
+        </div>
       </header>
+
+      <WiesPilneAlerty alerty={pilneAlerty} sciezkaOgloszenia={prefixOgloszenia} />
+      <OstrzezeniaLowieckieWsi ostrzezenia={ostrzezeniaLowieckie} nazwaWsi={wies.name} />
+      <WiesKontaktSzybkiPasek kontakty={kontaktyUrzedowe} />
 
       {wies.description ? (
         <OslonaSekcjiWies className="mt-8">
@@ -325,6 +371,14 @@ export function WiesProfilPubliczny({
 
       <WiesLaczonyFeedAktualnosci wpisy={laczonyFeed} />
 
+      <PomocSasiedzkaSekcja
+        oferty={pomocSasiedzka}
+        sciezkaPanelu="/panel/mieszkaniec/pomoc-sasiedzka"
+        zalogowany={zalogowany}
+      />
+
+      <WiesZgloszeniaPubliczne wiersze={zgloszeniaPubliczne} />
+
       <LazyWidoczny
         placeholder={
           <section className="sekcja-poza-foldem mt-12 h-48 animate-pulse rounded-2xl bg-stone-100" aria-hidden />
@@ -332,6 +386,19 @@ export function WiesProfilPubliczny({
       >
         <GaleriaPlakatowWsi plakaty={plakatyPubliczne} nazwaWsi={wies.name} />
       </LazyWidoczny>
+
+      <FotokronikaPublicznaWsi zdjecia={fotokronikaPubliczna} nazwaWsi={wies.name} pokazLinkDodaj={zalogowany} />
+
+      {konkursFoto ? (
+        <KonkursFotoWsiKlient
+          konkurs={konkursFoto.konkurs}
+          zdjecia={konkursFoto.zdjecia}
+          mojGlosPhotoId={konkursFoto.mojGlosPhotoId}
+          zalogowany={zalogowany}
+          nazwaWsi={wies.name}
+          sciezkaPaneluFoto="/panel/mieszkaniec/fotokronika"
+        />
+      ) : null}
 
       <WiesTransportLazy sciezkaWsi={sciezka} villageId={wies.id} />
 
@@ -546,6 +613,13 @@ export function WiesProfilPubliczny({
                             {ev.location_text ? ` · ${ev.location_text}` : ""}
                           </p>
                         </Link>
+                        <a
+                          href={`/api/wies/${wies.id}/wydarzenia/${ev.id}/ical`}
+                          className="shrink-0 rounded-lg border border-stone-200 bg-stone-50 px-2 py-1 text-xs text-green-900 hover:bg-stone-100"
+                          download
+                        >
+                          Kalendarz (.ics)
+                        </a>
                         {zalogowany ? (
                           <ZapiszTrescPrzycisk
                             villageId={wies.id}
@@ -649,7 +723,7 @@ export function WiesProfilPubliczny({
           <TytulSekcjiWies
             etykieta="Rynek"
             tytul="Darmowy rynek lokalny"
-            opis="Oferty mieszkańców i lokalnych usługodawców — publikacja bezpłatna, wygasłe wpisy archiwizują się automatycznie."
+            opis="Produkty z gospodarstw (miód, sery, mięso), maszyny, usługi mieszkańców — bezpłatnie, wygasłe ogłoszenia archiwizują się same."
           />
           {profileUslug.length > 0 ? (
             <ul className="mt-4 grid gap-3 sm:grid-cols-2">
@@ -668,7 +742,12 @@ export function WiesProfilPubliczny({
           ) : null}
           {rynek.length > 0 ? (
             <div className="mt-4">
-              <MarketplaceListaKlient oferty={rynek} kotwicaZasadSwietlicy={`${sciezka}#swietlica-regulamin`} />
+              <MarketplaceListaKlient
+                oferty={rynek}
+                sciezkaWsi={sciezka}
+                kotwicaZasadSwietlicy={`${sciezka}#swietlica-regulamin`}
+                limitWyswietlania={8}
+              />
             </div>
           ) : null}
         </OslonaSekcjiWies>

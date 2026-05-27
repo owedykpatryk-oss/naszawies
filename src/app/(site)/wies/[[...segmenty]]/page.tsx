@@ -26,6 +26,9 @@ import { sciezkaProfiluWsi } from "@/lib/wies/sciezka-publiczna";
 import { znajdzWiesPoSciezce } from "@/lib/wies/znajdz-wies-po-sciezce";
 import { etykietaKategoriiDotacji } from "@/lib/wies/teksty-dotacji";
 import { normalizujKategorieLinku, type LinkPrzydatnyPubliczny } from "@/lib/wies/linki-przydatne";
+import { pobierzKonkursFotoDlaProfiluWsi } from "@/lib/konkurs-foto/pobierz-konkurs-publiczny";
+import { pobierzFotokronikePublicznaWsi } from "@/lib/fotokronika/pobierz-fotokronike-publiczna";
+import { pobierzAktywneOstrzezeniaLowieckie } from "@/lib/lowiectwo/pobierz-ostrzezenia-publiczne";
 
 type Props = {
   params: { segmenty?: string[] };
@@ -53,9 +56,13 @@ type RynekOferta = {
   title: string;
   listing_type: string;
   category: string | null;
+  equipment_category?: string | null;
   location_text: string | null;
   price_amount: number | null;
+  price_unit?: string | null;
   currency: string | null;
+  with_operator?: boolean | null;
+  image_urls?: string[] | null;
   published_at: string | null;
   created_at: string;
 };
@@ -214,18 +221,33 @@ export default async function WiesCatchAllPage({ params, searchParams }: Props) 
   if (reszta.length === 0) {
     const { data: postyRaw } = await supabase
       .from("posts")
-      .select("id, title, type, created_at")
+      .select("id, title, type, created_at, is_pinned, event_end_at")
       .eq("village_id", wies.id)
       .eq("status", "approved")
+      .order("is_pinned", { ascending: false })
       .order("created_at", { ascending: false })
       .limit(25);
 
-    const posty = (postyRaw ?? []) as { id: string; title: string; type: string; created_at: string }[];
+    const posty = (postyRaw ?? []) as {
+      id: string;
+      title: string;
+      type: string;
+      created_at: string;
+      is_pinned?: boolean | null;
+      event_end_at?: string | null;
+    }[];
 
     const plakatyPubliczne = wies.is_active ? await pobierzPublicznePlakatyWsi(wies.id) : [];
 
-    const odWydarzen = new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString();
     const supabaseSerwer = utworzKlientaSupabaseSerwer();
+    const konkursFoto =
+      wies.is_active ? await pobierzKonkursFotoDlaProfiluWsi(supabaseSerwer, wies.id) : null;
+    const fotokronikaPubliczna =
+      wies.is_active ? await pobierzFotokronikePublicznaWsi(supabase, wies.id) : [];
+    const ostrzezeniaLowieckie =
+      wies.is_active ? await pobierzAktywneOstrzezeniaLowieckie(supabase, wies.id) : [];
+
+    const odWydarzen = new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString();
     const [
       authRes,
       { data: blogRaw },
@@ -241,6 +263,8 @@ export default async function WiesCatchAllPage({ params, searchParams }: Props) 
       { data: linkiPrzydatneRaw },
       { data: kontaktyUrzedoweRaw },
       { data: kadencjeFunkcyjneRaw },
+      { data: pomocSasiedzkaRaw },
+      { data: zgloszeniaPubliczneRaw },
     ] = await Promise.all([
       supabaseSerwer.auth.getUser(),
       supabase
@@ -259,7 +283,9 @@ export default async function WiesCatchAllPage({ params, searchParams }: Props) 
         .limit(6),
       supabase
         .from("marketplace_listings")
-        .select("id, title, listing_type, category, location_text, price_amount, currency, published_at, created_at")
+        .select(
+          "id, title, listing_type, category, equipment_category, location_text, price_amount, price_unit, currency, with_operator, image_urls, published_at, created_at",
+        )
         .eq("village_id", wies.id)
         .eq("status", "approved")
         .order("published_at", { ascending: false, nullsFirst: false })
@@ -338,6 +364,21 @@ export default async function WiesCatchAllPage({ params, searchParams }: Props) 
         .eq("village_id", wies.id)
         .order("term_start", { ascending: false })
         .limit(24),
+      supabase
+        .from("neighbor_help_offers")
+        .select("id, kind, category, title, body, contact_hint, published_at, created_at")
+        .eq("village_id", wies.id)
+        .eq("status", "approved")
+        .order("published_at", { ascending: false, nullsFirst: false })
+        .limit(8),
+      supabase
+        .from("issues")
+        .select("id, title, category, resolution_note, resolved_at")
+        .eq("village_id", wies.id)
+        .eq("status", "rozwiazane")
+        .not("resolution_note", "is", null)
+        .order("resolved_at", { ascending: false, nullsFirst: false })
+        .limit(12),
     ]);
 
     const userSesji = authRes.data.user;
@@ -505,6 +546,9 @@ export default async function WiesCatchAllPage({ params, searchParams }: Props) 
           wies={wies}
           posty={posty}
           plakatyPubliczne={plakatyPubliczne}
+          konkursFoto={konkursFoto}
+          fotokronikaPubliczna={fotokronikaPubliczna}
+          ostrzezeniaLowieckie={ostrzezeniaLowieckie}
           blog={blog}
           historia={historia}
           rynek={rynek}
@@ -512,6 +556,23 @@ export default async function WiesCatchAllPage({ params, searchParams }: Props) 
           profileUslug={profileUslug}
           organizacje={organizacje}
           wydarzenia={wydarzenia}
+          pomocSasiedzka={(pomocSasiedzkaRaw ?? []) as {
+            id: string;
+            kind: string;
+            category: string;
+            title: string;
+            body: string;
+            contact_hint: string | null;
+            published_at: string | null;
+            created_at: string;
+          }[]}
+          zgloszeniaPubliczne={(zgloszeniaPubliczneRaw ?? []) as {
+            id: string;
+            title: string;
+            category: string;
+            resolution_note: string;
+            resolved_at: string | null;
+          }[]}
           listaZakupow={listaZakupow}
           mozeZobaczycListeZakupow={mozeZobaczycListeZakupow}
           mozeEdytowacListeZakupow={mozeEdytowacListeZakupow}
@@ -523,6 +584,128 @@ export default async function WiesCatchAllPage({ params, searchParams }: Props) 
           kadencjeFunkcyjne={kadencjeFunkcyjne}
           zalogowany={!!userSesji}
           zapisaneTresci={zapisaneTresci}
+        />
+      </main>
+    );
+  }
+
+  if (reszta.length === 1 && reszta[0] === "rynek") {
+    const sciezka = sciezkaProfiluWsi(wies);
+    const { data: rynekPelny } = await supabase
+      .from("marketplace_listings")
+      .select(
+        "id, title, listing_type, category, equipment_category, location_text, price_amount, price_unit, currency, with_operator, image_urls, published_at, created_at",
+      )
+      .eq("village_id", wies.id)
+      .eq("status", "approved")
+      .order("published_at", { ascending: false, nullsFirst: false })
+      .limit(100);
+
+    const { MarketplaceListaKlient } = await import("@/components/wies/marketplace-lista-klient");
+
+    return (
+      <main className="mx-auto min-w-0 max-w-3xl py-8 sm:py-12 text-stone-800">
+        <p className="mb-4 text-sm">
+          <Link href={sciezka} className="text-green-800 underline">
+            ← {wies.name}
+          </Link>
+        </p>
+        <h1 className="font-serif text-3xl text-green-950">Rynek lokalny — wszystkie ogłoszenia</h1>
+        <p className="mt-2 text-sm text-stone-600">
+          Miód, sery, mięso, warzywa, maszyny rolnicze, konie — oferty mieszkańców i gospodarstw.
+        </p>
+        <MarketplaceListaKlient
+          oferty={(rynekPelny ?? []) as RynekOferta[]}
+          sciezkaWsi={sciezka}
+          kotwicaZasadSwietlicy={`${sciezka}#swietlica-regulamin`}
+          pokazLinkWszystkie={false}
+        />
+      </main>
+    );
+  }
+
+  if (reszta.length === 2 && reszta[0] === "rynek") {
+    const idOgl = z.string().uuid().safeParse(reszta[1]);
+    if (!idOgl.success) notFound();
+
+    const supabaseSerwer = utworzKlientaSupabaseSerwer();
+    const { data: authRes } = await supabaseSerwer.auth.getUser();
+
+    const { data: ogl } = await supabase
+      .from("marketplace_listings")
+      .select(
+        "id, village_id, title, description, listing_type, category, equipment_category, price_amount, price_unit, with_operator, phone, location_text, image_urls, published_at, created_at, owner_user_id, status, seller_verified, latitude, longitude, pickup_in_village, delivery_radius_km, seasonal_note, product_produced_at, product_best_before, is_organic, allergens_text, sales_poi_id, pois(name)",
+      )
+      .eq("id", idOgl.data)
+      .eq("village_id", wies.id)
+      .eq("status", "approved")
+      .maybeSingle();
+
+    if (!ogl) notFound();
+
+    const sciezka = sciezkaProfiluWsi(wies);
+    let zapisaneId: string | null = null;
+    if (authRes.user) {
+      const { data: zapis } = await supabaseSerwer
+        .from("user_saved_content")
+        .select("id")
+        .eq("user_id", authRes.user.id)
+        .eq("content_type", "listing")
+        .eq("content_id", ogl.id)
+        .maybeSingle();
+      zapisaneId = zapis?.id ?? null;
+    }
+
+    const katOgl = ogl.equipment_category ?? ogl.category;
+    let zapytaniePodobne = supabase
+      .from("marketplace_listings")
+      .select("id, title, listing_type, price_amount, price_unit, equipment_category, category")
+      .eq("village_id", wies.id)
+      .eq("status", "approved")
+      .neq("id", ogl.id)
+      .order("published_at", { ascending: false })
+      .limit(4);
+    if (katOgl) {
+      zapytaniePodobne = zapytaniePodobne.or(`equipment_category.eq.${katOgl},category.eq.${katOgl}`);
+    }
+    const { data: podobneRaw } = await zapytaniePodobne;
+
+    const { RynekOgloszenieSzczegoly } = await import("@/components/wies/rynek-ogloszenie-szczegoly");
+
+    return (
+      <main className="mx-auto min-w-0 max-w-3xl py-8 sm:py-12 text-stone-800">
+        <p className="mb-4 text-sm">
+          <Link href={sciezka} className="text-green-800 underline">
+            ← {wies.name}
+          </Link>
+          {" · "}
+          <Link href={`${sciezka}/rynek`} className="text-green-800 underline">
+            Wszystkie ogłoszenia
+          </Link>
+        </p>
+        <RynekOgloszenieSzczegoly
+          ogloszenie={{
+            ...ogl,
+            image_urls: ogl.image_urls ?? [],
+            sales_poi_name: (() => {
+              const p = Array.isArray(ogl.pois) ? ogl.pois[0] : ogl.pois;
+              return (p as { name: string } | null)?.name ?? null;
+            })(),
+          }}
+          sciezkaWsi={sciezka}
+          villageId={wies.id}
+          zalogowany={!!authRes.user}
+          toJa={authRes.user?.id === ogl.owner_user_id}
+          zapisaneId={zapisaneId}
+          podobne={(podobneRaw ?? []) as {
+            id: string;
+            title: string;
+            listing_type: string;
+            price_amount: number | null;
+            price_unit: string | null;
+            equipment_category: string | null;
+            category: string | null;
+          }[]}
         />
       </main>
     );
