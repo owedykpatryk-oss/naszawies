@@ -300,6 +300,15 @@ export default async function SoltysPage() {
               </span>
             </Link>
             <Link
+              href="/panel/soltys/grafika"
+              className="rounded-xl border border-stone-200 bg-white/95 p-4 text-sm shadow-sm transition hover:border-green-800/25 hover:shadow-md"
+            >
+              <span className="font-semibold text-green-950">Kreator grafiki</span>
+              <span className="mt-1 block text-xs text-stone-600">
+                Zaproszenia, dyplomy, plakaty i podziękowania — PDF jak w Canvie, bez konta zewnętrznego.
+              </span>
+            </Link>
+            <Link
               href="/panel/soltys/rezerwacje"
               className="rounded-xl border border-stone-200 bg-white/95 p-4 text-sm shadow-sm transition hover:border-green-800/25 hover:shadow-md"
             >
@@ -380,6 +389,15 @@ export default async function SoltysPage() {
               <span className="font-semibold text-green-950">Przewodnik samorządowy</span>
               <span className="mt-1 block text-xs text-stone-600">
                 Kontakty do gminy, śmieci, drogi — widoczne na profilu wsi.
+              </span>
+            </Link>
+            <Link
+              href="/panel/soltys/informacje-lokalne"
+              className="rounded-xl border border-emerald-200 bg-emerald-50/50 p-4 text-sm shadow-sm transition hover:border-green-800/25 hover:shadow-md"
+            >
+              <span className="font-semibold text-green-950">Informacje dla mieszkańców</span>
+              <span className="mt-1 block text-xs text-stone-600">
+                BIP, urząd gminy, gazeta, radio, portale i numery telefonów.
               </span>
             </Link>
             <Link

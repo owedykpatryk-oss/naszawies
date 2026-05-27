@@ -140,6 +140,8 @@ export default async function MieszkaniecPage() {
     };
   });
 
+  const pierwszaAktywnaSciezkaWsi = roleList.find((r) => r.status === "active" && r.sciezkaWsi)?.sciezkaWsi ?? null;
+
   return (
     <main>
       <h1 className="tytul-sekcji-panelu">Mieszkaniec</h1>
@@ -207,6 +209,17 @@ export default async function MieszkaniecPage() {
               Wątki dyskusji, komentarze i blog mieszkańca z moderacją.
             </span>
           </Link>
+          {pierwszaAktywnaSciezkaWsi ? (
+            <Link
+              href={`${pierwszaAktywnaSciezkaWsi}#informacje-mieszkancow`}
+              className="rounded-xl border border-emerald-200 bg-emerald-50/50 p-4 text-sm shadow-sm transition hover:border-green-800/25 hover:shadow-md"
+            >
+              <span className="font-semibold text-green-950">Informacje lokalne</span>
+              <span className="mt-1 block text-xs text-stone-600">
+                Urząd gminy, BIP, gazeta, radio i kontakty na profilu Twojej wsi.
+              </span>
+            </Link>
+          ) : null}
           <Link
             href="/panel/powiadomienia"
             className="rounded-xl border border-stone-200 bg-white/95 p-4 text-sm shadow-sm transition hover:border-green-800/25 hover:shadow-md sm:col-span-2"

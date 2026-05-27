@@ -3,6 +3,7 @@ type OpcjeWiadomosci = {
   temat: string;
   trescHtml: string;
   odpowiedzDo?: string;
+  zalaczniki?: { filename: string; content: string }[];
 };
 
 /** Wysyłka przez Resend. Zwraca false gdy brak klucza lub błąd API. */
@@ -29,6 +30,10 @@ export async function wyslijPrzezResend(
       subject: opcje.temat,
       html: opcje.trescHtml,
       reply_to: opcje.odpowiedzDo,
+      attachments: opcje.zalaczniki?.map((a) => ({
+        filename: a.filename,
+        content: a.content,
+      })),
     }),
   });
 

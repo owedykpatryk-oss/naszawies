@@ -6,7 +6,13 @@ import { R2_BUCKET_HALL_INVENTORY } from "@/lib/cloudflare/r2-bucket-znaczniki";
 import { wyciagnijBucketIKluczZUrlaR2 } from "@/lib/cloudflare/r2-url-pomoc";
 import { usunObiektR2JesliUrlNasz } from "@/lib/storage/usun-plik-r2-po-url";
 import { etykietaRoliWsi } from "@/lib/panel/role-definicje";
-import { pobierzVillageIdsRoliPaneluSoltysa } from "@/lib/panel/rola-panelu-soltysa";
+import { pobierzVillageIdsRoliPaneluSoltysa, czyUzytkownikJestSoltysemDlaSali } from "@/lib/panel/rola-panelu-soltysa";
+import { walidujDostepnoscAsortymentuWTerminie } from "@/lib/swietlica/dostepnosc-asortymentu-w-terminie";
+import {
+  schemaProtokolOdbioru,
+  type ProtokolOdbioruSali,
+  ETYKIETY_DECYZJI_KAUCJI,
+} from "@/lib/swietlica/protokol-odbioru";
 import { zaplanujPowiadomienieEmail } from "@/lib/email/zaplanuj-powiadomienie-email";
 import { wyslijWebPushDlaUzytkownika } from "@/lib/pwa/wyslij-web-push";
 import { powiadomObserwujacychOOpublikowanyPost } from "@/lib/powiadomienia/powiadom-obserwujacych-wies-post";
@@ -242,6 +248,14 @@ const schemaWyposazenieDodaj = z.object({
   quantity: z.coerce.number().int().min(1).max(99999),
   quantity_available: z.coerce.number().int().min(0).max(99999).nullable().optional(),
   condition: z.string().trim().max(50).optional().default("good"),
+  inventory_action: z
+    .enum(["in_use", "to_repair", "to_remove", "wishlist", "wishlist_wow"])
+    .optional()
+    .default("in_use"),
+  width_cm: z.coerce.number().int().min(1).max(9999).nullable().optional(),
+  length_cm: z.coerce.number().int().min(1).max(9999).nullable().optional(),
+  height_cm: z.coerce.number().int().min(1).max(9999).nullable().optional(),
+  notes: z.string().trim().max(2000).nullable().optional(),
 });
 
 export async function dodajWyposazenieSwietlicy(
@@ -270,6 +284,11 @@ export async function dodajWyposazenieSwietlicy(
     quantity: p.quantity,
     quantity_available: p.quantity_available ?? p.quantity,
     condition: p.condition || "good",
+    inventory_action: p.inventory_action ?? "in_use",
+    width_cm: p.width_cm ?? null,
+    length_cm: p.length_cm ?? null,
+    height_cm: p.height_cm ?? null,
+    notes: p.notes?.length ? p.notes : null,
   });
 
   if (error) {
@@ -465,6 +484,14 @@ const schemaWyposazenieAktualizuj = z.object({
   quantity: z.coerce.number().int().min(1).max(99999),
   quantity_available: z.coerce.number().int().min(0).max(99999).nullable().optional(),
   condition: z.string().trim().max(50).optional().default("good"),
+  inventory_action: z
+    .enum(["in_use", "to_repair", "to_remove", "wishlist", "wishlist_wow"])
+    .optional()
+    .default("in_use"),
+  width_cm: z.coerce.number().int().min(1).max(9999).nullable().optional(),
+  length_cm: z.coerce.number().int().min(1).max(9999).nullable().optional(),
+  height_cm: z.coerce.number().int().min(1).max(9999).nullable().optional(),
+  notes: z.string().trim().max(2000).nullable().optional(),
 });
 
 export async function aktualizujWyposazenieSwietlicy(
@@ -494,6 +521,11 @@ export async function aktualizujWyposazenieSwietlicy(
       quantity: p.quantity,
       quantity_available: p.quantity_available ?? p.quantity,
       condition: p.condition || "good",
+      inventory_action: p.inventory_action ?? "in_use",
+      width_cm: p.width_cm ?? null,
+      length_cm: p.length_cm ?? null,
+      height_cm: p.height_cm ?? null,
+      notes: p.notes?.length ? p.notes : null,
     })
     .eq("id", p.pozycjaId)
     .eq("hall_id", p.hallId);
@@ -601,7 +633,7 @@ export async function zatwierdzRezerwacjeSwietlicy(bookingId: string): Promise<W
 
   const { data: b, error: readE } = await supabase
     .from("hall_bookings")
-    .select("id, hall_id, start_at, end_at, status, booked_by, halls!inner(village_id)")
+    .select("id, hall_id, start_at, end_at, status, booked_by, requested_inventory, halls!inner(village_id)")
     .eq("id", id.data)
     .maybeSingle();
 
@@ -632,6 +664,26 @@ export async function zatwierdzRezerwacjeSwietlicy(bookingId: string): Promise<W
     };
   }
 
+  const requestedRaw = Array.isArray(b.requested_inventory)
+    ? (b.requested_inventory as { inventoryId?: string; quantity?: number }[])
+    : [];
+  const requested = requestedRaw
+    .filter((x) => x.inventoryId && Number(x.quantity) > 0)
+    .map((x) => ({ inventoryId: x.inventoryId!, quantity: Number(x.quantity) }));
+  if (requested.length > 0) {
+    const walidacjaAsort = await walidujDostepnoscAsortymentuWTerminie(
+      supabase,
+      b.hall_id,
+      b.start_at,
+      b.end_at,
+      requested,
+      b.id,
+    );
+    if (!walidacjaAsort.ok) {
+      return { blad: walidacjaAsort.blad };
+    }
+  }
+
   const { data: poAkt, error } = await supabase
     .from("hall_bookings")
     .update({
@@ -656,14 +708,15 @@ export async function zatwierdzRezerwacjeSwietlicy(bookingId: string): Promise<W
   if (b.booked_by && wiesId) {
     const tStart = new Date(b.start_at).toLocaleString("pl-PL", { dateStyle: "short", timeStyle: "short" });
     const tKoniec = new Date(b.end_at).toLocaleString("pl-PL", { dateStyle: "short", timeStyle: "short" });
+    const linkHall = `/panel/mieszkaniec/swietlica/${b.hall_id}`;
     const { error: notifErr } = await supabase.from("notifications").insert({
       user_id: b.booked_by,
       type: "hall_booking_approved",
       title: "Zatwierdzono rezerwację sali",
-      body: `Termin: ${tStart} – ${tKoniec}. Zobacz status przy swojej rezerwacji w panelu mieszkańca.`,
-      link_url: "/panel/mieszkaniec/swietlica",
-      related_id: wiesId,
-      related_type: "village",
+      body: `Termin: ${tStart} – ${tKoniec}. Zobacz szczegóły przy swojej rezerwacji.`,
+      link_url: linkHall,
+      related_id: b.id,
+      related_type: "hall_booking",
       channel: "in_app",
     });
     if (notifErr) {
@@ -671,8 +724,8 @@ export async function zatwierdzRezerwacjeSwietlicy(bookingId: string): Promise<W
     } else {
       zaplanujWebPushDlaUzytkownika(b.booked_by, {
         title: "Zatwierdzono rezerwację sali",
-        body: `Termin: ${tStart} – ${tKoniec}. Zobacz status przy swojej rezerwacji w panelu mieszkańca.`,
-        linkUrl: "/panel/mieszkaniec/swietlica",
+        body: `Termin: ${tStart} – ${tKoniec}.`,
+        linkUrl: linkHall,
         tag: `hall-booking-${b.hall_id}`,
       });
       zaplanujPowiadomienieEmail(
@@ -741,14 +794,15 @@ export async function odrzucRezerwacjeSwietlicy(bookingId: string, powod: string
   if (b.booked_by && wiesId) {
     const tStart = new Date(b.start_at).toLocaleString("pl-PL", { dateStyle: "short", timeStyle: "short" });
     const tKoniec = new Date(b.end_at).toLocaleString("pl-PL", { dateStyle: "short", timeStyle: "short" });
+    const linkHall = `/panel/mieszkaniec/swietlica/${b.hall_id}`;
     const { error: notifErr } = await supabase.from("notifications").insert({
       user_id: b.booked_by,
       type: "hall_booking_rejected",
       title: "Odrzucono wniosek o rezerwację sali",
       body: `Termin wniosku: ${tStart} – ${tKoniec}. Powód: ${powodOk.data}`,
-      link_url: "/panel/mieszkaniec/swietlica",
-      related_id: wiesId,
-      related_type: "village",
+      link_url: linkHall,
+      related_id: b.id,
+      related_type: "hall_booking",
       channel: "in_app",
     });
     if (notifErr) {
@@ -757,7 +811,7 @@ export async function odrzucRezerwacjeSwietlicy(bookingId: string, powod: string
       zaplanujWebPushDlaUzytkownika(b.booked_by, {
         title: "Odrzucono rezerwację sali",
         body: `Powód: ${powodOk.data.slice(0, 120)}${powodOk.data.length > 120 ? "…" : ""}`,
-        linkUrl: "/panel/mieszkaniec/swietlica",
+        linkUrl: linkHall,
         tag: `hall-booking-rejected-${b.hall_id}`,
       });
       zaplanujPowiadomienieEmail(
@@ -820,7 +874,7 @@ export async function oznaczRezerwacjeJakoZakonczonaSwietlicy(bookingId: string)
 
   const { error } = await supabase
     .from("hall_bookings")
-    .update({ status: "completed" })
+    .update({ status: "completed", is_completed: true })
     .eq("id", id.data)
     .eq("status", "approved");
 
@@ -835,6 +889,223 @@ export async function oznaczRezerwacjeJakoZakonczonaSwietlicy(bookingId: string)
   revalidatePath(`/panel/soltys/swietlica/${wiersz.hall_id}`);
   revalidatePath(`/panel/mieszkaniec/swietlica/${wiersz.hall_id}/dokument`);
   revalidatePath(`/panel/soltys/swietlica/${wiersz.hall_id}/dokument`);
+  return { ok: true };
+}
+
+/** Protokół odbioru sali po wydarzeniu — weryfikacja asortymentu i zamknięcie rezerwacji. */
+export async function zapiszProtokolOdbioruSali(
+  dane: z.infer<typeof schemaProtokolOdbioru>
+): Promise<WynikProsty> {
+  const parsed = schemaProtokolOdbioru.safeParse(dane);
+  if (!parsed.success) {
+    return { blad: "Sprawdź dane protokołu odbioru." };
+  }
+
+  const supabase = utworzKlientaSupabaseSerwer();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) {
+    return { blad: "Zaloguj się." };
+  }
+
+  const p = parsed.data;
+  const { data: wiersz, error: readErr } = await supabase
+    .from("hall_bookings")
+    .select("id, hall_id, status, end_at, checkout_inspection, booked_by")
+    .eq("id", p.bookingId)
+    .maybeSingle();
+
+  if (readErr || !wiersz) {
+    return { blad: "Nie znaleziono rezerwacji." };
+  }
+
+  const wolno = await czyUzytkownikJestSoltysemDlaSali(supabase, user.id, wiersz.hall_id);
+  if (!wolno) {
+    return { blad: "Brak uprawnień sołtysa do tej sali." };
+  }
+
+  if (wiersz.status !== "approved") {
+    return { blad: "Protokół odbioru można zapisać tylko dla zatwierdzonej rezerwacji." };
+  }
+
+  const koniec = new Date(wiersz.end_at);
+  if (Number.isNaN(koniec.getTime()) || koniec.getTime() > Date.now()) {
+    return { blad: "Odbiór sali możliwy dopiero po zakończeniu terminu rezerwacji." };
+  }
+
+  if (wiersz.checkout_inspection != null) {
+    return { blad: "Protokół odbioru został już zapisany dla tej rezerwacji." };
+  }
+
+  const { data: profil } = await supabase.from("users").select("display_name").eq("id", user.id).maybeSingle();
+  const nazwa = profil?.display_name?.trim() || "Sołtys";
+
+  const protokol: ProtokolOdbioruSali = {
+    wykonanoAt: new Date().toISOString(),
+    wykonanoPrzez: nazwa,
+    salaPorzadek: p.salaPorzadek,
+    pozycje: p.pozycje,
+    uwagiOgolne: p.uwagiOgolne?.trim() || null,
+    kaucjaZwrot: p.kaucjaZwrot,
+    uszkodzeniaPotwierdzone: p.uszkodzeniaPotwierdzone,
+  };
+
+  const { error } = await supabase
+    .from("hall_bookings")
+    .update({
+      checkout_inspection: protokol,
+      status: "completed",
+      is_completed: true,
+      was_damaged: p.uszkodzeniaPotwierdzone || p.pozycje.some((x) => x.stan === "uszkodzone" || x.stan === "brak"),
+    })
+    .eq("id", p.bookingId)
+    .eq("status", "approved");
+
+  if (error) {
+    console.error("[zapiszProtokolOdbioruSali]", error.message);
+    return { blad: "Nie udało się zapisać protokołu odbioru." };
+  }
+
+  if (wiersz.booked_by) {
+    const linkDoc = `/panel/mieszkaniec/swietlica/${wiersz.hall_id}/dokument?rezerwacja=${p.bookingId}`;
+    const { error: notifErr } = await supabase.from("notifications").insert({
+      user_id: wiersz.booked_by,
+      type: "hall_booking_checkout",
+      title: "Protokół odbioru sali — zapisany",
+      body: `Sołtys zamknął rezerwację. Kaucja: ${ETYKIETY_DECYZJI_KAUCJI[protokol.kaucjaZwrot]}.`,
+      link_url: linkDoc,
+      related_id: p.bookingId,
+      related_type: "hall_booking",
+      channel: "in_app",
+    });
+    if (notifErr) {
+      console.warn("[zapiszProtokolOdbioruSali] powiadomienie:", notifErr.message);
+    } else {
+      zaplanujWebPushDlaUzytkownika(wiersz.booked_by, {
+        title: "Protokół odbioru sali",
+        body: ETYKIETY_DECYZJI_KAUCJI[protokol.kaucjaZwrot],
+        linkUrl: linkDoc,
+        tag: `hall-checkout-${p.bookingId}`,
+      });
+    }
+  }
+
+  revalidatePath("/panel/soltys/rezerwacje");
+  revalidatePath("/panel/mieszkaniec/swietlica");
+  revalidatePath("/panel/powiadomienia");
+  revalidatePath(`/panel/mieszkaniec/swietlica/${wiersz.hall_id}`);
+  revalidatePath(`/panel/soltys/swietlica/${wiersz.hall_id}`);
+  revalidatePath(`/panel/soltys/swietlica/${wiersz.hall_id}/dokument`);
+  revalidatePath(`/panel/mieszkaniec/swietlica/${wiersz.hall_id}/dokument`);
+  return { ok: true };
+}
+
+const schemaDodajPakietWow = z.object({
+  hallId: z.string().uuid(),
+});
+
+export async function dodajPakietWowWyposazeniaSwietlicy(
+  dane: z.infer<typeof schemaDodajPakietWow>
+): Promise<WynikProsty> {
+  const parsed = schemaDodajPakietWow.safeParse(dane);
+  if (!parsed.success) {
+    return { blad: "Niepoprawny identyfikator sali." };
+  }
+
+  const supabase = utworzKlientaSupabaseSerwer();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) {
+    return { blad: "Zaloguj się." };
+  }
+
+  const { PAKIET_WOW_SWIETLICA } = await import("@/lib/swietlica/pakiety-wow-swietlica");
+  const p = parsed.data;
+
+  const { error } = await supabase.from("hall_inventory").insert(
+    PAKIET_WOW_SWIETLICA.map((it) => ({
+      hall_id: p.hallId,
+      category: it.category,
+      name: it.name,
+      description: it.description,
+      quantity: it.quantity,
+      quantity_available: 0,
+      condition: it.condition,
+      inventory_action: it.inventory_action,
+      width_cm: it.width_cm ?? null,
+      length_cm: it.length_cm ?? null,
+      height_cm: it.height_cm ?? null,
+      notes: "Propozycja pakietu WOW — do decyzji sołtysa i rady.",
+    }))
+  );
+
+  if (error) {
+    console.error("[dodajPakietWowWyposazeniaSwietlicy]", error.message);
+    return { blad: "Nie udało się dodać pakietu WOW (sprawdź migrację bazy i uprawnienia)." };
+  }
+
+  revalidatePath(`/panel/soltys/swietlica/${p.hallId}`);
+  revalidatePath(`/panel/mieszkaniec/swietlica/${p.hallId}`);
+  revalidatePath("/panel/mieszkaniec/swietlica");
+  return { ok: true };
+}
+
+const schemaProfilBudynkuSwietlicy = z.object({
+  hallId: z.string().uuid(),
+  address: z.string().trim().max(300).nullable().optional(),
+  description: z.string().trim().max(4000).nullable().optional(),
+  max_capacity: z.coerce.number().int().min(1).max(9999).nullable().optional(),
+  area_m2: z.coerce.number().min(1).max(99999).nullable().optional(),
+  parking_spaces: z.coerce.number().int().min(0).max(999).nullable().optional(),
+  caretaker_name: z.string().trim().max(120).nullable().optional(),
+  contact_phone: z.string().trim().max(40).nullable().optional(),
+  contact_email: z.string().trim().max(120).nullable().optional(),
+});
+
+export async function aktualizujProfilBudynkuSwietlicy(
+  dane: z.infer<typeof schemaProfilBudynkuSwietlicy>
+): Promise<WynikProsty> {
+  const parsed = schemaProfilBudynkuSwietlicy.safeParse(dane);
+  if (!parsed.success) {
+    return { blad: "Sprawdź poprawność danych budynku." };
+  }
+
+  const supabase = utworzKlientaSupabaseSerwer();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) {
+    return { blad: "Zaloguj się." };
+  }
+
+  const p = parsed.data;
+  const { error } = await supabase
+    .from("halls")
+    .update({
+      address: p.address?.trim().length ? p.address.trim() : null,
+      description: p.description?.trim().length ? p.description.trim() : null,
+      max_capacity: p.max_capacity ?? null,
+      area_m2: p.area_m2 ?? null,
+      parking_spaces: p.parking_spaces ?? null,
+      caretaker_name: p.caretaker_name?.trim().length ? p.caretaker_name.trim() : null,
+      contact_phone: p.contact_phone?.trim().length ? p.contact_phone.trim() : null,
+      contact_email: p.contact_email?.trim().length ? p.contact_email.trim() : null,
+    })
+    .eq("id", p.hallId);
+
+  if (error) {
+    console.error("[aktualizujProfilBudynkuSwietlicy]", error.message);
+    return { blad: "Nie udało się zapisać profilu budynku (uprawnienia sołtysa?)." };
+  }
+
+  revalidatePath(`/panel/soltys/swietlica/${p.hallId}`);
+  revalidatePath(`/panel/mieszkaniec/swietlica/${p.hallId}`);
+  revalidatePath("/panel/soltys/swietlica");
+  revalidatePath("/panel/mieszkaniec/swietlica");
+  revalidatePath(`/panel/soltys/swietlica/${p.hallId}/dokument`);
+  revalidatePath(`/panel/mieszkaniec/swietlica/${p.hallId}/dokument`);
   return { ok: true };
 }
 
@@ -957,6 +1228,112 @@ export async function zapiszRegulaminIKaucjeSali(
   revalidatePath(`/panel/mieszkaniec/swietlica/${p.hallId}`);
   revalidatePath(`/panel/soltys/swietlica/${p.hallId}/dokument`);
   revalidatePath(`/panel/mieszkaniec/swietlica/${p.hallId}/dokument`);
+  return { ok: true };
+}
+
+const schemaPlikRegulaminu = z.object({
+  hallId: z.string().uuid(),
+  rules_file_url: z.string().url().max(2000),
+  rules_file_name: z.string().min(1).max(255),
+});
+
+export async function zapiszPlikRegulaminuSali(
+  dane: z.infer<typeof schemaPlikRegulaminu>
+): Promise<WynikProsty> {
+  const parsed = schemaPlikRegulaminu.safeParse(dane);
+  if (!parsed.success) {
+    return { blad: "Niepoprawne dane pliku regulaminu." };
+  }
+
+  const supabase = utworzKlientaSupabaseSerwer();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) {
+    return { blad: "Zaloguj się." };
+  }
+
+  const p = parsed.data;
+  const wolno = await czyUzytkownikJestSoltysemDlaSali(supabase, user.id, p.hallId);
+  if (!wolno) {
+    return { blad: "Brak uprawnień do tej sali." };
+  }
+
+  const { data: poprzedni } = await supabase
+    .from("halls")
+    .select("rules_file_url")
+    .eq("id", p.hallId)
+    .maybeSingle();
+
+  const { error } = await supabase
+    .from("halls")
+    .update({
+      rules_file_url: p.rules_file_url,
+      rules_file_name: p.rules_file_name.trim(),
+    })
+    .eq("id", p.hallId);
+
+  if (error) {
+    console.error("[zapiszPlikRegulaminuSali]", error.message);
+    return { blad: "Nie udało się zapisać pliku regulaminu." };
+  }
+
+  if (poprzedni?.rules_file_url && poprzedni.rules_file_url !== p.rules_file_url) {
+    const { usunObiektR2JesliUrlNasz } = await import("@/lib/storage/usun-plik-r2-po-url");
+    await usunObiektR2JesliUrlNasz(poprzedni.rules_file_url);
+  }
+
+  revalidatePath(`/panel/soltys/swietlica/${p.hallId}`);
+  revalidatePath(`/panel/mieszkaniec/swietlica/${p.hallId}`);
+  revalidatePath(`/panel/soltys/swietlica/${p.hallId}/dokument`);
+  revalidatePath(`/panel/mieszkaniec/swietlica/${p.hallId}/dokument`);
+  return { ok: true };
+}
+
+export async function usunPlikRegulaminuSali(hallId: string): Promise<WynikProsty> {
+  const id = uuid.safeParse(hallId);
+  if (!id.success) {
+    return { blad: "Niepoprawny identyfikator sali." };
+  }
+
+  const supabase = utworzKlientaSupabaseSerwer();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) {
+    return { blad: "Zaloguj się." };
+  }
+
+  const wolno = await czyUzytkownikJestSoltysemDlaSali(supabase, user.id, id.data);
+  if (!wolno) {
+    return { blad: "Brak uprawnień do tej sali." };
+  }
+
+  const { data: poprzedni } = await supabase
+    .from("halls")
+    .select("rules_file_url")
+    .eq("id", id.data)
+    .maybeSingle();
+
+  const { error } = await supabase
+    .from("halls")
+    .update({ rules_file_url: null, rules_file_name: null })
+    .eq("id", id.data);
+
+  if (error) {
+    console.error("[usunPlikRegulaminuSali]", error.message);
+    return { blad: "Nie udało się usunąć pliku regulaminu." };
+  }
+
+  if (poprzedni?.rules_file_url) {
+    const { usunObiektR2JesliUrlNasz } = await import("@/lib/storage/usun-plik-r2-po-url");
+    await usunObiektR2JesliUrlNasz(poprzedni.rules_file_url);
+  }
+
+  revalidatePath(`/panel/soltys/swietlica/${id.data}`);
+  revalidatePath(`/panel/mieszkaniec/swietlica/${id.data}`);
+  revalidatePath(`/panel/soltys/swietlica/${id.data}/dokument`);
+  revalidatePath(`/panel/mieszkaniec/swietlica/${id.data}/dokument`);
   return { ok: true };
 }
 
@@ -2390,4 +2767,160 @@ export async function uruchomSynchronizacjeRssDlaMoichWsi(): Promise<WynikSyncRs
     noweWpisy: wynik.noweWpisy,
     bledy: wynik.bledy,
   };
+}
+
+const schemaLinkPrzydatny = z.object({
+  villageId: uuid,
+  id: uuid.optional(),
+  category: z.enum([
+    "bip_gmina",
+    "urzad_gmina",
+    "urzad_powiat",
+    "gazeta",
+    "radio",
+    "portal",
+    "tv",
+    "social",
+    "pomoc_spoleczna",
+    "zdrowie",
+    "edukacja",
+    "inne",
+  ]),
+  title: z.string().trim().min(1).max(200),
+  url: z.string().trim().max(2000).nullable().optional(),
+  phone: z.string().trim().max(80).nullable().optional(),
+  email: z.string().trim().max(200).nullable().optional(),
+  note: z.string().trim().max(2000).nullable().optional(),
+  display_order: z.number().int().min(-1000).max(10000).optional(),
+  is_active: z.boolean().optional(),
+});
+
+function oczyscOpcjonalnyTekst(t: string | null | undefined): string | null {
+  const s = t?.trim();
+  return s && s.length > 0 ? s : null;
+}
+
+export async function zapiszLinkPrzydatnyWsi(dane: z.infer<typeof schemaLinkPrzydatny>): Promise<WynikProsty> {
+  const parsed = schemaLinkPrzydatny.safeParse(dane);
+  if (!parsed.success) {
+    return { blad: "Sprawdź tytuł (1–200 znaków) i pozostałe pola." };
+  }
+  const supabase = utworzKlientaSupabaseSerwer();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { blad: "Zaloguj się." };
+  if (!(await czyUzytkownikMozeZarzadzacWsia(supabase, user.id, parsed.data.villageId))) {
+    return { blad: "Brak uprawnień do tej wsi." };
+  }
+
+  const row = {
+    village_id: parsed.data.villageId,
+    category: parsed.data.category,
+    title: parsed.data.title,
+    url: oczyscOpcjonalnyTekst(parsed.data.url),
+    phone: oczyscOpcjonalnyTekst(parsed.data.phone),
+    email: oczyscOpcjonalnyTekst(parsed.data.email),
+    note: oczyscOpcjonalnyTekst(parsed.data.note),
+    display_order: parsed.data.display_order ?? 0,
+    is_active: parsed.data.is_active ?? true,
+  };
+
+  if (parsed.data.id) {
+    const { error } = await supabase
+      .from("village_useful_links")
+      .update(row)
+      .eq("id", parsed.data.id)
+      .eq("village_id", parsed.data.villageId);
+    if (error) {
+      console.error("[zapiszLinkPrzydatnyWsi]", error.message);
+      return { blad: "Nie udało się zaktualizować linku." };
+    }
+  } else {
+    const { error } = await supabase.from("village_useful_links").insert(row);
+    if (error) {
+      console.error("[zapiszLinkPrzydatnyWsi]", error.message);
+      return { blad: "Nie udało się dodać linku (czy migracja bazy jest zastosowana?)." };
+    }
+  }
+
+  await revalidateProfilWsiDlaWioski(supabase, parsed.data.villageId);
+  revalidatePath("/panel/soltys/informacje-lokalne");
+  return { ok: true };
+}
+
+export async function usunLinkPrzydatnyWsi(linkId: string, villageId: string): Promise<WynikProsty> {
+  const id = uuid.safeParse(linkId);
+  const vid = uuid.safeParse(villageId);
+  if (!id.success || !vid.success) return { blad: "Niepoprawny identyfikator." };
+  const supabase = utworzKlientaSupabaseSerwer();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { blad: "Zaloguj się." };
+  if (!(await czyUzytkownikMozeZarzadzacWsia(supabase, user.id, vid.data))) {
+    return { blad: "Brak uprawnień." };
+  }
+  const { error } = await supabase
+    .from("village_useful_links")
+    .delete()
+    .eq("id", id.data)
+    .eq("village_id", vid.data);
+  if (error) {
+    console.error("[usunLinkPrzydatnyWsi]", error.message);
+    return { blad: "Nie udało się usunąć linku." };
+  }
+  await revalidateProfilWsiDlaWioski(supabase, vid.data);
+  revalidatePath("/panel/soltys/informacje-lokalne");
+  return { ok: true };
+}
+
+export async function dodajPakietLinkowPrzydatnych(
+  villageId: string,
+  pakietId: string,
+): Promise<WynikProsty & { dodano?: number }> {
+  const vid = uuid.safeParse(villageId);
+  if (!vid.success) return { blad: "Niepoprawna wieś." };
+  const { PAKIETY_LINKOW_PRZYDATNYCH } = await import("@/lib/wies/linki-przydatne");
+  const pakiet = PAKIETY_LINKOW_PRZYDATNYCH.find((p) => p.id === pakietId);
+  if (!pakiet) return { blad: "Nieznany pakiet." };
+
+  const supabase = utworzKlientaSupabaseSerwer();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { blad: "Zaloguj się." };
+  if (!(await czyUzytkownikMozeZarzadzacWsia(supabase, user.id, vid.data))) {
+    return { blad: "Brak uprawnień." };
+  }
+
+  const { data: istniejace } = await supabase
+    .from("village_useful_links")
+    .select("title, category")
+    .eq("village_id", vid.data);
+  const klucze = new Set((istniejace ?? []).map((r) => `${r.category}|${r.title}`));
+
+  const doWstawienia = pakiet.linki
+    .filter((l) => !klucze.has(`${l.category}|${l.title}`))
+    .map((l, i) => ({
+      village_id: vid.data,
+      category: l.category,
+      title: l.title,
+      note: l.note ?? null,
+      display_order: 100 + i,
+      is_active: true,
+    }));
+
+  if (doWstawienia.length === 0) {
+    return { ok: true, dodano: 0 };
+  }
+
+  const { error } = await supabase.from("village_useful_links").insert(doWstawienia);
+  if (error) {
+    console.error("[dodajPakietLinkowPrzydatnych]", error.message);
+    return { blad: "Nie udało się dodać pakietu." };
+  }
+  await revalidateProfilWsiDlaWioski(supabase, vid.data);
+  revalidatePath("/panel/soltys/informacje-lokalne");
+  return { ok: true, dodano: doWstawienia.length };
 }

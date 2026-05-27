@@ -1,6 +1,11 @@
 import type { ReactNode } from "react";
 import type { DaneDokumentuWynajmu } from "@/lib/swietlica/pobierz-dane-dokumentu-wynajmu";
 import { escapeHtml } from "@/lib/tekst/escape-html";
+import { ETYKIETY_AKCJI_INWENTARZA, normalizujAkcjeInwentarza } from "@/lib/swietlica/inwentarz-status";
+import {
+  ETYKIETY_DECYZJI_KAUCJI,
+  ETYKIETY_STANU_POZYCJI,
+} from "@/lib/swietlica/protokol-odbioru";
 import { PlanSaliRysunek } from "./plan-sali-rysunek";
 import { RzutParteruSaliSvg } from "./rzut-parteru-sali-svg";
 import { PrzyciskDrukuDokumentu } from "./przycisk-druku-dokumentu";
@@ -92,7 +97,9 @@ export function DokumentWynajmuWidok({ dane }: Props) {
               <div className="min-w-0">
                 <p className="font-serif text-2xl font-semibold tracking-tight text-green-950">naszawies.pl</p>
                 <h1 className="mt-2 break-words font-serif text-xl font-normal leading-tight tracking-tight text-green-950 sm:max-w-2xl sm:text-2xl sm:text-[1.65rem]">
-                  Załącznik informacyjny do wynajmu świetlicy
+                  {dane.rezerwacja
+                    ? "Załącznik informacyjny — rezerwacja świetlicy"
+                    : "Załącznik informacyjny do wynajmu świetlicy"}
                 </h1>
                 <p className="mt-3 max-w-prose text-sm leading-relaxed text-stone-600">
                   Dokument zestawia dane z panelu sołtysa i rezerwacji. <strong>Nie zastępuje</strong> umowy
@@ -118,6 +125,46 @@ export function DokumentWynajmuWidok({ dane }: Props) {
               </div>
             </dl>
           </header>
+
+          {dane.rezerwacja ? (
+            <Sekcja
+              nr="R"
+              tytul="Dane rezerwacji"
+              dzieci={
+                <dl className="grid gap-2 rounded-xl border border-indigo-200 bg-indigo-50/40 p-4 text-sm sm:grid-cols-2">
+                  <div>
+                    <dt className="text-xs font-semibold uppercase text-stone-500">Termin</dt>
+                    <dd className="mt-1 text-stone-900">
+                      {new Date(dane.rezerwacja.start_at).toLocaleString("pl-PL", {
+                        dateStyle: "medium",
+                        timeStyle: "short",
+                      })}{" "}
+                      —{" "}
+                      {new Date(dane.rezerwacja.end_at).toLocaleString("pl-PL", {
+                        dateStyle: "medium",
+                        timeStyle: "short",
+                      })}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt className="text-xs font-semibold uppercase text-stone-500">Wydarzenie</dt>
+                    <dd className="mt-1 text-stone-900">
+                      {escapeHtml(dane.rezerwacja.event_type)}
+                      {dane.rezerwacja.event_title ? ` — ${escapeHtml(dane.rezerwacja.event_title)}` : ""}
+                    </dd>
+                  </div>
+                  <div>
+                    <dt className="text-xs font-semibold uppercase text-stone-500">Wynajmujący</dt>
+                    <dd className="mt-1 text-stone-900">{escapeHtml(dane.rezerwacja.wynajmujacy ?? "—")}</dd>
+                  </div>
+                  <div>
+                    <dt className="text-xs font-semibold uppercase text-stone-500">Liczba gości</dt>
+                    <dd className="mt-1 text-stone-900">{dane.rezerwacja.expected_guests}</dd>
+                  </div>
+                </dl>
+              }
+            />
+          ) : null}
 
           <Sekcja
             nr="1"
@@ -189,7 +236,7 @@ export function DokumentWynajmuWidok({ dane }: Props) {
               </ul>
             </div>
               </div>
-              {(dane.sala.area_m2 != null || dane.sala.max_capacity != null || dane.sala.opis?.trim()) ? (
+              {(dane.sala.area_m2 != null || dane.sala.max_capacity != null || dane.sala.parking_spaces != null || dane.sala.opis?.trim()) ? (
                 <div className="mt-6 rounded-xl border border-dashed border-stone-300 bg-stone-50/50 p-4 text-sm text-stone-700">
                   {dane.sala.area_m2 != null ? (
                     <p>
@@ -199,6 +246,11 @@ export function DokumentWynajmuWidok({ dane }: Props) {
                   {dane.sala.max_capacity != null ? (
                     <p className={dane.sala.area_m2 != null ? "mt-1" : ""}>
                       <strong>Dopuszczalna liczba osób (wg wpisu):</strong> {dane.sala.max_capacity}
+                    </p>
+                  ) : null}
+                  {dane.sala.parking_spaces != null ? (
+                    <p className="mt-1">
+                      <strong>Miejsca parkingowe przy budynku:</strong> {dane.sala.parking_spaces}
                     </p>
                   ) : null}
                   {dane.sala.opis?.trim() ? (
@@ -270,7 +322,28 @@ export function DokumentWynajmuWidok({ dane }: Props) {
                     Brak treści regulaminu sali — uzupełnij w panelu sołtysa przy tej świetlicy.
                   </p>
                 )}
-                <h3 className="mt-8 text-sm font-semibold text-stone-800">3.2. Plac zabaw (sołectwo)</h3>
+                {dane.regulaminPlikUrl ? (
+                  <div className="mt-4 rounded-xl border border-green-200 bg-green-50/50 p-4">
+                    <p className="text-xs font-semibold uppercase tracking-wide text-green-900">Oficjalny plik regulaminu</p>
+                    <p className="mt-1 text-sm">
+                      <a
+                        href={dane.regulaminPlikUrl}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="font-medium text-green-800 underline"
+                      >
+                        {escapeHtml(dane.regulaminPlikNazwa ?? "Pobierz / otwórz regulamin")}
+                      </a>
+                    </p>
+                    {dane.regulaminPlikUrl.match(/\.(jpe?g|png|webp)(\?|$)/i) ? (
+                      <div className="mt-3 max-w-md overflow-hidden rounded-lg border border-stone-200">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={dane.regulaminPlikUrl} alt="Regulamin świetlicy" className="max-h-80 w-full object-contain" />
+                      </div>
+                    ) : null}
+                  </div>
+                ) : null}
+                <h3 className="mt-8 text-sm font-semibold text-stone-800">3.3. Plac zabaw (sołectwo)</h3>
                 {dane.regulaminPlacuZabaw?.trim() ? (
                   <div className="mt-2 whitespace-pre-wrap rounded-xl border border-stone-200 bg-stone-50/90 p-4 text-sm leading-relaxed text-stone-800">
                     {dane.regulaminPlacuZabaw}
@@ -286,11 +359,28 @@ export function DokumentWynajmuWidok({ dane }: Props) {
 
           <Sekcja
             nr="4"
-            tytul="Wyposażenie (asortyment)"
+            tytul={
+              dane.rezerwacja?.asortymentZamowiony.length
+                ? "Wyposażenie zamówione na rezerwację"
+                : "Wyposażenie (asortyment na sali)"
+            }
             dzieci={
-              dane.asortyment.length === 0 ? (
-                <p className="text-sm text-stone-600">Brak pozycji w katalogu wyposażenia.</p>
-              ) : (
+              (() => {
+                const lista =
+                  dane.rezerwacja?.asortymentZamowiony.length
+                    ? dane.rezerwacja.asortymentZamowiony
+                    : dane.asortyment;
+                if (lista.length === 0) {
+                  return (
+                    <p className="text-sm text-stone-600">
+                      {dane.rezerwacja
+                        ? "Brak zamówionego asortymentu przy tej rezerwacji."
+                        : "Brak pozycji operacyjnych w katalogu wyposażenia."}
+                    </p>
+                  );
+                }
+                return (
+                <>
                 <div className="max-w-full overflow-x-auto rounded-xl border border-stone-200 [-webkit-overflow-scrolling:touch] [scrollbar-width:thin]">
                   <table className="w-full min-w-[32rem] border-collapse text-sm">
                     <thead>
@@ -307,13 +397,21 @@ export function DokumentWynajmuWidok({ dane }: Props) {
                         <th className="py-2.5 pr-1 text-[10px] font-bold uppercase tracking-wide sm:py-3 sm:pr-2 sm:text-xs">
                           Ilość
                         </th>
+                        {!dane.rezerwacja ? (
+                          <th className="py-2.5 pr-1 text-[10px] font-bold uppercase tracking-wide sm:py-3 sm:pr-2 sm:text-xs">
+                            Status
+                          </th>
+                        ) : null}
                         <th className="min-w-[7rem] py-2.5 pr-2 text-[10px] font-bold uppercase tracking-wide sm:py-3 sm:pr-3 sm:text-xs">
                           Uwagi
                         </th>
                       </tr>
                     </thead>
                     <tbody>
-                      {dane.asortyment.map((w, i) => (
+                      {lista.map((w, i) => {
+                        const akcja = normalizujAkcjeInwentarza(w.inventory_action);
+                        const akcjaLabel = ETYKIETY_AKCJI_INWENTARZA[akcja].label;
+                        return (
                         <tr key={i} className="border-b border-stone-100 odd:bg-white even:bg-stone-50/50">
                           <td className="py-2.5 pl-2 pr-1 align-top sm:pl-3 sm:pr-2">
                             {w.image_url ? (
@@ -332,17 +430,75 @@ export function DokumentWynajmuWidok({ dane }: Props) {
                             {escapeHtml(w.nazwa)}
                           </td>
                           <td className="whitespace-nowrap py-2.5 pr-1 align-top tabular-nums sm:pr-2">{w.ilosc}</td>
+                          {!dane.rezerwacja ? (
+                            <td className="max-w-[5rem] break-words py-2.5 pr-1 align-top text-xs text-stone-700 sm:max-w-none sm:pr-2 sm:text-sm">
+                              {escapeHtml(akcjaLabel)}
+                            </td>
+                          ) : null}
                           <td className="min-w-0 max-w-[10rem] break-words py-2.5 pr-2 align-top text-xs text-stone-600 sm:max-w-none sm:pr-3 sm:text-sm">
                             {w.opis ? <span className="whitespace-pre-wrap">{escapeHtml(w.opis)}</span> : "—"}
                           </td>
                         </tr>
-                      ))}
+                        );
+                      })}
                     </tbody>
                   </table>
                 </div>
-              )
+                {!dane.rezerwacja && dane.asortymentPlanowany.length > 0 ? (
+                  <details className="mt-4 rounded-lg border border-stone-200 bg-stone-50/50 p-3">
+                    <summary className="cursor-pointer text-sm font-medium text-stone-700">
+                      Plany zakupów i pozycje do wycofania ({dane.asortymentPlanowany.length}) — informacyjnie
+                    </summary>
+                    <ul className="mt-2 space-y-1 text-xs text-stone-600">
+                      {dane.asortymentPlanowany.map((w, i) => (
+                        <li key={i}>
+                          {escapeHtml(w.nazwa)} ({w.ilosc} szt.) —{" "}
+                          {escapeHtml(ETYKIETY_AKCJI_INWENTARZA[normalizujAkcjeInwentarza(w.inventory_action)].label)}
+                        </li>
+                      ))}
+                    </ul>
+                  </details>
+                ) : null}
+                </>
+                );
+              })()
             }
           />
+
+          {dane.rezerwacja?.protokolOdbioru ? (
+            <Sekcja
+              nr="P"
+              tytul="Protokół odbioru sali"
+              dzieci={
+                <div className="rounded-xl border border-stone-200 bg-stone-50/80 p-4 text-sm">
+                  <p>
+                    <strong>Wykonano:</strong>{" "}
+                    {new Date(dane.rezerwacja.protokolOdbioru.wykonanoAt).toLocaleString("pl-PL")} ·{" "}
+                    {escapeHtml(dane.rezerwacja.protokolOdbioru.wykonanoPrzez)}
+                  </p>
+                  <p className="mt-2">
+                    <strong>Kaucja:</strong>{" "}
+                    {ETYKIETY_DECYZJI_KAUCJI[dane.rezerwacja.protokolOdbioru.kaucjaZwrot]}
+                  </p>
+                  {dane.rezerwacja.protokolOdbioru.pozycje.length > 0 ? (
+                    <ul className="mt-3 space-y-1 text-xs">
+                      {dane.rezerwacja.protokolOdbioru.pozycje.map((p, i) => (
+                        <li key={i}>
+                          {escapeHtml(p.nazwa)}: zam. {p.zamowiono}, zwr. {p.zwrocono} —{" "}
+                          {ETYKIETY_STANU_POZYCJI[p.stan]}
+                        </li>
+                      ))}
+                    </ul>
+                  ) : null}
+                  {dane.rezerwacja.protokolOdbioru.uwagiOgolne ? (
+                    <p className="mt-3 whitespace-pre-wrap text-stone-700">
+                      {escapeHtml(dane.rezerwacja.protokolOdbioru.uwagiOgolne)}
+                    </p>
+                  ) : null}
+                </div>
+              }
+            />
+          ) : null}
 
           <Sekcja
             nr="5"

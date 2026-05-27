@@ -30,6 +30,8 @@ type Props = {
   poczatkowyPlan: PlanSaliJson;
   /** Maks. osób w sali — porównanie z sumą miejsc w układzie stołów. */
   pojemnoscSali?: number | null;
+  /** Wymiary bryły z rzutu parteru — do przeniesienia na plan stołów. */
+  wymiaryZRzutu?: { bryla_szer_m: number; bryla_gleb_m: number } | null;
 };
 
 const MAX_COFANIA = 22;
@@ -82,7 +84,7 @@ function nowyStol(typ: TypElementuPlanu): ElementPlanuSali {
 
 const KLUCZ_SZABLONOW = (h: string) => `plan-sali-szablony-v1-${h}`;
 
-export function PlanSaliEdytor({ hallId, poczatkowyPlan, pojemnoscSali = null }: Props) {
+export function PlanSaliEdytor({ hallId, poczatkowyPlan, pojemnoscSali = null, wymiaryZRzutu = null }: Props) {
   const [plan, ustawPlan] = useState<PlanSaliJson>(() => ({
     wersja: 1,
     szerokosc_sali_m: poczatkowyPlan.szerokosc_sali_m,
@@ -862,6 +864,24 @@ export function PlanSaliEdytor({ hallId, poczatkowyPlan, pojemnoscSali = null }:
               />
             </label>
           </div>
+
+          {wymiaryZRzutu &&
+          wymiaryZRzutu.bryla_szer_m > 0 &&
+          wymiaryZRzutu.bryla_gleb_m > 0 ? (
+            <button
+              type="button"
+              onClick={() =>
+                mutujZOstatnimStanie((p) => ({
+                  ...p,
+                  szerokosc_sali_m: wymiaryZRzutu.bryla_szer_m,
+                  dlugosc_sali_m: wymiaryZRzutu.bryla_gleb_m,
+                }))
+              }
+              className="w-full rounded-lg border border-sky-200 bg-sky-50 px-3 py-2 text-xs font-medium text-sky-900 hover:bg-sky-100"
+            >
+              Przenieś wymiary z rzutu parteru ({wymiaryZRzutu.bryla_szer_m} × {wymiaryZRzutu.bryla_gleb_m} m)
+            </button>
+          ) : null}
 
           {wybranyEl ? (
             <div className="space-y-3 border-t border-stone-200 pt-3">

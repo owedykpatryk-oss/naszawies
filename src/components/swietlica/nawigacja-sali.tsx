@@ -14,16 +14,21 @@ export function NawigacjaSali({ hallId, rola, pokazRzutParteruMieszkaniec }: Pro
   const linki: { href: string; label: string }[] =
     rola === "soltys"
       ? [
-          { href: baza, label: "Przegląd sali" },
+          { href: `${baza}#budynek-swietlicy`, label: "Budynek" },
           { href: `${baza}#rzut-parteru-sali`, label: "Rzut parteru" },
           { href: `${baza}#plan-sali-edytor`, label: "Plan stołów" },
+          { href: `${baza}#asortyment-swietlicy`, label: "Asortyment" },
+          { href: `${baza}/tablica`, label: "Tablica cyfrowa" },
           { href: `${baza}/dokument`, label: "Dokument wynajmu" },
         ]
       : [
-          { href: baza, label: "Sala i rezerwacja" },
+          { href: `${baza}#budynek-swietlicy`, label: "Budynek" },
+          { href: baza, label: "Rezerwacja" },
           ...(pokazRzutParteruMieszkaniec
-            ? [{ href: `${baza}#rzut-parteru-sali-podglad`, label: "Rzut budynku" } as const]
+            ? [{ href: `${baza}#rzut-parteru-sali-podglad`, label: "Rzut i plan" } as const]
             : []),
+          { href: `${baza}#asortyment-swietlicy`, label: "Asortyment" },
+          { href: `${baza}/tablica`, label: "Tablica cyfrowa" },
           { href: `${baza}/dokument`, label: "Dokument informacyjny" },
         ];
 

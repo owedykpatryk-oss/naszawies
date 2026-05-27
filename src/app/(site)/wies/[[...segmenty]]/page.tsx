@@ -4,16 +4,30 @@ import { notFound } from "next/navigation";
 import { z } from "zod";
 import { StudzienkiProjektSwietlicy } from "@/components/wies/studzienki-projekt-swietlicy";
 import { WiesPostPubliczny } from "@/components/wies/wies-post-publiczny";
+import { pobierzPublicznePlakatyWsi } from "@/app/(site)/panel/grafika/akcje";
 import { pobierzKalendarzZajetosciDlaWsi } from "@/components/swietlica/kalendarz-zajetosci-publiczny";
+import { pobierzSalePubliczneDlaWsi } from "@/lib/swietlica/pobierz-sale-publiczne-wsi";
 import { WiesProfilPubliczny } from "@/components/wies/wies-profil-publiczny";
 import type { PrzewodnikSamorzadowyZapis } from "@/components/wies/sekcja-przewodnik-samorzadowy";
 import { WiesSzukajTresci } from "@/components/wies/wies-szukaj-tresci";
 import { roleDlaUprawnienia } from "@/lib/panel/uprawnienia-wsi";
 import { createPublicSupabaseClient } from "@/lib/supabase/public-client";
+import {
+  HubGminyStrona,
+  HubPowiatuStrona,
+  HubWojewodztwaStrona,
+} from "@/components/wies/hub-administracyjny-strona";
+import {
+  pobierzHubGminy,
+  pobierzHubPowiatu,
+  pobierzHubWojewodztwa,
+} from "@/lib/wies/hub-administracyjny";
+import { pobierzLinkiPrzydatneDlaWsiGminy } from "@/lib/wies/pobierz-linki-przydatne";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
 import { sciezkaProfiluWsi } from "@/lib/wies/sciezka-publiczna";
 import { znajdzWiesPoSciezce } from "@/lib/wies/znajdz-wies-po-sciezce";
 import { etykietaKategoriiDotacji } from "@/lib/wies/teksty-dotacji";
+import { normalizujKategorieLinku, type LinkPrzydatnyPubliczny } from "@/lib/wies/linki-przydatne";
 
 type Props = {
   params: { segmenty?: string[] };
@@ -67,6 +81,37 @@ function nazwaPowiazanejGrupy(rel: { name: string } | { name: string }[] | null 
 export async function generateMetadata({ params }: Props): Promise<Metadata> {
   const s = params.segmenty ?? [];
   const supabase = createPublicSupabaseClient();
+
+  if (supabase && s.length >= 1 && s.length <= 3) {
+    if (s.length === 3) {
+      const hub = await pobierzHubGminy(supabase, s[0]!, s[1]!, s[2]!);
+      if (hub) {
+        return {
+          title: `Wsie w gminie ${hub.gmina} — powiat ${hub.powiat}`,
+          description: `${hub.wies.length} miejscowości w gminie ${hub.gmina}, woj. ${hub.wojewodztwo} — profile, ogłoszenia i świetlice na naszawies.pl.`,
+        };
+      }
+    }
+    if (s.length === 2) {
+      const hub = await pobierzHubPowiatu(supabase, s[0]!, s[1]!);
+      if (hub) {
+        return {
+          title: `Gminy i wsie — powiat ${hub.powiat}`,
+          description: `${hub.gminy.length} gmin, ${hub.wies.length} miejscowości w powiecie ${hub.powiat}, woj. ${hub.wojewodztwo}.`,
+        };
+      }
+    }
+    if (s.length === 1) {
+      const hub = await pobierzHubWojewodztwa(supabase, s[0]!);
+      if (hub) {
+        return {
+          title: `Powiaty i wsie — ${hub.wojewodztwo}`,
+          description: `${hub.powiaty.length} powiatów, ${hub.wies.length} miejscowości w woj. ${hub.wojewodztwo}.`,
+        };
+      }
+    }
+  }
+
   if (s.length === 4) {
     if (!supabase) return { title: "Profil wsi" };
     const wies = await znajdzWiesPoSciezce(supabase, s[0], s[1], s[2], s[3]);
@@ -105,26 +150,40 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 export default async function WiesCatchAllPage({ params, searchParams }: Props) {
   const segmenty = params.segmenty ?? [];
 
+  if (segmenty.length >= 1 && segmenty.length <= 3) {
+    const supabase = createPublicSupabaseClient();
+    if (!supabase) {
+      return (
+        <main className="mx-auto min-w-0 max-w-2xl py-16 text-stone-800">
+          <h1 className="font-serif text-2xl text-green-950">Strona chwilowo niedostępna</h1>
+        </main>
+      );
+    }
+
+    if (segmenty.length === 3) {
+      const hub = await pobierzHubGminy(supabase, segmenty[0]!, segmenty[1]!, segmenty[2]!);
+      if (hub) {
+        const linkiPrzydatne = await pobierzLinkiPrzydatneDlaWsiGminy(
+          supabase,
+          hub.wies.map((w) => w.id),
+        );
+        return <HubGminyStrona hub={hub} linkiPrzydatne={linkiPrzydatne} />;
+      }
+    }
+    if (segmenty.length === 2) {
+      const hub = await pobierzHubPowiatu(supabase, segmenty[0]!, segmenty[1]!);
+      if (hub) return <HubPowiatuStrona hub={hub} />;
+    }
+    if (segmenty.length === 1) {
+      const hub = await pobierzHubWojewodztwa(supabase, segmenty[0]!);
+      if (hub) return <HubWojewodztwaStrona hub={hub} />;
+    }
+
+    notFound();
+  }
+
   if (segmenty.length < 4) {
-    return (
-      <main className="mx-auto min-w-0 max-w-2xl py-16 text-stone-800">
-        <p className="mb-4">
-          <Link href="/" className="text-green-800 underline">
-            ← Strona główna
-          </Link>
-        </p>
-        <h1 className="font-serif text-2xl text-green-950">Niepełny adres strony wsi</h1>
-        <p className="mt-2 text-stone-600">
-          Użyj pełnego linku do wsi (np. ze strony wyników wyszukiwania albo z paska przeglądarki, gdy już jesteś na
-          stronie sołectwa). Adres zawiera województwo, powiat, gminę i skróconą nazwę wsi.
-        </p>
-        <p className="mt-4 text-sm text-stone-600">
-          <Link href="/szukaj" className="text-green-800 underline">
-            Wyszukaj miejscowość
-          </Link>
-        </p>
-      </main>
-    );
+    notFound();
   }
 
   const [woj, powiat, gmina, slug, ...reszta] = segmenty;
@@ -166,6 +225,8 @@ export default async function WiesCatchAllPage({ params, searchParams }: Props) 
     const posty = (postyRaw ?? []) as { id: string; title: string; type: string; created_at: string }[];
 
     const kalendarz = wies.is_active ? await pobierzKalendarzZajetosciDlaWsi(supabase, wies.id) : [];
+    const salePubliczne = wies.is_active ? await pobierzSalePubliczneDlaWsi(supabase, wies.id) : [];
+    const plakatyPubliczne = wies.is_active ? await pobierzPublicznePlakatyWsi(wies.id) : [];
 
     const odWydarzen = new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString();
     const supabaseSerwer = utworzKlientaSupabaseSerwer();
@@ -181,6 +242,7 @@ export default async function WiesCatchAllPage({ params, searchParams }: Props) 
       { data: slotyRaw },
       { data: dotacjeSkrotRaw },
       { data: przewodnikRaw },
+      { data: linkiPrzydatneRaw },
       { data: transportStatusRaw },
       { data: transportOdjazdyRaw },
       { data: kontaktyUrzedoweRaw },
@@ -263,6 +325,13 @@ export default async function WiesCatchAllPage({ params, searchParams }: Props) 
         )
         .eq("village_id", wies.id)
         .maybeSingle(),
+      supabase
+        .from("village_useful_links")
+        .select("id, category, title, url, phone, email, note, display_order")
+        .eq("village_id", wies.id)
+        .eq("is_active", true)
+        .order("display_order", { ascending: true })
+        .order("title", { ascending: true }),
       supabase
         .from("village_transport_line_status")
         .select("status_color, status_label, delayed_count, cancelled_count, fallback_mode, updated_at")
@@ -415,6 +484,16 @@ export default async function WiesCatchAllPage({ params, searchParams }: Props) 
       application_deadline: string | null;
     }[];
     const przewodnikSamorzadowy = (przewodnikRaw as PrzewodnikSamorzadowyZapis | null) ?? null;
+    const linkiPrzydatne: LinkPrzydatnyPubliczny[] = (linkiPrzydatneRaw ?? []).map((r) => ({
+      id: r.id,
+      category: normalizujKategorieLinku(r.category),
+      title: r.title,
+      url: r.url,
+      phone: r.phone,
+      email: r.email,
+      note: r.note,
+      display_order: r.display_order,
+    }));
     const transportStatus = (transportStatusRaw as {
       status_color: string;
       status_label: string;
@@ -500,6 +579,8 @@ export default async function WiesCatchAllPage({ params, searchParams }: Props) 
           wies={wies}
           posty={posty}
           kalendarzZajetosci={kalendarz}
+          saleSwietlicy={salePubliczne}
+          plakatyPubliczne={plakatyPubliczne}
           blog={blog}
           historia={historia}
           rynek={rynek}
@@ -513,6 +594,7 @@ export default async function WiesCatchAllPage({ params, searchParams }: Props) 
           harmonogramTygodnia={harmonogramTygodnia}
           dotacjeSkrot={dotacjeSkrot}
           przewodnikSamorzadowy={przewodnikSamorzadowy}
+          linkiPrzydatne={linkiPrzydatne}
           transportStatus={transportStatus}
           transportOdjazdy={transportOdjazdy}
           kontaktyUrzedowe={kontaktyUrzedowe}

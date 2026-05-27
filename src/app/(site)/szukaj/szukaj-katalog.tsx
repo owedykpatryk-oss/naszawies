@@ -1,8 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { FormEvent, useCallback, useEffect, useRef, useState } from "react";
+import { FormEvent, useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useRouter } from "next/navigation";
+import { sciezkaGminy, sciezkaPowiatu } from "@/lib/wies/sciezka-publiczna";
 
 type Wynik = {
   id: string;
@@ -72,6 +73,21 @@ export function SzukajKatalog({ poczatkoweZapytanie }: { poczatkoweZapytanie?: s
     await wykonajSzukanie(fraza, { aktualizujUrl: true });
   }
 
+  const skrotyHub = useMemo(() => {
+    if (wyniki.length < 2) return [];
+    const mapaGmin = new Map<string, { gmina: string; powiat: string; wojewodztwo: string; liczba: number }>();
+    for (const w of wyniki) {
+      const klucz = `${w.gmina}|${w.powiat}|${w.wojewodztwo}`;
+      const prev = mapaGmin.get(klucz);
+      if (prev) prev.liczba += 1;
+      else mapaGmin.set(klucz, { gmina: w.gmina, powiat: w.powiat, wojewodztwo: w.wojewodztwo, liczba: 1 });
+    }
+    return Array.from(mapaGmin.values())
+      .filter((g) => g.liczba >= 2)
+      .sort((a, b) => b.liczba - a.liczba)
+      .slice(0, 3);
+  }, [wyniki]);
+
   return (
     <div className="mt-10">
       <form
@@ -104,6 +120,41 @@ export function SzukajKatalog({ poczatkoweZapytanie }: { poczatkoweZapytanie?: s
         </p>
       ) : null}
 
+      {skrotyHub.length > 0 ? (
+        <div className="mt-6 rounded-xl border border-emerald-200/80 bg-emerald-50/50 p-4">
+          <p className="text-sm font-medium text-emerald-950">Przeglądaj całą gminę lub powiat</p>
+          <ul className="mt-2 flex flex-wrap gap-2">
+            {skrotyHub.map((g) => (
+              <li key={`${g.gmina}-${g.powiat}`}>
+                <Link
+                  href={sciezkaGminy({
+                    voivodeship: g.wojewodztwo,
+                    county: g.powiat,
+                    commune: g.gmina,
+                  })}
+                  className="inline-flex rounded-full border border-emerald-300 bg-white px-3 py-1.5 text-xs font-medium text-emerald-900 hover:bg-emerald-100"
+                >
+                  Wszystkie wsie: {g.gmina} ({g.liczba})
+                </Link>
+              </li>
+            ))}
+            {skrotyHub[0] ? (
+              <li>
+                <Link
+                  href={sciezkaPowiatu({
+                    voivodeship: skrotyHub[0].wojewodztwo,
+                    county: skrotyHub[0].powiat,
+                  })}
+                  className="inline-flex rounded-full border border-stone-300 bg-white px-3 py-1.5 text-xs text-stone-700 hover:bg-stone-50"
+                >
+                  Powiat {skrotyHub[0].powiat}
+                </Link>
+              </li>
+            ) : null}
+          </ul>
+        </div>
+      ) : null}
+
       {wyniki.length > 0 ? (
         <ul className="mt-8 divide-y divide-stone-200 rounded-2xl border border-stone-200 bg-white shadow-sm">
           {wyniki.map((w) => (
@@ -115,7 +166,24 @@ export function SzukajKatalog({ poczatkoweZapytanie }: { poczatkoweZapytanie?: s
                 {w.nazwa}
               </Link>
               <p className="text-sm text-stone-600">
-                {w.gmina}, {w.powiat} · {w.wojewodztwo}
+                <Link
+                  href={sciezkaGminy({
+                    voivodeship: w.wojewodztwo,
+                    county: w.powiat,
+                    commune: w.gmina,
+                  })}
+                  className="text-green-800 hover:underline"
+                >
+                  {w.gmina}
+                </Link>
+                ,{" "}
+                <Link
+                  href={sciezkaPowiatu({ voivodeship: w.wojewodztwo, county: w.powiat })}
+                  className="text-green-800 hover:underline"
+                >
+                  {w.powiat}
+                </Link>{" "}
+                · {w.wojewodztwo}
               </p>
             </li>
           ))}

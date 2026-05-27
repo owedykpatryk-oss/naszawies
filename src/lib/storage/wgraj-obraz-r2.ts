@@ -5,6 +5,7 @@ import {
   R2_BUCKET_AVATARS,
   R2_BUCKET_BOOKING_DAMAGE,
   R2_BUCKET_HALL_INVENTORY,
+  R2_BUCKET_HALL_RULES,
 } from "@/lib/cloudflare/r2-bucket-znaczniki";
 import { czyPelnaKonfiguracjaR2S3 } from "@/lib/cloudflare/r2-env";
 import { wgrajBuforDoR2 } from "@/lib/cloudflare/r2-s3-klient";
@@ -17,7 +18,8 @@ import {
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
 
 const uuid = z.string().uuid();
-const MIME = new Set(["image/jpeg", "image/png", "image/webp"]);
+const MIME_OBRAZ = new Set(["image/jpeg", "image/png", "image/webp"]);
+const MIME_REGULAMIN = new Set(["image/jpeg", "image/png", "image/webp", "application/pdf"]);
 
 export type WynikWgrajR2 = { ok: true; publicUrl: string } | { blad: string };
 
@@ -91,7 +93,7 @@ export async function wgrajObrazDoMagazynuR2(formData: FormData): Promise<WynikW
   if (!(plik instanceof File) || plik.size < 1) {
     return { blad: "Brak pliku." };
   }
-  if (!MIME.has(plik.type)) {
+  if (!MIME_OBRAZ.has(plik.type)) {
     return { blad: "Dozwolone: JPEG, PNG, WebP." };
   }
 
@@ -149,6 +151,37 @@ export async function wgrajObrazDoMagazynuR2(formData: FormData): Promise<WynikW
     const w = await wgrajBuforDoR2(R2_BUCKET_BOOKING_DAMAGE, klucz, buf, plik.type);
     if (!w.ok) return { blad: w.blad };
     const publicUrl = zbudujPublicznyUrlObiektuR2(R2_BUCKET_BOOKING_DAMAGE, klucz);
+    if (!publicUrl) return { blad: "Nie udało się zbudować publicznego adresu pliku." };
+    return { ok: true, publicUrl };
+  }
+
+  if (typ === "rules") {
+    if (buf.length > 10 * 1024 * 1024) {
+      return { blad: "Maksymalnie 10 MB." };
+    }
+    if (!MIME_REGULAMIN.has(plik.type)) {
+      return { blad: "Dozwolone: PDF, JPEG, PNG, WebP." };
+    }
+    const hallId = String(formData.get("hallId") ?? "");
+    if (!uuid.safeParse(hallId).success) {
+      return { blad: "Niepoprawny identyfikator sali." };
+    }
+    const moze = await czySoltysLubWspoladminSwietlicy(supabase, user.id, hallId);
+    if (!moze) {
+      return { blad: "Brak uprawnień do regulaminu tej świetlicy." };
+    }
+    const ext =
+      plik.type === "application/pdf"
+        ? "pdf"
+        : plik.type === "image/png"
+          ? "png"
+          : plik.type === "image/webp"
+            ? "webp"
+            : "jpg";
+    const klucz = `${hallId}/regulamin-${Date.now()}.${ext}`;
+    const w = await wgrajBuforDoR2(R2_BUCKET_HALL_RULES, klucz, buf, plik.type);
+    if (!w.ok) return { blad: w.blad };
+    const publicUrl = zbudujPublicznyUrlObiektuR2(R2_BUCKET_HALL_RULES, klucz);
     if (!publicUrl) return { blad: "Nie udało się zbudować publicznego adresu pliku." };
     return { ok: true, publicUrl };
   }

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { bezpiecznaSciezkaNastepna } from "@/lib/auth/bezpieczna-sciezka-nastepna";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
 import { pobierzPochodzeniePubliczne } from "@/lib/zadanie/pochodzenie-publiczne";
 import { LogowanieProwiderzy } from "../logowanie/logowanie-prowiderzy";
@@ -11,8 +12,15 @@ export const metadata: Metadata = {
   description: "Załóż konto na naszawies.pl.",
 };
 
-export default async function RejestracjaPage() {
+type Props = {
+  searchParams: Record<string, string | string[] | undefined>;
+};
+
+export default async function RejestracjaPage({ searchParams }: Props) {
   const pochodzenie = pobierzPochodzeniePubliczne();
+  const nastepnyParam = searchParams.next;
+  const nastepna =
+    typeof nastepnyParam === "string" ? bezpiecznaSciezkaNastepna(nastepnyParam) : "/panel";
 
   try {
     const supabase = utworzKlientaSupabaseSerwer();
@@ -20,7 +28,7 @@ export default async function RejestracjaPage() {
       data: { user },
     } = await supabase.auth.getUser();
     if (user) {
-      redirect("/panel");
+      redirect(nastepna);
     }
   } catch {
     // brak env — strona dalej pokaże formularz
@@ -40,9 +48,14 @@ export default async function RejestracjaPage() {
         naszawies.pl przy roli sołtysa). Tutaj tylko zakładasz logowanie — bez wyboru „jestem
         sołtysem” w sensie prawnym.
       </p>
-      <LogowanieProwiderzy pochodzeniePubliczne={pochodzenie} nastepnaSciezka="/panel" />
+      {nastepna !== "/panel" ? (
+        <p className="mt-3 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs text-emerald-900">
+          Po rejestracji wrócisz do: <strong>{nastepna}</strong>
+        </p>
+      ) : null}
+      <LogowanieProwiderzy pochodzeniePubliczne={pochodzenie} nastepnaSciezka={nastepna} />
       <p className="mt-8 text-center text-sm text-stone-500">lub zarejestruj się e-mailem</p>
-      <RejestracjaFormularz pochodzeniePubliczne={pochodzenie} />
+      <RejestracjaFormularz pochodzeniePubliczne={pochodzenie} nastepnaSciezka={nastepna} />
     </main>
   );
 }

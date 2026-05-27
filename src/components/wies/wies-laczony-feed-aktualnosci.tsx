@@ -5,7 +5,7 @@ import type { ElementLaczonegoFeedu } from "@/lib/wies/zbuduj-laczony-feed-aktua
 export function WiesLaczonyFeedAktualnosci({ wpisy }: { wpisy: ElementLaczonegoFeedu[] }) {
   if (wpisy.length === 0) {
     return (
-      <section className="mt-10 rounded-xl border border-sky-200/80 bg-sky-50/30 px-4 py-5">
+      <section id="sekcja-aktualnosci-laczone" className="mt-10 scroll-mt-8 rounded-xl border border-sky-200/80 bg-sky-50/30 px-4 py-5">
         <h2 className="font-serif text-xl text-green-950">Najnowsze na wsi</h2>
         <p className="mt-2 text-sm text-stone-600">
           Gdy pojawią się ogłoszenia, wpisy bloga, historia, wiadomości lub wydarzenia, zobaczysz tu jeden wspólny
@@ -16,7 +16,7 @@ export function WiesLaczonyFeedAktualnosci({ wpisy }: { wpisy: ElementLaczonegoF
   }
 
   return (
-    <section className="mt-10 rounded-xl border border-sky-200/80 bg-sky-50/30 px-4 py-5 shadow-sm">
+    <section id="sekcja-aktualnosci-laczone" className="mt-10 scroll-mt-8 rounded-xl border border-sky-200/80 bg-sky-50/30 px-4 py-5 shadow-sm">
       <h2 className="font-serif text-xl text-green-950">Najnowsze na wsi</h2>
       <p className="mt-1 text-sm text-stone-600">
         Jedna lista — ogłoszenia, blog, historia, wiadomości lokalne i zbliżające się wydarzenia, od najnowszych.

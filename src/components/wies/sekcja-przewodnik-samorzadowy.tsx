@@ -41,7 +41,7 @@ export function SekcjaPrzewodnikSamorzadowy({
     ].some((x) => x && x.trim().length > 0);
 
   return (
-    <section className="mt-10">
+    <section id="sekcja-przewodnik-samorzadowy" className="mt-10 scroll-mt-8">
       <h2 className="font-serif text-xl text-green-950">Gmina, powiat, województwo — kto za co</h2>
       <p className="mt-1 text-sm text-stone-600">
         Skrót, gdzie szukać pomocy urzędowej i jak zwykle dzielą się zadania. Konkretne adresy, telefony i linki do BIP —

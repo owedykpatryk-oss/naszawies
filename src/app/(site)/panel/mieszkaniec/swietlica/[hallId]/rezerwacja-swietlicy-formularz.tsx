@@ -2,6 +2,7 @@
 
 import { useRouter } from "next/navigation";
 import { FormEvent, useMemo, useState, useTransition } from "react";
+import { WyborTerminuSwietlicyKlient } from "@/components/swietlica/wybor-terminu-swietlicy-klient";
 import { zlozRezerwacjeSwietlicy } from "../../akcje";
 
 const typyWydarzen = ["urodziny", "wesele", "zebranie", "zajecia", "inne"] as const;
@@ -11,9 +12,46 @@ type Props = {
   hallId: string;
   maxGosci: number | null;
   inventory: { id: string; name: string; quantity_available: number | null; quantity: number }[];
+  zajeteTerminy: { start_at: string; end_at: string; status: string }[];
+  kaucjaPln: number | null;
+  cenaMieszkaniec: number | null;
+  cenaObcy: number | null;
+  regulaminText: string | null;
+  regulaminPlikUrl: string | null;
 };
 
-export function RezerwacjaSwietlicyFormularz({ hallId, maxGosci, inventory }: Props) {
+function domyslnyStart(): string {
+  const d = new Date();
+  d.setDate(d.getDate() + 7);
+  d.setHours(16, 0, 0, 0);
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+function domyslnyKoniec(start: string): string {
+  const d = new Date(start);
+  if (Number.isNaN(d.getTime())) return start;
+  d.setHours(d.getHours() + 4);
+  const pad = (n: number) => String(n).padStart(2, "0");
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+function pln(n: number | null) {
+  if (n == null) return null;
+  return new Intl.NumberFormat("pl-PL", { style: "currency", currency: "PLN" }).format(n);
+}
+
+export function RezerwacjaSwietlicyFormularz({
+  hallId,
+  maxGosci,
+  inventory,
+  zajeteTerminy,
+  kaucjaPln,
+  cenaMieszkaniec,
+  cenaObcy,
+  regulaminText,
+  regulaminPlikUrl,
+}: Props) {
   const router = useRouter();
   const [blad, ustawBlad] = useState("");
   const [sukces, ustawSukces] = useState("");
@@ -22,6 +60,8 @@ export function RezerwacjaSwietlicyFormularz({ hallId, maxGosci, inventory }: Pr
   const [expectedGuestsInput, setExpectedGuestsInput] = useState<number>(20);
   const [seatingPresetInput, setSeatingPresetInput] =
     useState<(typeof typyUstawienia)[number]>("auto_bankiet");
+  const [startAt, setStartAt] = useState(domyslnyStart);
+  const [endAt, setEndAt] = useState(() => domyslnyKoniec(domyslnyStart()));
 
   const sortedInventory = useMemo(
     () => [...inventory].sort((a, b) => a.name.localeCompare(b.name, "pl-PL")),
@@ -69,8 +109,8 @@ export function RezerwacjaSwietlicyFormularz({ hallId, maxGosci, inventory }: Pr
   function onSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const fd = new FormData(e.currentTarget);
-    const startAt = String(fd.get("start_at") || "");
-    const endAt = String(fd.get("end_at") || "");
+    const startAtVal = startAt;
+    const endAtVal = endAt;
     const eventType = String(fd.get("event_type") || "inne");
     const seatingPreset = String(fd.get("seating_preset") || "wlasny");
     const eventTitle = String(fd.get("event_title") || "").trim();
@@ -134,7 +174,9 @@ export function RezerwacjaSwietlicyFormularz({ hallId, maxGosci, inventory }: Pr
         return;
       }
       ustawSukces(wynik.komunikat ?? "Wysłano wniosek o rezerwację.");
-      (e.target as HTMLFormElement).reset();
+      const nowyStart = domyslnyStart();
+      setStartAt(nowyStart);
+      setEndAt(domyslnyKoniec(nowyStart));
       setRequested({});
       router.refresh();
     });
@@ -179,20 +221,44 @@ export function RezerwacjaSwietlicyFormularz({ hallId, maxGosci, inventory }: Pr
         </a>
       </nav>
 
-      <div id="rs-sekcja-termin" className="scroll-mt-[10.5rem] grid gap-4 sm:grid-cols-2">
-        <div>
-          <label htmlFor="rs-start" className="mb-1 block">
-            Od (data i godzina)
-          </label>
-          <input id="rs-start" name="start_at" type="datetime-local" required />
-        </div>
-        <div>
-          <label htmlFor="rs-end" className="mb-1 block">
-            Do (data i godzina)
-          </label>
-          <input id="rs-end" name="end_at" type="datetime-local" required />
-        </div>
+      <div id="rs-sekcja-termin" className="scroll-mt-[10.5rem]">
+        <WyborTerminuSwietlicyKlient
+          zajeteTerminy={zajeteTerminy}
+          startValue={startAt}
+          endValue={endAt}
+          onStartChange={(v) => {
+            setStartAt(v);
+            if (!endAt || new Date(endAt) <= new Date(v)) setEndAt(domyslnyKoniec(v));
+          }}
+          onEndChange={setEndAt}
+        />
       </div>
+
+      {(kaucjaPln != null || cenaMieszkaniec != null || cenaObcy != null || regulaminText?.trim() || regulaminPlikUrl) ? (
+        <div className="rounded-xl border border-green-200/80 bg-green-50/40 p-4 text-sm">
+          <p className="font-medium text-green-950">Opłaty i regulamin (informacyjnie)</p>
+          <ul className="mt-2 space-y-1 text-xs text-stone-700">
+            {kaucjaPln != null ? <li>Kaucja: <strong>{pln(kaucjaPln)}</strong></li> : null}
+            {cenaMieszkaniec != null ? <li>Stawka — mieszkaniec: <strong>{pln(cenaMieszkaniec)}</strong></li> : null}
+            {cenaObcy != null ? <li>Stawka — osoby spoza wsi: <strong>{pln(cenaObcy)}</strong></li> : null}
+          </ul>
+          {regulaminText?.trim() ? (
+            <details className="mt-3">
+              <summary className="cursor-pointer text-xs font-medium text-green-900">Pełny regulamin sali</summary>
+              <div className="mt-2 max-h-48 overflow-y-auto whitespace-pre-wrap rounded border border-stone-200 bg-white p-3 text-xs text-stone-800">
+                {regulaminText}
+              </div>
+            </details>
+          ) : null}
+          {regulaminPlikUrl ? (
+            <p className="mt-2">
+              <a href={regulaminPlikUrl} target="_blank" rel="noopener noreferrer" className="text-xs text-green-800 underline">
+                Otwórz oficjalny plik regulaminu (PDF / skan)
+              </a>
+            </p>
+          ) : null}
+        </div>
+      ) : null}
 
       <div id="rs-sekcja-ustawienia" className="scroll-mt-[10.5rem]">
         <label htmlFor="rs-type" className="mb-1 block">

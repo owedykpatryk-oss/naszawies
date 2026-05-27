@@ -1,13 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
-import slugify from "slugify";
-
-function slugCzesciUrl(tekst: string): string {
-  return slugify(decodeURIComponent(tekst), { lower: true, strict: true, locale: "pl" });
-}
-
-function slugCzesciZBazy(tekst: string): string {
-  return slugify(tekst, { lower: true, strict: true, locale: "pl" });
-}
+import { slugCzesciAdministracyjnej, slugCzesciZBazy } from "@/lib/wies/slug-administracyjny";
 
 export type WiesPubliczna = {
   id: string;
@@ -25,7 +17,6 @@ export type WiesPubliczna = {
   website: string | null;
   is_active: boolean;
   cover_image_url: string | null;
-  /** Ostatnia zmiana rekordu wsi w katalogu (nie treści modułów). */
   updated_at: string | null;
 };
 
@@ -37,17 +28,17 @@ export async function znajdzWiesPoSciezce(
   wojSeg: string,
   powSeg: string,
   gminaSeg: string,
-  slugWioski: string
+  slugWioski: string,
 ): Promise<WiesPubliczna | null> {
   const slug = decodeURIComponent(slugWioski);
-  const w = slugCzesciUrl(wojSeg);
-  const p = slugCzesciUrl(powSeg);
-  const g = slugCzesciUrl(gminaSeg);
+  const w = slugCzesciAdministracyjnej(wojSeg);
+  const p = slugCzesciAdministracyjnej(powSeg);
+  const g = slugCzesciAdministracyjnej(gminaSeg);
 
   const { data, error } = await supabase
     .from("villages")
     .select(
-      "id, teryt_id, name, slug, voivodeship, county, commune, commune_type, latitude, longitude, population, description, website, is_active, cover_image_url, updated_at"
+      "id, teryt_id, name, slug, voivodeship, county, commune, commune_type, latitude, longitude, population, description, website, is_active, cover_image_url, updated_at",
     )
     .eq("slug", slug);
 
@@ -59,7 +50,7 @@ export async function znajdzWiesPoSciezce(
     (v) =>
       slugCzesciZBazy(v.voivodeship) === w &&
       slugCzesciZBazy(v.county) === p &&
-      slugCzesciZBazy(v.commune) === g
+      slugCzesciZBazy(v.commune) === g,
   );
 
   return (hit as WiesPubliczna) ?? null;

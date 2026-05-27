@@ -10,6 +10,11 @@ import {
 } from "@/lib/swietlica/limity-dokumentacji-zniszczen";
 import { usunObiektR2 } from "@/lib/cloudflare/r2-s3-klient";
 import { powiadomSoltysowONowymWnioskuRoli } from "@/lib/powiadomienia/powiadom-soltysow-o-wniosku-roli";
+import {
+  powiadomSoltysowOAnulowaniuRezerwacji,
+  powiadomSoltysowONowymWnioskuRezerwacji,
+} from "@/lib/powiadomienia/powiadom-soltysow-o-wniosku-rezerwacji";
+import { walidujDostepnoscAsortymentuWTerminie } from "@/lib/swietlica/dostepnosc-asortymentu-w-terminie";
 import { etykietaRoliWsi } from "@/lib/panel/role-definicje";
 import { pobierzVillageIdsRoliPaneluSoltysa } from "@/lib/panel/rola-panelu-soltysa";
 import { roleDlaUprawnienia } from "@/lib/panel/uprawnienia-wsi";
@@ -282,27 +287,15 @@ export async function zlozRezerwacjeSwietlicy(
         };
 
   if (requestedInventory.length > 0) {
-    const ids = requestedInventory.map((r) => r.inventoryId);
-    const { data: invRows, error: invErr } = await supabase
-      .from("hall_inventory")
-      .select("id, quantity, quantity_available")
-      .eq("hall_id", p.hallId)
-      .in("id", ids);
-    if (invErr) {
-      console.error("[zlozRezerwacjeSwietlicy] inventory-check", invErr.message);
-      return { blad: "Nie udało się zweryfikować dostępności asortymentu." };
-    }
-    const mapa = new Map(
-      (invRows ?? []).map((r) => [r.id as string, Number(r.quantity_available ?? r.quantity ?? 0)])
+    const walidacjaAsort = await walidujDostepnoscAsortymentuWTerminie(
+      supabase,
+      p.hallId,
+      startIso,
+      endIso,
+      requestedInventory,
     );
-    for (const req of requestedInventory) {
-      const max = mapa.get(req.inventoryId);
-      if (max == null) {
-        return { blad: "Wybrana pozycja asortymentu nie istnieje już w tej sali." };
-      }
-      if (req.quantity > max) {
-        return { blad: `Wybrano za dużo sztuk asortymentu (max dostępne: ${max}).` };
-      }
+    if (!walidacjaAsort.ok) {
+      return { blad: walidacjaAsort.blad };
     }
   }
 
@@ -322,30 +315,112 @@ export async function zlozRezerwacjeSwietlicy(
     };
   }
 
-  const { error } = await supabase.from("hall_bookings").insert({
-    hall_id: p.hallId,
-    booked_by: user.id,
-    start_at: startIso,
-    end_at: endIso,
-    event_type: p.eventType,
-    event_title: p.eventTitle?.length ? p.eventTitle : null,
-    expected_guests: p.expectedGuests,
-    has_alcohol: p.hasAlcohol,
-    contact_phone: p.contactPhone?.length ? p.contactPhone : null,
-    layout_data: hallLayoutData,
-    requested_inventory: requestedInventory,
-    rules_accepted_at: new Date().toISOString(),
-    status: "pending",
-  });
+  const { data: wiersz, error } = await supabase
+    .from("hall_bookings")
+    .insert({
+      hall_id: p.hallId,
+      booked_by: user.id,
+      start_at: startIso,
+      end_at: endIso,
+      event_type: p.eventType,
+      event_title: p.eventTitle?.length ? p.eventTitle : null,
+      expected_guests: p.expectedGuests,
+      has_alcohol: p.hasAlcohol,
+      contact_phone: p.contactPhone?.length ? p.contactPhone : null,
+      layout_data: hallLayoutData,
+      requested_inventory: requestedInventory,
+      rules_accepted_at: new Date().toISOString(),
+      status: "pending",
+    })
+    .select("id, halls!inner(village_id)")
+    .single();
 
-  if (error) {
-    console.error("[zlozRezerwacjeSwietlicy]", error.message);
+  if (error || !wiersz) {
+    console.error("[zlozRezerwacjeSwietlicy]", error?.message);
     return { blad: "Nie udało się złożyć rezerwacji (sprawdź dostęp do sali lub dane)." };
+  }
+
+  const halls = wiersz.halls as { village_id: string } | { village_id: string }[] | null;
+  const wiesId = Array.isArray(halls) ? halls[0]?.village_id : halls?.village_id;
+  const adminPowiadomienia = createAdminSupabaseClient();
+  if (adminPowiadomienia && wiesId) {
+    void powiadomSoltysowONowymWnioskuRezerwacji(adminPowiadomienia, {
+      villageId: wiesId,
+      hallId: p.hallId,
+      bookingId: wiersz.id,
+      applicantUserId: user.id,
+      startAt: startIso,
+      endAt: endIso,
+      eventType: p.eventType,
+      eventTitle: p.eventTitle?.length ? p.eventTitle : null,
+    });
   }
 
   revalidatePath(`/panel/mieszkaniec/swietlica/${p.hallId}`);
   revalidatePath("/panel/soltys/rezerwacje");
+  revalidatePath("/panel/powiadomienia");
   return { ok: true, komunikat: "Wniosek o rezerwację wysłany — sołtys zatwierdzi w panelu." };
+}
+
+/** Mieszkaniec może anulować własny wniosek oczekujący na sołtysa. */
+export async function anulujRezerwacjeSwietlicy(bookingId: string): Promise<WynikProsty> {
+  const id = uuid.safeParse(bookingId);
+  if (!id.success) {
+    return { blad: "Niepoprawny identyfikator rezerwacji." };
+  }
+
+  const supabase = utworzKlientaSupabaseSerwer();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) {
+    return { blad: "Zaloguj się." };
+  }
+
+  const { data: b, error: readE } = await supabase
+    .from("hall_bookings")
+    .select("id, hall_id, booked_by, status, start_at, halls!inner(village_id)")
+    .eq("id", id.data)
+    .maybeSingle();
+
+  if (readE || !b) {
+    return { blad: "Nie znaleziono rezerwacji." };
+  }
+  if (b.booked_by !== user.id) {
+    return { blad: "Możesz anulować tylko własny wniosek." };
+  }
+  if (b.status !== "pending") {
+    return { blad: "Tylko oczekujący wniosek można anulować." };
+  }
+
+  const { error } = await supabase
+    .from("hall_bookings")
+    .update({ status: "cancelled" })
+    .eq("id", id.data)
+    .eq("booked_by", user.id)
+    .eq("status", "pending");
+
+  if (error) {
+    console.error("[anulujRezerwacjeSwietlicy]", error.message);
+    return { blad: "Nie udało się anulować wniosku." };
+  }
+
+  const halls = b.halls as { village_id: string } | { village_id: string }[] | null;
+  const wiesId = Array.isArray(halls) ? halls[0]?.village_id : halls?.village_id;
+  const adminPowiadomienia = createAdminSupabaseClient();
+  if (adminPowiadomienia && wiesId) {
+    void powiadomSoltysowOAnulowaniuRezerwacji(adminPowiadomienia, {
+      villageId: wiesId,
+      hallId: b.hall_id,
+      applicantUserId: user.id,
+      startAt: b.start_at,
+    });
+  }
+
+  revalidatePath(`/panel/mieszkaniec/swietlica/${b.hall_id}`);
+  revalidatePath("/panel/soltys/rezerwacje");
+  revalidatePath("/panel/powiadomienia");
+  return { ok: true, komunikat: "Wniosek anulowany — termin zwolniony w kalendarzu." };
 }
 
 const schemaUrlZniszczenia = z.string().url().max(2048);

@@ -39,6 +39,10 @@ export function PowiadomieniaLista({ wpisy }: { wpisy: PowiadomienieWiersz[] }) 
     () => wpisy.filter((p) => grupaListyPowiadomien(p.type) === "zgloszenia").length,
     [wpisy],
   );
+  const liczbaSwietlica = useMemo(
+    () => wpisy.filter((p) => grupaListyPowiadomien(p.type) === "swietlica").length,
+    [wpisy],
+  );
   const liczbaPozostale = useMemo(
     () => wpisy.filter((p) => grupaListyPowiadomien(p.type) === "pozostale").length,
     [wpisy],
@@ -47,7 +51,7 @@ export function PowiadomieniaLista({ wpisy }: { wpisy: PowiadomienieWiersz[] }) 
   const przefiltrowane = useMemo(() => {
     if (filtr === "nieprzeczytane") return wpisy.filter((p) => !p.is_read);
     if (filtr === "przeczytane") return wpisy.filter((p) => p.is_read);
-    if (filtr === "wnioski_role" || filtr === "zgloszenia" || filtr === "pozostale") {
+    if (filtr === "wnioski_role" || filtr === "zgloszenia" || filtr === "swietlica" || filtr === "pozostale") {
       return wpisy.filter((p) => grupaListyPowiadomien(p.type) === filtr);
     }
     return wpisy;
@@ -95,6 +99,7 @@ export function PowiadomieniaLista({ wpisy }: { wpisy: PowiadomienieWiersz[] }) 
         {chip("przeczytane", "Przeczytane", wpisy.length - liczbaNieprzeczytanych)}
         {liczbaWnioski > 0 ? chip("wnioski_role", etykietaGrupyPowiadomien("wnioski_role"), liczbaWnioski) : null}
         {liczbaZgloszenia > 0 ? chip("zgloszenia", etykietaGrupyPowiadomien("zgloszenia"), liczbaZgloszenia) : null}
+        {liczbaSwietlica > 0 ? chip("swietlica", etykietaGrupyPowiadomien("swietlica"), liczbaSwietlica) : null}
         {liczbaPozostale > 0 ? chip("pozostale", etykietaGrupyPowiadomien("pozostale"), liczbaPozostale) : null}
       </div>
       {przefiltrowane.length === 0 ? (

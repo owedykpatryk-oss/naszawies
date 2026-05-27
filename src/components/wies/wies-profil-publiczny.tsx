@@ -3,10 +3,12 @@ import {
   MarketplaceListaKlient,
   type RynekOfertaPubliczna,
 } from "@/components/wies/marketplace-lista-klient";
+import { SwietliceWsiPubliczneSekcja } from "@/components/swietlica/swietlice-wsi-publiczne-sekcja";
 import { KalendarzZajetosciWsiSekcja } from "@/components/swietlica/kalendarz-zajetosci-publiczny";
 import type { WierszKalendarzaPublicznego } from "@/components/swietlica/kalendarz-zajetosci-publiczny";
+import type { SalaPublicznaWsi } from "@/lib/swietlica/pobierz-sale-publiczne-wsi";
 import type { WiesPubliczna } from "@/lib/wies/znajdz-wies-po-sciezce";
-import { sciezkaProfiluWsi } from "@/lib/wies/sciezka-publiczna";
+import { sciezkaProfiluWsi, sciezkaGminy, sciezkaPowiatu, sciezkaWojewodztwa } from "@/lib/wies/sciezka-publiczna";
 import { ListaZakupowWsiKlient, type PozycjaListyZakupow } from "@/components/wies/lista-zakupow-wsi-klient";
 import { etykietaRodzajuWydarzenia, etykietaTypuGrupy } from "@/lib/wies/teksty-organizacji";
 import { etykietaKategoriiDotacji, nazwaDniaTygodnia } from "@/lib/wies/teksty-dotacji";
@@ -16,7 +18,10 @@ import {
 } from "@/components/wies/sekcja-przewodnik-samorzadowy";
 import { WiesLaczonyFeedAktualnosci } from "@/components/wies/wies-laczony-feed-aktualnosci";
 import { zbudujLaczonyFeedAktualnosci } from "@/lib/wies/zbuduj-laczony-feed-aktualnosci";
+import { GaleriaPlakatowWsi, type PlakatPubliczny } from "@/components/grafika/galeria-plakatow-wsi";
 import { WiesTransportWidget, type TransportOdjazdPubliczny } from "@/components/wies/wies-transport-widget";
+import { PanelInformacjiMieszkancow } from "@/components/wies/panel-informacji-mieszkancow";
+import type { LinkPrzydatnyPubliczny } from "@/lib/wies/linki-przydatne";
 
 type WpisPostu = {
   id: string;
@@ -29,6 +34,7 @@ export function WiesProfilPubliczny({
   wies,
   posty,
   kalendarzZajetosci = [],
+  saleSwietlicy = [],
   blog = [],
   historia = [],
   rynek = [],
@@ -42,6 +48,7 @@ export function WiesProfilPubliczny({
   harmonogramTygodnia = [],
   dotacjeSkrot = [],
   przewodnikSamorzadowy = null,
+  linkiPrzydatne = [],
   transportStatus = null,
   transportOdjazdy = [],
   kontaktyUrzedowe = [],
@@ -49,10 +56,13 @@ export function WiesProfilPubliczny({
   geoKontekst = [],
   adresyUrzedowe = [],
   geoJakosc = null,
+  plakatyPubliczne = [],
 }: {
   wies: WiesPubliczna;
   posty: WpisPostu[];
   kalendarzZajetosci?: WierszKalendarzaPublicznego[];
+  saleSwietlicy?: SalaPublicznaWsi[];
+  plakatyPubliczne?: PlakatPubliczny[];
   blog?: {
     id: string;
     title: string;
@@ -124,6 +134,7 @@ export function WiesProfilPubliczny({
     application_deadline: string | null;
   }[];
   przewodnikSamorzadowy?: PrzewodnikSamorzadowyZapis | null;
+  linkiPrzydatne?: LinkPrzydatnyPubliczny[];
   transportStatus?: {
     status_color: string;
     status_label: string;
@@ -213,6 +224,18 @@ export function WiesProfilPubliczny({
           .sort((a, b) => b - a)[0]
       : null;
 
+  const maPrzewodnik =
+    !!przewodnikSamorzadowy &&
+    [
+      przewodnikSamorzadowy.commune_info,
+      przewodnikSamorzadowy.county_info,
+      przewodnikSamorzadowy.voivodeship_info,
+      przewodnikSamorzadowy.roads_info,
+      przewodnikSamorzadowy.waste_info,
+      przewodnikSamorzadowy.utilities_info,
+      przewodnikSamorzadowy.other_info,
+    ].some((x) => x && x.trim().length > 0);
+
   return (
     <article>
       {wies.cover_image_url ? (
@@ -223,14 +246,30 @@ export function WiesProfilPubliczny({
       ) : null}
 
       <header className="border-b border-stone-200 pb-6">
-        <p className="text-sm text-stone-500">
-          {wies.voivodeship} · {wies.county} · {wies.commune}
+        <nav className="text-sm text-stone-500">
+          <Link href={sciezkaWojewodztwa(wies.voivodeship)} className="text-green-800 hover:underline">
+            {wies.voivodeship}
+          </Link>
+          {" · "}
+          <Link
+            href={sciezkaPowiatu({ voivodeship: wies.voivodeship, county: wies.county })}
+            className="text-green-800 hover:underline"
+          >
+            pow. {wies.county}
+          </Link>
+          {" · "}
+          <Link
+            href={sciezkaGminy({ voivodeship: wies.voivodeship, county: wies.county, commune: wies.commune })}
+            className="text-green-800 hover:underline"
+          >
+            {wies.commune}
+          </Link>
           {wies.is_active ? null : (
             <span className="ml-2 rounded bg-amber-100 px-2 py-0.5 text-xs text-amber-900">
               Profil w przygotowaniu
             </span>
           )}
-        </p>
+        </nav>
         <h1 className="mt-2 font-serif text-3xl text-green-950">{wies.name}</h1>
         {wies.website ? (
           <p className="mt-3 text-sm">
@@ -280,6 +319,15 @@ export function WiesProfilPubliczny({
           <div className="mt-3 whitespace-pre-wrap text-sm leading-relaxed text-stone-700">{wies.description}</div>
         </section>
       ) : null}
+
+      <PanelInformacjiMieszkancow
+        wies={wies}
+        linkiPrzydatne={linkiPrzydatne}
+        maPrzewodnik={maPrzewodnik}
+        maKontakty={kontaktyUrzedowe.length > 0}
+        maWiadomosci={wiadomosci.length > 0}
+        maSwietlice={saleSwietlicy.length > 0}
+      />
 
       {geoJakosc ? (
         <section className="mt-8 rounded-xl border border-stone-200 bg-stone-50/70 px-4 py-3">
@@ -457,13 +505,15 @@ export function WiesProfilPubliczny({
 
       <WiesLaczonyFeedAktualnosci wpisy={laczonyFeed} />
 
+      <GaleriaPlakatowWsi plakaty={plakatyPubliczne} nazwaWsi={wies.name} />
+
       <WiesTransportWidget
         sciezkaWsi={sciezka}
         status={transportStatus}
         odjazdy={transportOdjazdy}
       />
 
-      <section className="mt-10">
+      <section id="kontakty-urzedowe-wsi" className="mt-10 scroll-mt-8">
         <h2 className="font-serif text-xl text-green-950">Kontakt urzędowy i osoby funkcyjne</h2>
         <p className="mt-1 text-sm text-stone-600">
           Najważniejsze kontakty we wsi (sołtys, parafia, OSP, KGW) wraz z dyżurami, weryfikacją i historią kadencji.
@@ -835,6 +885,10 @@ export function WiesProfilPubliczny({
       </section>
 
       {wies.is_active ? <KalendarzZajetosciWsiSekcja wies={{ name: wies.name }} wiersze={kalendarzZajetosci} /> : null}
+
+      {wies.is_active && saleSwietlicy.length > 0 ? (
+        <SwietliceWsiPubliczneSekcja nazwaWsi={wies.name} sale={saleSwietlicy} />
+      ) : null}
 
       <section
         id="swietlica-regulamin"

@@ -3,6 +3,7 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
 import { NawigacjaSali } from "@/components/swietlica/nawigacja-sali";
+import { KartaBudynkuSwietlicy } from "@/components/swietlica/karta-budynku-swietlicy";
 import { PlanSaliRysunek } from "@/components/swietlica/plan-sali-rysunek";
 import { RzutParteruSaliSvg } from "@/components/swietlica/rzut-parteru-sali-svg";
 import { parsujPlanZJsonb } from "@/lib/swietlica/plan-sali";
@@ -13,7 +14,13 @@ import {
   KalendarzZajetosciDlaHaliSekcja,
   pobierzKalendarzZajetosciDlaHali,
 } from "@/components/swietlica/kalendarz-zajetosci-publiczny";
+import { AnulujRezerwacjeSwietlicyKlient } from "@/components/swietlica/anuluj-rezerwacje-swietlicy-klient";
+import { LinkZaproszenieRezerwacji } from "@/components/swietlica/link-zaproszenie-rezerwacji";
 import { RezerwacjaSwietlicyFormularz } from "./rezerwacja-swietlicy-formularz";
+import {
+  ETYKIETY_AKCJI_INWENTARZA,
+  normalizujAkcjeInwentarza,
+} from "@/lib/swietlica/inwentarz-status";
 
 type PozycjaWyposazenia = {
   id: string;
@@ -24,6 +31,7 @@ type PozycjaWyposazenia = {
   quantity_available: number | null;
   condition: string | null;
   image_url: string | null;
+  inventory_action?: string | null;
 };
 
 type Props = { params: { hallId: string } };
@@ -50,7 +58,7 @@ export default async function MieszkaniecSwietlicaHallPage({ params }: Props) {
   const { data: sala, error: salaErr } = await supabase
     .from("halls")
     .select(
-      "id, name, description, address, max_capacity, village_id, layout_data, floor_plan_data, villages(name, playground_rules_text)"
+      "id, name, description, address, area_m2, max_capacity, parking_spaces, village_id, layout_data, floor_plan_data, rules_text, rules_file_url, deposit, price_resident, price_external, villages(name, playground_rules_text)"
     )
     .eq("id", hallId)
     .maybeSingle();
@@ -64,7 +72,7 @@ export default async function MieszkaniecSwietlicaHallPage({ params }: Props) {
 
   const { data: inv } = await supabase
     .from("hall_inventory")
-    .select("id, category, name, description, quantity, quantity_available, condition, image_url")
+    .select("id, category, name, description, quantity, quantity_available, condition, image_url, inventory_action")
     .eq("hall_id", hallId)
     .order("category", { ascending: true })
     .order("name", { ascending: true });
@@ -134,14 +142,17 @@ export default async function MieszkaniecSwietlicaHallPage({ params }: Props) {
       </p>
       <NawigacjaSali hallId={hallId} rola="mieszkaniec" pokazRzutParteruMieszkaniec={rzutParteru != null} />
       <h1 className="tytul-sekcji-panelu">{sala.name}</h1>
-      <p className="mt-1 text-sm text-stone-600">
-        {wies?.name ?? "Wieś"}
-        {sala.max_capacity ? ` · do ${sala.max_capacity} osób` : ""}
-        {sala.address ? ` · ${sala.address}` : ""}
-      </p>
-      {sala.description ? (
-        <p className="mt-3 text-sm leading-relaxed text-stone-700">{sala.description}</p>
-      ) : null}
+
+      <div className="mt-4">
+        <KartaBudynkuSwietlicy
+          nazwa={sala.name}
+          adres={sala.address}
+          areaM2={sala.area_m2 != null ? Number(sala.area_m2) : null}
+          maxCapacity={sala.max_capacity}
+          parkingSpaces={sala.parking_spaces != null ? Number(sala.parking_spaces) : null}
+          opis={sala.description}
+        />
+      </div>
 
       {regulaminPlacu ? (
         <section className="mt-10 rounded-2xl border border-green-900/10 bg-[#f7faf5] p-5 shadow-sm">
@@ -217,6 +228,12 @@ export default async function MieszkaniecSwietlicaHallPage({ params }: Props) {
             quantity_available: p.quantity_available,
             quantity: p.quantity,
           }))}
+          zajeteTerminy={zajeteTerminy}
+          kaucjaPln={sala.deposit != null ? Number(sala.deposit) : null}
+          cenaMieszkaniec={sala.price_resident != null ? Number(sala.price_resident) : null}
+          cenaObcy={sala.price_external != null ? Number(sala.price_external) : null}
+          regulaminText={sala.rules_text as string | null}
+          regulaminPlikUrl={(sala.rules_file_url as string | null)?.trim() || null}
         />
       </section>
 
@@ -249,10 +266,21 @@ export default async function MieszkaniecSwietlicaHallPage({ params }: Props) {
                   {b.rejection_reason ? (
                     <span className="mt-1 block text-red-800">Powód odrzucenia: {b.rejection_reason}</span>
                   ) : null}
+                  <AnulujRezerwacjeSwietlicyKlient bookingId={b.id} status={b.status} />
                   {terminMinel ? (
                     <p className="mt-2 text-xs text-stone-500">
-                      Termin minął — sołtys może w panelu „Rezerwacje sal” oznaczyć wpis jako zakończony; Ty nadal możesz
-                      uzupełniać dokumentację i uwagi.
+                      Termin minął — sołtys uzupełni protokół odbioru sali; Ty nadal możesz uzupełniać dokumentację zdjęć
+                      i uwagi.
+                    </p>
+                  ) : null}
+                  {(b.status === "approved" || b.status === "completed") ? (
+                    <p className="mt-2">
+                      <Link
+                        href={`/panel/mieszkaniec/swietlica/${hallId}/dokument?rezerwacja=${b.id}`}
+                        className="text-xs font-medium text-green-800 underline"
+                      >
+                        Dokument rezerwacji (PDF / druk)
+                      </Link>
                     </p>
                   ) : null}
                   {pokazDokumentacje ? (
@@ -263,6 +291,15 @@ export default async function MieszkaniecSwietlicaHallPage({ params }: Props) {
                       wasDamagedPoczatkowe={b.was_damaged}
                     />
                   ) : null}
+                  <LinkZaproszenieRezerwacji
+                    bookingId={b.id}
+                    eventType={b.event_type}
+                    eventTitle={b.event_title}
+                    startAt={b.start_at}
+                    endAt={b.end_at}
+                    hallName={sala.name}
+                    status={b.status}
+                  />
                 </li>
               );
             })}
@@ -270,11 +307,11 @@ export default async function MieszkaniecSwietlicaHallPage({ params }: Props) {
         )}
       </section>
 
-      <section className="mt-10">
+      <section id="asortyment-swietlicy" className="scroll-mt-24 mt-10">
         <h2 className="font-serif text-xl text-green-950">Co jest w świetlicy (asortyment)</h2>
         <p className="mt-1 text-sm text-stone-600">
-          Lista prowadzona przez sołtysa — przy składaniu rezerwacji dopasujesz sprzęt w formularzu (pole wyposażenia /
-          uwagi).
+          Lista prowadzona przez sołtysa — widać też plany zakupów i propozycje WOW. Przy rezerwacji dopasujesz sprzęt w
+          formularzu.
         </p>
         {pozycje.length === 0 ? (
           <p className="mt-4 text-sm text-stone-600">Brak wpisów w katalogu wyposażenia.</p>
@@ -288,6 +325,8 @@ export default async function MieszkaniecSwietlicaHallPage({ params }: Props) {
                   <ul className="mt-3 space-y-3">
                     {lista.map((p) => {
                       const stan = etykietaStanu(p.condition);
+                      const akcja = normalizujAkcjeInwentarza(p.inventory_action);
+                      const akcjaMeta = ETYKIETY_AKCJI_INWENTARZA[akcja];
                       return (
                         <li key={p.id} className="flex gap-3 rounded-xl border border-stone-200 bg-white px-4 py-3 shadow-sm">
                           {p.image_url ? (
@@ -304,6 +343,11 @@ export default async function MieszkaniecSwietlicaHallPage({ params }: Props) {
                             <span className={`mt-2 inline-flex rounded-full border px-2 py-0.5 text-[11px] ${stan.cls}`}>
                               {stan.txt}
                             </span>
+                            {akcja !== "in_use" ? (
+                              <span className={`ml-1 mt-2 inline-flex rounded-full border px-2 py-0.5 text-[11px] ${akcjaMeta.cls}`}>
+                                {akcjaMeta.label}
+                              </span>
+                            ) : null}
                             {p.description ? <p className="mt-2 text-sm text-stone-600">{p.description}</p> : null}
                           </div>
                         </li>

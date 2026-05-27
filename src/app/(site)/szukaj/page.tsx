@@ -23,8 +23,8 @@ export default function SzukajPage({ searchParams }: Props) {
       <h1 className="font-serif text-3xl text-green-950">Szukaj wsi</h1>
       <p className="mt-2 text-sm leading-relaxed text-stone-600">
         Wpisz <strong>nazwę wsi</strong> albo fragment <strong>gminy, powiatu czy województwa</strong> — pokażemy
-        miejscowości dostępne w serwisie. Możesz też wpisać <strong>fragment adresu strony wsi</strong> z
-        paska przeglądarki.
+        miejscowości dostępne w serwisie. Przy wielu wynikach z tej samej gminy pojawi się skrót do{" "}
+        <strong>listy wszystkich miejscowości w gminie</strong> (oraz powiatu).
       </p>
       <SzukajKatalog key={qPoczatkowe ?? ""} poczatkoweZapytanie={qPoczatkowe} />
     </main>

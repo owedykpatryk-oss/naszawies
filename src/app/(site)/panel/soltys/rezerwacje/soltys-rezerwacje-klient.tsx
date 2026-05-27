@@ -2,6 +2,8 @@
 
 import { useRouter } from "next/navigation";
 import { useState, useTransition } from "react";
+import { PlanSaliRysunek } from "@/components/swietlica/plan-sali-rysunek";
+import { parsujPlanZJsonb } from "@/lib/swietlica/plan-sali";
 import { odrzucRezerwacjeSwietlicy, zatwierdzRezerwacjeSwietlicy } from "../akcje";
 
 export type WierszRezerwacji = {
@@ -18,6 +20,7 @@ export type WierszRezerwacji = {
   contact_phone: string | null;
   requested_inventory: { name: string; quantity: number; available: number | null }[];
   suggested_layout: string;
+  layout_data: unknown;
   preparation_warnings: string[];
   procurement_recommendations: string[];
   created_at: string;
@@ -139,6 +142,16 @@ export function SoltysRezerwacjeKlient({ wiersze: poczatkowe }: Props) {
             {r.contact_phone ? ` · tel. ${r.contact_phone}` : ""}
           </p>
           <p className="mt-1 text-xs text-stone-500">Sugerowany układ sali: {r.suggested_layout}</p>
+          {(() => {
+            const plan = parsujPlanZJsonb(r.layout_data);
+            if (!plan.elementy.length) return null;
+            return (
+              <div className="mt-3 max-w-xs rounded-lg border border-stone-200 bg-[#faf8f3] p-2">
+                <p className="mb-1 text-[10px] font-medium uppercase text-stone-500">Podgląd układu z wniosku</p>
+                <PlanSaliRysunek plan={plan} className="h-32 w-full" />
+              </div>
+            );
+          })()}
           {r.requested_inventory.length > 0 ? (
             <div className="mt-2 rounded-lg border border-stone-200 bg-stone-50 px-3 py-2">
               <p className="text-xs font-medium text-stone-700">Zamówiony asortyment:</p>

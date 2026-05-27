@@ -5,9 +5,13 @@ import { useRouter } from "next/navigation";
 import { zapiszRegulaminIKaucjeSali } from "@/app/(site)/panel/soltys/akcje";
 import { REGULAMIN_SWIETLICY_SZABLONY } from "@/lib/swietlica/regulamin-swietlica-szablon";
 
+import { PlikRegulaminuSaliKlient } from "@/components/swietlica/plik-regulaminu-sali-klient";
+
 type Props = {
   hallId: string;
   rulesTextPoczatek: string | null;
+  rulesFileUrlPoczatek: string | null;
+  rulesFileNamePoczatek: string | null;
   depositPoczatek: number | null;
   priceResidentPoczatek: number | null;
   priceExternalPoczatek: number | null;
@@ -23,6 +27,8 @@ function liczbaLubPuste(v: string): number | null {
 export function RegulaminSaliKlient({
   hallId,
   rulesTextPoczatek,
+  rulesFileUrlPoczatek,
+  rulesFileNamePoczatek,
   depositPoczatek,
   priceResidentPoczatek,
   priceExternalPoczatek,
@@ -167,6 +173,12 @@ export function RegulaminSaliKlient({
             placeholder={"§1. Wynajmujący zobowiązuje się…\n§2. Kaucja…\n§3. Sprzątanie…"}
           />
         </div>
+
+        <PlikRegulaminuSaliKlient
+          hallId={hallId}
+          rulesFileUrlPoczatek={rulesFileUrlPoczatek}
+          rulesFileNamePoczatek={rulesFileNamePoczatek}
+        />
 
         <div className="grid gap-4 sm:grid-cols-3">
           <div>

@@ -3,20 +3,29 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { DokumentWynajmuWidok } from "@/components/swietlica/dokument-wynajmu-widok";
 import { NawigacjaSali } from "@/components/swietlica/nawigacja-sali";
-import { pobierzDaneDokumentuWynajmu } from "@/lib/swietlica/pobierz-dane-dokumentu-wynajmu";
+import {
+  pobierzDaneDokumentuWynajmu,
+  pobierzDaneDokumentuWynajmuRezerwacji,
+} from "@/lib/swietlica/pobierz-dane-dokumentu-wynajmu";
 import { czyUzytkownikJestSoltysemDlaSali } from "@/lib/panel/rola-panelu-soltysa";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
 
-type Props = { params: { hallId: string } };
+type Props = {
+  params: { hallId: string };
+  searchParams?: { rezerwacja?: string | string[] };
+};
 
 export const metadata: Metadata = {
   title: "Dokument wynajmu świetlicy",
 };
 
-export default async function DokumentWynajmuSoltysPage({ params }: Props) {
+export default async function DokumentWynajmuSoltysPage({ params, searchParams }: Props) {
   const hallId = params.hallId;
   const uuidOk = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(hallId);
   if (!uuidOk) notFound();
+
+  const rezerwacjaParam = searchParams?.rezerwacja;
+  const bookingId = Array.isArray(rezerwacjaParam) ? rezerwacjaParam[0] : rezerwacjaParam;
 
   const supabase = utworzKlientaSupabaseSerwer();
   const {
@@ -29,7 +38,10 @@ export default async function DokumentWynajmuSoltysPage({ params }: Props) {
     notFound();
   }
 
-  const dane = await pobierzDaneDokumentuWynajmu(hallId);
+  const dane =
+    bookingId && /^[0-9a-f-]{36}$/i.test(bookingId)
+      ? await pobierzDaneDokumentuWynajmuRezerwacji(hallId, bookingId)
+      : await pobierzDaneDokumentuWynajmu(hallId);
   if (!dane) notFound();
 
   return (
@@ -38,12 +50,23 @@ export default async function DokumentWynajmuSoltysPage({ params }: Props) {
         <Link href={`/panel/soltys/swietlica/${hallId}`} className="text-green-800 underline">
           ← Wróć do edycji sali
         </Link>
+        {dane.rezerwacja ? (
+          <>
+            {" · "}
+            <Link href={`/panel/soltys/swietlica/${hallId}/dokument`} className="text-green-800 underline">
+              Dokument ogólny sali
+            </Link>
+          </>
+        ) : null}
       </p>
       <NawigacjaSali hallId={hallId} rola="soltys" />
-      <h1 className="tytul-sekcji-panelu">Dokument wynajmu</h1>
+      <h1 className="tytul-sekcji-panelu">
+        {dane.rezerwacja ? "Dokument rezerwacji" : "Dokument wynajmu"}
+      </h1>
       <p className="mt-1 text-sm text-stone-600">
-        Podgląd z aktualnych danych sali, regulaminu, kaucji, cen, asortymentu, rzutu parteru i planu stołów. Użyj
-        druku, by zapisać PDF lub wydrukować dla najemcy.
+        {dane.rezerwacja
+          ? "Zestawienie dla konkretnej rezerwacji: termin, zamówiony asortyment, regulamin i protokół odbioru (jeśli zapisany)."
+          : "Podgląd z aktualnych danych sali, regulaminu, kaucji, cen, asortymentu, rzutu parteru i planu stołów."}
       </p>
       <div className="mt-8">
         <DokumentWynajmuWidok dane={dane} />

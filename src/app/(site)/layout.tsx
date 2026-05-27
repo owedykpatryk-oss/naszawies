@@ -3,6 +3,7 @@ import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
 
 export default async function LayoutWitryny({ children }: { children: React.ReactNode }) {
   let linkiGlowne: { href: string; label: string }[] = [
+    { href: "/grafika", label: "Kreator plakatów" },
     { href: "/szukaj", label: "Szukaj wsi" },
     { href: "/mapa", label: "Mapa wsi" },
     { href: "/kontakt", label: "Kontakt" },
@@ -21,6 +22,7 @@ export default async function LayoutWitryny({ children }: { children: React.Reac
     if (user) {
       linkiGlowne = [
         { href: "/panel", label: "Panel" },
+        { href: "/grafika", label: "Kreator plakatów" },
         { href: "/szukaj", label: "Szukaj wsi" },
         { href: "/mapa", label: "Mapa wsi" },
         { href: "/kontakt", label: "Kontakt" },

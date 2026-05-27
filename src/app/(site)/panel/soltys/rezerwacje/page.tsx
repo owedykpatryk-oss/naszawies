@@ -2,7 +2,11 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { DokumentacjaZniszczenRezerwacji } from "@/components/swietlica/dokumentacja-zniszczen-rezerwacji";
-import { PrzyciskZakonczRezerwacjeSwietlicy } from "@/components/swietlica/przycisk-zakoncz-rezerwacje-swietlicy";
+import {
+  ProtokolOdbioruSaliKlient,
+  type PozycjaDoOdbioru,
+} from "@/components/swietlica/protokol-odbioru-sali-klient";
+import { czyWymagaOdbioru } from "@/lib/swietlica/protokol-odbioru";
 import { pobierzVillageIdsRoliPaneluSoltysaDlaUzytkownikaCache } from "@/lib/panel/rola-panelu-soltysa";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
 import { SoltysRezerwacjeKalendarzEksport } from "./soltys-rezerwacje-kalendarz-eksport";
@@ -58,7 +62,7 @@ export default async function SoltysRezerwacjePage() {
           quantity?: number;
         }[]
       | null;
-    layout_data: { preset?: string } | null;
+    layout_data: unknown;
     created_at: string;
   };
 
@@ -214,16 +218,18 @@ export default async function SoltysRezerwacjePage() {
           }))
           .filter((x) => Number.isFinite(x.quantity) && x.quantity > 0)
       : [],
-    suggested_layout:
-      r.layout_data?.preset === "auto_bankiet"
-        ? "Auto bankiet"
-        : r.layout_data?.preset === "teatralny"
-          ? "Teatralny"
-          : r.layout_data?.preset === "warsztatowy"
-            ? "Warsztatowy (wyspy)"
-            : r.layout_data?.preset === "u_ksztalt"
-              ? "U-kształt"
-              : "Własny / bez zmian",
+    suggested_layout: (() => {
+      const preset =
+        r.layout_data && typeof r.layout_data === "object" && r.layout_data !== null
+          ? (r.layout_data as { preset?: string }).preset
+          : undefined;
+      if (preset === "auto_bankiet") return "Auto bankiet";
+      if (preset === "teatralny") return "Teatralny";
+      if (preset === "warsztatowy") return "Warsztatowy (wyspy)";
+      if (preset === "u_ksztalt") return "U-kształt";
+      return "Własny / bez zmian";
+    })(),
+    layout_data: r.layout_data,
     preparation_warnings: [
       ...(maxPojemnoscSali[r.hall_id] != null && r.expected_guests > Number(maxPojemnoscSali[r.hall_id])
         ? [`Liczba gości (${r.expected_guests}) przekracza pojemność sali (${maxPojemnoscSali[r.hall_id]}).`]
@@ -303,6 +309,13 @@ export default async function SoltysRezerwacjePage() {
     event_title: string | null;
     expected_guests: number;
     status: string;
+    requested_inventory:
+      | {
+          inventoryId?: string;
+          quantity?: number;
+        }[]
+      | null;
+    checkout_inspection: unknown;
     damage_documentation_urls: string[] | null;
     completion_notes: string | null;
     was_damaged: boolean | null;
@@ -313,7 +326,7 @@ export default async function SoltysRezerwacjePage() {
     const { data } = await supabase
       .from("hall_bookings")
       .select(
-        "id, hall_id, booked_by, start_at, end_at, event_type, event_title, expected_guests, status, damage_documentation_urls, completion_notes, was_damaged"
+        "id, hall_id, booked_by, start_at, end_at, event_type, event_title, expected_guests, status, requested_inventory, checkout_inspection, damage_documentation_urls, completion_notes, was_damaged"
       )
       .in("hall_id", hallIds)
       .in("status", ["approved", "completed"])
@@ -332,6 +345,26 @@ export default async function SoltysRezerwacjePage() {
     }
   }
 
+  const inventoryNameByIdGlobal: Record<string, string> = { ...inventoryNameById };
+  for (const it of hallInventoryRaw ?? []) {
+    inventoryNameByIdGlobal[it.id] = it.name;
+  }
+
+  function pozycjeDoOdbioru(r: RawArchiwum): PozycjaDoOdbioru[] {
+    const req = Array.isArray(r.requested_inventory) ? r.requested_inventory : [];
+    return req
+      .map((x) => ({
+        inventoryId: x.inventoryId ?? "",
+        nazwa:
+          (x.inventoryId && inventoryNameByIdGlobal[x.inventoryId]) ||
+          (x.inventoryId ? `Pozycja ${x.inventoryId.slice(0, 6)}` : "Pozycja"),
+        zamowiono: Number(x.quantity ?? 0),
+      }))
+      .filter((x) => x.inventoryId && x.zamowiono > 0);
+  }
+
+  const wymagaOdbioru = archiwum.filter((r) => czyWymagaOdbioru(r.status, r.end_at, r.checkout_inspection));
+
   return (
     <main>
       <h1 className="tytul-sekcji-panelu">Rezerwacje świetlic</h1>
@@ -347,6 +380,18 @@ export default async function SoltysRezerwacjePage() {
         </p>
       ) : (
         <>
+          {wymagaOdbioru.length > 0 ? (
+            <div className="mt-6 rounded-xl border border-amber-300 bg-amber-50 p-4">
+              <p className="font-medium text-amber-950">
+                {wymagaOdbioru.length === 1
+                  ? "1 rezerwacja czeka na odbiór sali"
+                  : `${wymagaOdbioru.length} rezerwacji czeka na odbiór sali`}
+              </p>
+              <p className="mt-1 text-sm text-amber-900/90">
+                Termin minął — uzupełnij protokół odbioru z weryfikacją asortymentu w sekcji poniżej.
+              </p>
+            </div>
+          ) : null}
           <SoltysRezerwacjeKlient wiersze={wiersze} />
           <SoltysRezerwacjeKalendarzEksport kalendarz={wierszeKalendarz} eksport={wierszeEksport} />
           <section className="mt-14">
@@ -377,7 +422,14 @@ export default async function SoltysRezerwacjePage() {
                         {r.event_type}
                         {r.event_title ? ` — ${r.event_title}` : ""} · {r.expected_guests} os.
                       </p>
-                      <PrzyciskZakonczRezerwacjeSwietlicy bookingId={r.id} status={r.status} endAtIso={r.end_at} />
+                      <ProtokolOdbioruSaliKlient
+                        bookingId={r.id}
+                        hallId={r.hall_id}
+                        status={r.status}
+                        endAtIso={r.end_at}
+                        pozycjePoczatkowe={pozycjeDoOdbioru(r)}
+                        checkoutInspectionRaw={r.checkout_inspection}
+                      />
                       <DokumentacjaZniszczenRezerwacji
                         bookingId={r.id}
                         urlsPoczatkowe={urls}

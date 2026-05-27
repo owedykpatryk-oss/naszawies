@@ -4,6 +4,8 @@ import { notFound, redirect } from "next/navigation";
 import { czyUzytkownikJestSoltysemDlaSali } from "@/lib/panel/rola-panelu-soltysa";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
 import { NawigacjaSali } from "@/components/swietlica/nawigacja-sali";
+import { KartaBudynkuSwietlicy } from "@/components/swietlica/karta-budynku-swietlicy";
+import { ProfilBudynkuSwietlicyKlient } from "@/components/swietlica/profil-budynku-swietlicy-klient";
 import { GeneratorRzutuParteruSaliKlient } from "@/components/swietlica/generator-rzutu-parteru-sali-klient";
 import { PlanSaliEdytor } from "@/components/swietlica/plan-sali-edytor";
 import { RegulaminPlacuZabawKlient } from "@/components/swietlica/regulamin-placu-zabaw-klient";
@@ -37,7 +39,7 @@ export default async function SoltysSwietlicaHallPage({ params }: Props) {
   const { data: sala, error: salaErr } = await supabase
     .from("halls")
     .select(
-      "id, name, description, address, max_capacity, village_id, layout_data, floor_plan_data, rules_text, deposit, price_resident, price_external, contact_phone, contact_email, caretaker_name, villages(id, name, playground_rules_text)"
+      "id, name, description, address, area_m2, max_capacity, parking_spaces, village_id, layout_data, floor_plan_data, rules_text, rules_file_url, rules_file_name, deposit, price_resident, price_external, contact_phone, contact_email, caretaker_name, villages(id, name, playground_rules_text)"
     )
     .eq("id", hallId)
     .maybeSingle();
@@ -56,7 +58,9 @@ export default async function SoltysSwietlicaHallPage({ params }: Props) {
 
   const { data: inv, error: invErr } = await supabase
     .from("hall_inventory")
-    .select("id, category, name, description, quantity, quantity_available, condition, image_url")
+    .select(
+      "id, category, name, description, quantity, quantity_available, condition, image_url, inventory_action, width_cm, length_cm, height_cm, notes"
+    )
     .eq("hall_id", hallId)
     .order("category", { ascending: true })
     .order("name", { ascending: true });
@@ -71,6 +75,13 @@ export default async function SoltysSwietlicaHallPage({ params }: Props) {
   const dep = sala.deposit != null ? Number(sala.deposit) : null;
   const pr = sala.price_resident != null ? Number(sala.price_resident) : null;
   const pe = sala.price_external != null ? Number(sala.price_external) : null;
+  const areaM2 = sala.area_m2 != null ? Number(sala.area_m2) : null;
+  const parkingSpaces = sala.parking_spaces != null ? Number(sala.parking_spaces) : null;
+
+  const wymiaryZRzutu =
+    rzutParteru && rzutParteru.bryla_szer_m > 0 && rzutParteru.bryla_gleb_m > 0
+      ? { bryla_szer_m: rzutParteru.bryla_szer_m, bryla_gleb_m: rzutParteru.bryla_gleb_m }
+      : null;
 
   return (
     <main>
@@ -81,47 +92,46 @@ export default async function SoltysSwietlicaHallPage({ params }: Props) {
       </p>
       <NawigacjaSali hallId={hallId} rola="soltys" />
       <h1 className="tytul-sekcji-panelu">{sala.name}</h1>
-      <p className="mt-1 text-sm text-stone-600">
-        {podpisWsi}
-        {sala.max_capacity ? ` · pojemność do ${sala.max_capacity} osób` : ""}
-        {sala.address ? ` · ${sala.address}` : ""}
-      </p>
-      {sala.description ? (
-        <p className="mt-3 text-sm leading-relaxed text-stone-700">{sala.description}</p>
-      ) : null}
+      <p className="mt-1 text-sm text-stone-600">{podpisWsi}</p>
 
-      {sala.contact_phone || sala.contact_email || sala.caretaker_name ? (
-        <div className="mt-5 rounded-xl border border-stone-200 bg-stone-50/80 p-4 text-sm text-stone-800 shadow-sm">
-          <h2 className="text-xs font-bold uppercase tracking-widest text-stone-500">Kontakt do sali (dla wynajmujących)</h2>
-          <ul className="mt-2 space-y-1.5">
-            {sala.caretaker_name ? <li>Opiekun / opiekunka: {sala.caretaker_name}</li> : null}
-            {sala.contact_phone ? (
-              <li>
-                Telefon:{" "}
-                <a href={`tel:${sala.contact_phone.replace(/\s/g, "")}`} className="text-green-800 underline">
-                  {sala.contact_phone}
-                </a>
-              </li>
-            ) : null}
-            {sala.contact_email ? (
-              <li>
-                E-mail:{" "}
-                <a href={`mailto:${sala.contact_email}`} className="text-green-800 underline">
-                  {sala.contact_email}
-                </a>
-              </li>
-            ) : null}
-          </ul>
-        </div>
-      ) : null}
+      <div className="mt-6">
+        <KartaBudynkuSwietlicy
+          nazwa={sala.name}
+          adres={sala.address}
+          areaM2={areaM2}
+          maxCapacity={sala.max_capacity}
+          parkingSpaces={parkingSpaces}
+          opis={sala.description}
+        />
+        <ProfilBudynkuSwietlicyKlient
+          hallId={hallId}
+          poczatek={{
+            address: sala.address,
+            area_m2: areaM2,
+            max_capacity: sala.max_capacity,
+            parking_spaces: parkingSpaces,
+            description: sala.description,
+            contact_phone: sala.contact_phone,
+            contact_email: sala.contact_email,
+            caretaker_name: sala.caretaker_name,
+          }}
+        />
+      </div>
 
       <GeneratorRzutuParteruSaliKlient hallId={hallId} poczatkowyRzut={rzutParteru} />
 
-      <PlanSaliEdytor hallId={hallId} poczatkowyPlan={plan} pojemnoscSali={sala.max_capacity} />
+      <PlanSaliEdytor
+        hallId={hallId}
+        poczatkowyPlan={plan}
+        pojemnoscSali={sala.max_capacity}
+        wymiaryZRzutu={wymiaryZRzutu}
+      />
 
       <RegulaminSaliKlient
         hallId={hallId}
         rulesTextPoczatek={sala.rules_text}
+        rulesFileUrlPoczatek={sala.rules_file_url as string | null}
+        rulesFileNamePoczatek={sala.rules_file_name as string | null}
         depositPoczatek={dep}
         priceResidentPoczatek={pr}
         priceExternalPoczatek={pe}
@@ -135,7 +145,7 @@ export default async function SoltysSwietlicaHallPage({ params }: Props) {
         />
       ) : null}
 
-      <AsortymentSwietlicyKlient hallId={hallId} nazwaSali={sala.name} pozycje={pozycje} />
+      <AsortymentSwietlicyKlient hallId={hallId} nazwaSali={sala.name} nazwaWsi={podpisWsi} pozycje={pozycje} />
     </main>
   );
 }

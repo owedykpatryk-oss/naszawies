@@ -10,9 +10,10 @@ import { RejestracjaWyborWsi } from "./rejestracja-wybor-wsi";
 type Props = {
   /** Publiczny adres strony (np. https://naszawies.pl) używany w linku z e-maila potwierdzającego. */
   pochodzeniePubliczne: string;
+  nastepnaSciezka?: string;
 };
 
-export function RejestracjaFormularz({ pochodzeniePubliczne }: Props) {
+export function RejestracjaFormularz({ pochodzeniePubliczne, nastepnaSciezka = "/panel" }: Props) {
   const [laduje, ustawLaduje] = useState(false);
   const [blad, ustawBlad] = useState("");
   const [sukces, ustawSukces] = useState(false);
@@ -53,7 +54,9 @@ export function RejestracjaFormularz({ pochodzeniePubliczne }: Props) {
     ustawLaduje(true);
     try {
       const supabase = utworzKlientaSupabasePrzegladarka();
-      const nastepnyPoPotwierdzeniu = encodeURIComponent("/panel");
+      const nastepnyPoPotwierdzeniu = encodeURIComponent(
+        nastepnaSciezka.startsWith("/") ? nastepnaSciezka : "/panel",
+      );
       const { error } = await supabase.auth.signUp({
         email,
         password: haslo,
@@ -99,7 +102,7 @@ export function RejestracjaFormularz({ pochodzeniePubliczne }: Props) {
         </p>
         <p className="mt-3 text-sm leading-relaxed text-green-900/90">
           Gdy konto jest już aktywne, możesz od razu{" "}
-          <Link href="/logowanie" className="font-medium underline">
+          <Link href={`/logowanie?next=${encodeURIComponent(nastepnaSciezka)}`} className="font-medium underline">
             zalogować się
           </Link>{" "}
           tym samym hasłem.

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { bezpiecznaSciezkaNastepna } from "@/lib/auth/bezpieczna-sciezka-nastepna";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
 import { pobierzPochodzeniePubliczne } from "@/lib/zadanie/pochodzenie-publiczne";
 import { LogowanieFormularz } from "./logowanie-formularz";
@@ -10,11 +11,6 @@ export const metadata: Metadata = {
   title: "Logowanie",
   description: "Logowanie do naszawies.pl.",
 };
-
-function bezpiecznaSciezkaNastepna(n?: string) {
-  if (!n || !n.startsWith("/") || n.startsWith("//")) return "/panel";
-  return n;
-}
 
 type Props = {
   searchParams: Record<string, string | string[] | undefined>;

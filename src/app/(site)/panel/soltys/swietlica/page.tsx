@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { KartaBudynkuSwietlicy } from "@/components/swietlica/karta-budynku-swietlicy";
 import { pobierzVillageIdsRoliPaneluSoltysaDlaUzytkownikaCache } from "@/lib/panel/rola-panelu-soltysa";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
 
@@ -32,12 +33,15 @@ export default async function SoltysSwietlicaPage() {
     max_capacity: number | null;
     village_id: string;
     address: string | null;
+    area_m2: number | null;
+    parking_spaces: number | null;
+    description: string | null;
   };
   let sale: WpisSali[] = [];
   if (villageIds.length > 0) {
     const { data } = await supabase
       .from("halls")
-      .select("id, name, max_capacity, village_id, address")
+      .select("id, name, max_capacity, village_id, address, area_m2, parking_spaces, description")
       .in("village_id", villageIds)
       .order("name", { ascending: true })
       .limit(80);
@@ -48,9 +52,8 @@ export default async function SoltysSwietlicaPage() {
     <main>
       <h1 className="tytul-sekcji-panelu">Świetlica i wyposażenie</h1>
       <p className="mt-2 text-sm text-stone-600">
-        Dla każdej sali ustawiasz m.in. <strong>plan układu stołów</strong> (rysunek w panelu) oraz listę wyposażenia
-        — mieszkańcy zobaczą to przy rezerwacji. Nie trzeba zgłaszać tego do administratora: robisz to sam w
-        zakładce sali.
+        Dla każdej sali: <strong>profil budynku</strong>, rzut parteru, <strong>plan stołów z wymiarami</strong> i
+        asortyment z planem WOW — mieszkańcy zobaczą to przy rezerwacji.
       </p>
 
       {villageIds.length === 0 ? (
@@ -60,26 +63,40 @@ export default async function SoltysSwietlicaPage() {
         </p>
       ) : null}
 
-      <ul className="mt-8 space-y-3">
+      <ul className="mt-8 space-y-4">
         {sale.map((h) => (
-          <li
-            key={h.id}
-            className="flex flex-col gap-2 rounded-xl border border-stone-200 bg-white px-4 py-3 shadow-sm sm:flex-row sm:items-center sm:justify-between"
-          >
-            <div>
-              <p className="font-medium text-stone-900">{h.name}</p>
-              <p className="text-xs text-stone-600">
-                {nazwy[h.village_id] ?? "Wieś"}
-                {h.max_capacity ? ` · do ${h.max_capacity} osób` : ""}
-                {h.address ? ` · ${h.address}` : ""}
-              </p>
+          <li key={h.id} className="rounded-2xl border border-stone-200 bg-white p-4 shadow-sm sm:p-5">
+            <p className="text-xs font-semibold uppercase tracking-wide text-stone-500">{nazwy[h.village_id] ?? "Wieś"}</p>
+            <div className="mt-2">
+              <KartaBudynkuSwietlicy
+                nazwa={h.name}
+                adres={h.address}
+                areaM2={h.area_m2 != null ? Number(h.area_m2) : null}
+                maxCapacity={h.max_capacity}
+                parkingSpaces={h.parking_spaces != null ? Number(h.parking_spaces) : null}
+                opis={h.description}
+              />
             </div>
-            <Link
-              href={`/panel/soltys/swietlica/${h.id}#plan-sali-edytor`}
-              className="shrink-0 rounded-lg bg-green-800 px-3 py-2 text-center text-sm font-medium text-white hover:bg-green-900"
-            >
-              Otwórz salę
-            </Link>
+            <div className="mt-4 flex flex-wrap gap-2">
+              <Link
+                href={`/panel/soltys/swietlica/${h.id}#budynek-swietlicy`}
+                className="rounded-lg bg-green-800 px-3 py-2 text-sm font-medium text-white hover:bg-green-900"
+              >
+                Zarządzaj salą
+              </Link>
+              <Link
+                href={`/panel/soltys/swietlica/${h.id}#plan-sali-edytor`}
+                className="rounded-lg border border-green-800/40 px-3 py-2 text-sm text-green-900 hover:bg-green-50"
+              >
+                Plan stołów
+              </Link>
+              <Link
+                href={`/panel/soltys/swietlica/${h.id}#asortyment-swietlicy`}
+                className="rounded-lg border border-stone-300 px-3 py-2 text-sm text-stone-800 hover:bg-stone-50"
+              >
+                Asortyment
+              </Link>
+            </div>
           </li>
         ))}
       </ul>
