@@ -12,15 +12,26 @@ export type NazwaLimituApi =
 
 let redisInstancja: Redis | null | undefined;
 
+/** Upstash Search (Vercel Marketplace) nie obsługuje poleceń Redis wymaganych przez @upstash/ratelimit. */
+function czyToRedisRestUrl(url: string): boolean {
+  try {
+    const host = new URL(url).hostname.toLowerCase();
+    if (host.includes("search.upstash.io")) return false;
+    return host.endsWith(".upstash.io");
+  } catch {
+    return false;
+  }
+}
+
 function pobierzRedis(): Redis | null {
   if (redisInstancja !== undefined) return redisInstancja;
-  const url =
-    process.env.UPSTASH_REDIS_REST_URL?.trim() ||
-    process.env.UPSTASH_SEARCH_REST_URL?.trim();
-  const token =
-    process.env.UPSTASH_REDIS_REST_TOKEN?.trim() ||
-    process.env.UPSTASH_SEARCH_REST_TOKEN?.trim();
+  const url = process.env.UPSTASH_REDIS_REST_URL?.trim();
+  const token = process.env.UPSTASH_REDIS_REST_TOKEN?.trim();
   if (!url || !token) {
+    redisInstancja = null;
+    return null;
+  }
+  if (!czyToRedisRestUrl(url)) {
     redisInstancja = null;
     return null;
   }
@@ -103,13 +114,18 @@ export async function sprawdzLimitApi(
   const limity = pobierzLubUtworzLimitery();
   if (!limity) return { ok: true };
 
-  const wynik = await limity[nazwa].limit(identyfikator);
-  if (!wynik.success) {
-    const retryPoSekundach = Math.max(
-      1,
-      Math.ceil((wynik.reset - Date.now()) / 1000),
-    );
-    return { ok: false, retryPoSekundach };
+  try {
+    const wynik = await limity[nazwa].limit(identyfikator);
+    if (!wynik.success) {
+      const retryPoSekundach = Math.max(
+        1,
+        Math.ceil((wynik.reset - Date.now()) / 1000),
+      );
+      return { ok: false, retryPoSekundach };
+    }
+    return { ok: true };
+  } catch {
+    // Błąd Upstash (np. zły endpoint) nie może wywalić middleware / API.
+    return { ok: true };
   }
-  return { ok: true };
 }

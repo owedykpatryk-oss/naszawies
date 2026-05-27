@@ -33,8 +33,8 @@ const wymaganeProdukcja = [
 ];
 
 const zalecaneProdukcja = [
-  { klucz: "UPSTASH_REDIS_REST_URL", alias: "UPSTASH_SEARCH_REST_URL", opis: "Rate limit formularzy publicznych" },
-  { klucz: "UPSTASH_REDIS_REST_TOKEN", alias: "UPSTASH_SEARCH_REST_TOKEN", opis: "Token Upstash Redis" },
+  { klucz: "UPSTASH_REDIS_REST_URL", opis: "Rate limit — Upstash Redis REST (nie Search)" },
+  { klucz: "UPSTASH_REDIS_REST_TOKEN", opis: "Token Upstash Redis REST" },
   { klucz: "NEXT_PUBLIC_TURNSTILE_SITE_KEY", opis: "Cloudflare Turnstile (kontakt, waitlist)" },
   { klucz: "TURNSTILE_SECRET_KEY", opis: "Walidacja Turnstile po stronie serwera" },
   { klucz: "RESEND_API_KEY", opis: "Formularz kontaktowy" },
