@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useDeferredValue, useEffect, useState } from "react";
 import type { FormatSocialGrafiki, MotywGrafiki, SzablonGrafiki, WartosciPolGrafiki } from "@/lib/grafika/typy";
 import { WYMIARY_SOCIAL } from "@/lib/grafika/eksport-social";
 import { formatDatyPolskiej } from "@/lib/grafika/szablony";
@@ -534,14 +534,24 @@ export function PodgladSzablonuGrafiki({
 }: Props) {
   const { szer, wys } = wymiaryKontenera(szablon, formatSocial);
   const [qrObraz, ustawQrObraz] = useState<string | null>(null);
+  const qrOpozniony = useDeferredValue(qrDataUrl?.trim() ?? "");
 
   useEffect(() => {
-    if (!qrDataUrl?.trim()) {
+    if (!qrOpozniony) {
       ustawQrObraz(null);
       return;
     }
-    void generujQrDataUrl(qrDataUrl.trim(), 120).then(ustawQrObraz);
-  }, [qrDataUrl]);
+    let anuluj = false;
+    const t = window.setTimeout(() => {
+      void generujQrDataUrl(qrOpozniony, 120).then((url) => {
+        if (!anuluj) ustawQrObraz(url);
+      });
+    }, 180);
+    return () => {
+      anuluj = true;
+      window.clearTimeout(t);
+    };
+  }, [qrOpozniony]);
 
   const tloStyle = backgroundDataUrl
     ? {
@@ -588,21 +598,17 @@ export function MiniaturaSzablonuGrafiki({
   szablon: SzablonGrafiki;
   motyw: MotywGrafiki;
 }) {
-  const skala = 0.22;
-  const { szer, wys } = wymiaryKontenera(szablon);
   return (
     <div
-      className="pointer-events-none overflow-hidden rounded-lg border border-stone-200 shadow-sm"
-      style={{ width: szer * skala, height: wys * skala }}
+      className="flex aspect-[3/4] w-full flex-col justify-end overflow-hidden rounded-lg border border-stone-200 p-2 shadow-sm"
+      style={{
+        backgroundColor: motyw.tlo,
+        color: motyw.tekst,
+        borderColor: motyw.ramka ?? undefined,
+      }}
     >
-      <div style={{ transform: `scale(${skala})`, transformOrigin: "top left" }}>
-        <PodgladSzablonuGrafiki
-          szablon={szablon}
-          motyw={motyw}
-          wartosci={{}}
-          elementId={`mini-${szablon.id}`}
-        />
-      </div>
+      <p className="text-[9px] font-semibold uppercase tracking-wide opacity-70">{szablon.kategoria}</p>
+      <p className="mt-0.5 line-clamp-2 font-serif text-[11px] font-semibold leading-tight">{szablon.tytul}</p>
     </div>
   );
 }

@@ -144,6 +144,13 @@ export default async function MieszkaniecPage() {
 
   return (
     <main>
+      <div className="mb-6 rounded-xl border border-emerald-200/80 bg-emerald-50/40 px-4 py-3 text-sm text-stone-700">
+        <strong className="text-emerald-900">Nowość:</strong> Twoje wsie, gminy i ulubione są w{" "}
+        <Link href="/panel/moje" className="font-semibold text-green-800 underline">
+          Moje
+        </Link>
+        . Tutaj zostają moduły do działania (ogłoszenia, świetlica).
+      </div>
       <h1 className="tytul-sekcji-panelu">Mieszkaniec</h1>
       <p className="mt-2 text-sm text-stone-600">
         Twoje role we wsiach, wnioski i obserwowane miejscowości. Publiczny profil:{" "}

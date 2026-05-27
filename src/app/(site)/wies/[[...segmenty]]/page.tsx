@@ -5,8 +5,6 @@ import { z } from "zod";
 import { StudzienkiProjektSwietlicy } from "@/components/wies/studzienki-projekt-swietlicy";
 import { WiesPostPubliczny } from "@/components/wies/wies-post-publiczny";
 import { pobierzPublicznePlakatyWsi } from "@/app/(site)/panel/grafika/akcje";
-import { pobierzKalendarzZajetosciDlaWsi } from "@/components/swietlica/kalendarz-zajetosci-publiczny";
-import { pobierzSalePubliczneDlaWsi } from "@/lib/swietlica/pobierz-sale-publiczne-wsi";
 import { WiesProfilPubliczny } from "@/components/wies/wies-profil-publiczny";
 import type { PrzewodnikSamorzadowyZapis } from "@/components/wies/sekcja-przewodnik-samorzadowy";
 import { WiesSzukajTresci } from "@/components/wies/wies-szukaj-tresci";
@@ -224,8 +222,6 @@ export default async function WiesCatchAllPage({ params, searchParams }: Props) 
 
     const posty = (postyRaw ?? []) as { id: string; title: string; type: string; created_at: string }[];
 
-    const kalendarz = wies.is_active ? await pobierzKalendarzZajetosciDlaWsi(supabase, wies.id) : [];
-    const salePubliczne = wies.is_active ? await pobierzSalePubliczneDlaWsi(supabase, wies.id) : [];
     const plakatyPubliczne = wies.is_active ? await pobierzPublicznePlakatyWsi(wies.id) : [];
 
     const odWydarzen = new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString();
@@ -243,13 +239,8 @@ export default async function WiesCatchAllPage({ params, searchParams }: Props) 
       { data: dotacjeSkrotRaw },
       { data: przewodnikRaw },
       { data: linkiPrzydatneRaw },
-      { data: transportStatusRaw },
-      { data: transportOdjazdyRaw },
       { data: kontaktyUrzedoweRaw },
       { data: kadencjeFunkcyjneRaw },
-      { data: geoKontekstRaw },
-      { data: adresyRaw },
-      { data: granicaRaw },
     ] = await Promise.all([
       supabaseSerwer.auth.getUser(),
       supabase
@@ -333,20 +324,6 @@ export default async function WiesCatchAllPage({ params, searchParams }: Props) 
         .order("display_order", { ascending: true })
         .order("title", { ascending: true }),
       supabase
-        .from("village_transport_line_status")
-        .select("status_color, status_label, delayed_count, cancelled_count, fallback_mode, updated_at")
-        .eq("village_id", wies.id)
-        .maybeSingle(),
-      supabase
-        .from("transport_departures_cache")
-        .select(
-          "id, station_name, train_label, destination, platform, planned_at, realtime_at, delay_min, is_cancelled, status, fetched_at",
-        )
-        .eq("village_id", wies.id)
-        .gte("planned_at", new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString())
-        .order("planned_at", { ascending: true })
-        .limit(8),
-      supabase
         .from("village_official_contacts")
         .select(
           "id, office_key, role_label, person_name, organization_name, contact_phone, contact_email, duty_hours_text, note, cta_label, cta_url, is_verified_by_soltys, updated_at",
@@ -361,29 +338,12 @@ export default async function WiesCatchAllPage({ params, searchParams }: Props) 
         .eq("village_id", wies.id)
         .order("term_start", { ascending: false })
         .limit(24),
-      supabase
-        .from("geo_context_features")
-        .select("id, dataset, layer_name, feature_category, feature_name, latitude, longitude, updated_at")
-        .eq("village_id", wies.id)
-        .order("updated_at", { ascending: false })
-        .limit(80),
-      supabase
-        .from("address_points")
-        .select("id, street_name, house_number, postal_code, latitude, longitude, updated_at")
-        .eq("village_id", wies.id)
-        .order("street_name", { ascending: true })
-        .order("house_number", { ascending: true })
-        .limit(500),
-      supabase
-        .from("villages")
-        .select("boundary_geojson")
-        .eq("id", wies.id)
-        .maybeSingle(),
     ]);
 
     const userSesji = authRes.data.user;
     let mozeEdytowacListeZakupow = false;
     let mozeZobaczycListeZakupow = false;
+    const zapisaneTresci: Record<string, string> = {};
     if (userSesji) {
       const { data: uvr } = await supabaseSerwer
         .from("user_village_roles")
@@ -395,6 +355,15 @@ export default async function WiesCatchAllPage({ params, searchParams }: Props) 
         .maybeSingle();
       mozeZobaczycListeZakupow = !!uvr;
       mozeEdytowacListeZakupow = !!uvr;
+
+      const { data: zapisaneRaw } = await supabaseSerwer
+        .from("user_saved_content")
+        .select("id, content_type, content_id")
+        .eq("user_id", userSesji.id)
+        .eq("village_id", wies.id);
+      for (const row of zapisaneRaw ?? []) {
+        zapisaneTresci[`${row.content_type}:${row.content_id}`] = row.id;
+      }
     }
 
     const blog = (blogRaw ?? []) as BlogWpis[];
@@ -494,27 +463,6 @@ export default async function WiesCatchAllPage({ params, searchParams }: Props) 
       note: r.note,
       display_order: r.display_order,
     }));
-    const transportStatus = (transportStatusRaw as {
-      status_color: string;
-      status_label: string;
-      delayed_count: number;
-      cancelled_count: number;
-      fallback_mode: boolean;
-      updated_at: string;
-    } | null) ?? null;
-    const transportOdjazdy = (transportOdjazdyRaw ?? []) as {
-      id: string;
-      station_name: string | null;
-      train_label: string;
-      destination: string | null;
-      platform: string | null;
-      planned_at: string;
-      realtime_at: string | null;
-      delay_min: number | null;
-      is_cancelled: boolean;
-      status: string | null;
-      fetched_at: string;
-    }[];
     const kontaktyUrzedowe = (kontaktyUrzedoweRaw ?? []) as {
       id: string;
       office_key: string;
@@ -541,28 +489,6 @@ export default async function WiesCatchAllPage({ params, searchParams }: Props) 
       note: string | null;
       is_current: boolean;
     }[];
-    const geoKontekst = (geoKontekstRaw ?? []) as {
-      id: string;
-      dataset: string;
-      layer_name: string;
-      feature_category: string | null;
-      feature_name: string | null;
-      latitude: number | null;
-      longitude: number | null;
-      updated_at: string;
-    }[];
-    const adresyUrzedowe = (adresyRaw ?? []) as {
-      id: string;
-      street_name: string | null;
-      house_number: string;
-      postal_code: string | null;
-      latitude: number;
-      longitude: number;
-      updated_at: string;
-    }[];
-    const maGraniceGeojson = Boolean((granicaRaw as { boundary_geojson?: unknown } | null)?.boundary_geojson);
-    const liczbaPrng = geoKontekst.filter((x) => x.dataset === "PRNG").length;
-    const liczbaInst = geoKontekst.filter((x) => x.dataset === "PRG_INSTITUTIONAL").length;
 
     return (
       <main className="mx-auto min-w-0 max-w-2xl py-16 text-stone-800">
@@ -578,8 +504,6 @@ export default async function WiesCatchAllPage({ params, searchParams }: Props) 
         <WiesProfilPubliczny
           wies={wies}
           posty={posty}
-          kalendarzZajetosci={kalendarz}
-          saleSwietlicy={salePubliczne}
           plakatyPubliczne={plakatyPubliczne}
           blog={blog}
           historia={historia}
@@ -595,18 +519,10 @@ export default async function WiesCatchAllPage({ params, searchParams }: Props) 
           dotacjeSkrot={dotacjeSkrot}
           przewodnikSamorzadowy={przewodnikSamorzadowy}
           linkiPrzydatne={linkiPrzydatne}
-          transportStatus={transportStatus}
-          transportOdjazdy={transportOdjazdy}
           kontaktyUrzedowe={kontaktyUrzedowe}
           kadencjeFunkcyjne={kadencjeFunkcyjne}
-          geoKontekst={geoKontekst}
-          adresyUrzedowe={adresyUrzedowe}
-          geoJakosc={{
-            maGraniceGeojson,
-            liczbaAdresow: adresyUrzedowe.length,
-            liczbaPrng,
-            liczbaInstytucji: liczbaInst,
-          }}
+          zalogowany={!!userSesji}
+          zapisaneTresci={zapisaneTresci}
         />
       </main>
     );

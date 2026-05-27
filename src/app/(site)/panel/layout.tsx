@@ -1,4 +1,4 @@
-import { PanelNawigacja } from "@/components/panel/panel-nawigacja";
+import { PanelNaglowekZLogo } from "@/components/panel/panel-naglowek-z-logo";
 import { pobierzVillageIdsRoliPaneluSoltysaDlaUzytkownikaCache } from "@/lib/panel/rola-panelu-soltysa";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
 
@@ -20,7 +20,7 @@ export default async function PanelLayout({ children }: { children: React.ReactN
     <div className="panel-tlo min-h-[100dvh] min-w-0 overflow-x-hidden">
       <div className="panel-shell w-full min-w-0 py-6 text-stone-800 sm:py-8 lg:py-10">
         <div className="no-print">
-          <PanelNawigacja pokazLinkSoltysa={pokazLinkSoltysa} />
+          <PanelNaglowekZLogo pokazLinkSoltysa={pokazLinkSoltysa} />
         </div>
         <div className="min-w-0">{children}</div>
       </div>

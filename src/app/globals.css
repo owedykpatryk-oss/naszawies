@@ -113,7 +113,7 @@ body {
     @apply min-h-0 resize-y;
   }
   .sekcja-form-nav {
-    @apply no-print sticky top-[8.4rem] z-20 overflow-x-auto rounded-xl border border-stone-200/80 bg-white/95 px-2 py-2 text-xs shadow-sm backdrop-blur [-webkit-overflow-scrolling:touch] [scrollbar-width:thin];
+    @apply no-print sticky top-[8.4rem] z-20 overflow-x-auto rounded-xl border border-stone-200/80 bg-white px-2 py-2 text-xs [-webkit-overflow-scrolling:touch] [scrollbar-width:thin];
   }
   .sekcja-form-nav-link {
     @apply shrink-0 rounded-lg border border-stone-200 bg-stone-50 px-2.5 py-1.5 text-stone-700 transition hover:border-green-300 hover:bg-green-50 hover:text-green-950;
@@ -136,7 +136,7 @@ body {
     @apply rounded-2xl border border-stone-200/90 bg-white p-5 shadow-sm ring-1 ring-stone-900/[0.04] transition duration-200;
   }
   .panel-karta:hover {
-    @apply border-emerald-200/70 shadow-md ring-emerald-800/[0.06];
+    @apply border-emerald-200/70 ring-emerald-800/[0.06];
   }
   .panel-tlo {
     @apply min-h-screen bg-gradient-to-b from-[#f4f0e6] via-stone-50 to-stone-100/95;
@@ -146,5 +146,60 @@ body {
   }
   .nawigacja-pill {
     @apply focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-green-800/80;
+  }
+
+  .sekcja-poza-foldem {
+    content-visibility: auto;
+    contain-intrinsic-size: auto 480px;
+  }
+
+  .wow-wejscie {
+    animation: wow-wejscie 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
+  .karta-wow {
+    @apply border border-stone-200/90 bg-white transition-[border-color,transform] duration-200;
+  }
+
+  .karta-wow:hover {
+    @apply border-emerald-300/80;
+    transform: translateY(-1px);
+  }
+
+  .panel-informacji-hero {
+    @apply relative overflow-hidden rounded-2xl border border-emerald-800/15 bg-[#f5f9f0] p-5 sm:p-6;
+    box-shadow:
+      0 1px 0 rgba(255, 255, 255, 0.8) inset,
+      0 8px 32px rgba(45, 90, 45, 0.06);
+  }
+
+  .panel-informacji-hero::before {
+    content: "";
+    position: absolute;
+    inset: -40% -20% auto;
+    height: 120px;
+    background: radial-gradient(ellipse at center, rgba(90, 156, 62, 0.12), transparent 70%);
+    pointer-events: none;
+  }
+}
+
+@keyframes wow-wejscie {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .wow-wejscie {
+    animation: none;
+  }
+
+  .karta-wow:hover {
+    transform: none;
   }
 }

@@ -6,6 +6,7 @@ import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
 import { pobierzPochodzeniePubliczne } from "@/lib/zadanie/pochodzenie-publiczne";
 import { LogowanieFormularz } from "./logowanie-formularz";
 import { LogowanieProwiderzy } from "./logowanie-prowiderzy";
+import { LogoNaszawiesWycentrowane } from "@/components/marka/logo-naszawies";
 
 export const metadata: Metadata = {
   title: "Logowanie",
@@ -42,11 +43,7 @@ export default async function LogowaniePage({ searchParams }: Props) {
 
   return (
     <main className="mx-auto min-w-0 max-w-md py-12 text-stone-800 sm:py-16">
-      <p className="mb-6 text-sm text-stone-500">
-        <Link href="/" className="font-medium text-green-900 underline decoration-emerald-800/30 underline-offset-2 hover:decoration-emerald-800">
-          ← Strona główna
-        </Link>
-      </p>
+      <LogoNaszawiesWycentrowane />
       <div className="relative overflow-hidden rounded-3xl border border-stone-200/80 bg-gradient-to-b from-white to-stone-50/90 p-6 shadow-[0_20px_50px_-20px_rgba(21,60,40,0.18)] ring-1 ring-stone-900/[0.04] sm:p-8">
         <div
           className="pointer-events-none absolute -right-20 -top-20 h-56 w-56 rounded-full bg-emerald-500/10 blur-3xl"
@@ -82,6 +79,11 @@ export default async function LogowaniePage({ searchParams }: Props) {
           </ul>
         </div>
       </div>
+      <p className="mt-6 text-center text-sm text-stone-500">
+        <Link href="/" className="text-green-800 underline">
+          Strona główna
+        </Link>
+      </p>
     </main>
   );
 }

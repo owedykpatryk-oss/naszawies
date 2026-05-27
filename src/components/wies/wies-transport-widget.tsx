@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { KARTA_LISTY_WIES, OslonaSekcjiWies } from "@/components/wies/oslona-sekcji-wies";
+import { TytulSekcjiWies } from "@/components/wies/tytul-sekcji-wies";
 
 export type TransportOdjazdPubliczny = {
   id: string;
@@ -41,9 +43,7 @@ export function WiesTransportWidget({
   walkingMarginMin?: number;
 }) {
   const frazaStacji = encodeURIComponent(odjazdy[0]?.station_name ?? "");
-  const linkRozklad = frazaStacji
-    ? `/transport/rozklad?stacja=${frazaStacji}`
-    : `${sciezkaWsi}`;
+  const linkRozklad = frazaStacji ? `/transport/rozklad?stacja=${frazaStacji}` : `${sciezkaWsi}`;
 
   if (!status && odjazdy.length === 0) return null;
 
@@ -67,18 +67,22 @@ export function WiesTransportWidget({
     .slice(-2);
 
   return (
-    <section className="mt-10 rounded-2xl border border-sky-200/80 bg-sky-50/40 p-5 shadow-sm">
-      <div className="flex flex-wrap items-center justify-between gap-3">
-        <h2 className="font-serif text-xl text-green-950">Najbliższe odjazdy</h2>
+    <OslonaSekcjiWies id="sekcja-transport" className="from-sky-50/50 via-white to-[#f5f9f0]">
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <TytulSekcjiWies
+          etykieta="Transport"
+          tytul="Najbliższe odjazdy"
+          opis="Rozkład i opóźnienia w jednym miejscu — sprawdź, czy zdążysz na stację."
+        />
         {status ? (
-          <span className={`rounded-full border px-2 py-1 text-xs ${colorClass(status.status_color)}`}>
+          <span className={`shrink-0 rounded-full border px-2 py-1 text-xs ${colorClass(status.status_color)}`}>
             Linia: {status.status_label}
           </span>
         ) : null}
       </div>
 
       {status?.fallback_mode ? (
-        <p className="mt-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900">
+        <p className="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900">
           Live chwilowo niedostępne — pokazujemy planowy rozkład z ostatniej synchronizacji.
         </p>
       ) : null}
@@ -98,7 +102,7 @@ export function WiesTransportWidget({
             const planned = new Date(d.planned_at);
             const mocneOpoznienie = (d.delay_min ?? 0) >= delayAlertMin;
             return (
-              <li key={d.id} className="rounded-lg border border-stone-200 bg-white px-4 py-3">
+              <li key={d.id} className={KARTA_LISTY_WIES}>
                 <div className="flex flex-wrap items-center justify-between gap-2">
                   <p className="font-medium text-stone-900">
                     {d.train_label}
@@ -132,7 +136,7 @@ export function WiesTransportWidget({
       )}
 
       <div className="mt-4 grid gap-3 sm:grid-cols-2">
-        <div className="rounded-lg border border-stone-200 bg-white px-3 py-2">
+        <div className={KARTA_LISTY_WIES}>
           <p className="text-xs uppercase tracking-wide text-stone-500">Rano do pracy/szkoły</p>
           {poranne.length === 0 ? (
             <p className="mt-1 text-xs text-stone-600">Brak kursów porannych.</p>
@@ -148,7 +152,7 @@ export function WiesTransportWidget({
             </ul>
           )}
         </div>
-        <div className="rounded-lg border border-stone-200 bg-white px-3 py-2">
+        <div className={KARTA_LISTY_WIES}>
           <p className="text-xs uppercase tracking-wide text-stone-500">Powrót wieczorem</p>
           {wieczorne.length === 0 ? (
             <p className="mt-1 text-xs text-stone-600">Brak kursów wieczornych.</p>
@@ -167,13 +171,13 @@ export function WiesTransportWidget({
       </div>
 
       <div className="mt-4 flex flex-wrap gap-4 text-xs">
-        <Link href={linkRozklad} className="text-green-800 underline">
+        <Link href={linkRozklad} className="font-medium text-green-800 underline">
           Pełny rozkład transportu
         </Link>
-        <Link href="/panel/powiadomienia" className="text-green-800 underline">
+        <Link href="/panel/powiadomienia" className="font-medium text-green-800 underline">
           Powiadom mnie o zmianach
         </Link>
       </div>
-    </section>
+    </OslonaSekcjiWies>
   );
 }

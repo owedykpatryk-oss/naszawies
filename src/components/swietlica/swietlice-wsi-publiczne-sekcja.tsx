@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { KartaBudynkuSwietlicy } from "@/components/swietlica/karta-budynku-swietlicy";
 import type { SalaPublicznaWsi } from "@/lib/swietlica/pobierz-sale-publiczne-wsi";
+import { KARTA_LISTY_WIES, OslonaSekcjiWies } from "@/components/wies/oslona-sekcji-wies";
+import { TytulSekcjiWies } from "@/components/wies/tytul-sekcji-wies";
 
 type Props = {
   nazwaWsi: string;
@@ -11,14 +13,15 @@ export function SwietliceWsiPubliczneSekcja({ nazwaWsi, sale }: Props) {
   if (sale.length === 0) return null;
 
   return (
-    <section id="swietlice-wsi" className="scroll-mt-8 mt-10">
-      <h2 className="font-serif text-xl text-green-950">Świetlice w {nazwaWsi}</h2>
-      <p className="mt-1 text-sm text-stone-600">
-        Sale wiejskie w sołectwie — rezerwacja po zalogowaniu jako mieszaniec. Poniżej adres, metraż i parking.
-      </p>
+    <OslonaSekcjiWies id="swietlice-wsi">
+      <TytulSekcjiWies
+        etykieta="Świetlica"
+        tytul={`Świetlice w ${nazwaWsi}`}
+        opis="Sale wiejskie w sołectwie — rezerwacja po zalogowaniu jako mieszkaniec. Poniżej adres, metraż i parking."
+      />
       <ul className="mt-5 space-y-4">
         {sale.map((s) => (
-          <li key={s.id} className="rounded-2xl border border-stone-200 bg-white p-4 shadow-sm sm:p-5">
+          <li key={s.id} className={`${KARTA_LISTY_WIES} p-4 sm:p-5`}>
             <KartaBudynkuSwietlicy
               nazwa={s.name}
               adres={s.address}
@@ -30,13 +33,13 @@ export function SwietliceWsiPubliczneSekcja({ nazwaWsi, sale }: Props) {
             <div className="mt-4 flex flex-wrap gap-2">
               <Link
                 href={`/logowanie?next=${encodeURIComponent(`/panel/mieszkaniec/swietlica/${s.id}`)}`}
-                className="inline-flex min-h-[44px] items-center rounded-lg bg-green-800 px-4 py-2 text-sm font-medium text-white hover:bg-green-900"
+                className="inline-flex min-h-[44px] items-center rounded-lg bg-green-800 px-4 py-2 text-sm font-medium text-white hover:bg-green-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-green-800"
               >
                 Zaloguj się — rezerwacja sali
               </Link>
               <Link
                 href={`/logowanie?next=${encodeURIComponent(`/panel/mieszkaniec/swietlica/${s.id}/dokument`)}`}
-                className="inline-flex min-h-[44px] items-center rounded-lg border border-stone-300 bg-white px-4 py-2 text-sm text-stone-800 hover:bg-stone-50"
+                className="inline-flex min-h-[44px] items-center rounded-lg border border-stone-300 bg-white px-4 py-2 text-sm text-stone-800 hover:bg-stone-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-green-800"
               >
                 Dokument informacyjny
               </Link>
@@ -44,6 +47,6 @@ export function SwietliceWsiPubliczneSekcja({ nazwaWsi, sale }: Props) {
           </li>
         ))}
       </ul>
-    </section>
+    </OslonaSekcjiWies>
   );
 }

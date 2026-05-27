@@ -1,10 +1,9 @@
+import dynamic from "next/dynamic";
 import Link from "next/link";
 import {
   MarketplaceListaKlient,
   type RynekOfertaPubliczna,
 } from "@/components/wies/marketplace-lista-klient";
-import { SwietliceWsiPubliczneSekcja } from "@/components/swietlica/swietlice-wsi-publiczne-sekcja";
-import { KalendarzZajetosciWsiSekcja } from "@/components/swietlica/kalendarz-zajetosci-publiczny";
 import type { WierszKalendarzaPublicznego } from "@/components/swietlica/kalendarz-zajetosci-publiczny";
 import type { SalaPublicznaWsi } from "@/lib/swietlica/pobierz-sale-publiczne-wsi";
 import type { WiesPubliczna } from "@/lib/wies/znajdz-wies-po-sciezce";
@@ -18,10 +17,26 @@ import {
 } from "@/components/wies/sekcja-przewodnik-samorzadowy";
 import { WiesLaczonyFeedAktualnosci } from "@/components/wies/wies-laczony-feed-aktualnosci";
 import { zbudujLaczonyFeedAktualnosci } from "@/lib/wies/zbuduj-laczony-feed-aktualnosci";
-import { GaleriaPlakatowWsi, type PlakatPubliczny } from "@/components/grafika/galeria-plakatow-wsi";
-import { WiesTransportWidget, type TransportOdjazdPubliczny } from "@/components/wies/wies-transport-widget";
+import { LazyWidoczny } from "@/components/ui/lazy-widoczny";
+import type { PlakatPubliczny } from "@/components/grafika/galeria-plakatow-wsi";
 import { PanelInformacjiMieszkancow } from "@/components/wies/panel-informacji-mieszkancow";
 import type { LinkPrzydatnyPubliczny } from "@/lib/wies/linki-przydatne";
+import { MojeObserwujWiesPasek } from "@/components/panel/moje/moje-obserwuj-wies-pasek";
+import { ZapiszTrescPrzycisk } from "@/components/panel/moje/zapisz-tresc-przycisk";
+import { KARTA_LISTY_WIES, OslonaSekcjiWies } from "@/components/wies/oslona-sekcji-wies";
+import { TytulSekcjiWies } from "@/components/wies/tytul-sekcji-wies";
+import { SekcjaDaneGeoWsiLazy } from "@/components/wies/sekcja-dane-geo-wsi-lazy";
+import { WiesTransportLazy } from "@/components/wies/wies-transport-lazy";
+import { SwietliceWsiLazy } from "@/components/wies/swietlice-wsi-lazy";
+
+const GaleriaPlakatowWsi = dynamic(
+  () => import("@/components/grafika/galeria-plakatow-wsi").then((m) => ({ default: m.GaleriaPlakatowWsi })),
+  {
+    loading: () => (
+      <section className="sekcja-poza-foldem mt-12 h-48 animate-pulse rounded-2xl bg-stone-100" aria-hidden />
+    ),
+  },
+);
 
 type WpisPostu = {
   id: string;
@@ -33,8 +48,6 @@ type WpisPostu = {
 export function WiesProfilPubliczny({
   wies,
   posty,
-  kalendarzZajetosci = [],
-  saleSwietlicy = [],
   blog = [],
   historia = [],
   rynek = [],
@@ -49,14 +62,11 @@ export function WiesProfilPubliczny({
   dotacjeSkrot = [],
   przewodnikSamorzadowy = null,
   linkiPrzydatne = [],
-  transportStatus = null,
-  transportOdjazdy = [],
   kontaktyUrzedowe = [],
   kadencjeFunkcyjne = [],
-  geoKontekst = [],
-  adresyUrzedowe = [],
-  geoJakosc = null,
   plakatyPubliczne = [],
+  zalogowany = false,
+  zapisaneTresci = {},
 }: {
   wies: WiesPubliczna;
   posty: WpisPostu[];
@@ -135,15 +145,6 @@ export function WiesProfilPubliczny({
   }[];
   przewodnikSamorzadowy?: PrzewodnikSamorzadowyZapis | null;
   linkiPrzydatne?: LinkPrzydatnyPubliczny[];
-  transportStatus?: {
-    status_color: string;
-    status_label: string;
-    delayed_count: number;
-    cancelled_count: number;
-    fallback_mode: boolean;
-    updated_at: string;
-  } | null;
-  transportOdjazdy?: TransportOdjazdPubliczny[];
   kontaktyUrzedowe?: {
     id: string;
     office_key: string;
@@ -170,59 +171,13 @@ export function WiesProfilPubliczny({
     note: string | null;
     is_current: boolean;
   }[];
-  geoKontekst?: {
-    id: string;
-    dataset: string;
-    layer_name: string;
-    feature_category: string | null;
-    feature_name: string | null;
-    latitude: number | null;
-    longitude: number | null;
-    updated_at: string;
-  }[];
-  adresyUrzedowe?: {
-    id: string;
-    street_name: string | null;
-    house_number: string;
-    postal_code: string | null;
-    latitude: number;
-    longitude: number;
-    updated_at: string;
-  }[];
-  geoJakosc?: {
-    maGraniceGeojson: boolean;
-    liczbaAdresow: number;
-    liczbaPrng: number;
-    liczbaInstytucji: number;
-  } | null;
+  zalogowany?: boolean;
+  /** Klucz `post:id` lub `event:id` → ID wiersza w user_saved_content. */
+  zapisaneTresci?: Record<string, string>;
 }) {
   const sciezka = sciezkaProfiluWsi(wies);
   const prefixOgloszenia = `${sciezka}/ogloszenie`;
   const laczonyFeed = zbudujLaczonyFeedAktualnosci(sciezka, posty, blog, historia, wiadomosci, wydarzenia, 14);
-  const prng = geoKontekst
-    .filter((x) => x.dataset === "PRNG")
-    .filter((x) => x.feature_name || x.feature_category)
-    .slice(0, 14);
-  const instytucje = geoKontekst
-    .filter((x) => x.dataset === "PRG_INSTITUTIONAL")
-    .filter((x) => x.feature_name || x.feature_category)
-    .slice(0, 14);
-  const adresyWgUlicy = Array.from(
-    adresyUrzedowe.reduce((acc, a) => {
-      const k = a.street_name?.trim() || "(bez nazwy ulicy)";
-      acc.set(k, (acc.get(k) ?? 0) + 1);
-      return acc;
-    }, new Map<string, number>()),
-  )
-    .sort((a, b) => b[1] - a[1] || a[0].localeCompare(b[0], "pl"))
-    .slice(0, 20);
-  const ostatniaAktualizacjaAdresow =
-    adresyUrzedowe.length > 0
-      ? adresyUrzedowe
-          .map((a) => Date.parse(a.updated_at))
-          .filter((t) => Number.isFinite(t))
-          .sort((a, b) => b - a)[0]
-      : null;
 
   const maPrzewodnik =
     !!przewodnikSamorzadowy &&
@@ -236,31 +191,47 @@ export function WiesProfilPubliczny({
       przewodnikSamorzadowy.other_info,
     ].some((x) => x && x.trim().length > 0);
 
+  const maRynek = profileUslug.length > 0 || rynek.length > 0;
+
   return (
     <article>
+      <a
+        href="#informacje-mieszkancow"
+        className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:rounded-lg focus:bg-green-900 focus:px-4 focus:py-2 focus:text-sm focus:font-medium focus:text-white"
+      >
+        Przejdź do informacji dla mieszkańców
+      </a>
+
       {wies.cover_image_url ? (
-        <div className="relative mb-8 aspect-[21/9] max-h-64 overflow-hidden rounded-xl border border-stone-200 bg-stone-100">
+        <div className="relative mb-8 aspect-[21/9] max-h-64 overflow-hidden rounded-2xl border border-stone-200/90 bg-stone-100 shadow-sm ring-1 ring-stone-900/[0.03]">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={wies.cover_image_url} alt="" className="h-full w-full object-cover" />
+          <img
+            src={wies.cover_image_url}
+            alt={`Okładka profilu wsi ${wies.name}`}
+            className="h-full w-full object-cover"
+            loading="lazy"
+            decoding="async"
+          />
+          <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-stone-950/35 via-transparent to-transparent" aria-hidden />
         </div>
       ) : null}
 
-      <header className="border-b border-stone-200 pb-6">
-        <nav className="text-sm text-stone-500">
-          <Link href={sciezkaWojewodztwa(wies.voivodeship)} className="text-green-800 hover:underline">
+      <header className="wow-wejscie border-b border-stone-200/90 pb-6">
+        <nav className="text-sm text-stone-500" aria-label="Ścieżka nawigacji">
+          <Link href={sciezkaWojewodztwa(wies.voivodeship)} className="text-green-800 underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-green-800">
             {wies.voivodeship}
           </Link>
           {" · "}
           <Link
             href={sciezkaPowiatu({ voivodeship: wies.voivodeship, county: wies.county })}
-            className="text-green-800 hover:underline"
+            className="text-green-800 underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-green-800"
           >
             pow. {wies.county}
           </Link>
           {" · "}
           <Link
             href={sciezkaGminy({ voivodeship: wies.voivodeship, county: wies.county, commune: wies.commune })}
-            className="text-green-800 hover:underline"
+            className="text-green-800 underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-green-800"
           >
             {wies.commune}
           </Link>
@@ -270,12 +241,25 @@ export function WiesProfilPubliczny({
             </span>
           )}
         </nav>
-        <h1 className="mt-2 font-serif text-3xl text-green-950">{wies.name}</h1>
+        <div className="mt-3 flex flex-wrap items-start gap-x-4 gap-y-2">
+          <h1 className="font-serif text-3xl text-green-950 sm:text-4xl">{wies.name}</h1>
+          {wies.is_active ? (
+            <span className="mt-1 rounded-full bg-emerald-100 px-2.5 py-0.5 text-[11px] font-semibold text-emerald-900 ring-1 ring-emerald-200/80">
+              Aktywny profil
+            </span>
+          ) : null}
+        </div>
+        {wies.population != null && wies.population > 0 ? (
+          <p className="mt-2 text-sm text-stone-600">
+            Szacunkowa liczba mieszkańców:{" "}
+            <span className="font-semibold tabular-nums text-green-950">{wies.population.toLocaleString("pl-PL")}</span>
+          </p>
+        ) : null}
         {wies.website ? (
           <p className="mt-3 text-sm">
             <a
               href={wies.website}
-              className="text-green-800 underline"
+              className="text-green-800 underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-green-800"
               target="_blank"
               rel="noopener noreferrer"
             >
@@ -306,18 +290,23 @@ export function WiesProfilPubliczny({
             </span>
           ) : null}
         </p>
-        {transportStatus && (transportStatus.status_color === "orange" || transportStatus.status_color === "red") ? (
-          <p className="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-900">
-            Dziś utrudnienia w transporcie: {transportStatus.status_label}.
-          </p>
-        ) : null}
+        <MojeObserwujWiesPasek
+          villageId={wies.id}
+          wies={{
+            name: wies.name,
+            slug: wies.slug,
+            voivodeship: wies.voivodeship,
+            county: wies.county,
+            commune: wies.commune,
+          }}
+        />
       </header>
 
       {wies.description ? (
-        <section className="mt-8">
-          <h2 className="font-serif text-xl text-green-950">O miejscowości</h2>
+        <OslonaSekcjiWies className="mt-8">
+          <TytulSekcjiWies etykieta="Opis" tytul="O miejscowości" />
           <div className="mt-3 whitespace-pre-wrap text-sm leading-relaxed text-stone-700">{wies.description}</div>
-        </section>
+        </OslonaSekcjiWies>
       ) : null}
 
       <PanelInformacjiMieszkancow
@@ -326,205 +315,39 @@ export function WiesProfilPubliczny({
         maPrzewodnik={maPrzewodnik}
         maKontakty={kontaktyUrzedowe.length > 0}
         maWiadomosci={wiadomosci.length > 0}
-        maSwietlice={saleSwietlicy.length > 0}
+        maSwietlice={wies.is_active}
+        maRynek={maRynek}
+        maDotacje={dotacjeSkrot.length > 0}
+        maTransport={wies.is_active}
       />
-
-      {geoJakosc ? (
-        <section className="mt-8 rounded-xl border border-stone-200 bg-stone-50/70 px-4 py-3">
-          <h2 className="font-serif text-lg text-green-950">Jakość danych geo</h2>
-          <p className="mt-1 text-xs text-stone-600">
-            Szybki podgląd, czy wieś ma już kluczowe dane referencyjne z synchronizacji Geoportalu.
-          </p>
-          <ul className="mt-3 grid gap-2 text-sm sm:grid-cols-2 lg:grid-cols-4">
-            <li className="rounded-lg border border-stone-200 bg-white px-3 py-2">
-              <p className="text-xs text-stone-500">Granica wsi</p>
-              <p className="font-medium text-stone-900">{geoJakosc.maGraniceGeojson ? "OK" : "Brak"}</p>
-            </li>
-            <li className="rounded-lg border border-stone-200 bg-white px-3 py-2">
-              <p className="text-xs text-stone-500">Punkty adresowe</p>
-              <p className="font-medium text-stone-900">{geoJakosc.liczbaAdresow}</p>
-            </li>
-            <li className="rounded-lg border border-stone-200 bg-white px-3 py-2">
-              <p className="text-xs text-stone-500">Obiekty PRNG</p>
-              <p className="font-medium text-stone-900">{geoJakosc.liczbaPrng}</p>
-            </li>
-            <li className="rounded-lg border border-stone-200 bg-white px-3 py-2">
-              <p className="text-xs text-stone-500">Warstwy instytucjonalne</p>
-              <p className="font-medium text-stone-900">{geoJakosc.liczbaInstytucji}</p>
-            </li>
-          </ul>
-        </section>
-      ) : null}
-
-      <section className="mt-10">
-        <h2 className="font-serif text-xl text-green-950">Kontekst Geoportalu (PRNG i instytucje)</h2>
-        <p className="mt-1 text-sm text-stone-600">
-          Nazwy terenowe i obiekty referencyjne z rejestrów państwowych (Geoportal): pomocne przy orientacji i opisie
-          okolicy.
-        </p>
-        {prng.length === 0 && instytucje.length === 0 ? (
-          <p className="mt-4 text-sm text-stone-500">
-            Brak danych kontekstowych w tej chwili. Synchronizacja Geoportalu uzupełni je automatycznie.
-          </p>
-        ) : (
-          <div className="mt-4 grid gap-5 lg:grid-cols-2">
-            <div>
-              <h3 className="text-sm font-semibold uppercase tracking-wide text-stone-500">
-                PRNG — nazwy geograficzne
-              </h3>
-              {prng.length === 0 ? (
-                <p className="mt-3 text-sm text-stone-500">Brak obiektów PRNG w promieniu synchronizacji.</p>
-              ) : (
-                <ul className="mt-3 space-y-2">
-                  {prng.map((f) => (
-                    <li key={f.id} className="rounded-lg border border-stone-200 bg-white px-3 py-2 text-sm">
-                      <p className="font-medium text-stone-900">{f.feature_name ?? "Nazwa obiektu bez etykiety"}</p>
-                      <p className="mt-1 text-xs text-stone-600">
-                        {f.feature_category ?? "kategoria nieokreślona"}
-                        {f.latitude != null && f.longitude != null ? (
-                          <>
-                            {" · "}
-                            <a
-                              href={`https://www.openstreetmap.org/?mlat=${f.latitude}&mlon=${f.longitude}&zoom=14`}
-                              className="text-green-800 underline"
-                              target="_blank"
-                              rel="noopener noreferrer"
-                            >
-                              punkt na mapie
-                            </a>
-                          </>
-                        ) : null}
-                      </p>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
-
-            <div>
-              <h3 className="text-sm font-semibold uppercase tracking-wide text-stone-500">
-                PRG — warstwy instytucjonalne
-              </h3>
-              {instytucje.length === 0 ? (
-                <p className="mt-3 text-sm text-stone-500">Brak instytucji referencyjnych w promieniu synchronizacji.</p>
-              ) : (
-                <ul className="mt-3 space-y-2">
-                  {instytucje.map((f) => (
-                    <li key={f.id} className="rounded-lg border border-stone-200 bg-white px-3 py-2 text-sm">
-                      <p className="font-medium text-stone-900">{f.feature_name ?? "Jednostka bez nazwy"}</p>
-                      <p className="mt-1 text-xs text-stone-600">
-                        {f.feature_category ?? f.layer_name}
-                        {f.latitude != null && f.longitude != null ? (
-                          <>
-                            {" · "}
-                            <a
-                              href={`https://www.openstreetmap.org/?mlat=${f.latitude}&mlon=${f.longitude}&zoom=14`}
-                              className="text-green-800 underline"
-                              target="_blank"
-                              rel="noopener noreferrer"
-                            >
-                              punkt na mapie
-                            </a>
-                          </>
-                        ) : null}
-                      </p>
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </div>
-          </div>
-        )}
-      </section>
-
-      <section className="mt-10">
-        <h2 className="font-serif text-xl text-green-950">Ulice i punkty adresowe (KIN/PRG)</h2>
-        <p className="mt-1 text-sm text-stone-600">
-          Oficjalne punkty adresowe z rejestru państwowego. Przydatne przy nawigacji, opisie lokalizacji i planowaniu usług.
-        </p>
-        {adresyUrzedowe.length === 0 ? (
-          <p className="mt-4 text-sm text-stone-500">
-            Brak punktów adresowych dla tej wsi. Synchronizacja KIN/PRG uzupełni je automatycznie.
-          </p>
-        ) : (
-          <>
-            <p className="mt-3 text-xs text-stone-600">
-              Punktów adresowych: <strong>{adresyUrzedowe.length}</strong>
-              {" · "}
-              Ulic z danymi: <strong>{adresyWgUlicy.length}</strong>
-              {ostatniaAktualizacjaAdresow ? (
-                <>
-                  {" · "}
-                  Ostatnia aktualizacja:{" "}
-                  <strong>{new Date(ostatniaAktualizacjaAdresow).toLocaleDateString("pl-PL")}</strong>
-                </>
-              ) : null}
-            </p>
-            <div className="mt-4 grid gap-5 lg:grid-cols-2">
-              <div>
-                <h3 className="text-sm font-semibold uppercase tracking-wide text-stone-500">Najczęściej występujące ulice</h3>
-                <ul className="mt-3 space-y-2">
-                  {adresyWgUlicy.map(([ulica, liczba]) => (
-                    <li key={ulica} className="rounded-lg border border-stone-200 bg-white px-3 py-2 text-sm">
-                      <p className="font-medium text-stone-900">{ulica}</p>
-                      <p className="mt-1 text-xs text-stone-600">Punktów adresowych: {liczba}</p>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-              <div>
-                <h3 className="text-sm font-semibold uppercase tracking-wide text-stone-500">Przykładowe adresy</h3>
-                <ul className="mt-3 space-y-2">
-                  {adresyUrzedowe.slice(0, 20).map((a) => (
-                    <li key={a.id} className="rounded-lg border border-stone-200 bg-white px-3 py-2 text-sm">
-                      <p className="font-medium text-stone-900">
-                        {a.street_name?.trim() ? `${a.street_name} ${a.house_number}` : a.house_number}
-                      </p>
-                      <p className="mt-1 text-xs text-stone-600">
-                        {a.postal_code ?? "kod pocztowy b/d"}
-                        {" · "}
-                        <a
-                          href={`https://www.openstreetmap.org/?mlat=${a.latitude}&mlon=${a.longitude}&zoom=17`}
-                          className="text-green-800 underline"
-                          target="_blank"
-                          rel="noopener noreferrer"
-                        >
-                          punkt na mapie
-                        </a>
-                      </p>
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            </div>
-          </>
-        )}
-      </section>
 
       <SekcjaPrzewodnikSamorzadowy wies={wies} przewodnik={przewodnikSamorzadowy} />
 
       <WiesLaczonyFeedAktualnosci wpisy={laczonyFeed} />
 
-      <GaleriaPlakatowWsi plakaty={plakatyPubliczne} nazwaWsi={wies.name} />
+      <LazyWidoczny
+        placeholder={
+          <section className="sekcja-poza-foldem mt-12 h-48 animate-pulse rounded-2xl bg-stone-100" aria-hidden />
+        }
+      >
+        <GaleriaPlakatowWsi plakaty={plakatyPubliczne} nazwaWsi={wies.name} />
+      </LazyWidoczny>
 
-      <WiesTransportWidget
-        sciezkaWsi={sciezka}
-        status={transportStatus}
-        odjazdy={transportOdjazdy}
-      />
+      <WiesTransportLazy sciezkaWsi={sciezka} villageId={wies.id} />
 
-      <section id="kontakty-urzedowe-wsi" className="mt-10 scroll-mt-8">
-        <h2 className="font-serif text-xl text-green-950">Kontakt urzędowy i osoby funkcyjne</h2>
-        <p className="mt-1 text-sm text-stone-600">
-          Najważniejsze kontakty we wsi (sołtys, parafia, OSP, KGW) wraz z dyżurami, weryfikacją i historią kadencji.
-        </p>
+      <OslonaSekcjiWies id="kontakty-urzedowe-wsi" pusta={kontaktyUrzedowe.length === 0}>
+        <TytulSekcjiWies
+          etykieta="Kontakt"
+          tytul="Kontakt urzędowy i osoby funkcyjne"
+          opis="Sołtys, parafia, OSP, KGW — z dyżurami, weryfikacją i historią kadencji."
+        />
         {kontaktyUrzedowe.length === 0 ? (
           <p className="mt-4 text-sm text-stone-500">Brak opublikowanych kontaktów urzędowych.</p>
         ) : (
-          <div className="mt-4 grid gap-4 lg:grid-cols-2">
+          <div className="mt-5 grid gap-4 lg:grid-cols-2">
             <ul className="space-y-3">
               {kontaktyUrzedowe.map((k) => (
-                <li key={k.id} className="rounded-xl border border-stone-200 bg-white px-4 py-3 shadow-sm">
+                <li key={k.id} className={KARTA_LISTY_WIES}>
                   <p className="text-xs text-sky-800">{k.role_label}</p>
                   <p className="mt-1 font-medium text-stone-900">{k.person_name}</p>
                   {k.organization_name ? <p className="text-xs text-stone-600">{k.organization_name}</p> : null}
@@ -556,13 +379,13 @@ export function WiesProfilPubliczny({
               ))}
             </ul>
             <div>
-              <h3 className="text-sm font-semibold uppercase tracking-wide text-stone-500">Kadencje i historia</h3>
+              <h3 className="text-xs font-semibold uppercase tracking-wide text-stone-500">Kadencje i historia</h3>
               {kadencjeFunkcyjne.length === 0 ? (
                 <p className="mt-3 text-sm text-stone-500">Brak wpisów historii kadencji.</p>
               ) : (
                 <ul className="mt-3 space-y-2">
                   {kadencjeFunkcyjne.map((k) => (
-                    <li key={k.id} className="rounded-lg border border-stone-200 bg-white px-3 py-2 text-sm">
+                    <li key={k.id} className={KARTA_LISTY_WIES}>
                       <p className="font-medium text-stone-900">
                         {k.role_label}: {k.person_name}
                       </p>
@@ -579,59 +402,64 @@ export function WiesProfilPubliczny({
             </div>
           </div>
         )}
-      </section>
+      </OslonaSekcjiWies>
 
-      <section className="mt-10">
-        <h2 className="font-serif text-xl text-green-950">Ogłoszenia i oferty</h2>
-        <p className="mt-1 text-sm text-stone-600">
-          Na publicznym profilu widać m.in. zatwierdzone oferty typu „targ lokalny”. Pozostałe treści — po zalogowaniu,
-          jeśli masz rolę mieszkańca w tej wsi.
-        </p>
-        {posty.length === 0 ? (
-          <p className="mt-4 text-sm text-stone-500">Brak publicznych wpisów do wyświetlenia.</p>
-        ) : (
-          <ul className="mt-6 space-y-3">
+      {posty.length > 0 ? (
+        <OslonaSekcjiWies>
+          <TytulSekcjiWies
+            etykieta="Ogłoszenia"
+            tytul="Ogłoszenia i oferty"
+            opis={
+              laczonyFeed.length > 0
+                ? "Pełna lista ogłoszeń — najnowsze wpisy widać także w skrócie „Najnowsze na wsi” powyżej."
+                : "Zatwierdzone oferty publiczne. Pozostałe treści — po zalogowaniu z rolą mieszkańca."
+            }
+          />
+          <ul className="mt-5 space-y-2">
             {posty.map((p) => (
               <li key={p.id}>
-                <Link
-                  href={`${prefixOgloszenia}/${p.id}`}
-                  className="block rounded-xl border border-stone-200 bg-white px-4 py-3 shadow-sm transition hover:border-green-300 hover:bg-green-50/40"
-                >
-                  <p className="font-medium text-stone-900">{p.title}</p>
-                  <p className="mt-1 text-xs text-stone-500">
-                    {p.type} · {new Date(p.created_at).toLocaleDateString("pl-PL")}
-                  </p>
-                </Link>
+                <div className={`${KARTA_LISTY_WIES} flex flex-wrap items-start justify-between gap-2`}>
+                  <Link href={`${prefixOgloszenia}/${p.id}`} className="min-w-0 flex-1">
+                    <p className="font-medium text-stone-900">{p.title}</p>
+                    <p className="mt-1 text-xs text-stone-500">
+                      {p.type} · {new Date(p.created_at).toLocaleDateString("pl-PL")}
+                    </p>
+                  </Link>
+                  {zalogowany ? (
+                    <ZapiszTrescPrzycisk
+                      villageId={wies.id}
+                      contentType="post"
+                      contentId={p.id}
+                      title={p.title}
+                      href={`${prefixOgloszenia}/${p.id}`}
+                      zapisaneId={zapisaneTresci[`post:${p.id}`]}
+                    />
+                  ) : null}
+                </div>
               </li>
             ))}
           </ul>
-        )}
-      </section>
+        </OslonaSekcjiWies>
+      ) : null}
 
-      <section className="mt-10">
-        <h2 className="font-serif text-xl text-green-950">Blog i kronika mieszkańców</h2>
-        <p className="mt-1 text-sm text-stone-600">
-          Lokalne wpisy blogerów oraz materiały o historii miejscowości dodawane przez społeczność i zatwierdzane przez
-          sołtysa.
-        </p>
-        <p className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-stone-600">
-          <Link href={`${sciezka}/blog`} className="text-green-800 underline">
-            Zobacz wszystkie wpisy bloga
-          </Link>
-          <Link href={`${sciezka}/historia`} className="text-green-800 underline">
-            Zobacz pełną historię wsi
-          </Link>
-        </p>
-        {blog.length === 0 && historia.length === 0 ? (
-          <p className="mt-4 text-sm text-stone-500">Brak opublikowanych wpisów bloga i historii.</p>
-        ) : (
+      {(blog.length > 0 || historia.length > 0) ? (
+        <OslonaSekcjiWies>
+          <TytulSekcjiWies
+            etykieta="Społeczność"
+            tytul="Blog i kronika mieszkańców"
+            opis="Lokalne wpisy i materiały historyczne zatwierdzane przez sołtysa."
+          />
+          <p className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-stone-600">
+            <Link href={`${sciezka}/blog`} className="text-green-800 underline">
+              Wszystkie wpisy bloga
+            </Link>
+            <Link href={`${sciezka}/historia`} className="text-green-800 underline">
+              Pełna historia wsi
+            </Link>
+          </p>
           <div className="mt-5 grid gap-3 sm:grid-cols-2">
             {blog.map((w) => (
-              <Link
-                key={`blog-${w.id}`}
-                href={`${sciezka}/blog/${w.id}`}
-                className="block rounded-xl border border-stone-200 bg-white px-4 py-3 shadow-sm transition hover:border-green-300 hover:bg-green-50/40"
-              >
+              <Link key={`blog-${w.id}`} href={`${sciezka}/blog/${w.id}`} className={`${KARTA_LISTY_WIES} block`}>
                 <p className="text-xs uppercase tracking-wide text-green-800">Blog</p>
                 <p className="mt-1 font-medium text-stone-900">{w.title}</p>
                 {w.excerpt ? <p className="mt-1 line-clamp-2 text-xs text-stone-600">{w.excerpt}</p> : null}
@@ -641,11 +469,7 @@ export function WiesProfilPubliczny({
               </Link>
             ))}
             {historia.map((w) => (
-              <Link
-                key={`historia-${w.id}`}
-                href={`${sciezka}/historia/${w.id}`}
-                className="block rounded-xl border border-stone-200 bg-white px-4 py-3 shadow-sm transition hover:border-green-300 hover:bg-green-50/40"
-              >
+              <Link key={`historia-${w.id}`} href={`${sciezka}/historia/${w.id}`} className={`${KARTA_LISTY_WIES} block`}>
                 <p className="text-xs uppercase tracking-wide text-amber-700">Historia wsi</p>
                 <p className="mt-1 font-medium text-stone-900">{w.title}</p>
                 {w.short_description ? <p className="mt-1 line-clamp-2 text-xs text-stone-600">{w.short_description}</p> : null}
@@ -657,28 +481,28 @@ export function WiesProfilPubliczny({
               </Link>
             ))}
           </div>
-        )}
-      </section>
+        </OslonaSekcjiWies>
+      ) : null}
 
-      <section className="mt-10">
-        <h2 className="font-serif text-xl text-green-950">Koła, kluby i kalendarz wydarzeń</h2>
-        <p className="mt-1 text-sm text-stone-600">
-          Koła Gospodyń, sekcje sportowe, zespoły — oraz zbliżające się mecze, wyjazdy, próby i festyny. Pełna lista:{" "}
-          <Link href={`${sciezka}/wydarzenia`} className="text-green-800 underline">
-            kalendarz wydarzeń
-          </Link>
-          .
-        </p>
-        {organizacje.length === 0 && wydarzenia.length === 0 ? (
-          <p className="mt-4 text-sm text-stone-500">Brak opublikowanych organizacji i wydarzeń.</p>
-        ) : (
+      {(organizacje.length > 0 || wydarzenia.length > 0) ? (
+        <OslonaSekcjiWies>
+          <TytulSekcjiWies
+            etykieta="Organizacje"
+            tytul="Koła, kluby i kalendarz wydarzeń"
+            opis="Koła Gospodyń, sekcje sportowe, zespoły — oraz zbliżające się wydarzenia. Pełny kalendarz: link poniżej."
+          />
+          <p className="mt-2 text-xs text-stone-600">
+            <Link href={`${sciezka}/wydarzenia`} className="text-green-800 underline">
+              Zobacz pełny kalendarz wydarzeń
+            </Link>
+          </p>
           <div className="mt-5 grid gap-6 lg:grid-cols-2">
             {organizacje.length > 0 ? (
               <div>
-                <h3 className="text-sm font-semibold uppercase tracking-wide text-stone-500">Organizacje</h3>
+                <h3 className="text-xs font-semibold uppercase tracking-wide text-stone-500">Organizacje</h3>
                 <ul className="mt-3 space-y-3">
                   {organizacje.map((o) => (
-                    <li key={o.id} className="rounded-xl border border-stone-200 bg-white px-4 py-3 shadow-sm">
+                    <li key={o.id} className={KARTA_LISTY_WIES}>
                       <p className="text-xs text-rose-800">{etykietaTypuGrupy(o.group_type)}</p>
                       <p className="mt-1 font-medium text-stone-900">{o.name}</p>
                       {o.short_description ? <p className="mt-1 text-sm text-stone-700">{o.short_description}</p> : null}
@@ -692,59 +516,63 @@ export function WiesProfilPubliczny({
                           <span className="font-medium">Terminy:</span> {o.schedule_text}
                         </p>
                       ) : null}
-                      {o.contact_phone ? (
-                        <p className="mt-2 text-xs text-stone-500">Tel. {o.contact_phone}</p>
-                      ) : null}
+                      {o.contact_phone ? <p className="mt-2 text-xs text-stone-500">Tel. {o.contact_phone}</p> : null}
                     </li>
                   ))}
                 </ul>
               </div>
-            ) : (
-              <p className="text-sm text-stone-500 lg:col-span-1">Brak zapisanych organizacji.</p>
-            )}
+            ) : null}
             {wydarzenia.length > 0 ? (
               <div>
-                <h3 className="text-sm font-semibold uppercase tracking-wide text-stone-500">Nadchodzące wydarzenia</h3>
+                <h3 className="text-xs font-semibold uppercase tracking-wide text-stone-500">Nadchodzące wydarzenia</h3>
                 <ul className="mt-3 space-y-3">
                   {wydarzenia.map((ev) => (
                     <li key={ev.id}>
-                      <Link
-                        href={`${sciezka}/wydarzenia/${ev.id}`}
-                        className="block rounded-xl border border-stone-200 bg-white px-4 py-3 shadow-sm transition hover:border-indigo-300 hover:bg-indigo-50/40"
-                      >
-                        <p className="text-xs text-indigo-800">
-                          {etykietaRodzajuWydarzenia(ev.event_kind)}
-                          {ev.nazwa_grupy ? ` · ${ev.nazwa_grupy}` : ""}
-                        </p>
-                        <p className="mt-1 font-medium text-stone-900">{ev.title}</p>
-                        <p className="mt-2 text-xs text-stone-600">
-                          {new Date(ev.starts_at).toLocaleString("pl-PL", {
-                            dateStyle: "medium",
-                            timeStyle: "short",
-                          })}
-                          {ev.ends_at
-                            ? ` – ${new Date(ev.ends_at).toLocaleTimeString("pl-PL", { timeStyle: "short" })}`
-                            : null}
-                          {ev.location_text ? ` · ${ev.location_text}` : ""}
-                        </p>
-                      </Link>
+                      <div className={`${KARTA_LISTY_WIES} flex flex-wrap items-start justify-between gap-2`}>
+                        <Link href={`${sciezka}/wydarzenia/${ev.id}`} className="min-w-0 flex-1">
+                          <p className="text-xs text-indigo-800">
+                            {etykietaRodzajuWydarzenia(ev.event_kind)}
+                            {ev.nazwa_grupy ? ` · ${ev.nazwa_grupy}` : ""}
+                          </p>
+                          <p className="mt-1 font-medium text-stone-900">{ev.title}</p>
+                          <p className="mt-2 text-xs text-stone-600">
+                            {new Date(ev.starts_at).toLocaleString("pl-PL", {
+                              dateStyle: "medium",
+                              timeStyle: "short",
+                            })}
+                            {ev.ends_at
+                              ? ` – ${new Date(ev.ends_at).toLocaleTimeString("pl-PL", { timeStyle: "short" })}`
+                              : null}
+                            {ev.location_text ? ` · ${ev.location_text}` : ""}
+                          </p>
+                        </Link>
+                        {zalogowany ? (
+                          <ZapiszTrescPrzycisk
+                            villageId={wies.id}
+                            contentType="event"
+                            contentId={ev.id}
+                            title={ev.title}
+                            href={`${sciezka}/wydarzenia/${ev.id}`}
+                            zapisaneId={zapisaneTresci[`event:${ev.id}`]}
+                          />
+                        ) : null}
+                      </div>
                     </li>
                   ))}
                 </ul>
               </div>
-            ) : (
-              <p className="text-sm text-stone-500">Brak zaplanowanych wydarzeń w najbliższym oknie.</p>
-            )}
+            ) : null}
           </div>
-        )}
-      </section>
+        </OslonaSekcjiWies>
+      ) : null}
 
       {mozeZobaczycListeZakupow ? (
-        <section className="mt-10">
-          <h2 className="font-serif text-xl text-green-950">Lista zakupów KGW</h2>
-          <p className="mt-1 text-sm text-stone-600">
-            Wewnętrzna lista zakupów dostępna dla osób zapisanych do KGW oraz sołtysa.
-          </p>
+        <OslonaSekcjiWies>
+          <TytulSekcjiWies
+            etykieta="KGW"
+            tytul="Lista zakupów KGW"
+            opis="Wewnętrzna lista zakupów dla osób zapisanych do KGW oraz sołtysa."
+          />
           <ListaZakupowWsiKlient
             villageId={wies.id}
             pozycje={listaZakupow}
@@ -753,24 +581,24 @@ export function WiesProfilPubliczny({
             pokazDruk={listaZakupow.length > 0}
             nazwaWsi={wies.name}
           />
-        </section>
+        </OslonaSekcjiWies>
       ) : null}
 
-      <section className="mt-10">
-        <h2 className="font-serif text-xl text-green-950">Plan stałych zajęć (tydzień)</h2>
-        <p className="mt-1 text-sm text-stone-600">
-          Powtarzalne terminy (próby, zajęcia w świetlicy) — uzupełnia sołtys. Jednorazowe wydarzenia są w{" "}
-          <Link href={`${sciezka}/wydarzenia`} className="text-green-800 underline">
-            kalendarzu
-          </Link>
-          .
-        </p>
-        {harmonogramTygodnia.length === 0 ? (
-          <p className="mt-4 text-sm text-stone-500">Brak zapisanego tygodniowego harmonogramu.</p>
-        ) : (
+      {harmonogramTygodnia.length > 0 ? (
+        <OslonaSekcjiWies>
+          <TytulSekcjiWies
+            etykieta="Harmonogram"
+            tytul="Plan stałych zajęć (tydzień)"
+            opis="Powtarzalne terminy (próby, zajęcia w świetlicy) — jednorazowe wydarzenia w kalendarzu wydarzeń."
+          />
+          <p className="mt-2 text-xs text-stone-600">
+            <Link href={`${sciezka}/wydarzenia`} className="text-green-800 underline">
+              Kalendarz wydarzeń
+            </Link>
+          </p>
           <ul className="mt-4 space-y-2">
             {harmonogramTygodnia.map((s) => (
-              <li key={s.id} className="rounded-lg border border-teal-200/70 bg-teal-50/30 px-3 py-2 text-sm">
+              <li key={s.id} className={`${KARTA_LISTY_WIES} border-teal-200/70 bg-teal-50/30`}>
                 <span className="font-medium text-teal-950">{nazwaDniaTygodnia(s.day_of_week)}</span>
                 <span className="text-stone-700">
                   {" "}
@@ -782,25 +610,20 @@ export function WiesProfilPubliczny({
               </li>
             ))}
           </ul>
-        )}
-      </section>
+        </OslonaSekcjiWies>
+      ) : null}
 
-      <section className="mt-10">
-        <h2 className="font-serif text-xl text-green-950">Możliwe źródła dofinansowania</h2>
-        <p className="mt-1 text-sm text-stone-600">
-          Informacje zebrane przez sołtysa (programy, nabory, linki) — bez porady prawnej; warto zweryfikować warunki u
-          wnioskodawcy lub w BIP gminy.
-        </p>
-        {dotacjeSkrot.length === 0 ? (
-          <p className="mt-4 text-sm text-stone-500">Brak wpisów o dotacjach i grantach.</p>
-        ) : (
-          <ul className="mt-4 space-y-3">
+      {dotacjeSkrot.length > 0 ? (
+        <OslonaSekcjiWies id="sekcja-dotacje">
+          <TytulSekcjiWies
+            etykieta="Finansowanie"
+            tytul="Możliwe źródła dofinansowania"
+            opis="Informacje zebrane przez sołtysa — bez porady prawnej; zweryfikuj warunki u wnioskodawcy lub w BIP gminy."
+          />
+          <ul className="mt-4 space-y-2">
             {dotacjeSkrot.map((d) => (
               <li key={d.id}>
-                <Link
-                  href={`${sciezka}/dotacje/${d.id}`}
-                  className="block rounded-xl border border-emerald-200/80 bg-white px-4 py-3 shadow-sm transition hover:border-emerald-400 hover:bg-emerald-50/40"
-                >
+                <Link href={`${sciezka}/dotacje/${d.id}`} className={`${KARTA_LISTY_WIES} block border-emerald-200/80`}>
                   <p className="text-xs text-emerald-900">{etykietaKategoriiDotacji(d.category)}</p>
                   <p className="mt-1 font-medium text-stone-900">{d.title}</p>
                   {d.summary ? <p className="mt-1 line-clamp-2 text-xs text-stone-600">{d.summary}</p> : null}
@@ -813,63 +636,58 @@ export function WiesProfilPubliczny({
               </li>
             ))}
           </ul>
-        )}
-        <p className="mt-3 text-xs text-stone-500">
-          <Link href={`${sciezka}/dotacje`} className="text-green-800 underline">
-            Wszystkie zapisy o dofinansowaniu
-          </Link>
-        </p>
-      </section>
+          <p className="mt-3 text-xs text-stone-500">
+            <Link href={`${sciezka}/dotacje`} className="text-green-800 underline">
+              Wszystkie zapisy o dofinansowaniu
+            </Link>
+          </p>
+        </OslonaSekcjiWies>
+      ) : null}
 
-      <section id="sekcja-rynek-lokalny" className="mt-10 scroll-mt-8">
-        <h2 className="font-serif text-xl text-green-950">Darmowy rynek lokalny</h2>
-        <p className="mt-1 text-sm text-stone-600">
-          Publiczne oferty mieszkańców i lokalnych usługodawców. Publikacja jest bezpłatna, a wygasłe wpisy archiwizują
-          się automatycznie.
-        </p>
-        {profileUslug.length === 0 && rynek.length === 0 ? (
-          <p className="mt-4 text-sm text-stone-500">Brak aktywnych ofert i profili usług.</p>
-        ) : (
-          <>
-            {profileUslug.length > 0 ? (
-              <ul className="mt-4 grid gap-3 sm:grid-cols-2">
-                {profileUslug.map((p) => (
-                  <li key={p.id} className="rounded-xl border border-stone-200 bg-white px-4 py-3 shadow-sm">
-                    <p className="font-medium text-stone-900">{p.business_name}</p>
-                    <p className="mt-1 text-xs text-stone-600">{p.short_description ?? "Profil usług lokalnych."}</p>
-                    <p className="mt-2 text-xs text-stone-500">
-                      {(p.categories ?? []).slice(0, 3).join(" · ") || "Usługi lokalne"}
-                      {p.phone ? ` · tel. ${p.phone}` : ""}
-                      {p.is_verified ? " · zweryfikowany" : ""}
-                    </p>
-                  </li>
-                ))}
-              </ul>
-            ) : null}
-
-            {rynek.length > 0 ? (
+      {maRynek ? (
+        <OslonaSekcjiWies id="sekcja-rynek-lokalny">
+          <TytulSekcjiWies
+            etykieta="Rynek"
+            tytul="Darmowy rynek lokalny"
+            opis="Oferty mieszkańców i lokalnych usługodawców — publikacja bezpłatna, wygasłe wpisy archiwizują się automatycznie."
+          />
+          {profileUslug.length > 0 ? (
+            <ul className="mt-4 grid gap-3 sm:grid-cols-2">
+              {profileUslug.map((p) => (
+                <li key={p.id} className={KARTA_LISTY_WIES}>
+                  <p className="font-medium text-stone-900">{p.business_name}</p>
+                  <p className="mt-1 text-xs text-stone-600">{p.short_description ?? "Profil usług lokalnych."}</p>
+                  <p className="mt-2 text-xs text-stone-500">
+                    {(p.categories ?? []).slice(0, 3).join(" · ") || "Usługi lokalne"}
+                    {p.phone ? ` · tel. ${p.phone}` : ""}
+                    {p.is_verified ? " · zweryfikowany" : ""}
+                  </p>
+                </li>
+              ))}
+            </ul>
+          ) : null}
+          {rynek.length > 0 ? (
+            <div className="mt-4">
               <MarketplaceListaKlient oferty={rynek} kotwicaZasadSwietlicy={`${sciezka}#swietlica-regulamin`} />
-            ) : null}
-          </>
-        )}
-      </section>
+            </div>
+          ) : null}
+        </OslonaSekcjiWies>
+      ) : null}
 
-      <section id="sekcja-wiadomosci-lokalne" className="mt-10 scroll-mt-8">
-        <h2 className="font-serif text-xl text-green-950">Lokalne wiadomości</h2>
-        <p className="mt-1 text-sm text-stone-600">
-          Krótkie aktualności o sprawach ważnych dla mieszkańców. Część wpisów może być tworzona automatycznie i
-          zatwierdzana przez moderatora.
-        </p>
-        {wiadomosci.length === 0 ? (
-          <p className="mt-4 text-sm text-stone-500">Brak opublikowanych wiadomości lokalnych.</p>
-        ) : (
-          <ul className="mt-4 space-y-3">
+      {wiadomosci.length > 0 ? (
+        <OslonaSekcjiWies id="sekcja-wiadomosci-lokalne">
+          <TytulSekcjiWies
+            etykieta="Aktualności"
+            tytul="Lokalne wiadomości"
+            opis={
+              laczonyFeed.length > 0
+                ? "Pełna lista wiadomości — skrót chronologiczny widać w sekcji „Najnowsze na wsi”."
+                : "Krótkie aktualności o sprawach ważnych dla mieszkańców."
+            }
+          />
+          <ul className="mt-4 space-y-2">
             {wiadomosci.map((w) => (
-              <li
-                key={w.id}
-                id={`wiadomosc-lokalna-${w.id}`}
-                className="rounded-xl border border-stone-200 bg-white px-4 py-3 shadow-sm"
-              >
+              <li key={w.id} id={`wiadomosc-lokalna-${w.id}`} className={KARTA_LISTY_WIES}>
                 <p className="font-medium text-stone-900">{w.title}</p>
                 {w.summary ? <p className="mt-1 text-sm text-stone-700">{w.summary}</p> : null}
                 <p className="mt-2 text-xs text-stone-500">
@@ -881,39 +699,34 @@ export function WiesProfilPubliczny({
               </li>
             ))}
           </ul>
-        )}
-      </section>
-
-      {wies.is_active ? <KalendarzZajetosciWsiSekcja wies={{ name: wies.name }} wiersze={kalendarzZajetosci} /> : null}
-
-      {wies.is_active && saleSwietlicy.length > 0 ? (
-        <SwietliceWsiPubliczneSekcja nazwaWsi={wies.name} sale={saleSwietlicy} />
+        </OslonaSekcjiWies>
       ) : null}
 
-      <section
-        id="swietlica-regulamin"
-        className="mt-10 scroll-mt-8 rounded-xl border border-stone-200 bg-stone-50 px-4 py-4 text-sm text-stone-700"
-      >
-        <p className="font-medium text-stone-900">Świetlica i rezerwacje</p>
-        <p className="mt-2">
+      <SwietliceWsiLazy nazwaWsi={wies.name} villageId={wies.id} isActive={wies.is_active} />
+
+      <SekcjaDaneGeoWsiLazy villageId={wies.id} />
+
+      <OslonaSekcjiWies id="swietlica-regulamin" className="from-stone-50/80 via-white to-stone-50/40">
+        <TytulSekcjiWies etykieta="Regulamin" tytul="Świetlica i rezerwacje" />
+        <p className="mt-3 text-sm text-stone-700">
           Rezerwacja sali odbywa się w{" "}
           <Link href="/logowanie?next=/panel/mieszkaniec/swietlica" className="text-green-800 underline">
             panelu mieszkańca
           </Link>{" "}
-          (po akceptacji roli we wsi). Kto zajął salę w danym terminie — tylko sołtys w panelu obiegu; powyżej
-          widać wyłącznie że przedział jest zajęty, bez danych osobowych.
+          (po akceptacji roli we wsi). Kto zajął salę w danym terminie — tylko sołtys w panelu obiegu; powyżej widać
+          wyłącznie że przedział jest zajęty, bez danych osobowych.
         </p>
         {wies.teryt_id === "0088390" ? (
           <p className="mt-4 border-t border-stone-200 pt-4">
             <Link
               href={`${sciezka}/projekt-swietlicy`}
-              className="inline-flex items-center gap-2 rounded-lg bg-green-800 px-4 py-2.5 text-sm font-medium text-white shadow-sm hover:bg-green-900"
+              className="inline-flex items-center gap-2 rounded-lg bg-green-800 px-4 py-2.5 text-sm font-medium text-white shadow-sm hover:bg-green-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-green-800"
             >
               Zobacz projekt świetlicy (rzut, elewacje, powierzchnie)
             </Link>
           </p>
         ) : null}
-      </section>
+      </OslonaSekcjiWies>
     </article>
   );
 }

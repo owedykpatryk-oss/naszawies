@@ -1,5 +1,7 @@
 import { SamorzadTeoriaPubliczna } from "@/components/wies/samorzad-teoria-publiczna";
 import type { WiesPubliczna } from "@/lib/wies/znajdz-wies-po-sciezce";
+import { KARTA_LISTY_WIES, OslonaSekcjiWies } from "@/components/wies/oslona-sekcji-wies";
+import { TytulSekcjiWies } from "@/components/wies/tytul-sekcji-wies";
 
 export type PrzewodnikSamorzadowyZapis = {
   commune_info: string | null;
@@ -14,8 +16,8 @@ export type PrzewodnikSamorzadowyZapis = {
 function BlokTresci({ tytul, tresc }: { tytul: string; tresc: string | null }) {
   if (!tresc?.trim()) return null;
   return (
-    <div className="rounded-lg border border-slate-200 bg-slate-50/60 px-3 py-3">
-      <h3 className="text-xs font-semibold uppercase tracking-wide text-slate-700">{tytul}</h3>
+    <div className={`${KARTA_LISTY_WIES} bg-white/95`}>
+      <h3 className="text-xs font-semibold uppercase tracking-wide text-emerald-900/80">{tytul}</h3>
       <div className="mt-2 whitespace-pre-wrap text-sm text-stone-800">{tresc.trim()}</div>
     </div>
   );
@@ -41,20 +43,20 @@ export function SekcjaPrzewodnikSamorzadowy({
     ].some((x) => x && x.trim().length > 0);
 
   return (
-    <section id="sekcja-przewodnik-samorzadowy" className="mt-10 scroll-mt-8">
-      <h2 className="font-serif text-xl text-green-950">Gmina, powiat, województwo — kto za co</h2>
-      <p className="mt-1 text-sm text-stone-600">
-        Skrót, gdzie szukać pomocy urzędowej i jak zwykle dzielą się zadania. Konkretne adresy, telefony i linki do BIP —
-        uzupełnia sołtys w panelu (sekcja poniżej, jeśli już zapisana).
-      </p>
+    <OslonaSekcjiWies id="sekcja-przewodnik-samorzadowy" pusta={!maWpisySołtysa}>
+      <TytulSekcjiWies
+        etykieta="Samorząd"
+        tytul="Gmina, powiat, województwo — kto za co"
+        opis="Skrót, gdzie szukać pomocy urzędowej i jak zwykle dzielą się zadania. Konkretne adresy i telefony — w linkach przydatnych oraz w uzupełnieniach sołtysa poniżej."
+      />
 
       <div className="mt-5">
         <SamorzadTeoriaPubliczna nazwaGminy={wies.commune} nazwaPowiatu={wies.county} nazwaWojewodztwa={wies.voivodeship} />
       </div>
 
       {maWpisySołtysa ? (
-        <div className="mt-8 space-y-4">
-          <h3 className="text-sm font-semibold text-green-950">Na miejscu we wsi (uzupełnione przez sołtysa)</h3>
+        <div className="mt-6 space-y-3">
+          <h3 className="text-xs font-semibold uppercase tracking-wide text-stone-500">Na miejscu we wsi (sołtys)</h3>
           <BlokTresci tytul="Gmina — kontakty i sprawy" tresc={przewodnik!.commune_info} />
           <BlokTresci tytul="Powiat — kontakty i sprawy" tresc={przewodnik!.county_info} />
           <BlokTresci tytul="Województwo — kontakty i sprawy" tresc={przewodnik!.voivodeship_info} />
@@ -64,12 +66,11 @@ export function SekcjaPrzewodnikSamorzadowy({
           <BlokTresci tytul="Inne (np. straż, OSP, koordynacja)" tresc={przewodnik!.other_info} />
         </div>
       ) : (
-        <p className="mt-6 rounded-lg border border-dashed border-stone-300 bg-stone-50/80 px-4 py-3 text-sm text-stone-600">
-          Sołtys może dopisać tutaj telefony do urzędu gminy, link do harmonogramu śmieci, numery awaryjne i wskazówki,
-          komu w Waszej okolicy zgłasza się np. dziurę na konkretnej drodze — wtedy pojawi się sekcja „Na miejscu we
-          wsi”.
+        <p className="mt-5 rounded-xl border border-dashed border-stone-300/90 bg-white/60 px-4 py-3 text-sm text-stone-600">
+          Sołtys może dopisać telefony do urzędu gminy, link do harmonogramu śmieci i wskazówki, komu zgłaszać sprawy
+          lokalne — wtedy pojawi się sekcja „Na miejscu we wsi”.
         </p>
       )}
-    </section>
+    </OslonaSekcjiWies>
   );
 }

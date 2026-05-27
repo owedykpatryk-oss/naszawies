@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { pobierzVillageIdsRoliPaneluSoltysaDlaUzytkownikaCache } from "@/lib/panel/rola-panelu-soltysa";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
 import { normalizujKategorieLinku } from "@/lib/wies/linki-przydatne";
+import { sciezkaProfiluWsi } from "@/lib/wies/sciezka-publiczna";
 import { InformacjeLokalneKlient, type LinkDoEdycji, type WiesDoInformacji } from "./informacje-lokalne-klient";
 
 export const metadata: Metadata = {
@@ -33,11 +34,21 @@ export default async function InformacjeLokalnePage() {
     );
   }
 
-  const { data: rows } = await supabase.from("villages").select("id, name, commune").in("id", villageIds).order("name");
+  const { data: rows } = await supabase
+    .from("villages")
+    .select("id, name, commune, voivodeship, county, slug")
+    .in("id", villageIds)
+    .order("name");
   const wsie: WiesDoInformacji[] = (rows ?? []).map((r) => ({
     id: r.id,
     name: r.name,
     commune: r.commune,
+    profilPubliczny: sciezkaProfiluWsi({
+      voivodeship: r.voivodeship,
+      county: r.county,
+      commune: r.commune,
+      slug: r.slug,
+    }),
   }));
 
   const { data: linkRows } = await supabase

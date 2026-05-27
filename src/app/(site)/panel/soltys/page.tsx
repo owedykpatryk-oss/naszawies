@@ -110,12 +110,13 @@ export default async function SoltysPage() {
   let liczbaGrupOsp = 0;
   let liczbaWydarzenKgw7Dni = 0;
   let liczbaWydarzenOsp7Dni = 0;
+  let liczbaLinkowNiekompletnych = 0;
   if (villageIds.length > 0) {
     const teraz = new Date();
     const terazIso = teraz.toISOString();
     const za7dniIso = new Date(teraz.getTime() + 7 * 24 * 60 * 60 * 1000).toISOString();
 
-    const [{ count: cNews }, { count: cFeeds }, { data: hallsRows }, { count: cEvents7Dni }, { data: grupyRows }] =
+    const [{ count: cNews }, { count: cFeeds }, { data: hallsRows }, { count: cEvents7Dni }, { data: grupyRows }, { data: linkiRows }] =
       await Promise.all([
         supabase
           .from("local_news_items")
@@ -140,6 +141,12 @@ export default async function SoltysPage() {
           .in("village_id", villageIds)
           .eq("is_active", true)
           .limit(500),
+        supabase
+          .from("village_useful_links")
+          .select("id, url, phone, email, is_active")
+          .in("village_id", villageIds)
+          .eq("is_active", true)
+          .limit(500),
       ]);
 
     liczbaWiadomosciDoAkceptu = cNews ?? 0;
@@ -152,6 +159,10 @@ export default async function SoltysPage() {
     const idsOsp = grupy.filter((g) => g.group_type === "sport" || g.group_type === "osp").map((g) => g.id);
     liczbaGrupKgw = idsKgw.length;
     liczbaGrupOsp = idsOsp.length;
+
+    liczbaLinkowNiekompletnych = ((linkiRows ?? []) as { url: string | null; phone: string | null; email: string | null }[]).filter(
+      (l) => !l.url?.trim() && !l.phone?.trim() && !l.email?.trim(),
+    ).length;
 
     const [bookingsRes, kgwRes, ospRes] = await Promise.all([
       hallIds.length > 0
@@ -205,7 +216,7 @@ export default async function SoltysPage() {
           <p className="mt-1 text-xs text-stone-600">
             Jedno miejsce z najważniejszymi decyzjami i najbliższymi działaniami dla Twoich wsi.
           </p>
-          <div className="siatka-kafli-responsywna mt-4 lg:grid-cols-4">
+          <div className="siatka-kafli-responsywna mt-4 lg:grid-cols-5">
             <Link
               href="/panel/soltys#wnioski-o-role"
               className="rounded-xl border border-stone-200 bg-white/95 p-3 shadow-sm transition hover:border-amber-400"
@@ -229,6 +240,16 @@ export default async function SoltysPage() {
               <p className="text-xs text-stone-500">Moderacja treści</p>
               <p className="mt-1 text-2xl font-semibold text-green-950">{postyDoModeracji.length + liczbaWiadomosciDoAkceptu}</p>
               <p className="mt-1 text-xs text-stone-600">Posty + wiadomości lokalne do przejrzenia</p>
+            </Link>
+            <Link
+              href="/panel/soltys/informacje-lokalne"
+              className={`rounded-xl border bg-white/95 p-3 shadow-sm transition ${
+                liczbaLinkowNiekompletnych > 0 ? "border-amber-300 hover:border-amber-500" : "border-stone-200 hover:border-amber-400"
+              }`}
+            >
+              <p className="text-xs text-stone-500">Linki mieszkańców</p>
+              <p className="mt-1 text-2xl font-semibold text-green-950">{liczbaLinkowNiekompletnych}</p>
+              <p className="mt-1 text-xs text-stone-600">Bez URL, telefonu i e-maila</p>
             </Link>
             <Link
               href="/panel/soltys/spolecznosc"

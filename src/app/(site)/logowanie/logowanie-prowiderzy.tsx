@@ -31,10 +31,11 @@ export function LogowanieProwiderzy({ pochodzeniePubliczne, nastepnaSciezka }: P
         },
       });
       if (error) {
+        const nieWlaczony = /not enabled|unsupported provider/i.test(error.message);
         ustawBlad(
-          error.message.includes("not enabled")
-            ? `Logowanie przez ${dostawca === "google" ? "Google" : "GitHub"} nie jest w tej chwili dostępne w serwisie.`
-            : error.message
+          nieWlaczony
+            ? `Logowanie przez ${dostawca === "google" ? "Google" : "GitHub"} nie jest jeszcze skonfigurowane w Supabase. Administrator musi dodać klucze OAuth (patrz docs/POLACZENIE.md → „Logowanie Google”) i uruchomić npm run wlacz:oauth-supabase.`
+            : error.message,
         );
         ustawLaduje(null);
         return;

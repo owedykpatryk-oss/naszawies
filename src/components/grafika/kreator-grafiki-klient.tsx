@@ -1,11 +1,23 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { useCallback, useEffect, useMemo, useState, useTransition } from "react";
-import { EdytorFabricKlient } from "@/components/grafika/edytor-fabric-klient";
-import { MasowyDrukDyplomowKlient } from "@/components/grafika/masowy-druk-dyplomow-klient";
 import {
   PodgladSzablonuGrafiki,
 } from "@/components/grafika/podglad-szablonu-grafiki";
+
+const EdytorFabricKlient = dynamic(
+  () => import("@/components/grafika/edytor-fabric-klient").then((m) => ({ default: m.EdytorFabricKlient })),
+  { ssr: false, loading: () => <p className="text-sm text-stone-500">Ładowanie edytora…</p> },
+);
+
+const MasowyDrukDyplomowKlient = dynamic(
+  () =>
+    import("@/components/grafika/masowy-druk-dyplomow-klient").then((m) => ({
+      default: m.MasowyDrukDyplomowKlient,
+    })),
+  { ssr: false, loading: () => <p className="text-sm text-stone-500">Ładowanie druku…</p> },
+);
 import { PrzewodnikKreatoraGrafiki } from "@/components/grafika/przewodnik-kreatora-grafiki";
 import { NawigacjaZakladekKreatora } from "@/components/grafika/nawigacja-zakladek-kreatora";
 import { SelektorTrybuGrafiki } from "@/components/grafika/selektor-trybu-grafiki";
@@ -487,23 +499,31 @@ export function KreatorGrafikiKlient({
               {blad ? <p className="text-sm text-red-700">{blad}</p> : null}
             </div>
 
-            <section className="lg:sticky lg:top-24 lg:self-start">
-              <p className="no-print mb-2 text-xs font-semibold uppercase tracking-wide text-stone-500">Podgląd na żywo</p>
-              <div className="overflow-x-auto rounded-2xl border border-stone-200 bg-stone-100/80 p-3 sm:p-4">
-                <PodgladSzablonuGrafiki
-                  szablon={szablon}
-                  motyw={motyw}
-                  wartosci={wartosci}
-                  logoDataUrl={logoDataUrl}
-                  backgroundDataUrl={backgroundDataUrl}
-                  qrDataUrl={qrUrl}
-                  elementId={ID_PODGLADU}
-                />
-              </div>
-              <p className="no-print mt-2 text-[11px] text-stone-500">
-                {szablon.format.toUpperCase()} · {szablon.orientacja === "pion" ? "pion" : "poziom"}
+            {zakladka !== "szablon" ? (
+              <section className="lg:sticky lg:top-24 lg:self-start">
+                <p className="no-print mb-2 text-xs font-semibold uppercase tracking-wide text-stone-500">
+                  Podgląd na żywo
+                </p>
+                <div className="overflow-x-auto rounded-2xl border border-stone-200 bg-stone-100/80 p-3 sm:p-4">
+                  <PodgladSzablonuGrafiki
+                    szablon={szablon}
+                    motyw={motyw}
+                    wartosci={wartosci}
+                    logoDataUrl={logoDataUrl}
+                    backgroundDataUrl={backgroundDataUrl}
+                    qrDataUrl={qrUrl}
+                    elementId={ID_PODGLADU}
+                  />
+                </div>
+                <p className="no-print mt-2 text-[11px] text-stone-500">
+                  {szablon.format.toUpperCase()} · {szablon.orientacja === "pion" ? "pion" : "poziom"}
+                </p>
+              </section>
+            ) : (
+              <p className="no-print hidden text-sm text-stone-500 lg:block">
+                Wybierz szablon — podgląd pojawi się w kolejnych krokach.
               </p>
-            </section>
+            )}
           </div>
         </>
       ) : null}

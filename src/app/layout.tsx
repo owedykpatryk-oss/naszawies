@@ -49,12 +49,18 @@ export const metadata: Metadata = {
     title: "naszawies.pl — cyfrowy dom polskiej wsi",
     description:
       "Bezpłatna platforma dla sołtysów i mieszkańców. Rezerwuj świetlicę, planuj układ stołów, łącz wieś.",
+    images: [{ url: "/opengraph-image", width: 1200, height: 630, alt: "naszawies.pl" }],
   },
   twitter: {
     card: "summary_large_image",
     title: "naszawies.pl — cyfrowy dom polskiej wsi",
     description:
       "Bezpłatna platforma dla sołtysów i mieszkańców. Bez reklam, bez opłat dla wsi.",
+    images: ["/opengraph-image"],
+  },
+  icons: {
+    icon: [{ url: "/icon", type: "image/png" }],
+    apple: [{ url: "/apple-icon", type: "image/png" }],
   },
   robots: {
     index: true,

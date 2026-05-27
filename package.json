@@ -15,6 +15,9 @@
     "r2:buckets": "node scripts/r2-buckets.mjs",
     "r2:s3-ping": "node scripts/r2-s3-ping.mjs",
     "wgraj:szablony-maili": "node scripts/wgraj-szablony-maili-supabase.mjs",
+    "wlacz:oauth-supabase": "node scripts/wlacz-oauth-supabase.mjs",
+    "sprawdz:env": "node scripts/sprawdz-env.mjs",
+    "env:pull-vercel": "vercel env pull .env.vercel.check --environment=production",
     "db:apply-sql": "node scripts/zastosuj-migracje-sql.mjs",
     "gml:obwody-spisowe-geojson": "node scripts/gml-obwody-spisowe-to-geojson.mjs"
   },

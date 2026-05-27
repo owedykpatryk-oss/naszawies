@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { LogoNaszawies } from "@/components/marka/logo-naszawies";
 import { pojedynczaWies } from "@/lib/supabase/wies-z-zapytania";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
 import {
@@ -90,13 +89,10 @@ export default async function MieszkaniecSpolecznoscPage() {
 
   return (
     <main>
-      <p className="mb-4 text-sm text-stone-500">
-        <Link href="/panel/mieszkaniec" className="text-green-800 underline">
+      <div className="mb-4">
+        <Link href="/panel/mieszkaniec" className="text-sm text-green-800 underline">
           ← Panel mieszkańca
         </Link>
-      </p>
-      <div className="mb-4">
-        <LogoNaszawies kompakt />
       </div>
       <h1 className="tytul-sekcji-panelu">Społeczność mieszkańców</h1>
       <p className="mt-2 text-sm text-stone-600">

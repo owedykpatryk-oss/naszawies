@@ -80,9 +80,21 @@ export default async function PanelPage() {
 
       <h2 className="sr-only">Skróty do modułów</h2>
       <ul className="mb-10 grid gap-4 text-sm sm:grid-cols-2">
+        <li className="group panel-karta ring-2 ring-emerald-600/15">
+          <Link href="/panel/moje" className="link-panel">
+            Moje
+            <span
+              className="ml-0.5 inline-block text-emerald-700/80 transition group-hover:translate-x-0.5"
+              aria-hidden
+            >
+              →
+            </span>
+          </Link>
+          <p className="mt-2 text-sm text-stone-600">Twoje wsie, gminy, powiaty i ulubione — bez szukania po serwisie.</p>
+        </li>
         <li className="group panel-karta">
           <Link href="/panel/profil" className="link-panel">
-            Mój profil
+            Konto
             <span
               className="ml-0.5 inline-block text-emerald-700/80 transition group-hover:translate-x-0.5"
               aria-hidden
@@ -94,7 +106,7 @@ export default async function PanelPage() {
         </li>
         <li className="group panel-karta">
           <Link href="/panel/mieszkaniec" className="link-panel">
-            Mieszkaniec
+            Działania (mieszkaniec)
             <span
               className="ml-0.5 inline-block text-emerald-700/80 transition group-hover:translate-x-0.5"
               aria-hidden

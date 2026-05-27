@@ -80,6 +80,7 @@ export async function zlozWniosekRoleOrganizacyjnej(
   }
 
   revalidatePath("/panel/mieszkaniec");
+  revalidatePath("/panel/moje");
   revalidatePath("/panel/soltys");
   return { ok: true, komunikat: "Wniosek wysłany — sołtys rozpatrzy go w panelu." };
 }
@@ -122,6 +123,7 @@ export async function zlozWniosekMieszkaniec(villageId: string): Promise<WynikPr
   }
 
   revalidatePath("/panel/mieszkaniec");
+  revalidatePath("/panel/moje");
   revalidatePath("/panel/soltys");
   return { ok: true, komunikat: "Wniosek wysłany — czekaj na akceptację sołtysa." };
 }
@@ -157,6 +159,7 @@ export async function obserwujWies(villageId: string): Promise<WynikProsty> {
   }
 
   revalidatePath("/panel/mieszkaniec");
+  revalidatePath("/panel/moje");
   return { ok: true, komunikat: "Dodano obserwację — poniżej możesz dopasować kategorie powiadomień." };
 }
 
@@ -207,6 +210,7 @@ export async function aktualizujPreferencjeObserwacjiWsi(formData: FormData): Pr
   }
 
   revalidatePath("/panel/mieszkaniec");
+  revalidatePath("/panel/moje");
   return { ok: true, komunikat: "Zapisano preferencje powiadomień." };
 }
 

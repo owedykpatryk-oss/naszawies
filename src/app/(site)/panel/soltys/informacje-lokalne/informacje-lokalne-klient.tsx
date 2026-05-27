@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { FormEvent, useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import {
@@ -10,7 +11,7 @@ import {
 } from "@/lib/wies/linki-przydatne";
 import { dodajPakietLinkowPrzydatnych, usunLinkPrzydatnyWsi, zapiszLinkPrzydatnyWsi } from "../akcje";
 
-export type WiesDoInformacji = { id: string; name: string; commune: string };
+export type WiesDoInformacji = { id: string; name: string; commune: string; profilPubliczny: string };
 
 export type LinkDoEdycji = {
   id: string;
@@ -35,8 +36,22 @@ export function InformacjeLokalneKlient({ wsie, linki }: { wsie: WiesDoInformacj
 
   const linkiWsi = useMemo(() => linki.filter((l) => l.village_id === villageId), [linki, villageId]);
   const edytowany = linkiWsi.find((l) => l.id === edytowanyId) ?? null;
-  const nazwaWsi = wsie.find((w) => w.id === villageId)?.name ?? "";
-  const gmina = wsie.find((w) => w.id === villageId)?.commune ?? "";
+  const wiesAktywna = wsie.find((w) => w.id === villageId);
+  const nazwaWsi = wiesAktywna?.name ?? "";
+  const gmina = wiesAktywna?.commune ?? "";
+  const profilPubliczny = wiesAktywna?.profilPubliczny ?? "";
+
+  const linkiNiekompletne = useMemo(
+    () =>
+      linkiWsi.filter(
+        (l) => l.is_active && !l.url?.trim() && !l.phone?.trim() && !l.email?.trim(),
+      ),
+    [linkiWsi],
+  );
+  const linkiBezUrl = useMemo(
+    () => linkiWsi.filter((l) => l.is_active && !l.url?.trim()),
+    [linkiWsi],
+  );
 
   function onZapiszLink(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -124,6 +139,25 @@ export function InformacjeLokalneKlient({ wsie, linki }: { wsie: WiesDoInformacj
         <p className="mt-2 text-xs text-stone-500">
           Linki dla: <strong>{nazwaWsi}</strong> (gmina {gmina}).
         </p>
+        {profilPubliczny ? (
+          <p className="mt-2 text-sm">
+            <Link
+              href={`${profilPubliczny}#informacje-mieszkancow`}
+              className="font-medium text-green-800 underline"
+              target="_blank"
+              rel="noopener noreferrer"
+            >
+              Podgląd sekcji na profilu wsi →
+            </Link>
+          </p>
+        ) : null}
+        {linkiNiekompletne.length > 0 ? (
+          <p className="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-950">
+            <strong>{linkiNiekompletne.length}</strong>{" "}
+            {linkiNiekompletne.length === 1 ? "wpis wymaga" : "wpisy wymagają"} uzupełnienia — brak URL, telefonu i
+            e-maila (np. po szablonie szybkiego pakietu).
+          </p>
+        ) : null}
         {komunikat ? (
           <p className="mt-3 rounded border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-900">{komunikat}</p>
         ) : null}
@@ -261,11 +295,17 @@ export function InformacjeLokalneKlient({ wsie, linki }: { wsie: WiesDoInformacj
           <p className="mt-2 text-sm text-stone-600">Brak wpisów — użyj szablonu lub formularza powyżej.</p>
         ) : (
           <ul className="mt-3 space-y-2">
-            {linkiWsi.map((l) => (
+            {linkiWsi.map((l) => {
+              const niekompletny = l.is_active && !l.url?.trim() && !l.phone?.trim() && !l.email?.trim();
+              return (
               <li
                 key={l.id}
                 className={`flex flex-wrap items-start justify-between gap-2 rounded-lg border px-3 py-2 text-sm ${
-                  l.is_active ? "border-stone-200 bg-white" : "border-stone-100 bg-stone-100 opacity-70"
+                  niekompletny
+                    ? "border-amber-300 bg-amber-50/80"
+                    : l.is_active
+                      ? "border-stone-200 bg-white"
+                      : "border-stone-100 bg-stone-100 opacity-70"
                 }`}
               >
                 <div>
@@ -274,6 +314,7 @@ export function InformacjeLokalneKlient({ wsie, linki }: { wsie: WiesDoInformacj
                     {ETYKIETY_KATEGORII_LINKOW[l.category].label}
                     {l.url ? ` · ${l.url}` : ""}
                     {l.phone ? ` · tel. ${l.phone}` : ""}
+                    {niekompletny ? " · uzupełnij kontakt" : ""}
                   </p>
                 </div>
                 <div className="flex gap-2">
@@ -294,9 +335,15 @@ export function InformacjeLokalneKlient({ wsie, linki }: { wsie: WiesDoInformacj
                   </button>
                 </div>
               </li>
-            ))}
+            );
+            })}
           </ul>
         )}
+        {linkiBezUrl.length > 0 ? (
+          <p className="mt-3 text-xs text-stone-500">
+            Aktywne bez adresu URL: <strong>{linkiBezUrl.length}</strong> — dodaj link do BIP lub strony, jeśli dotyczy.
+          </p>
+        ) : null}
       </div>
     </section>
   );

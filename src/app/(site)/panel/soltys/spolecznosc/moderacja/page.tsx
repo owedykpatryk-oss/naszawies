@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { LogoNaszawies } from "@/components/marka/logo-naszawies";
 import { pobierzVillageIdsRoliPaneluSoltysaDlaUzytkownikaCache } from "@/lib/panel/rola-panelu-soltysa";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
 import { SoltysModeracjaDyskusjiKlient, type RaportModeracji } from "./moderacja-klient";
@@ -50,9 +49,6 @@ export default async function SoltysModeracjaDyskusjiPage() {
           ← Społeczność i rozwój
         </Link>
       </p>
-      <div className="mb-4">
-        <LogoNaszawies kompakt />
-      </div>
       <h1 className="tytul-sekcji-panelu">Moderacja społeczności</h1>
       <p className="mt-2 text-sm text-stone-600">
         Tu obsłużysz zgłoszenia mieszkańców dla dyskusji i bloga.

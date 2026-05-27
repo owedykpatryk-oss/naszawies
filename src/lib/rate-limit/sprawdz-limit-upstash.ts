@@ -7,8 +7,12 @@ let redisInstancja: Redis | null | undefined;
 
 function pobierzRedis(): Redis | null {
   if (redisInstancja !== undefined) return redisInstancja;
-  const url = process.env.UPSTASH_REDIS_REST_URL?.trim();
-  const token = process.env.UPSTASH_REDIS_REST_TOKEN?.trim();
+  const url =
+    process.env.UPSTASH_REDIS_REST_URL?.trim() ||
+    process.env.UPSTASH_SEARCH_REST_URL?.trim();
+  const token =
+    process.env.UPSTASH_REDIS_REST_TOKEN?.trim() ||
+    process.env.UPSTASH_SEARCH_REST_TOKEN?.trim();
   if (!url || !token) {
     redisInstancja = null;
     return null;
