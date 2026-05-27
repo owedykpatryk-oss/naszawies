@@ -4,33 +4,30 @@ import { useEffect, useState } from "react";
 import { LazyWidoczny } from "@/components/ui/lazy-widoczny";
 import {
   WiesTransportWidget,
-  type TransportOdjazdPubliczny,
+  type TransportDaneWsi,
 } from "@/components/wies/wies-transport-widget";
 
-type TransportDane = {
-  status: {
-    status_color: string;
-    status_label: string;
-    delayed_count: number;
-    cancelled_count: number;
-    fallback_mode: boolean;
-    updated_at: string;
-  } | null;
-  odjazdy: TransportOdjazdPubliczny[];
-};
+type StanLadowania = "laduje" | "ok" | "blad";
 
 function TransportTresc({ sciezkaWsi, villageId }: { sciezkaWsi: string; villageId: string }) {
-  const [dane, setDane] = useState<TransportDane | null>(null);
+  const [stan, setStan] = useState<StanLadowania>("laduje");
+  const [dane, setDane] = useState<TransportDaneWsi | null>(null);
 
   useEffect(() => {
     let anuluj = false;
+    setStan("laduje");
     void (async () => {
       try {
         const res = await fetch(`/api/wies/${villageId}/transport`);
-        if (!res.ok || anuluj) return;
-        setDane((await res.json()) as TransportDane);
+        if (anuluj) return;
+        if (!res.ok) {
+          setStan("blad");
+          return;
+        }
+        setDane((await res.json()) as TransportDaneWsi);
+        setStan("ok");
       } catch {
-        /* brak transportu — widget zwróci null */
+        if (!anuluj) setStan("blad");
       }
     })();
     return () => {
@@ -38,22 +35,47 @@ function TransportTresc({ sciezkaWsi, villageId }: { sciezkaWsi: string; village
     };
   }, [villageId]);
 
-  if (!dane) {
+  if (stan === "laduje") {
     return (
-      <section id="sekcja-transport" className="sekcja-poza-foldem mt-10 h-32 animate-pulse rounded-2xl bg-stone-100" aria-hidden />
+      <section
+        id="sekcja-transport"
+        className="sekcja-poza-foldem mt-10 h-36 animate-pulse rounded-2xl bg-stone-100"
+        aria-busy="true"
+        aria-label="Ładowanie transportu"
+      />
     );
   }
 
-  return (
-    <WiesTransportWidget sciezkaWsi={sciezkaWsi} status={dane.status} odjazdy={dane.odjazdy} />
-  );
+  if (stan === "blad" || !dane) {
+    return (
+      <WiesTransportWidget
+        sciezkaWsi={sciezkaWsi}
+        status={null}
+        odjazdy={[]}
+        przystanki={[]}
+        stacjeKolejowe={[]}
+        stacjePkp={[]}
+        linkiZewnetrzne={[]}
+        wies={{ name: "Wieś" }}
+        maKolej={false}
+        maAutobus={false}
+        bladLadowania={stan === "blad"}
+      />
+    );
+  }
+
+  return <WiesTransportWidget sciezkaWsi={sciezkaWsi} {...dane} />;
 }
 
 export function WiesTransportLazy({ sciezkaWsi, villageId }: { sciezkaWsi: string; villageId: string }) {
   return (
     <LazyWidoczny
       placeholder={
-        <section id="sekcja-transport" className="sekcja-poza-foldem mt-10 h-36 animate-pulse rounded-2xl bg-stone-100" aria-hidden />
+        <section
+          id="sekcja-transport"
+          className="sekcja-poza-foldem mt-10 h-36 animate-pulse rounded-2xl bg-stone-100"
+          aria-hidden
+        />
       }
     >
       <TransportTresc sciezkaWsi={sciezkaWsi} villageId={villageId} />

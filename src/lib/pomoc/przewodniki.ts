@@ -38,6 +38,11 @@ export const PRZEWODNIKI: Record<RolaPrzewodnika, SekcjaPrzewodnika[]> = {
           link: { href: "/szukaj", label: "Szukaj wsi" },
         },
         {
+          tytul: "Transport (PKP, PKS)",
+          opis: "Na profilu wsi: odjazdy pociągów i linki do rozkładów autobusów.",
+          link: { href: "/transport", label: "Centrum transportu" },
+        },
+        {
           tytul: "Załóż konto",
           opis: "Rejestracja jest darmowa. Konto pozwala zgłaszać sprawy, rezerwować świetlicę i brać udział w życiu wsi.",
           link: { href: "/rejestracja", label: "Rejestracja" },
@@ -105,6 +110,11 @@ export const PRZEWODNIKI: Record<RolaPrzewodnika, SekcjaPrzewodnika[]> = {
           tytul: "Fotokronika i konkursy",
           opis: "Dodaj zdjęcie wsi — po akceptacji sołtysa trafi na profil publiczny. W konkursie możesz głosować.",
           link: { href: "/panel/mieszkaniec/fotokronika", label: "Fotokronika" },
+        },
+        {
+          tytul: "Transport (pociąg i autobus)",
+          opis: "Na profilu wsi sekcja Transport: PKP z opóźnieniami oraz linki PKS/bus. Ustaw relacje w panelu, by dostawać alerty.",
+          link: { href: "/transport", label: "Centrum transportu" },
         },
       ],
     },

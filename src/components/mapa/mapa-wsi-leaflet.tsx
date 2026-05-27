@@ -349,8 +349,10 @@ function htmlPopupPoi(z: ZnacznikPoi): string {
   const opis = z.description?.trim();
   const osm = `https://www.openstreetmap.org/?mlat=${encodeURIComponent(String(z.lat))}&mlon=${encodeURIComponent(String(z.lon))}&zoom=17`;
   const czyStacja = z.category.trim().toLowerCase() === "stacja_kolejowa";
+  const czyPrzystanek = z.category.trim().toLowerCase() === "przystanek";
   const czyOspWoda = z.category.trim().toLowerCase() === "osp_punkt_czerpania_wody";
   const stacjaLink = `/transport/rozklad?stacja=${encodeURIComponent(z.name)}`;
+  const epodroznikLink = `https://www.e-podroznik.pl/public/search?from=${encodeURIComponent(`${z.name}, ${z.villageName}`)}`;
   const typZrodlaMap: Record<string, string> = {
     hydrant: "Hydrant",
     staw: "Staw",
@@ -385,7 +387,8 @@ function htmlPopupPoi(z: ZnacznikPoi): string {
         <a href="${z.sciezkaWsi.replace(/"/g, "")}">Strona wsi →</a>
         <span aria-hidden="true"> · </span>
         <a href="${osm}" target="_blank" rel="noopener noreferrer">Punkt w OSM ↗</a>
-        ${czyStacja ? `<span aria-hidden="true"> · </span><a href="${stacjaLink}">Rozkład stacji 🚆</a>` : ""}
+        ${czyStacja ? `<span aria-hidden="true"> · </span><a href="${stacjaLink}">Rozkład PKP 🚆</a>` : ""}
+        ${czyPrzystanek ? `<span aria-hidden="true"> · </span><a href="${epodroznikLink}" target="_blank" rel="noopener noreferrer">PKS / bus ↗</a>` : ""}
         ${czyOspWoda ? `<span aria-hidden="true"> · </span><a href="${zglosAktualizacjeLink}">Zgłoś aktualizację punktu</a>` : ""}
       </p>
     </div>

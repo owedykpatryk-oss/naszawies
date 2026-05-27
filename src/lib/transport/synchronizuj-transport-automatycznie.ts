@@ -70,6 +70,7 @@ async function wyslijAlertyTransportowe(
     delayedCount: number;
     cancelledCount: number;
     delayThreshold: number;
+    maxDelayMin: number;
   },
 ) {
   const { data: favRaw, error: favErr } = await supabase
@@ -100,10 +101,9 @@ async function wyslijAlertyTransportowe(
   );
 
   for (const fav of favorites) {
+    const progOpoznienia = fav.notify_delay_min ?? args.delayThreshold;
     const shouldDelay =
-      args.delayedCount > 0 &&
-      fav.notify_disruptions &&
-      (fav.notify_delay_min ?? args.delayThreshold) <= args.delayThreshold;
+      fav.notify_disruptions && args.maxDelayMin >= progOpoznienia && args.maxDelayMin > 0;
     const shouldCancelled = args.cancelledCount > 0 && fav.notify_cancelled;
 
     if (shouldCancelled && !recentSet.has(`${fav.user_id}|transport_cancelled_alert`)) {
@@ -131,8 +131,8 @@ async function wyslijAlertyTransportowe(
         user_id: fav.user_id,
         type: "transport_delay_alert",
         title: "Opóźnienia w odjazdach",
-        body: `${args.villageName}: opóźnienie przekracza ${args.delayThreshold} min.`,
-        link_url: "/panel/powiadomienia",
+        body: `${args.villageName}: opóźnienie do ${args.maxDelayMin} min (Twój próg: ${progOpoznienia} min).`,
+        link_url: "/panel/moje",
         related_id: args.villageId,
         related_type: "village",
         channel: "in_app",
@@ -141,7 +141,7 @@ async function wyslijAlertyTransportowe(
         userId: fav.user_id,
         title: "Transport: opóźnienia",
         body: `${args.villageName}: są opóźnione kursy.`,
-        linkUrl: "/panel/powiadomienia",
+        linkUrl: "/panel/moje",
         tag: `transport-delay-${args.villageId}`,
       });
     }
@@ -312,6 +312,7 @@ export async function synchronizujTransportAutomatycznie(
 
     const cancelledCount = upcoming.filter((d) => d.isCancelled).length;
     const delayedCount = upcoming.filter((d) => (d.delayMinutes ?? 0) >= delayThreshold).length;
+    const maxDelayMin = upcoming.reduce((max, d) => Math.max(max, d.delayMinutes ?? 0), 0);
     const observed = upcoming.length;
     const maxRealtimeAgeMs = Math.max(
       ...upcoming.map((d) => {
@@ -364,6 +365,7 @@ export async function synchronizujTransportAutomatycznie(
       delayedCount,
       cancelledCount,
       delayThreshold,
+      maxDelayMin,
     });
   }
 

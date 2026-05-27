@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { RozkladSzukajFormularz } from "@/components/transport/rozklad-szukaj-formularz";
 import { pobierzOdjazdyDlaStacjiPkp, wyszukajStacjePkpPoNazwie } from "@/lib/transport/pkp-plk-api";
 
 type Props = {
@@ -17,9 +18,7 @@ export default async function RozkladStacjiPage({ searchParams }: Props) {
   let odjazdy: Awaited<ReturnType<typeof pobierzOdjazdyDlaStacjiPkp>> = [];
   let wybrana: { id: string; name: string } | null = null;
 
-  if (!stacjaFraza) {
-    msg = "Podaj nazwę stacji, żeby sprawdzić rozkład.";
-  } else {
+  if (stacjaFraza) {
     try {
       stacje = await wyszukajStacjePkpPoNazwie(stacjaFraza);
       if (stacje.length === 0) {
@@ -39,22 +38,34 @@ export default async function RozkladStacjiPage({ searchParams }: Props) {
   return (
     <main className="mx-auto max-w-3xl px-4 py-10 text-stone-800">
       <p className="mb-4 text-sm text-stone-500">
+        <Link href="/transport" className="text-green-800 underline">
+          ← Transport
+        </Link>
+        {" · "}
         <Link href="/mapa" className="text-green-800 underline">
-          ← Mapa wsi
+          Mapa wsi
         </Link>
       </p>
-      <h1 className="font-serif text-3xl text-green-950">Rozkład stacji kolejowej</h1>
+      <h1 className="font-serif text-3xl text-green-950">Rozkład stacji kolejowej (PKP)</h1>
       <p className="mt-2 text-sm text-stone-600">
-        Dane z PKP PLK OpenData API (jeśli `PKP_PLK_API_KEY` jest ustawiony). Fraza:{" "}
-        <strong>{stacjaFraza || "—"}</strong>
+        Dane z PKP PLK OpenData API, gdy na serwerze ustawiono <code className="text-xs">PKP_PLK_API_KEY</code>.
       </p>
+
+      <RozkladSzukajFormularz domyslnaStacja={stacjaFraza} />
 
       {stacje.length > 1 ? (
         <div className="mt-5 rounded-xl border border-stone-200 bg-white p-4">
-          <p className="text-xs uppercase tracking-wide text-stone-500">Podobne stacje</p>
-          <ul className="mt-2 list-disc space-y-1 pl-5 text-sm text-stone-700">
-            {stacje.slice(0, 6).map((s) => (
-              <li key={s.id}>{s.name}</li>
+          <p className="text-xs uppercase tracking-wide text-stone-500">Wybierz stację</p>
+          <ul className="mt-2 space-y-2">
+            {stacje.slice(0, 8).map((s) => (
+              <li key={s.id}>
+                <Link
+                  href={`/transport/rozklad?stacja=${encodeURIComponent(s.name)}`}
+                  className="text-sm font-medium text-green-800 underline"
+                >
+                  {s.name}
+                </Link>
+              </li>
             ))}
           </ul>
         </div>
@@ -86,8 +97,11 @@ export default async function RozkladStacjiPage({ searchParams }: Props) {
                   {d.carrier ? ` · ${d.carrier}` : ""}
                 </p>
                 <p className="mt-1 text-xs text-stone-500">
-                  {d.isCancelled ? "Odwołany" : d.delayMinutes != null && d.delayMinutes > 0 ? `Opóźnienie ${d.delayMinutes} min` : "Planowo"}
-                  {d.status ? ` · ${d.status}` : ""}
+                  {d.isCancelled
+                    ? "Odwołany"
+                    : d.delayMinutes != null && d.delayMinutes > 0
+                      ? `Opóźnienie ${d.delayMinutes} min`
+                      : "Planowo"}
                 </p>
               </li>
             ))}
@@ -100,10 +114,14 @@ export default async function RozkladStacjiPage({ searchParams }: Props) {
       ) : null}
 
       <p className="mt-6 text-xs text-stone-500">
-        Brak danych live? Sprawdź też oficjalną wyszukiwarkę:{" "}
-        <a className="text-green-800 underline" href="https://rozklad.pkp.pl/pl/recommended" target="_blank" rel="noreferrer">
-          rozklad.pkp.pl
+        Autobusy i PKS:{" "}
+        <a className="text-green-800 underline" href="https://www.e-podroznik.pl" target="_blank" rel="noreferrer">
+          e-podroznik.pl
         </a>
+        {" · "}
+        <Link href="/transport" className="text-green-800 underline">
+          więcej o transporcie
+        </Link>
       </p>
     </main>
   );

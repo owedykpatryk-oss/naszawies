@@ -33,6 +33,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.7,
     },
     {
+      url: `${baza}/transport`,
+      lastModified: teraz,
+      changeFrequency: "weekly",
+      priority: 0.65,
+    },
+    {
       url: `${baza}/zglos-problem-strony`,
       lastModified: teraz,
       changeFrequency: "yearly",
