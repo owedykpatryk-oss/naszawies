@@ -1,4 +1,5 @@
 import type { Metadata } from "next";
+import Link from "next/link";
 
 type Props = { params: { sciezka: string[] } };
 
@@ -7,18 +8,19 @@ export function generateMetadata({ params }: Props): Metadata {
   return { title: `Panel — ${sc}` };
 }
 
-/** Moduły roli i podstrony panelu (np. /panel/soltys/…) — do rozbudowy wg roadmapy. */
+/** Moduły roli i podstrony panelu (np. /panel/soltys/…) — placeholder pod rozbudowę. */
 export default function PanelModulPage({ params }: Props) {
   const sciezka = params.sciezka.filter(Boolean);
-  const opis = `Ścieżka: /panel/${sciezka.join("/")}. Ogłoszenia, świetlica, mieszkańcy — kolejne fazy.`;
 
   return (
     <main>
       <h1 className="mb-4 font-serif text-3xl text-green-950">Panel: {sciezka.join(" → ")}</h1>
-      <p className="mb-6 leading-relaxed text-stone-700">{opis}</p>
-      <p className="rounded-lg border border-stone-200 bg-stone-100/80 p-4 text-sm text-stone-600">
-        Specyfikacja w pakiecie projektu:{" "}
-        <code className="rounded bg-white px-1.5 py-0.5">Cloude Docs/naszawies-package/frontend/FRONTEND.md</code>
+      <p className="mb-6 leading-relaxed text-stone-700">
+        Ta sekcja jest w przygotowaniu. Wróć do{" "}
+        <Link href="/panel" className="font-medium text-green-800 underline">
+          głównego panelu
+        </Link>{" "}
+        lub wybierz moduł z menu po lewej stronie.
       </p>
     </main>
   );

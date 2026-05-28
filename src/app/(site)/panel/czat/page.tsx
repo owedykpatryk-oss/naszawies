@@ -114,7 +114,7 @@ export default async function CzatPage() {
   const lacznieNieprzeczytane = Object.values(nieprzeczytane).reduce((s, n) => s + n, 0);
 
   return (
-    <main>
+    <main className="mx-auto w-full max-w-7xl">
       <p className="text-sm text-stone-500">
         <Link href="/panel" className="text-green-800 underline">
           ← Panel

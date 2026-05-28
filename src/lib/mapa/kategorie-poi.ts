@@ -18,6 +18,7 @@ export const ETYKIETA_KATEGORII_POI: Record<string, string> = {
   boisko: "Boisko, sport",
   biblioteka: "Biblioteka, filia",
   urzad: "Urząd, instytucja",
+  ladne_miejsce: "Ładne miejsce (zdjęcie)",
   inne: "Miejsce",
 };
 
@@ -56,8 +57,11 @@ const KOLOR_OBRAMOWANIA: Record<string, string> = {
   boisko: "#0d9488",
   biblioteka: "#7c3aed",
   urzad: "#475569",
+  ladne_miejsce: "#b45309",
   inne: "#57534e",
 };
+
+export const KATEGORIA_LADNE_MIEJSCE = "ladne_miejsce";
 
 export function etykietaKategoriiPoi(kategoria: string): string {
   const k = kategoria.trim().toLowerCase();

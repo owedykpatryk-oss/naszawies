@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { pobierzStanPrzewodnikaStartu } from "@/lib/panel/stan-przewodnika-startu";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
 import { PanelPrzewodnikStartu } from "./panel-przewodnik-startu";
@@ -16,24 +17,7 @@ export default async function PanelPage() {
   } = await supabase.auth.getUser();
 
   if (!user) {
-    return (
-      <main>
-        <div className="mb-8 rounded-2xl border border-amber-200/80 bg-gradient-to-br from-amber-50/95 to-stone-50/90 p-6 shadow-sm ring-1 ring-amber-900/5">
-          <h1 className="font-serif text-3xl tracking-tight text-green-950">Panel</h1>
-          <p className="mt-2 text-sm text-stone-600">
-            Zaloguj się, by przejść do profilu, rezerwacji świetlicy i innych funkcji wsi.
-          </p>
-          <p className="mt-5">
-            <Link
-              href="/logowanie"
-              className="inline-flex min-h-[44px] min-w-[44px] items-center justify-center rounded-xl bg-green-800 px-5 py-2.5 text-sm font-medium text-white shadow-sm transition hover:bg-green-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-green-800"
-            >
-              Przejdź do logowania
-            </Link>
-          </p>
-        </div>
-      </main>
-    );
+    redirect("/logowanie?next=/panel");
   }
 
   const { data: profil } = await supabase
@@ -76,6 +60,15 @@ export default async function PanelPage() {
           Pierwsze kroki po rejestracji
         </Link>{" "}
         — pełniejszy opis: profil, wybór wsi, różnice mieszkaniec / sołtys.
+        {!stanStartu.jestSoltysem ? (
+          <>
+            {" "}
+            <Link href="/panel/wniosek-soltysa" className="font-medium text-green-800 underline">
+              Wniosek o rolę sołtysa
+            </Link>
+            .
+          </>
+        ) : null}
       </p>
 
       <h2 className="sr-only">Skróty do modułów</h2>

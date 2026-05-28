@@ -126,7 +126,7 @@ html.tryb-senior textarea {
     @apply mx-auto w-full min-w-0 max-w-7xl;
   }
   .panel-shell {
-    @apply mx-auto w-full min-w-0 max-w-6xl;
+    @apply mx-auto w-full min-w-0 max-w-7xl px-4 sm:px-6 lg:px-8;
   }
   .tytul-sekcji-panelu {
     @apply font-serif text-[clamp(1.35rem,2.4vw,1.95rem)] leading-tight text-green-950;

@@ -1,6 +1,7 @@
 import type { CookieOptions } from "@supabase/ssr";
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { sciezkaApiWymagaLogowania, sciezkaWymagaLogowania } from "@/lib/auth/sciezki-chronione";
 import { dolaczNaglowkiBezpieczenstwa } from "@/lib/bezpieczenstwo/naglowki-odpowiedzi";
 import { ipZRequestu, sprawdzLimitApi } from "@/lib/rate-limit/sprawdz-limit-upstash";
 
@@ -71,9 +72,16 @@ export async function middleware(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  if (sciezka.startsWith("/panel") && !user) {
+  const wymagaKonta = sciezkaWymagaLogowania(sciezka) || sciezkaApiWymagaLogowania(sciezka);
+  if (wymagaKonta && !user) {
+    if (sciezka.startsWith("/api/")) {
+      return odpowiedzZBazowymiNaglowkami(
+        NextResponse.json({ blad: "Wymagane logowanie." }, { status: 401 }),
+      );
+    }
     const przekierowanie = request.nextUrl.clone();
     przekierowanie.pathname = "/logowanie";
+    przekierowanie.search = "";
     przekierowanie.searchParams.set("next", sciezka + request.nextUrl.search);
     return odpowiedzZBazowymiNaglowkami(NextResponse.redirect(przekierowanie));
   }

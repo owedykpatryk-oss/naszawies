@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { wymagajLogowaniaApi } from "@/lib/auth/wymagaj-logowania-api";
 import { createPublicSupabaseClient } from "@/lib/supabase/public-client";
 import { sciezkaProfiluWsi } from "@/lib/wies/sciezka-publiczna";
 
@@ -22,6 +23,9 @@ type WierszRpc = {
  * Przydatne do zewnętrznych narzędzi, cache na CDN lub prostego klienta bez Supabase.
  */
 export async function GET() {
+  const auth = await wymagajLogowaniaApi();
+  if (!auth.ok) return auth.response;
+
   const supabase = createPublicSupabaseClient();
   if (!supabase) {
     return NextResponse.json({ blad: "Usługa chwilowo niedostępna." }, { status: 503 });

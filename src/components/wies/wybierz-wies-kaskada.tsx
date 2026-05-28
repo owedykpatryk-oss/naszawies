@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useCallback, useEffect, useState } from "react";
+import { pobierzKatalogDlaRejestracji } from "@/app/(site)/rejestracja/akcje-katalog-wsi";
 import { odczytajJsonOdpowiedzi } from "@/lib/api/odczytaj-json-odpowiedzi";
 import type { WpisWsi } from "@/components/wies/wyszukiwarka-wsi";
 
@@ -13,13 +14,21 @@ type Props = {
   onWybor?: (w: WpisWsi) => void | Promise<void>;
   /** Gdy true — lista wsi z linkami zamiast przycisku akcji. */
   trybPrzegladania?: boolean;
+  /** Formularz rejestracji — server actions zamiast chronionego API. */
+  trybRejestracji?: boolean;
   className?: string;
 };
 
 const stylSelect =
   "min-h-[44px] w-full rounded-lg border border-stone-300 bg-white px-3 py-2 text-sm text-stone-900 outline-none ring-green-800 focus:ring-2 disabled:cursor-not-allowed disabled:bg-stone-100 disabled:text-stone-500";
 
-export function WybierzWiesKaskada({ tekstPrzycisku, onWybor, trybPrzegladania, className }: Props) {
+export function WybierzWiesKaskada({
+  tekstPrzycisku,
+  onWybor,
+  trybPrzegladania,
+  trybRejestracji = false,
+  className,
+}: Props) {
   const [woj, ustawWoj] = useState("");
   const [pow, ustawPow] = useState("");
   const [gmina, ustawGmina] = useState("");
@@ -32,10 +41,39 @@ export function WybierzWiesKaskada({ tekstPrzycisku, onWybor, trybPrzegladania, 
   const [laduje, ustawLaduje] = useState<"woj" | "pow" | "gmina" | "wsi" | null>("woj");
   const [blad, ustawBlad] = useState("");
 
-  const pobierzKatalog = useCallback(async (url: string) => {
-    const res = await fetch(url);
-    return odczytajJsonOdpowiedzi<{ elementy?: Element[]; wsi?: WpisWsi[]; blad?: string }>(res);
-  }, []);
+  const pobierzKatalog = useCallback(
+    async (url: string) => {
+      if (trybRejestracji) {
+        const u = new URL(url, "http://local");
+        const poziom = u.searchParams.get("poziom");
+        const payload =
+          poziom === "wojewodztwa"
+            ? { poziom: "wojewodztwa" as const }
+            : poziom === "powiaty"
+              ? { poziom: "powiaty" as const, woj: u.searchParams.get("woj") ?? "" }
+              : poziom === "gminy"
+                ? {
+                    poziom: "gminy" as const,
+                    woj: u.searchParams.get("woj") ?? "",
+                    pow: u.searchParams.get("pow") ?? "",
+                  }
+                : {
+                    poziom: "wsi" as const,
+                    woj: u.searchParams.get("woj") ?? "",
+                    pow: u.searchParams.get("pow") ?? "",
+                    gmina: u.searchParams.get("gmina") ?? "",
+                  };
+        const w = await pobierzKatalogDlaRejestracji(payload);
+        if (!w.ok) {
+          return { ok: false as const, komunikat: w.blad };
+        }
+        return { ok: true as const, dane: { elementy: w.elementy, wsi: w.wsi as WpisWsi[] | undefined } };
+      }
+      const res = await fetch(url);
+      return odczytajJsonOdpowiedzi<{ elementy?: Element[]; wsi?: WpisWsi[]; blad?: string }>(res);
+    },
+    [trybRejestracji],
+  );
 
   useEffect(() => {
     let anuluj = false;

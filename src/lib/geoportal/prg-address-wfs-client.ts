@@ -11,6 +11,8 @@ export type PrgAddressPoint = {
   locationGeom: unknown;
 };
 
+import { pobierzWfsFeatureCollection } from "@/lib/geoportal/wfs-get-feature";
+
 export type PrgAddressFetchResult =
   | {
       ok: true;
@@ -105,7 +107,16 @@ function pointFromFeature(f: GeoJsonFeature): PrgAddressPoint | null {
   const xy = pointFromGeometry(f.geometry);
   if (!xy) return null;
   const props = f.properties ?? {};
-  const houseNumber = propStr(props, ["house_number", "numer_porzadkowy", "numer", "nr", "NUMER", "NR", "NUMERPORZ"]);
+  const houseNumber = propStr(props, [
+    "house_number",
+    "numer_porzadkowy",
+    "numer",
+    "nr",
+    "NUMER",
+    "NR",
+    "NUMERPORZ",
+    "ms:numer",
+  ]);
   if (!houseNumber) return null;
 
   const streetName = propStr(props, [
@@ -118,7 +129,7 @@ function pointFromFeature(f: GeoJsonFeature): PrgAddressPoint | null {
     "NAZWAULICY",
   ]);
   const postalCode = propStr(props, ["postal_code", "kod_pocztowy", "kod", "KOD_POCZTOWY", "KOD"]);
-  const terytSimc = propStr(props, ["simc", "teryt_simc", "SIMC", "TERYT_SIMC"]);
+  const terytSimc = propStr(props, ["simc", "teryt_simc", "SIMC", "TERYT_SIMC", "ms:simc"]);
   const terytUlic = propStr(props, ["ulic", "teryt_ulic", "ULIC", "TERYT_ULIC"]);
   const extId =
     (typeof f.id === "string" || typeof f.id === "number" ? String(f.id) : null) ??
@@ -162,62 +173,28 @@ export async function pobierzAdresyWsiZPrgWfs(
     return { ok: false, reason: "Brak GEOPORTAL_PRG_ADDRESS_WFS_TYPENAME.", retryable: false };
   }
 
-  const params = new URLSearchParams({
-    SERVICE: "WFS",
-    VERSION: wfsVersion,
-    REQUEST: "GetFeature",
-    SRSNAME: "EPSG:4326",
-    outputFormat: "application/json",
-    BBOX: makeBbox(lat, lon, Math.max(400, Math.min(8000, radiusM))),
-  });
-  if (wfsVersion.startsWith("1.")) {
-    params.set("TYPENAME", typeName);
-    params.set("MAXFEATURES", "1500");
-  } else {
-    params.set("TYPENAMES", typeName);
-    params.set("COUNT", "1500");
-  }
-
   const simcField = env("GEOPORTAL_PRG_ADDRESS_SIMC_FIELD");
-  if (simcField) {
-    params.set("CQL_FILTER", `${simcField}='${escapeCqlLiteral(cleanTeryt)}'`);
-  }
+  const cqlFilter = simcField ? `${simcField}='${escapeCqlLiteral(cleanTeryt)}'` : undefined;
 
-  let res: Response;
-  try {
-    res = await fetch(`${wfsUrl}?${params.toString()}`, {
-      method: "GET",
-      cache: "no-store",
-      signal: AbortSignal.timeout(45_000),
-      headers: {
-        Accept: "application/json, application/geo+json, text/xml",
-        "User-Agent": "NaszawiesPl/1.0 (+https://naszawies.pl/)",
-      },
-    });
-  } catch (e) {
-    const msg = e instanceof Error ? e.message : String(e);
-    return { ok: false, reason: `Błąd połączenia z KIN/PRG WFS: ${msg}`, retryable: true };
-  }
+  const wfs = await pobierzWfsFeatureCollection({
+    wfsUrl,
+    wfsVersion,
+    typeName,
+    bbox: makeBbox(lat, lon, Math.max(400, Math.min(8000, radiusM))),
+    cqlFilter,
+    maxFeatures: 1500,
+    timeoutMs: 45_000,
+  });
 
-  if (!res.ok) {
+  if (!wfs.ok) {
     return {
       ok: false,
-      reason: `KIN/PRG WFS zwrócił HTTP ${res.status}.`,
-      retryable: res.status >= 500 || res.status === 429,
+      reason: `KIN/PRG WFS: ${wfs.reason}`,
+      retryable: wfs.retryable,
     };
   }
 
-  let json: unknown;
-  try {
-    json = (await res.json()) as unknown;
-  } catch {
-    return { ok: false, reason: "KIN/PRG WFS nie zwrócił JSON.", retryable: false };
-  }
-
-  const fc = json as GeoJsonFeatureCollection;
-  if (fc?.type !== "FeatureCollection" || !Array.isArray(fc.features)) {
-    return { ok: false, reason: "Nieoczekiwany format odpowiedzi KIN/PRG WFS.", retryable: false };
-  }
+  const fc = wfs.collection as GeoJsonFeatureCollection;
 
   const points = fc.features.map(pointFromFeature).filter(Boolean) as PrgAddressPoint[];
   return {

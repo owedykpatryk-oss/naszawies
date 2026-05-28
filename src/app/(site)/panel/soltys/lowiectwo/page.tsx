@@ -3,7 +3,7 @@ import { redirect } from "next/navigation";
 import { PanelStronaSoltysa } from "@/components/panel/panel-strona-soltysa";
 import { pobierzVillageIdsRoliPaneluSoltysaDlaUzytkownikaCache } from "@/lib/panel/rola-panelu-soltysa";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
-import { SoltysLowiectwoKlient, type WierszOstrzezenia } from "./soltys-lowiectwo-klient";
+import { SoltysLowiectwoKlient, type WierszOstrzezenia, type WiesGeoLowiectwo } from "./soltys-lowiectwo-klient";
 
 export const metadata: Metadata = {
   title: "Ostrzeżenia polowań",
@@ -17,12 +17,23 @@ export default async function SoltysLowiectwoPage() {
   if (!user) redirect("/logowanie?next=/panel/soltys/lowiectwo");
 
   const villageIds = await pobierzVillageIdsRoliPaneluSoltysaDlaUzytkownikaCache(user.id);
-  const wsie: { id: string; name: string }[] = [];
+  const wsie: WiesGeoLowiectwo[] = [];
   const nazwy: Record<string, string> = {};
   if (villageIds.length > 0) {
-    const { data: vs } = await supabase.from("villages").select("id, name").in("id", villageIds);
+    const { data: vs } = await supabase
+      .from("villages")
+      .select("id, name, latitude, longitude, boundary_geojson")
+      .in("id", villageIds);
     for (const v of vs ?? []) {
-      wsie.push({ id: v.id, name: v.name });
+      const lat = Number(v.latitude);
+      const lon = Number(v.longitude);
+      wsie.push({
+        id: v.id,
+        name: v.name,
+        lat: Number.isFinite(lat) ? lat : 52.1,
+        lon: Number.isFinite(lon) ? lon : 19.3,
+        boundaryGeojson: v.boundary_geojson ?? null,
+      });
       nazwy[v.id] = v.name;
     }
   }
@@ -49,13 +60,14 @@ export default async function SoltysLowiectwoPage() {
       endsAt: r.ends_at,
       status: r.status,
       aktywne: r.status === "approved" && teraz >= new Date(r.starts_at).getTime() && teraz <= new Date(r.ends_at).getTime(),
+      maObszarMapy: r.area_geojson != null,
     }));
   }
 
   return (
     <PanelStronaSoltysa
       tytul="Polowania — ostrzeżenia"
-      opis="Informuj mieszkańców i gości, gdzie i kiedy prowadzone są polowania. Ostrzeżenie jest widoczne na publicznym profilu wsi."
+      opis="Zaznacz obszar na mapie i ustaw termin — mieszkańcy zobaczą to na mapie naszawies i na profilu wsi."
       akcje={
         <>
           <a href="/panel/soltys/spolecznosc?tryb=mysliwi" className="btn-panel-secondary text-sm">

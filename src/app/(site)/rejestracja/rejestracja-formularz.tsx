@@ -108,8 +108,11 @@ export function RejestracjaFormularz({ pochodzeniePubliczne, nastepnaSciezka = "
           tym samym hasłem.
         </p>
         <p className="mt-2 text-xs leading-relaxed text-green-900/80">
-          Rolę we wsi (np. mieszkaniec) ustalisz w panelu po zalogowaniu — sołtys przez osobny proces
-          weryfikacji.
+          Rolę mieszkańca ustalisz w panelu po zalogowaniu. Sołtys: po potwierdzeniu konta wejdź w{" "}
+          <Link href="/panel/wniosek-soltysa" className="font-medium underline">
+            Wniosek o rolę sołtysa
+          </Link>
+          .
         </p>
         <p className="mt-4 text-sm">
           <Link href="/logowanie" className="text-green-800 underline">
@@ -168,7 +171,10 @@ export function RejestracjaFormularz({ pochodzeniePubliczne, nastepnaSciezka = "
           </label>
           <label className="flex cursor-pointer items-start gap-2">
             <input type="radio" name="intencja_rejestracji" value="soltys" className="mt-1" />
-            <span>Jestem / będę sołtysem — chcę prowadzić profil wsi (weryfikacja po kontakcie)</span>
+            <span>
+              Jestem / będę sołtysem — po potwierdzeniu e-maila złożysz wniosek w{" "}
+              <strong>panelu → Wniosek o rolę sołtysa</strong> (weryfikacja przez administratora platformy)
+            </span>
           </label>
           <label className="flex cursor-pointer items-start gap-2">
             <input type="radio" name="intencja_rejestracji" value="inne" className="mt-1" />

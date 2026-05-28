@@ -231,7 +231,7 @@ export function CzatOknoKlient({
   }
 
   return (
-    <div className="flex min-h-[55vh] flex-col overflow-hidden rounded-2xl border border-stone-200 bg-white shadow-sm">
+    <div className="flex min-h-[min(55vh,520px)] flex-col overflow-hidden rounded-2xl border border-stone-200 bg-white shadow-sm lg:min-h-[min(72dvh,780px)]">
       <div
         ref={kontener}
         className="flex-1 space-y-2 overflow-y-auto p-4"

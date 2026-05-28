@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { Suspense } from "react";
 import { PanelStronaSoltysa } from "@/components/panel/panel-strona-soltysa";
 import { GeneratorDokumentowSoltysaKlient } from "@/components/soltys/generator-dokumentow-klient";
 import { PRESETY_DOKUMENTOW_SOLTYSA } from "@/lib/dokumenty-soltysa/presety";
@@ -77,12 +78,14 @@ export default async function SoltysDokumentyPage() {
         </>
       }
       dzieci={
-        <GeneratorDokumentowSoltysaKlient
-          wsie={wsie}
-          domyslnaWies={pierwsza?.name ?? ""}
-          domyslnaGmina={pierwsza?.commune ?? ""}
-          domyslnySoltysNazwa={domyslnySoltysNazwa}
-        />
+        <Suspense fallback={<p className="text-sm text-stone-600">Ładowanie generatora…</p>}>
+          <GeneratorDokumentowSoltysaKlient
+            wsie={wsie}
+            domyslnaWies={pierwsza?.name ?? ""}
+            domyslnaGmina={pierwsza?.commune ?? ""}
+            domyslnySoltysNazwa={domyslnySoltysNazwa}
+          />
+        </Suspense>
       }
     />
   );

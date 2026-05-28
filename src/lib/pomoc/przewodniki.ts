@@ -234,13 +234,19 @@ export const PRZEWODNIKI: Record<RolaPrzewodnika, SekcjaPrzewodnika[]> = {
           link: { href: "/panel/soltys/lowiectwo", label: "Panel — polowania" },
         },
         {
-          tytul: "Co wpisać",
-          opis: "Rejon (np. „las za stadniną”, „pole na wschód od drogi gminnej”), dokładny termin od–do, numer kontaktowy.",
+          tytul: "Obszar na mapie",
+          opis: "W panelu Polowania zaznacz prostokąt (2 kliknięcia) lub wielokąt; możesz też użyć obrysu całej wsi. Termin ustawisz skrótem (dziś, jutro, weekend).",
+          link: { href: "/panel/soltys/lowiectwo", label: "Panel — polowania" },
+        },
+        {
+          tytul: "Opis tekstowy",
+          opis: "Krótki opis dla osób bez mapy (np. „las za stadniną”) oraz telefon łowczego.",
         },
       ],
       wskazowki: [
         "Opublikuj ostrzeżenie minimum 2–3 dni przed polowaniem.",
         "Po zakończeniu akcji oznacz jako zarchiwizowane.",
+        "Link z profilu wsi prowadzi bezpośrednio do obszaru na mapie.",
         "Użyj szablonu plakatu „polowanie” w kreatorze grafiki.",
       ],
     },

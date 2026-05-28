@@ -1,6 +1,9 @@
 import type { MetadataRoute } from "next";
 
-const baza = (process.env.NEXT_PUBLIC_SITE_URL ?? "https://naszawies.pl").replace(/\/$/, "");
+const baza = (process.env.NEXT_PUBLIC_SITE_URL ?? "https://naszawies.pl")
+  .replace(/[\r\n]+/g, "")
+  .trim()
+  .replace(/\/$/, "");
 
 export default function manifest(): MetadataRoute.Manifest {
   return {

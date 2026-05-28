@@ -141,3 +141,43 @@ export async function zaktualizujZgloszenieSoltys(
   revalidatePath("/panel/powiadomienia");
   return { ok: true };
 }
+
+export async function oznaczPismoDoGminyWyslane(issueId: string): Promise<WynikAktZgl> {
+  const id = uuid.safeParse(issueId);
+  if (!id.success) return { blad: "Niepoprawny identyfikator zgłoszenia." };
+
+  const supabase = utworzKlientaSupabaseSerwer();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { blad: "Zaloguj się." };
+
+  const villageIds = await pobierzVillageIdsRoliPaneluSoltysaDlaUzytkownikaCache(user.id);
+  if (villageIds.length === 0) return { blad: "Brak uprawnień sołtysa." };
+
+  const { data: w } = await supabase
+    .from("issues")
+    .select("id, village_id")
+    .eq("id", id.data)
+    .maybeSingle();
+
+  if (!w || !villageIds.includes(w.village_id)) {
+    return { blad: "Nie znaleziono zgłoszenia w Twojej wsi." };
+  }
+
+  const { error } = await supabase
+    .from("issues")
+    .update({
+      gmina_letter_sent_at: new Date().toISOString(),
+      gmina_letter_status: "sent",
+    })
+    .eq("id", id.data);
+
+  if (error) {
+    console.error("[oznaczPismoDoGminy]", error.message);
+    return { blad: "Nie udało się zapisać statusu pisma." };
+  }
+
+  revalidatePath("/panel/soltys/zgloszenia");
+  return { ok: true };
+}

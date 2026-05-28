@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
+import { wymagajLogowaniaApi } from "@/lib/auth/wymagaj-logowania-api";
 import { odczytajAdresIpZNaglowkow } from "@/lib/api/odczytaj-adres-ip";
 import { sprawdzLimitApi } from "@/lib/rate-limit/sprawdz-limit-upstash";
 import { createPublicSupabaseClient } from "@/lib/supabase/public-client";
@@ -31,6 +32,9 @@ const zapytanie = z.discriminatedUnion("poziom", [
 ]);
 
 export async function GET(request: Request) {
+  const auth = await wymagajLogowaniaApi();
+  if (!auth.ok) return auth.response;
+
   const { searchParams } = new URL(request.url);
   const poziom = searchParams.get("poziom") ?? "";
   const sparsowane = zapytanie.safeParse({

@@ -1,3 +1,4 @@
+import Link from "next/link";
 import type { OstrzezenieLowieckie } from "@/lib/lowiectwo/pobierz-ostrzezenia-publiczne";
 import { OslonaSekcjiWies } from "@/components/wies/oslona-sekcji-wies";
 
@@ -46,6 +47,16 @@ export function OstrzezeniaLowieckieWsi({
                 <p className="mt-2 text-xs text-stone-600">
                   Kontakt: {o.contactName ? `${o.contactName}` : ""}
                   {o.contactPhone ? ` · tel. ${o.contactPhone}` : ""}
+                </p>
+              ) : null}
+              {o.maObszarMapy ? (
+                <p className="mt-2">
+                  <Link
+                    href={`/mapa?polowanie=${encodeURIComponent(o.id)}`}
+                    className="text-sm font-medium text-amber-900 underline hover:text-amber-950"
+                  >
+                    Zobacz obszar na mapie →
+                  </Link>
                 </p>
               ) : null}
             </li>

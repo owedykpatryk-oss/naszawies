@@ -5,6 +5,10 @@ import { FormEvent, useState, useTransition } from "react";
 import { dodajBrakujacePoiZOpenStreetMap, dodajPunktCzerpaniaWodyOsp } from "../akcje-mapa-poi";
 import { zapiszProfilPublicznyWsi } from "../akcje";
 import { sciezkaProfiluWsi } from "@/lib/wies/sciezka-publiczna";
+import { LadneMiejsceFormularz } from "@/components/panel/ladne-miejsce-formularz";
+import { QrProfilWsiPanel } from "@/components/panel/qr-profil-wsi-panel";
+import { SugestieAutomatyzacjiMapy } from "@/components/panel/sugestie-automatyzacji-mapy";
+import type { SugestiaAutomatyzacjiMapy } from "@/lib/mapa/pobierz-sugestie-automatyzacji-wsi";
 
 export type WiesDoEdycji = {
   id: string;
@@ -20,7 +24,13 @@ export type WiesDoEdycji = {
   longitude: number | null;
 };
 
-export function ProfilWsiSoltysKlient({ wies }: { wies: WiesDoEdycji[] }) {
+export function ProfilWsiSoltysKlient({
+  wies,
+  sugestieMapy = {},
+}: {
+  wies: WiesDoEdycji[];
+  sugestieMapy?: Record<string, SugestiaAutomatyzacjiMapy[]>;
+}) {
   const [czek, startT] = useTransition();
   const [czekOsm, startOsm] = useTransition();
   const [blad, ustawBlad] = useState<Record<string, string>>({});
@@ -121,7 +131,17 @@ export function ProfilWsiSoltysKlient({ wies }: { wies: WiesDoEdycji[] }) {
               <Link href="/mapa" className="text-green-800 underline">
                 Mapa wszystkich wsi
               </Link>
+              {" · "}
+              <a href="#qr-profil-wsi" className="text-green-800 underline">
+                Kod QR dla tablicy
+              </a>
             </p>
+            <QrProfilWsiPanel nazwaWsi={w.name} sciezkaPubliczna={sciezka} />
+            <SugestieAutomatyzacjiMapy
+              villageId={w.id}
+              nazwaWsi={w.name}
+              sugestie={sugestieMapy[w.id] ?? []}
+            />
             {ok[w.id] ? (
               <p className="mt-2 text-sm text-green-800" role="status">
                 Zapisano.
@@ -142,7 +162,7 @@ export function ProfilWsiSoltysKlient({ wies }: { wies: WiesDoEdycji[] }) {
                   name="description"
                   rows={6}
                   defaultValue={w.description ?? ""}
-                  className="mt-1 w-full max-w-2xl rounded border border-stone-300 px-2 py-1.5"
+                  className="mt-1 w-full rounded border border-stone-300 px-2 py-1.5"
                   maxLength={20000}
                 />
               </div>
@@ -155,7 +175,7 @@ export function ProfilWsiSoltysKlient({ wies }: { wies: WiesDoEdycji[] }) {
                   name="website"
                   type="url"
                   defaultValue={w.website ?? ""}
-                  className="mt-1 w-full max-w-2xl rounded border border-stone-300 px-2 py-1.5"
+                  className="mt-1 w-full rounded border border-stone-300 px-2 py-1.5"
                   placeholder="https://"
                 />
               </div>
@@ -168,7 +188,7 @@ export function ProfilWsiSoltysKlient({ wies }: { wies: WiesDoEdycji[] }) {
                   name="cover_image_url"
                   type="url"
                   defaultValue={w.cover_image_url ?? ""}
-                  className="mt-1 w-full max-w-2xl rounded border border-stone-300 px-2 py-1.5"
+                  className="mt-1 w-full rounded border border-stone-300 px-2 py-1.5"
                   placeholder="https://"
                 />
               </div>
@@ -215,6 +235,10 @@ export function ProfilWsiSoltysKlient({ wies }: { wies: WiesDoEdycji[] }) {
               >
                 {czekOsm ? "Pobieram z OpenStreetMap…" : "Dopisz brakujące POI z OpenStreetMap"}
               </button>
+
+              {maGps ? (
+                <LadneMiejsceFormularz villageId={w.id} domyslnaLat={w.latitude} domyslnaLng={w.longitude} />
+              ) : null}
 
               <div className="mt-6 rounded-xl border border-blue-200/80 bg-blue-50/40 p-4">
                 <h4 className="font-medium text-blue-950">OSP v1: punkt czerpania wody</h4>

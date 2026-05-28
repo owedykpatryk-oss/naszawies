@@ -33,6 +33,8 @@ yarn-error.log*
 .vercel
 
 # lokalne / przypadkowe (nie commituj)
+.tmp/
+tmp-*.xml
 __q.sql
 _apply_m1.json
 _mcp/

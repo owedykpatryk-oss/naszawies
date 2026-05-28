@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
+import { walidujObszarPolowania } from "@/lib/lowiectwo/geojson-obszar";
 import { pobierzVillageIdsRoliPaneluSoltysaDlaUzytkownikaCache } from "@/lib/panel/rola-panelu-soltysa";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
 
@@ -23,6 +24,7 @@ const schemaDodaj = z.object({
   contactName: z.string().trim().max(120).optional().nullable(),
   startsAt: z.string(),
   endsAt: z.string(),
+  areaGeojson: z.unknown().optional().nullable(),
 });
 
 export async function dodajOstrzezenieLowieckieSoltys(dane: z.infer<typeof schemaDodaj>): Promise<WynikLow> {
@@ -42,6 +44,11 @@ export async function dodajOstrzezenieLowieckieSoltys(dane: z.infer<typeof schem
     return { blad: "Niepoprawny zakres dat." };
   }
 
+  const areaGeojson = walidujObszarPolowania(p.data.areaGeojson ?? null);
+  if (!areaGeojson) {
+    return { blad: "Zaznacz obszar polowania na mapie (min. 3 narożniki)." };
+  }
+
   const { error } = await supabase.from("village_hunting_notices").insert({
     village_id: p.data.villageId,
     created_by: user.id,
@@ -52,6 +59,7 @@ export async function dodajOstrzezenieLowieckieSoltys(dane: z.infer<typeof schem
     contact_name: p.data.contactName?.length ? p.data.contactName : null,
     starts_at: start.toISOString(),
     ends_at: end.toISOString(),
+    area_geojson: areaGeojson,
     status: "approved",
     moderated_by: user.id,
     moderated_at: new Date().toISOString(),
@@ -64,6 +72,47 @@ export async function dodajOstrzezenieLowieckieSoltys(dane: z.infer<typeof schem
 
   revalidatePath("/panel/soltys/lowiectwo");
   revalidatePath("/wies");
+  revalidatePath("/mapa");
+  return { ok: true };
+}
+
+const schemaObszar = z.object({
+  noticeId: uuid,
+  areaGeojson: z.unknown(),
+});
+
+export async function aktualizujObszarOstrzezeniaLowieckiego(
+  dane: z.infer<typeof schemaObszar>,
+): Promise<WynikLow> {
+  const p = schemaObszar.safeParse(dane);
+  if (!p.success) return { blad: "Niepoprawne dane." };
+
+  const areaGeojson = walidujObszarPolowania(p.data.areaGeojson);
+  if (!areaGeojson) return { blad: "Zaznacz poprawny obszar na mapie." };
+
+  const supabase = utworzKlientaSupabaseSerwer();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { blad: "Zaloguj się." };
+
+  const { data: row } = await supabase
+    .from("village_hunting_notices")
+    .select("id, village_id")
+    .eq("id", p.data.noticeId)
+    .maybeSingle();
+  if (!row || !(await czySoltysWsi(user.id, row.village_id))) return { blad: "Brak uprawnień." };
+
+  const { error } = await supabase
+    .from("village_hunting_notices")
+    .update({ area_geojson: areaGeojson })
+    .eq("id", p.data.noticeId);
+
+  if (error) return { blad: "Nie udało się zapisać obszaru." };
+
+  revalidatePath("/panel/soltys/lowiectwo");
+  revalidatePath("/wies");
+  revalidatePath("/mapa");
   return { ok: true };
 }
 
@@ -102,5 +151,6 @@ export async function zmienStatusOstrzezeniaLowieckiego(dane: z.infer<typeof sch
 
   revalidatePath("/panel/soltys/lowiectwo");
   revalidatePath("/wies");
+  revalidatePath("/mapa");
   return { ok: true };
 }

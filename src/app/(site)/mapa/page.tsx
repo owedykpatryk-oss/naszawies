@@ -1,11 +1,25 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { Suspense } from "react";
-import { MapaSyncGraniceKlient } from "@/components/mapa/mapa-sync-granice-klient";
+import { MapaAutomatyzacjaKlient } from "@/components/mapa/mapa-automatyzacja-klient";
+import type { StatystykiMapy } from "@/components/mapa/mapa-statystyki-banner";
+import {
+  obliczStatystykiMapy,
+  wybierzWsiBezTransportuNaMapie,
+} from "@/lib/mapa/wybierz-wsi-do-uzupelnienia";
 import { MapaWsiStronaDynamic } from "@/components/mapa/mapa-wsi-strona-dynamic";
-import type { ZnacznikPoi, ZnacznikRynek, ZnacznikWsi } from "@/components/mapa/mapa-wsi-leaflet";
+import type {
+  ZnacznikAdres,
+  ZnacznikPoi,
+  ZnacznikPolowanie,
+  ZnacznikRynek,
+  ZnacznikWsi,
+  ZnacznikZgloszenie,
+} from "@/components/mapa/mapa-wsi-leaflet";
+import { centroidObszaruPolowania } from "@/lib/lowiectwo/geojson-obszar";
 import { mapujOgloszeniaRynekDlaMapy } from "@/lib/mapa/rynek-na-mapie";
 import { createPublicSupabaseClient } from "@/lib/supabase/public-client";
+import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
 import { sciezkaProfiluWsi } from "@/lib/wies/sciezka-publiczna";
 
 export const metadata: Metadata = {
@@ -64,6 +78,8 @@ type WierszPoi = {
   osp_winter_access: boolean | null;
   osp_heavy_truck_access: boolean | null;
   osp_note: string | null;
+  photo_url: string | null;
+  photo_caption: string | null;
 };
 
 const KATEGORIE_WYMAGAJACE_WERYFIKACJI = new Set(["szkola", "kosciol"]);
@@ -112,6 +128,8 @@ function mapujPoiDlaMapy(
       ospWinterAccess: r.osp_winter_access,
       ospHeavyTruckAccess: r.osp_heavy_truck_access,
       ospNote: r.osp_note,
+      photoUrl: r.photo_url,
+      photoCaption: r.photo_caption,
     });
   }
   return out;
@@ -162,7 +180,7 @@ export default async function MapaPage() {
         .not("latitude", "is", null)
         .not("longitude", "is", null)
         .order("name", { ascending: true })
-        .limit(500);
+        .limit(5000);
 
       if (err2) {
         bladZapytania = `${opisRpc} · ${err2.message}`;
@@ -197,13 +215,14 @@ export default async function MapaPage() {
 
   let punktyPoi: ZnacznikPoi[] = [];
   let punktyRynek: ZnacznikRynek[] = [];
+  const punktyAdresy: ZnacznikAdres[] = [];
   if (supabase && znaczniki.length > 0) {
     const wiesPoId = new Map(znaczniki.map((z) => [z.id, { name: z.name, sciezka: z.sciezka } as const]));
     const idsWsi = znaczniki.map((z) => z.id);
     const { data: wierszePoi, error: errPoi } = await supabase
       .from("pois")
       .select(
-        "id, village_id, category, name, description, latitude, longitude, source, confidence, verified_at, is_local_override, osp_water_source_type, osp_water_capacity_lpm, osp_winter_access, osp_heavy_truck_access, osp_note",
+        "id, village_id, category, name, description, latitude, longitude, source, confidence, verified_at, is_local_override, osp_water_source_type, osp_water_capacity_lpm, osp_winter_access, osp_heavy_truck_access, osp_note, photo_url, photo_caption",
       )
       .in("village_id", idsWsi);
     if (!errPoi && wierszePoi) {
@@ -218,9 +237,103 @@ export default async function MapaPage() {
       .not("longitude", "is", null)
       .limit(400);
     punktyRynek = mapujOgloszeniaRynekDlaMapy((wierszeRynek ?? []) as Parameters<typeof mapujOgloszeniaRynekDlaMapy>[0], wiesPoId);
+
+    const { data: wierszeAdresy } = await supabase
+      .from("address_points")
+      .select("id, village_id, street_name, house_number, latitude, longitude")
+      .in("village_id", idsWsi)
+      .limit(3000);
+    for (const a of wierszeAdresy ?? []) {
+      const w = wiesPoId.get(a.village_id as string);
+      if (!w) continue;
+      const lat = doLiczby(a.latitude as string | number | null);
+      const lon = doLiczby(a.longitude as string | number | null);
+      if (Number.isNaN(lat) || Number.isNaN(lon)) continue;
+      punktyAdresy.push({
+        id: a.id as string,
+        villageId: a.village_id as string,
+        villageName: w.name,
+        streetName: (a.street_name as string | null) ?? null,
+        houseNumber: String(a.house_number ?? "").trim() || "?",
+        lat,
+        lon,
+      });
+    }
+  }
+
+  const punktyZgloszenia: ZnacznikZgloszenie[] = [];
+  const punktyPolowania: ZnacznikPolowanie[] = [];
+  try {
+    const sbAuth = utworzKlientaSupabaseSerwer();
+    const {
+      data: { user },
+    } = await sbAuth.auth.getUser();
+    if (user && znaczniki.length > 0) {
+      const { data: roleRows } = await sbAuth
+        .from("user_village_roles")
+        .select("village_id")
+        .eq("user_id", user.id)
+        .eq("status", "active");
+      const vids = Array.from(new Set((roleRows ?? []).map((r) => r.village_id)));
+      if (vids.length > 0) {
+        const wiesPoId = new Map(znaczniki.map((z) => [z.id, z.name]));
+        const { data: issues } = await sbAuth
+          .from("issues")
+          .select("id, title, status, latitude, longitude, village_id")
+          .in("village_id", vids)
+          .in("status", ["nowe", "w_trakcie"])
+          .not("latitude", "is", null)
+          .not("longitude", "is", null)
+          .limit(150);
+        for (const iss of issues ?? []) {
+          const lat = doLiczby(iss.latitude as string | number | null);
+          const lon = doLiczby(iss.longitude as string | number | null);
+          if (Number.isNaN(lat) || Number.isNaN(lon)) continue;
+          punktyZgloszenia.push({
+            id: iss.id,
+            title: iss.title,
+            status: iss.status,
+            lat,
+            lon,
+            villageName: wiesPoId.get(iss.village_id) ?? "Wieś",
+          });
+        }
+      }
+    }
+    if (supabase && znaczniki.length > 0) {
+      const teraz = new Date().toISOString();
+      const { data: polowania } = await supabase
+        .from("village_hunting_notices")
+        .select("id, title, area_description, area_geojson, starts_at, ends_at, village_id")
+        .eq("status", "approved")
+        .lte("starts_at", teraz)
+        .gte("ends_at", teraz)
+        .limit(80);
+      for (const p of polowania ?? []) {
+        const z = znaczniki.find((w) => w.id === p.village_id);
+        if (!z) continue;
+        const srodek = centroidObszaruPolowania(p.area_geojson) ?? { lat: z.lat, lng: z.lon };
+        punktyPolowania.push({
+          id: p.id,
+          title: p.title,
+          areaDescription: p.area_description,
+          startsAt: p.starts_at as string,
+          endsAt: p.ends_at as string,
+          lat: srodek.lat,
+          lon: srodek.lng,
+          villageName: z.name,
+          villageSciezka: z.sciezka,
+          areaGeojson: p.area_geojson ?? null,
+        });
+      }
+    }
+  } catch {
+    /* warstwy opcjonalne */
   }
 
   const liczbaWsi = znaczniki.length;
+  const statystykiMapy: StatystykiMapy = obliczStatystykiMapy(znaczniki, punktyPoi);
+  const villageIdsBezTransportu = wybierzWsiBezTransportuNaMapie(znaczniki, punktyPoi, 12);
 
   return (
     <main className="relative min-h-[100dvh] overflow-hidden bg-stone-50 text-stone-800">
@@ -237,7 +350,7 @@ export default async function MapaPage() {
         aria-hidden="true"
       />
 
-      <div className="relative mx-auto max-w-[1400px] px-4 pb-12 pt-8 md:px-6 md:pb-16 md:pt-10">
+      <div className="relative mx-auto w-full max-w-[min(100%,1600px)] px-4 pb-12 pt-8 md:px-6 md:pb-16 md:pt-10">
         <p className="mb-5 text-sm text-stone-500 opacity-0 animate-mapa-reveal motion-reduce:animate-none motion-reduce:opacity-100">
           <Link href="/" className="rounded text-green-900 underline decoration-green-800/40 underline-offset-2 transition hover:decoration-green-800">
             ← Strona główna
@@ -248,7 +361,7 @@ export default async function MapaPage() {
           </Link>
         </p>
 
-        <header className="max-w-3xl opacity-0 animate-mapa-reveal motion-reduce:animate-none motion-reduce:opacity-100 [animation-delay:0.06s]">
+        <header className="max-w-4xl opacity-0 animate-mapa-reveal motion-reduce:animate-none motion-reduce:opacity-100 [animation-delay:0.06s]">
           <div className="mb-3 flex flex-wrap items-center gap-2">
             <span className="rounded-full border border-green-900/15 bg-white/80 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-green-900 shadow-sm backdrop-blur-sm">
               Atlas
@@ -272,6 +385,7 @@ export default async function MapaPage() {
             Wybierz wsi z <strong>katalogu</strong> (województwo → powiat → gmina) albo wyszukaj po nazwie. Przy każdej wsi:
             obrys z PRG (gdy jest w bazie), punkt GPS oraz <strong>miejsca w sołectwie</strong> — kościół, szkoła, świetlica, OSP,
             punkt czerpania wody, stacja kolejowa. Włącz <strong>lokalizację</strong>, żeby sortować listę i zobaczyć wsie w promieniu km.
+            Aktywne <strong>polowania</strong> są zaznaczone czerwonym obszarem — na liście po lewej kliknij wpis, by przybliżyć mapę.
             Sołtys może w panelu{" "}
             <Link href="/panel/soltys/moja-wies" className="font-medium text-green-900 underline decoration-green-800/35 underline-offset-2">
               Profil wsi
@@ -331,8 +445,20 @@ export default async function MapaPage() {
                 </div>
               }
             >
-              <MapaSyncGraniceKlient znaczniki={znaczniki} />
-              <MapaWsiStronaDynamic znaczniki={znaczniki} punktyPoi={punktyPoi} punktyRynek={punktyRynek} />
+              <MapaAutomatyzacjaKlient
+                znaczniki={znaczniki}
+                villageIdsBezTransportu={villageIdsBezTransportu}
+                statystyki={statystykiMapy}
+              />
+              <MapaWsiStronaDynamic
+                znaczniki={znaczniki}
+                punktyPoi={punktyPoi}
+                punktyAdresy={punktyAdresy}
+                punktyRynek={punktyRynek}
+                punktyZgloszenia={punktyZgloszenia}
+                punktyPolowania={punktyPolowania}
+                statystykiMapy={statystykiMapy}
+              />
             </Suspense>
           </div>
         ) : null}

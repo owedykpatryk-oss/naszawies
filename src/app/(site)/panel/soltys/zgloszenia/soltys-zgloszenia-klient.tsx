@@ -1,8 +1,9 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useMemo, useState, useTransition } from "react";
-import { zaktualizujZgloszenieSoltys } from "../akcje-zgloszenia";
+import { oznaczPismoDoGminyWyslane, zaktualizujZgloszenieSoltys } from "../akcje-zgloszenia";
 import { etykietkiSzybkich, etykietaStanuZgloszenia, kategorieZgloszen } from "@/lib/zgloszenia/szybkie-etykiety";
 import { SZABLONY_ODPOWIEDZI_ZGLOSZEN } from "@/lib/zgloszenia/szablony-odpowiedzi";
 import { EksportZgloszenPdf } from "@/components/panel/eksport-zgloszen-pdf";
@@ -22,8 +23,23 @@ export type WierszZgloszenia = {
   quick_flags: Record<string, unknown> | null;
   resolution_note: string | null;
   wies_nazwa: string;
+  gmina_nazwa: string;
+  gmina_letter_sent_at: string | null;
+  gmina_letter_status: string | null;
   zglaszajacy: string;
 };
+
+function linkPismoDoGminy(r: WierszZgloszenia): string {
+  const params = new URLSearchParams({
+    preset: "pismo-drogowa-usterka",
+    wies: r.wies_nazwa,
+    gmina: r.gmina_nazwa,
+    droga: r.title,
+    usterka: r.description.slice(0, 1200),
+    lokalizacja: r.location_text ?? r.wies_nazwa,
+  });
+  return `/panel/soltys/dokumenty?${params.toString()}`;
+}
 
 type Props = { wiersze: WierszZgloszenia[] };
 
@@ -207,6 +223,35 @@ function Wiersz({
       {r.resolution_note && r.status === "rozwiazane" ? (
         <p className="mt-2 text-sm text-stone-600">Poprzednia notatka: {r.resolution_note}</p>
       ) : null}
+
+      <div className="mt-3 flex flex-wrap items-center gap-2 rounded-lg border border-sky-100 bg-sky-50/60 px-3 py-2 text-xs">
+        <Link
+          href={linkPismoDoGminy(r)}
+          className="font-medium text-green-900 underline decoration-green-800/40"
+        >
+          Przygotuj pismo do gminy (PDF)
+        </Link>
+        {r.gmina_letter_status === "sent" || r.gmina_letter_sent_at ? (
+          <span className="text-stone-600">
+            Wysłano do gminy: {r.gmina_letter_sent_at ? new Date(r.gmina_letter_sent_at).toLocaleDateString("pl-PL") : "tak"}
+          </span>
+        ) : (
+          <button
+            type="button"
+            disabled={czeka}
+            className="rounded border border-stone-300 bg-white px-2 py-0.5 hover:bg-stone-50"
+            onClick={() => {
+              startT(async () => {
+                const w = await oznaczPismoDoGminyWyslane(r.id);
+                if ("blad" in w) ustawBlad(w.blad);
+                else onOk();
+              });
+            }}
+          >
+            Oznacz jako wysłane
+          </button>
+        )}
+      </div>
 
       <div className="mt-4 flex flex-col gap-3 border-t border-stone-100 pt-4 sm:flex-row sm:items-end sm:flex-wrap">
         <div className="min-w-0 flex-1">

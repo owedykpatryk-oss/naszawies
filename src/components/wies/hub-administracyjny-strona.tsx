@@ -58,7 +58,7 @@ export function HubGminyStrona({
   const aktywne = hub.wies.filter((w) => w.is_active).length;
 
   return (
-    <main className="mx-auto min-w-0 max-w-3xl py-10 sm:py-14">
+    <main className="mx-auto min-w-0 w-full max-w-7xl px-4 py-10 sm:px-6 sm:py-14">
       <Okruszki woj={hub.wojewodztwo} pow={hub.powiat} gmina={hub.gmina} />
       <header className="wow-wejscie">
         <p className="text-xs font-bold uppercase tracking-wider text-green-800">Gmina</p>
@@ -105,7 +105,7 @@ export function HubGminyStrona({
 
 export function HubPowiatuStrona({ hub }: { hub: HubPowiatu }) {
   return (
-    <main className="mx-auto min-w-0 max-w-4xl py-10 sm:py-14">
+    <main className="mx-auto min-w-0 w-full max-w-7xl px-4 py-10 sm:px-6 sm:py-14">
       <Okruszki woj={hub.wojewodztwo} pow={hub.powiat} />
       <header className="wow-wejscie">
         <p className="text-xs font-bold uppercase tracking-wider text-green-800">Powiat</p>
@@ -162,7 +162,7 @@ export function HubPowiatuStrona({ hub }: { hub: HubPowiatu }) {
 
 export function HubWojewodztwaStrona({ hub }: { hub: HubWojewodztwa }) {
   return (
-    <main className="mx-auto min-w-0 max-w-4xl py-10 sm:py-14">
+    <main className="mx-auto min-w-0 w-full max-w-7xl px-4 py-10 sm:px-6 sm:py-14">
       <Okruszki woj={hub.wojewodztwo} />
       <header className="wow-wejscie">
         <p className="text-xs font-bold uppercase tracking-wider text-green-800">Województwo</p>

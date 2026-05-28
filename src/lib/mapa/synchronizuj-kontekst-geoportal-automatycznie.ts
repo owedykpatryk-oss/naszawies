@@ -76,8 +76,8 @@ async function upsertSyncState(
 export async function synchronizujKontekstGeoportalAutomatycznie(
   supabase: SupabaseClient,
 ): Promise<GeoportalContextSyncSummary> {
-  const maxPerRun = parseIntEnv("GEOPORTAL_CONTEXT_SYNC_VILLAGES_PER_RUN", 1, 1, 20);
-  const maxScanned = parseIntEnv("GEOPORTAL_CONTEXT_SYNC_VILLAGES_SCANNED", 8, 3, 120);
+  const maxPerRun = parseIntEnv("GEOPORTAL_CONTEXT_SYNC_VILLAGES_PER_RUN", 5, 1, 30);
+  const maxScanned = parseIntEnv("GEOPORTAL_CONTEXT_SYNC_VILLAGES_SCANNED", 40, 3, 500);
   const minDays = parseIntEnv("GEOPORTAL_CONTEXT_SYNC_MIN_DAYS", 21, 1, 180);
   const minSyncMs = minDays * 24 * 60 * 60 * 1000;
 
@@ -195,6 +195,9 @@ export async function synchronizujKontekstGeoportalAutomatycznie(
           updated_at: nowIso,
         });
       } else {
+        for (const err of inst.layerErrors) {
+          summary.errors.push(`${village.name} INST warstwa: ${err}`);
+        }
         const payload = inst.features.map((f) => ({
           village_id: village.id,
           dataset: "PRG_INSTITUTIONAL",

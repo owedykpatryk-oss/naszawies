@@ -89,3 +89,56 @@ export async function adminUtworzWiesISoltysa(niesprawdzone: unknown): Promise<W
   revalidatePath("/mapa");
   return { ok: true, villageId };
 }
+
+const zodAktywacja = z.object({
+  villageId: z.string().uuid("Wybierz wieś z katalogu."),
+  emailSoltysa: z.string().trim().email("Podaj poprawny e-mail sołtysa (konto w serwisie)."),
+});
+
+export async function adminAktywujWiesZKatalogu(niesprawdzone: unknown): Promise<WynikAdminWies> {
+  const p = zodAktywacja.safeParse(niesprawdzone);
+  if (!p.success) {
+    return { blad: p.error.issues[0]?.message ?? "Sprawdź dane formularza." };
+  }
+  const supabase = utworzKlientaSupabaseSerwer();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) {
+    return { blad: "Zaloguj się." };
+  }
+
+  const { data, error } = await supabase.rpc("admin_przypisz_soltysa_do_wsi", {
+    p_village_id: p.data.villageId,
+    p_soltys_email: p.data.emailSoltysa.trim().toLowerCase(),
+  });
+
+  if (error) {
+    const m = error.message;
+    if (m.includes("Brak uprawnień") || m.includes("42501")) {
+      return { blad: "To konto nie ma uprawnień administratora platformy." };
+    }
+    if (m.includes("Nie znaleziono użytkownika")) {
+      return { blad: "Nie ma konta z tym e-mailem — sołtys musi najpierw założyć konto w serwisie." };
+    }
+    if (m.includes("już aktywn") || m.includes("już innego sołtysa")) {
+      return { blad: m };
+    }
+    if (m.includes("function") && m.includes("does not exist")) {
+      return {
+        blad: "Brak migracji bazy (admin_przypisz_soltysa_do_wsi). Uruchom: supabase db push",
+      };
+    }
+    return { blad: m || "Nie udało się aktywować wsi." };
+  }
+
+  const villageId = typeof data === "string" ? data : (data as string | null);
+  if (!villageId) {
+    return { blad: "Brak identyfikatora wsi." };
+  }
+
+  revalidatePath("/panel/admin");
+  revalidatePath("/szukaj");
+  revalidatePath("/mapa");
+  return { ok: true, villageId };
+}

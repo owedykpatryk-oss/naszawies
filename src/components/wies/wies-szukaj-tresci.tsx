@@ -23,7 +23,7 @@ export async function WiesSzukajTresci({
 
   if (!fragment) {
     return (
-      <main className="mx-auto min-w-0 max-w-2xl py-16 text-stone-800">
+      <main className="mx-auto min-w-0 w-full max-w-7xl px-4 py-16 text-stone-800 sm:px-6">
         <p className="mb-4 text-sm text-stone-500">
           <Link href={sciezka} className="text-green-800 underline">
             ← {wies.name}
@@ -181,7 +181,7 @@ export async function WiesSzukajTresci({
   }
 
   return (
-    <main className="mx-auto min-w-0 max-w-2xl py-16 text-stone-800">
+    <main className="mx-auto min-w-0 w-full max-w-7xl px-4 py-16 text-stone-800 sm:px-6">
       <p className="mb-4 text-sm text-stone-500">
         <Link href={sciezka} className="text-green-800 underline">
           ← {wies.name}

@@ -3,7 +3,10 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
 import { AdminNowaWiesKlient } from "./admin-nowa-wies-klient";
+import { AdminKolejkaSoltysowKlient } from "./admin-kolejka-soltysow-klient";
+import type { WniosekAdminWiersz } from "@/lib/admin/typy-wniosek-soltysa";
 import { pobierzJakoscKatalogu } from "@/lib/admin/pobierz-jakosc-katalogu";
+import { pobierzKolejkeWnioskowSoltysaAdmin } from "@/lib/admin/pobierz-kolejke-wnioskow-soltysa";
 
 export const metadata: Metadata = {
   title: "Admin",
@@ -17,6 +20,8 @@ export default async function AdminPage() {
   if (!user) {
     redirect("/logowanie?next=/panel/admin");
   }
+
+  const wnioskiSoltys: WniosekAdminWiersz[] = await pobierzKolejkeWnioskowSoltysaAdmin();
 
   const [{ data: wpisy, error }, { data: cronWpisy, error: cronErr }, raportKatalogu] = await Promise.all([
     supabase
@@ -125,6 +130,16 @@ export default async function AdminPage() {
             Uzupełnianie: <code className="font-mono">npm run sync:granice</code>,{" "}
             <code className="font-mono">npm run automatyzuj:katalog</code>
           </p>
+        </section>
+      ) : null}
+
+      {!brakDostepu ? (
+        <section className="mt-10 rounded-xl border border-amber-200/80 bg-white p-5 shadow-sm">
+          <h2 className="font-serif text-2xl text-green-950">Kolejka wniosków sołtysów</h2>
+          <p className="mt-1 text-sm text-stone-600">
+            Zatwierdzenie tworzy lub aktywuje wieś i nadaje rolę sołtysa (trigger aktywacji profilu).
+          </p>
+          <AdminKolejkaSoltysowKlient wnioski={wnioskiSoltys} />
         </section>
       ) : null}
 

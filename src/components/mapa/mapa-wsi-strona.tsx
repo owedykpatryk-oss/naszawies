@@ -18,12 +18,17 @@ import {
   MapaFiltrAdministracyjny,
   type FiltrAdministracyjny,
 } from "@/components/mapa/mapa-filtr-administracyjny";
+import { sciezkaGminy } from "@/lib/wies/sciezka-publiczna";
+import { MapaStatystykiBanner, type StatystykiMapy } from "./mapa-statystyki-banner";
 import {
   MapaWsiLeaflet,
   type MapaWsiLeafletRef,
+  type ZnacznikAdres,
   type ZnacznikPoi,
+  type ZnacznikPolowanie,
   type ZnacznikRynek,
   type ZnacznikWsi,
+  type ZnacznikZgloszenie,
 } from "./mapa-wsi-leaflet";
 
 function normalizuj(tekst: string): string {
@@ -80,11 +85,19 @@ const PROMIENIE_KM = [0, 10, 25, 50, 100] as const;
 export function MapaWsiStrona({
   znaczniki,
   punktyPoi = [],
+  punktyAdresy = [],
   punktyRynek = [],
+  punktyZgloszenia = [],
+  punktyPolowania = [],
+  statystykiMapy,
 }: {
   znaczniki: ZnacznikWsi[];
   punktyPoi?: ZnacznikPoi[];
+  punktyAdresy?: ZnacznikAdres[];
   punktyRynek?: ZnacznikRynek[];
+  punktyZgloszenia?: ZnacznikZgloszenie[];
+  punktyPolowania?: ZnacznikPolowanie[];
+  statystykiMapy?: StatystykiMapy;
 }) {
   const searchParams = useSearchParams();
   const pathname = usePathname();
@@ -95,7 +108,21 @@ export function MapaWsiStrona({
     searchParams.get("q")?.trim() ? "szukaj" : "katalog",
   );
   const [szukaj, setSzukaj] = useState(() => searchParams.get("q") ?? "");
-  const [filtrPoi, setFiltrPoi] = useState(() => searchParams.get("poi") ?? "wszystkie");
+  const [filtrPoi, setFiltrPoi] = useState(() => {
+    const warstwa = searchParams.get("warstwa");
+    if (warstwa === "transport") return "transport";
+    if (warstwa === "ladne") return "ladne_miejsce";
+    return searchParams.get("poi") ?? "wszystkie";
+  });
+  const [pokazPolowania, ustawPokazPolowania] = useState(
+    () => searchParams.get("warstwa") !== "transport",
+  );
+  const [pokazZgloszenia, ustawPokazZgloszenia] = useState(
+    () => searchParams.get("warstwa") !== "transport",
+  );
+  const [pokazRynekMapa, ustawPokazRynekMapa] = useState(
+    () => searchParams.get("warstwa") !== "transport",
+  );
   const [filtrAdmin, ustawFiltrAdmin] = useState<FiltrAdministracyjny>(() => ({
     wojSlug: searchParams.get("woj") ?? "",
     powSlug: searchParams.get("pow") ?? "",
@@ -104,6 +131,9 @@ export function MapaWsiStrona({
   const [filtrNazwa, ustawFiltrNazwa] = useState("");
   const [tylkoObrysPrg, ustawTylkoObrysPrg] = useState(searchParams.get("obrys") === "1");
   const [tylkoOferty, ustawTylkoOferty] = useState(searchParams.get("oferty") === "1");
+  const [pokazObrysGminy, ustawPokazObrysGminy] = useState(
+    searchParams.get("gmina_obrys") === "1" || Boolean(searchParams.get("gmina")),
+  );
   const [promienKm, ustawPromienKm] = useState<number>(() => {
     const raw = searchParams.get("km");
     const n = raw ? Number.parseInt(raw, 10) : 0;
@@ -118,11 +148,28 @@ export function MapaWsiStrona({
   const [statusGps, setStatusGps] = useState<"idle" | "wczytuje" | "blad" | "ok">("idle");
   const [kopiujLink, ustawKopiujLink] = useState<"idle" | "ok" | "blad">("idle");
   const wykonanoDeepLinkWsi = useRef(false);
+  const wykonanoDeepLinkPolowania = useRef(false);
+  const wykonanoDeepLinkPoi = useRef(false);
 
   const poAdministracji = useMemo(
     () => filtrujZnacznikiAdministracyjnie(znaczniki, filtrAdmin),
     [znaczniki, filtrAdmin],
   );
+
+  const obrysyGminy = useMemo(() => {
+    if (!filtrAdmin.gminaSlug) return [];
+    return poAdministracji;
+  }, [poAdministracji, filtrAdmin.gminaSlug]);
+
+  const linkHubGminy = useMemo(() => {
+    const z = poAdministracji[0];
+    if (!filtrAdmin.gminaSlug || !z?.voivodeship || !z.county || !z.commune) return null;
+    return sciezkaGminy({
+      voivodeship: z.voivodeship,
+      county: z.county,
+      commune: z.commune,
+    });
+  }, [poAdministracji, filtrAdmin.gminaSlug]);
 
   const odfiltrowane = useMemo(() => {
     let lista = poAdministracji;
@@ -173,11 +220,18 @@ export function MapaWsiStrona({
 
   const filtrPoiEfektywny = useMemo(() => {
     if (!filtrPoi || filtrPoi === "wszystkie") return "wszystkie";
+    if (filtrPoi === "transport") return "transport";
     return kategoriePoi.includes(filtrPoi) ? filtrPoi : "wszystkie";
   }, [filtrPoi, kategoriePoi]);
 
   const punktyPoiPoKategorii = useMemo(() => {
     if (filtrPoiEfektywny === "wszystkie") return punktyPoi;
+    if (filtrPoiEfektywny === "transport") {
+      return punktyPoi.filter((p) => {
+        const k = p.category.trim().toLowerCase();
+        return k === "przystanek" || k === "stacja_kolejowa";
+      });
+    }
     return punktyPoi.filter((p) => p.category === filtrPoiEfektywny);
   }, [punktyPoi, filtrPoiEfektywny]);
 
@@ -185,6 +239,11 @@ export function MapaWsiStrona({
     const idWsi = new Set(odfiltrowane.map((z) => z.id));
     return punktyPoiPoKategorii.filter((p) => idWsi.has(p.villageId));
   }, [punktyPoiPoKategorii, odfiltrowane]);
+
+  const punktyAdresyFiltrowane = useMemo(() => {
+    const idWsi = new Set(odfiltrowane.map((z) => z.id));
+    return punktyAdresy.filter((a) => idWsi.has(a.villageId));
+  }, [punktyAdresy, odfiltrowane]);
 
   const wierszeListy = useMemo(() => {
     if (!pozycjaUzytkownika) return odfiltrowane;
@@ -204,9 +263,19 @@ export function MapaWsiStrona({
       if (filtrAdmin.wojSlug) params.set("woj", filtrAdmin.wojSlug);
       if (filtrAdmin.powSlug) params.set("pow", filtrAdmin.powSlug);
       if (filtrAdmin.gminaSlug) params.set("gmina", filtrAdmin.gminaSlug);
-      if (filtrPoiEfektywny !== "wszystkie") params.set("poi", filtrPoiEfektywny);
+      if (filtrPoiEfektywny === "transport") params.set("warstwa", "transport");
+      else if (filtrPoiEfektywny === "ladne_miejsce") params.set("warstwa", "ladne");
+      else if (filtrPoiEfektywny !== "wszystkie") params.set("poi", filtrPoiEfektywny);
+      else params.delete("warstwa");
+      if (!pokazPolowania) params.set("polowania", "0");
+      else params.delete("polowania");
+      if (!pokazZgloszenia) params.set("zgloszenia", "0");
+      else params.delete("zgloszenia");
+      if (!pokazRynekMapa) params.set("rynek", "0");
+      else params.delete("rynek");
       if (tylkoObrysPrg) params.set("obrys", "1");
       if (tylkoOferty) params.set("oferty", "1");
+      if (pokazObrysGminy) params.set("gmina_obrys", "1");
       if (promienKm > 0) params.set("km", String(promienKm));
       const url = params.toString() ? `${pathname}?${params.toString()}` : pathname;
       router.replace(url, { scroll: false });
@@ -218,8 +287,12 @@ export function MapaWsiStrona({
     szukaj,
     filtrAdmin,
     filtrPoiEfektywny,
+    pokazPolowania,
+    pokazZgloszenia,
+    pokazRynekMapa,
     tylkoObrysPrg,
     tylkoOferty,
+    pokazObrysGminy,
     promienKm,
     pathname,
     router,
@@ -245,6 +318,33 @@ export function MapaWsiStrona({
     }, 400);
     return () => window.clearTimeout(t);
   }, [searchParams]);
+
+  useEffect(() => {
+    if (wykonanoDeepLinkPolowania.current) return;
+    const id = searchParams.get("polowanie");
+    if (!id || !punktyPolowania.some((p) => p.id === id)) return;
+    wykonanoDeepLinkPolowania.current = true;
+    const t = window.setTimeout(() => mapRef.current?.pokazPolowanie(id), 450);
+    return () => window.clearTimeout(t);
+  }, [searchParams, punktyPolowania]);
+
+  useEffect(() => {
+    if (wykonanoDeepLinkPoi.current) return;
+    const id = searchParams.get("poi");
+    if (!id || !punktyPoi.some((p) => p.id === id)) return;
+    wykonanoDeepLinkPoi.current = true;
+    const t = window.setTimeout(() => mapRef.current?.pokazPoi(id), 450);
+    return () => window.clearTimeout(t);
+  }, [searchParams, punktyPoi]);
+
+  const ladneMiejsca = useMemo(
+    () => punktyPoi.filter((p) => p.category === "ladne_miejsce" && p.photoUrl),
+    [punktyPoi],
+  );
+
+  const punktyPolowaniaWidoczne = pokazPolowania ? punktyPolowania : [];
+  const punktyZgloszeniaWidoczne = pokazZgloszenia ? punktyZgloszenia : [];
+  const punktyRynekWidoczne = pokazRynekMapa ? punktyRynek : [];
 
   const wyczyscSzukaj = useCallback(() => {
     setSzukaj("");
@@ -305,7 +405,9 @@ export function MapaWsiStrona({
   const kluczListy = `${frazaDoPodswietlenia}|${pozycjaUzytkownika ? "gps" : "nogps"}|${filtrAdmin.gminaSlug}`;
 
   return (
-    <div className="flex flex-col gap-0 lg:mx-auto lg:max-w-[1400px] lg:flex-row lg:items-stretch lg:gap-0">
+    <div className="flex flex-col gap-0 lg:mx-auto lg:w-full lg:max-w-[min(100%,1600px)]">
+      {statystykiMapy ? <MapaStatystykiBanner statystyki={statystykiMapy} /> : null}
+      <div className="flex flex-col gap-0 lg:flex-row lg:items-stretch lg:gap-0">
       <aside className="flex max-h-[min(48vh,420px)] shrink-0 flex-col border-b border-stone-200/80 bg-white/90 backdrop-blur-md lg:max-h-none lg:w-[min(100%,360px)] lg:border-b-0 lg:border-r lg:border-stone-200/60">
         <div className="border-b border-stone-100/90 p-4">
           <div className="mb-3 flex flex-wrap gap-2" role="tablist" aria-label="Sposób wyboru wsi">
@@ -382,6 +484,33 @@ export function MapaWsiStrona({
             <label className="inline-flex cursor-pointer items-center gap-1.5">
               <input
                 type="checkbox"
+                checked={pokazPolowania}
+                onChange={(e) => ustawPokazPolowania(e.target.checked)}
+                className="rounded border-stone-300 text-red-800 focus:ring-red-700"
+              />
+              Polowania
+            </label>
+            <label className="inline-flex cursor-pointer items-center gap-1.5">
+              <input
+                type="checkbox"
+                checked={pokazZgloszenia}
+                onChange={(e) => ustawPokazZgloszenia(e.target.checked)}
+                className="rounded border-stone-300 text-amber-800 focus:ring-amber-700"
+              />
+              Zgłoszenia
+            </label>
+            <label className="inline-flex cursor-pointer items-center gap-1.5">
+              <input
+                type="checkbox"
+                checked={pokazRynekMapa}
+                onChange={(e) => ustawPokazRynekMapa(e.target.checked)}
+                className="rounded border-stone-300 text-orange-800 focus:ring-orange-700"
+              />
+              Rynek
+            </label>
+            <label className="inline-flex cursor-pointer items-center gap-1.5">
+              <input
+                type="checkbox"
                 checked={tylkoObrysPrg}
                 onChange={(e) => ustawTylkoObrysPrg(e.target.checked)}
                 className="rounded border-stone-300 text-green-800 focus:ring-green-700"
@@ -397,7 +526,77 @@ export function MapaWsiStrona({
               />
               Tylko z ofertami targu
             </label>
+            {filtrAdmin.gminaSlug ? (
+              <label className="inline-flex cursor-pointer items-center gap-1.5">
+                <input
+                  type="checkbox"
+                  checked={pokazObrysGminy}
+                  onChange={(e) => ustawPokazObrysGminy(e.target.checked)}
+                  className="rounded border-stone-300 text-amber-800 focus:ring-amber-600"
+                />
+                Obrysy wszystkich wsi w gminie
+              </label>
+            ) : null}
           </div>
+
+          {linkHubGminy ? (
+            <p className="mt-2 text-xs">
+              <Link href={linkHubGminy} className="font-medium text-green-900 underline">
+                Strona gminy — lista miejscowości
+              </Link>
+            </p>
+          ) : null}
+
+          {(punktyZgloszenia.length > 0 || punktyPolowania.length > 0) && (
+            <p className="mt-2 text-xs text-stone-600">
+              {punktyZgloszenia.length > 0 ? (
+                <span>
+                  <span className="inline-block h-2 w-2 rounded-full bg-amber-500 align-middle" /> zgłoszenia (członek
+                  wsi)
+                </span>
+              ) : null}
+              {punktyZgloszenia.length > 0 && punktyPolowania.length > 0 ? " · " : null}
+              {punktyPolowania.length > 0 ? (
+                <span>
+                  <span className="inline-block h-3 w-4 rounded-sm border-2 border-red-800 bg-red-500/40 align-middle" /> aktywne polowania (obszar)
+                </span>
+              ) : null}
+            </p>
+          )}
+
+          {ladneMiejsca.length > 0 ? (
+            <ul className="mt-2 max-h-32 space-y-1 overflow-y-auto rounded-lg border border-amber-200/80 bg-amber-50/60 p-2">
+              {ladneMiejsca.map((p) => (
+                <li key={p.id}>
+                  <button
+                    type="button"
+                    className="w-full rounded-md px-2 py-1.5 text-left text-xs text-amber-950 transition hover:bg-amber-100/80"
+                    onClick={() => mapRef.current?.pokazPoi(p.id)}
+                  >
+                    <span className="font-medium">✨ {p.name}</span>
+                    <span className="block text-[11px] text-amber-900/80">{p.villageName}</span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          ) : null}
+
+          {punktyPolowania.length > 0 ? (
+            <ul className="mt-2 max-h-36 space-y-1 overflow-y-auto rounded-lg border border-red-200/80 bg-red-50/50 p-2">
+              {punktyPolowania.map((p) => (
+                <li key={p.id}>
+                  <button
+                    type="button"
+                    className="w-full rounded-md px-2 py-1.5 text-left text-xs text-red-950 transition hover:bg-red-100/80"
+                    onClick={() => mapRef.current?.pokazPolowanie(p.id)}
+                  >
+                    <span className="font-medium">{p.title}</span>
+                    <span className="block text-[11px] text-red-900/80">{p.villageName}</span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          ) : null}
 
           <div className="mt-2">
             <label htmlFor="mapa-filtr-poi" className="sr-only">
@@ -410,6 +609,7 @@ export function MapaWsiStrona({
               className="w-full rounded-xl border border-stone-200/90 bg-white/90 px-3 py-2 text-sm text-stone-800 shadow-sm outline-none focus:border-green-600 focus:ring-2"
             >
               <option value="wszystkie">Wszystkie punkty POI</option>
+              <option value="transport">🚌🚆 Transport (PKS + PKP)</option>
               {kategoriePoi.map((k) => (
                 <option key={k} value={k}>
                   {etykietaKategoriiPoi(k)}
@@ -557,11 +757,16 @@ export function MapaWsiStrona({
             ref={mapRef}
             znaczniki={wierszeListy}
             punktyPoi={punktyPoiFiltrowane}
-            punktyRynek={punktyRynek}
+            punktyAdresy={punktyAdresyFiltrowane}
+            punktyRynek={punktyRynekWidoczne}
+            punktyZgloszenia={punktyZgloszeniaWidoczne}
+            punktyPolowania={punktyPolowaniaWidoczne}
+            obrysyGminy={pokazObrysGminy ? obrysyGminy : []}
             pozycjaUzytkownika={pozycjaUzytkownika}
             promienKm={promienKm > 0 ? promienKm : null}
           />
         )}
+      </div>
       </div>
     </div>
   );

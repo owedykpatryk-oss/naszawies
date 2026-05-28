@@ -3,6 +3,9 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { pobierzVillageIdsRoliPaneluSoltysaDlaUzytkownikaCache } from "@/lib/panel/rola-panelu-soltysa";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
+import { pobierzSugestieAutomatyzacjiWsi } from "@/lib/mapa/pobierz-sugestie-automatyzacji-wsi";
+import { pobierzKatalogMozliwosciSoltysa } from "@/lib/panel/katalog-mozliwosci-soltysa";
+import { SoltysKatalogMozliwosci } from "@/components/panel/soltys-katalog-mozliwosci";
 import { ProfilWsiSoltysKlient, type WiesDoEdycji } from "./profil-wsi-klient";
 
 export const metadata: Metadata = {
@@ -40,6 +43,12 @@ export default async function SoltysMojaWiesPage() {
     .in("id", villageIds)
     .order("name", { ascending: true });
 
+  const sugestieMapy: Record<string, Awaited<ReturnType<typeof pobierzSugestieAutomatyzacjiWsi>>> = {};
+  for (const id of villageIds) {
+    sugestieMapy[id] = await pobierzSugestieAutomatyzacjiWsi(supabase, id);
+  }
+  const katalogMozliwosci = await pobierzKatalogMozliwosciSoltysa(supabase, villageIds);
+
   const wies: WiesDoEdycji[] = (wiersze ?? []).map((r) => ({
     id: r.id,
     name: r.name,
@@ -68,7 +77,8 @@ export default async function SoltysMojaWiesPage() {
         </Link>
         .
       </p>
-      <ProfilWsiSoltysKlient wies={wies} />
+      <SoltysKatalogMozliwosci katalog={katalogMozliwosci} kompaktowy />
+      <ProfilWsiSoltysKlient wies={wies} sugestieMapy={sugestieMapy} />
     </main>
   );
 }

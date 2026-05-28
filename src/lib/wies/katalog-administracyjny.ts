@@ -42,19 +42,14 @@ export async function pobierzWojewodztwaKatalog(supabase: SupabaseClient): Promi
     NAZWY_WOJEWODZTW.map(async (nazwa) => {
       const slug = slugCzesciZBazy(nazwa);
       const { data, error } = await supabase.rpc("hub_powiaty_w_wojewodztwie", { p_woj_slug: slug });
-      if (error || !data?.length) return null;
-      const liczba = (data as { liczba_wsi?: number }[]).reduce(
-        (s, r) => s + Number(r.liczba_wsi ?? 0),
-        0,
-      );
+      const liczba =
+        error || !data?.length
+          ? 0
+          : (data as { liczba_wsi?: number }[]).reduce((s, r) => s + Number(r.liczba_wsi ?? 0), 0);
       return { nazwa, slug, liczba };
     }),
   );
-  const out: ElementKatalogu[] = [];
-  for (const x of wyniki) {
-    if (x) out.push(x);
-  }
-  return out;
+  return wyniki.sort((a, b) => a.nazwa.localeCompare(b.nazwa, "pl"));
 }
 
 export async function pobierzPowiatyKatalog(

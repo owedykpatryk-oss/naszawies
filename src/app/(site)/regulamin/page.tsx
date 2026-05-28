@@ -18,12 +18,8 @@ export default function RegulaminPage() {
         <header>
           <h1 className="font-serif text-3xl text-green-950">Regulamin platformy</h1>
           <p className="mt-2 text-sm text-stone-600">
-            Wersja robocza — treść pełna w pliku Word w pakiecie projektu. Przed pierwszą rejestracją użytkowników
-            uzupełnij definicje i dane administratora zgodnie z{" "}
-            <code className="rounded bg-stone-100 px-1 text-xs">
-              Cloude Docs/naszawies-package/legal/LEGAL.md
-            </code>
-            .
+            Wersja robocza — przed pierwszą rejestracją użytkowników uzupełnij definicje i dane administratora
+            serwisu.
           </p>
         </header>
 
@@ -32,7 +28,7 @@ export default function RegulaminPage() {
           <p className="mt-2 leading-relaxed text-stone-700">
             Platforma <strong>naszawies.pl</strong> ma charakter społeczny i informacyjny: wspiera sołtysów i
             mieszkańców wsi w komunikacji i organizacji życia lokalnego. Usługa jest bezpłatna dla wsi w modelu
-            opisanym w dokumentacji projektu. Korzystanie z serwisu oznacza akceptację niniejszego regulaminu.
+            przyjętym przez operatora serwisu. Korzystanie z serwisu oznacza akceptację niniejszego regulaminu.
           </p>
         </section>
 

@@ -1,5 +1,6 @@
 "use client";
 
+import { useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { PrzyciskPobierzPdf } from "@/components/dokumenty/przycisk-pobierz-pdf";
 import {
@@ -75,12 +76,16 @@ export function GeneratorDokumentowSoltysaKlient({
   domyslnaGmina = "",
   domyslnySoltysNazwa = "",
 }: Props) {
+  const searchParams = useSearchParams();
   const [wybranaWiesId, ustawWybranaWiesId] = useState(wsie[0]?.id ?? "");
   const aktywnaWies = wsie.find((w) => w.id === wybranaWiesId) ?? wsie[0];
   const wiesEfektywna = aktywnaWies?.name?.trim() || domyslnaWies;
   const gminaEfektywna = aktywnaWies?.commune?.trim() || domyslnaGmina;
   const pierwszy = PRESETY_DOKUMENTOW_SOLTYSA[0];
-  const [presetId, ustawPresetId] = useState(pierwszy?.id ?? "");
+  const presetZUrl = searchParams.get("preset")?.trim() ?? "";
+  const [presetId, ustawPresetId] = useState(
+    presetZUrl && znajdzPreset(presetZUrl) ? presetZUrl : (pierwszy?.id ?? ""),
+  );
   const [filtrSzukaj, ustawFiltrSzukaj] = useState("");
   const [numerReferencyjnySesji, ustawNumerReferencyjnySesji] = useState(() =>
     wygenerujNumerReferencyjnySoltys(),
@@ -375,6 +380,24 @@ export function GeneratorDokumentowSoltysaKlient({
     },
     [wiesEfektywna, gminaEfektywna, opcjeDomyslne],
   );
+
+  useEffect(() => {
+    const id = searchParams.get("preset")?.trim();
+    if (!id || !znajdzPreset(id)) return;
+    const p = znajdzPreset(id)!;
+    const w = domyslneWartosciPol(p);
+    const wiesUrl = searchParams.get("wies")?.trim();
+    const gminaUrl = searchParams.get("gmina")?.trim();
+    if (wiesUrl) w.wies = wiesUrl;
+    if (gminaUrl) w.gmina = gminaUrl;
+    for (const pole of p.pola) {
+      const zUrl = searchParams.get(pole.id)?.trim();
+      if (zUrl) w[pole.id] = zUrl;
+    }
+    ustawPresetId(id);
+    ustawWartosci(uzupelnijDomyslnePresetu(p, w, opcjeDomyslne));
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- jednorazowe wypełnienie z URL zgłoszenia
+  }, []);
 
   useEffect(() => {
     const t = window.setTimeout(() => {

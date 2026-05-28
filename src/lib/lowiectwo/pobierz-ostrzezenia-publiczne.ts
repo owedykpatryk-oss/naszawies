@@ -9,6 +9,7 @@ export type OstrzezenieLowieckie = {
   contactName: string | null;
   startsAt: string;
   endsAt: string;
+  maObszarMapy: boolean;
 };
 
 export async function pobierzAktywneOstrzezeniaLowieckie(
@@ -24,14 +25,18 @@ export async function pobierzAktywneOstrzezeniaLowieckie(
     .gte("ends_at", teraz)
     .order("starts_at", { ascending: true });
 
-  return (data ?? []).map((r) => ({
-    id: r.id as string,
-    title: r.title as string,
-    areaDescription: r.area_description as string,
-    safetyNote: (r.safety_note as string | null) ?? null,
-    contactPhone: (r.contact_phone as string | null) ?? null,
-    contactName: (r.contact_name as string | null) ?? null,
-    startsAt: r.starts_at as string,
-    endsAt: r.ends_at as string,
-  }));
+  return (data ?? []).map((r) => {
+    const row = r as typeof r & { area_geojson?: unknown | null };
+    return {
+      id: row.id as string,
+      title: row.title as string,
+      areaDescription: row.area_description as string,
+      safetyNote: (row.safety_note as string | null) ?? null,
+      contactPhone: (row.contact_phone as string | null) ?? null,
+      contactName: (row.contact_name as string | null) ?? null,
+      startsAt: row.starts_at as string,
+      endsAt: row.ends_at as string,
+      maObszarMapy: row.area_geojson != null,
+    };
+  });
 }

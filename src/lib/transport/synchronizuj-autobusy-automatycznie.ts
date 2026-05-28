@@ -2,12 +2,14 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { czyscStaryCacheTransportu } from "@/lib/transport/czysc-stare-odjazdy";
 import { dopasujPoiPrzystanku } from "@/lib/transport/dopasuj-poi-przystanku";
 import { epodroznikSkonfigurowany, pobierzOdjazdyEpodroznik } from "@/lib/transport/epodroznik-api";
+import { utworzBrakujacePoiPrzystankowZGtfs } from "@/lib/transport/dodaj-poi-przystanki-z-gtfs";
 import { gtfsCsvSkonfigurowany, pobierzOdjazdyGtfsDlaPunktu } from "@/lib/transport/gtfs-csv";
 
 export type BusAutoSyncSummary = {
   enabled: boolean;
   villagesProcessed: number;
   departuresUpserted: number;
+  przystankiPoiUtworzono: number;
   provider: "gtfs" | "epodroznik" | "none";
   errors: string[];
 };
@@ -34,6 +36,7 @@ export async function synchronizujAutobusyAutomatycznie(
     enabled: busSyncEnabled(),
     villagesProcessed: 0,
     departuresUpserted: 0,
+    przystankiPoiUtworzono: 0,
     provider: provider(),
     errors: [],
   };
@@ -86,6 +89,26 @@ export async function synchronizujAutobusyAutomatycznie(
     if (!Number.isFinite(lat) || !Number.isFinite(lon)) continue;
 
     try {
+      const przystanki = poisByVillage.get(v.id) ?? [];
+
+      if (summary.provider === "gtfs") {
+        const poiGtfs = await utworzBrakujacePoiPrzystankowZGtfs(supabase, {
+          villageId: v.id,
+          lat,
+          lon,
+          istniejace: przystanki,
+        });
+        summary.przystankiPoiUtworzono += poiGtfs.utworzono;
+        if (poiGtfs.utworzono > 0) {
+          const { data: nowe } = await supabase
+            .from("pois")
+            .select("id, village_id, name, latitude, longitude")
+            .eq("village_id", v.id)
+            .eq("category", "przystanek");
+          poisByVillage.set(v.id, nowe ?? przystanki);
+        }
+      }
+
       let odjazdy: {
         departureUid: string;
         stopId: string;
@@ -120,10 +143,10 @@ export async function synchronizujAutobusyAutomatycznie(
       if (odjazdy.length === 0) continue;
       summary.villagesProcessed += 1;
 
-      const przystanki = poisByVillage.get(v.id) ?? [];
+      const przystankiPoSync = poisByVillage.get(v.id) ?? przystanki;
       const payload = odjazdy.map((d) => ({
         village_id: v.id,
-        poi_id: dopasujPoiPrzystanku(przystanki, d.stopName, lat, lon),
+        poi_id: dopasujPoiPrzystanku(przystankiPoSync, d.stopName, lat, lon),
         stop_id: d.stopId,
         stop_name: d.stopName,
         departure_uid: d.departureUid,

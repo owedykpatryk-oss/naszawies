@@ -1,7 +1,8 @@
 /**
- * Uproszczony import GTFS z publicznych plików CSV (stops.txt, stop_times.txt).
- * Ustaw TRANSPORT_GTFS_STOPS_URL i TRANSPORT_GTFS_STOP_TIMES_URL (HTTPS).
+ * Uproszczony import GTFS: ZIP (TRANSPORT_GTFS_ZIP_URL) lub osobne CSV (stops + stop_times).
  */
+
+import { wczytajPlikiGtfsZZip } from "@/lib/transport/gtfs-wczytaj-zip";
 
 export type GtfsStop = {
   stopId: string;
@@ -19,12 +20,17 @@ export type GtfsOdjazd = {
   plannedWhenIso: string;
 };
 
-function enabled(): boolean {
+function zipUrl(): string | null {
+  const u = process.env.TRANSPORT_GTFS_ZIP_URL?.trim();
+  return u || null;
+}
+
+function csvEnabled(): boolean {
   return !!(process.env.TRANSPORT_GTFS_STOPS_URL?.trim() && process.env.TRANSPORT_GTFS_STOP_TIMES_URL?.trim());
 }
 
 export function gtfsCsvSkonfigurowany(): boolean {
-  return enabled();
+  return !!zipUrl() || csvEnabled();
 }
 
 function odlegloscM(lat1: number, lon1: number, lat2: number, lon2: number): number {
@@ -38,7 +44,6 @@ function odlegloscM(lat1: number, lon1: number, lat2: number, lon2: number): num
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
-/** Parsuje linię CSV z cudzysłowami (uproszczone). */
 function parseCsvLine(line: string): string[] {
   const out: string[] = [];
   let cur = "";
@@ -64,23 +69,7 @@ let cacheStops: GtfsStop[] | null = null;
 let cacheStopTimesRaw: string[] | null = null;
 let cacheLoadedAt = 0;
 
-async function zaladujGtfs(): Promise<void> {
-  if (cacheStops && Date.now() - cacheLoadedAt < 6 * 60 * 60 * 1000) return;
-
-  const stopsUrl = process.env.TRANSPORT_GTFS_STOPS_URL!.trim();
-  const timesUrl = process.env.TRANSPORT_GTFS_STOP_TIMES_URL!.trim();
-
-  const [stopsRes, timesRes] = await Promise.all([
-    fetch(stopsUrl, { signal: AbortSignal.timeout(60_000) }),
-    fetch(timesUrl, { signal: AbortSignal.timeout(120_000) }),
-  ]);
-
-  if (!stopsRes.ok) throw new Error(`GTFS stops HTTP ${stopsRes.status}`);
-  if (!timesRes.ok) throw new Error(`GTFS stop_times HTTP ${timesRes.status}`);
-
-  const stopsText = await stopsRes.text();
-  const timesText = await timesRes.text();
-
+function parsujStops(stopsText: string): GtfsStop[] {
   const lines = stopsText.split(/\r?\n/).filter(Boolean);
   const header = parseCsvLine(lines[0] ?? "");
   const idx = {
@@ -106,8 +95,34 @@ async function zaladujGtfs(): Promise<void> {
       lon,
     });
   }
+  return stops;
+}
 
-  cacheStops = stops;
+async function zaladujGtfs(): Promise<void> {
+  if (cacheStops && Date.now() - cacheLoadedAt < 6 * 60 * 60 * 1000) return;
+
+  let stopsText: string;
+  let timesText: string;
+
+  const zip = zipUrl();
+  if (zip) {
+    const pliki = await wczytajPlikiGtfsZZip(zip);
+    stopsText = pliki.stopsText;
+    timesText = pliki.stopTimesText;
+  } else if (csvEnabled()) {
+    const [stopsRes, timesRes] = await Promise.all([
+      fetch(process.env.TRANSPORT_GTFS_STOPS_URL!.trim(), { signal: AbortSignal.timeout(60_000) }),
+      fetch(process.env.TRANSPORT_GTFS_STOP_TIMES_URL!.trim(), { signal: AbortSignal.timeout(120_000) }),
+    ]);
+    if (!stopsRes.ok) throw new Error(`GTFS stops HTTP ${stopsRes.status}`);
+    if (!timesRes.ok) throw new Error(`GTFS stop_times HTTP ${timesRes.status}`);
+    stopsText = await stopsRes.text();
+    timesText = await timesRes.text();
+  } else {
+    return;
+  }
+
+  cacheStops = parsujStops(stopsText);
   cacheStopTimesRaw = timesText.split(/\r?\n/).filter(Boolean);
   cacheLoadedAt = Date.now();
 }
@@ -118,7 +133,7 @@ export async function pobierzOdjazdyGtfsDlaPunktu(args: {
   radiusM?: number;
   hoursAhead?: number;
 }): Promise<GtfsOdjazd[]> {
-  if (!enabled()) return [];
+  if (!gtfsCsvSkonfigurowany()) return [];
   await zaladujGtfs();
   if (!cacheStops?.length || !cacheStopTimesRaw?.length) return [];
 
@@ -168,4 +183,23 @@ export async function pobierzOdjazdyGtfsDlaPunktu(args: {
   }
 
   return out.sort((a, b) => Date.parse(a.plannedWhenIso) - Date.parse(b.plannedWhenIso)).slice(0, 40);
+}
+
+export async function pobierzPrzystankiGtfsWokolPunktu(args: {
+  lat: number;
+  lon: number;
+  radiusM?: number;
+}): Promise<GtfsStop[]> {
+  if (!gtfsCsvSkonfigurowany()) return [];
+  await zaladujGtfs();
+  if (!cacheStops?.length) return [];
+
+  const radiusM = args.radiusM ?? 8000;
+  return cacheStops
+    .filter((s) => odlegloscM(args.lat, args.lon, s.lat, s.lon) <= radiusM)
+    .sort(
+      (a, b) =>
+        odlegloscM(args.lat, args.lon, a.lat, a.lon) -
+        odlegloscM(args.lat, args.lon, b.lat, b.lon),
+    );
 }

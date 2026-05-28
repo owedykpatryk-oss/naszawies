@@ -19,12 +19,8 @@ export default function PolitykaPrywatnosciPage() {
         <header>
           <h1 className="font-serif text-3xl text-green-950">Polityka prywatności</h1>
           <p className="mt-2 text-sm text-stone-600">
-            Wersja robocza opublikowana na stronie — uzupełnij dane administratora i skonsultuj pełny
-            dokument Word z prawnikiem (patrz{" "}
-            <code className="rounded bg-stone-100 px-1 text-xs">
-              Cloude Docs/naszawies-package/legal/LEGAL.md
-            </code>
-            ).
+            Wersja robocza opublikowana na stronie — przed pełnym uruchomieniem uzupełnij dane administratora i
+            skonsultuj treść z prawnikiem.
           </p>
         </header>
 
@@ -106,8 +102,7 @@ export default function PolitykaPrywatnosciPage() {
           <h2 className="font-serif text-xl text-green-900">6. Pliki cookie</h2>
           <p className="mt-2 leading-relaxed text-stone-700">
             Stosujemy wyłącznie cookies niezbędne do działania serwisu (np. sesja po zalogowaniu). Nie używamy
-            plików cookies do profilowania reklamowego. Szczegóły:{" "}
-            <code className="rounded bg-stone-100 px-1 text-xs">LEGAL.md</code> w pakiecie projektu.
+            plików cookies do profilowania reklamowego.
           </p>
         </section>
 

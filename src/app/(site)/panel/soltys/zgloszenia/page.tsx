@@ -40,7 +40,7 @@ export default async function SoltysZgloszeniaPage() {
   const { data: raw, error } = await supabase
     .from("issues")
     .select(
-      "id, village_id, title, description, category, status, is_urgent, created_at, observed_at, location_text, image_urls, quick_flags, resolution_note, reporter_id, villages(name)"
+      "id, village_id, title, description, category, status, is_urgent, created_at, observed_at, location_text, image_urls, quick_flags, resolution_note, reporter_id, gmina_letter_sent_at, gmina_letter_status, villages(name, commune)"
     )
     .in("village_id", villageIds)
     .order("created_at", { ascending: false })
@@ -65,7 +65,9 @@ export default async function SoltysZgloszeniaPage() {
     quick_flags: Record<string, unknown> | null;
     resolution_note: string | null;
     reporter_id: string | null;
-    villages: { name: string } | { name: string }[] | null;
+    gmina_letter_sent_at: string | null;
+    gmina_letter_status: string | null;
+    villages: { name: string; commune: string } | { name: string; commune: string }[] | null;
   }[];
 
   const idsRep = Array.from(
@@ -93,7 +95,10 @@ export default async function SoltysZgloszeniaPage() {
     image_urls: r.image_urls,
     quick_flags: r.quick_flags,
     resolution_note: r.resolution_note,
-    wies_nazwa: pojedynczaWies<{ name: string }>(r.villages)?.name ?? "Wieś",
+    wies_nazwa: pojedynczaWies<{ name: string; commune: string }>(r.villages)?.name ?? "Wieś",
+    gmina_nazwa: pojedynczaWies<{ name: string; commune: string }>(r.villages)?.commune ?? "",
+    gmina_letter_sent_at: r.gmina_letter_sent_at,
+    gmina_letter_status: r.gmina_letter_status,
     zglaszajacy: r.reporter_id
       ? imiona[r.reporter_id] ?? `użytkownik ${r.reporter_id.slice(0, 8)}…`
       : "—",

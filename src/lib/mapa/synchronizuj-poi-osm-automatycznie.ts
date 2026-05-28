@@ -30,8 +30,8 @@ const LIMITY_KATEGORII: Record<string, number> = {
   osp: 2,
   biblioteka: 2,
   cmentarz: 2,
-  przystanek: 4,
-  stacja_kolejowa: 2,
+  przystanek: 6,
+  stacja_kolejowa: 3,
   sklep: 4,
 };
 
@@ -144,9 +144,19 @@ function filtrujKandydatyDoZapisu(
   return wybrane;
 }
 
+export type OpcjeSynchronizacjiPoiOsm = {
+  maxVillagesPerRun?: number;
+  maxVillagesScanned?: number;
+  minDaysBetweenSync?: number;
+  /** Tylko wskazane wsi (np. uzupełnienie z mapy). */
+  tylkoVillageIds?: string[];
+  /** Pomiń limit dni od ostatniego sync OSM. */
+  wymus?: boolean;
+};
+
 export async function synchronizujPoiOsmAutomatycznie(
   supabase: SupabaseClient,
-  opts?: { maxVillagesPerRun?: number; maxVillagesScanned?: number; minDaysBetweenSync?: number },
+  opts?: OpcjeSynchronizacjiPoiOsm,
 ): Promise<PoiAutoSyncSummary> {
   const maxVillagesScanned = Math.max(5, opts?.maxVillagesScanned ?? LIMITY_DOMYSLNE.maxVillagesScanned);
   const maxVillagesPerRun = Math.max(1, opts?.maxVillagesPerRun ?? LIMITY_DOMYSLNE.maxVillagesPerRun);
@@ -165,12 +175,18 @@ export async function synchronizujPoiOsmAutomatycznie(
     villages: [],
   };
 
-  const { data: wsie, error: errWsie } = await supabase
+  let zapytanieWsi = supabase
     .from("villages")
     .select("id, name, latitude, longitude, population")
-    .eq("is_active", true)
-    .order("updated_at", { ascending: true })
-    .limit(maxVillagesScanned);
+    .eq("is_active", true);
+
+  if (opts?.tylkoVillageIds?.length) {
+    zapytanieWsi = zapytanieWsi.in("id", opts.tylkoVillageIds);
+  } else {
+    zapytanieWsi = zapytanieWsi.order("updated_at", { ascending: true }).limit(maxVillagesScanned);
+  }
+
+  const { data: wsie, error: errWsie } = await zapytanieWsi;
 
   if (errWsie) {
     throw new Error(`Nie udało się pobrać listy wsi: ${errWsie.message}`);
@@ -226,7 +242,7 @@ export async function synchronizujPoiOsmAutomatycznie(
       .filter((p) => czyPoiZEwidentnieAutomatycznegoOsm(p))
       .map((p) => czasPoISO(p.created_at))
       .reduce((a, b) => Math.max(a, b), 0);
-    if (lastOsmSync > 0 && Date.now() - lastOsmSync < minSyncMs) {
+    if (!opts?.wymus && lastOsmSync > 0 && Date.now() - lastOsmSync < minSyncMs) {
       summary.skippedRecentSync += 1;
       continue;
     }

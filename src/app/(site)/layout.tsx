@@ -2,14 +2,22 @@ import { NaglowekStrony } from "@/components/marka/naglowek-strony";
 import { TrybSeniorProvider } from "@/components/ui/tryb-senior-provider";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
 
+const LINKI_PUBLICZNE = [
+  { href: "/pomoc", label: "Pomoc" },
+  { href: "/kontakt", label: "Kontakt" },
+] as const;
+
+const LINKI_PO_ZALOGOWANIU = [
+  { href: "/panel", label: "Panel" },
+  { href: "/grafika", label: "Kreator plakatów" },
+  { href: "/szukaj", label: "Szukaj wsi" },
+  { href: "/mapa", label: "Mapa wsi" },
+  { href: "/pomoc", label: "Pomoc" },
+  { href: "/kontakt", label: "Kontakt" },
+] as const;
+
 export default async function LayoutWitryny({ children }: { children: React.ReactNode }) {
-  let linkiGlowne: { href: string; label: string }[] = [
-    { href: "/grafika", label: "Kreator plakatów" },
-    { href: "/szukaj", label: "Szukaj wsi" },
-    { href: "/mapa", label: "Mapa wsi" },
-    { href: "/pomoc", label: "Pomoc" },
-    { href: "/kontakt", label: "Kontakt" },
-  ];
+  let linkiGlowne: { href: string; label: string }[] = [...LINKI_PUBLICZNE];
   let linkiAkcje: { href: string; label: string }[] = [
     { href: "/o-nas", label: "O nas" },
     { href: "/logowanie", label: "Logowanie" },
@@ -22,14 +30,7 @@ export default async function LayoutWitryny({ children }: { children: React.Reac
       data: { user },
     } = await supabase.auth.getUser();
     if (user) {
-      linkiGlowne = [
-        { href: "/panel", label: "Panel" },
-        { href: "/grafika", label: "Kreator plakatów" },
-        { href: "/szukaj", label: "Szukaj wsi" },
-        { href: "/mapa", label: "Mapa wsi" },
-        { href: "/pomoc", label: "Pomoc" },
-        { href: "/kontakt", label: "Kontakt" },
-      ];
+      linkiGlowne = [...LINKI_PO_ZALOGOWANIU];
       linkiAkcje = [
         { href: "/panel/profil", label: "Profil" },
         { href: "/panel/powiadomienia", label: "Powiadomienia" },

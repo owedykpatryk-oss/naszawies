@@ -155,7 +155,7 @@ export default async function CzatKonwersacjaPage({ params }: Props) {
   }));
 
   return (
-    <main>
+    <main className="mx-auto w-full max-w-7xl">
       <p className="text-sm text-stone-500">
         <Link href="/panel/czat" className="text-green-800 underline">
           ← Wiadomości

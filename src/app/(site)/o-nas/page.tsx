@@ -7,7 +7,7 @@ export const metadata: Metadata = {
 
 export default function AboutPage() {
   return (
-    <main className="mx-auto min-w-0 max-w-2xl py-16 text-stone-800">
+    <main className="mx-auto min-w-0 w-full max-w-4xl px-4 py-16 text-stone-800 sm:px-6">
       <p className="mb-6 text-sm text-stone-500">
         <Link href="/" className="text-green-800 underline">
           ← Strona główna
@@ -20,9 +20,9 @@ export default function AboutPage() {
         (w kolejnych wersjach) planer układu stołów.
       </p>
       <p className="leading-relaxed">
-        Misja, wartości i plan rozwoju opisane są w dokumentacji projektu (
-        <code className="rounded bg-stone-100 px-1">PROJECT.md</code> w folderze
-        Cloude Docs).
+        Chcemy, żeby każda wieś miała jedno miejsce w sieci: przejrzyste ogłoszenia, kontakt z sołtysem, mapa
+        miejscowości i narzędzia do codziennej organizacji — bez skomplikowanych portali i bez opłat za sam fakt
+        bycia w sieci.
       </p>
     </main>
   );

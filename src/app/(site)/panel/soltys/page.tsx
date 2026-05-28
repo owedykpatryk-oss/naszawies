@@ -25,6 +25,10 @@ import {
 import { SoltysPodsumowanieWsi } from "./soltys-podsumowanie-wsi";
 import { SoltysKpiKafel } from "@/components/panel/soltys-kpi-kafel";
 import { SoltysEksportPodsumowania } from "@/components/panel/soltys-eksport-podsumowania";
+import { SoltysChecklist7Dni } from "@/components/panel/soltys-checklist-7-dni";
+import { pobierzChecklisteSoltys7Dni } from "@/lib/panel/checklist-soltys-7-dni";
+import { pobierzKatalogMozliwosciSoltysa } from "@/lib/panel/katalog-mozliwosci-soltysa";
+import { SoltysKatalogMozliwosci } from "@/components/panel/soltys-katalog-mozliwosci";
 export const metadata: Metadata = {
   title: "Panel sołtysa",
 };
@@ -372,6 +376,27 @@ export default async function SoltysPage() {
 
   const listaNazwWsi = Object.values(nazwyWsi);
 
+  const { data: profilSoltysa } = await supabase
+    .from("users")
+    .select("display_name")
+    .eq("id", user.id)
+    .maybeSingle();
+  const profilNickOk = (profilSoltysa?.display_name ?? "").trim().length >= 2;
+  let wiesOpisWypelniony = true;
+  if (villageIds.length > 0) {
+    const { data: opisyWsi } = await supabase.from("villages").select("description").in("id", villageIds);
+    const opisy = (opisyWsi ?? []).map((w) => (w.description ?? "").trim());
+    wiesOpisWypelniony =
+      opisy.length === villageIds.length && opisy.every((t) => t.length >= 30);
+  }
+  const checklist7 = await pobierzChecklisteSoltys7Dni(
+    supabase,
+    villageIds,
+    profilNickOk,
+    wiesOpisWypelniony,
+  );
+  const katalogMozliwosci = await pobierzKatalogMozliwosciSoltysa(supabase, villageIds);
+
   let statusTransportu: StatusTransportuWsi[] = [];
   if (villageIds.length > 0) {
     const { data: linie } = await supabase
@@ -392,11 +417,13 @@ export default async function SoltysPage() {
 
   return (
     <main>
+      <SoltysChecklist7Dni checklist={checklist7} />
+      {villageIds.length > 0 ? <SoltysKatalogMozliwosci katalog={katalogMozliwosci} /> : null}
       <header className="panel-informacji-hero">
         <div className="relative flex flex-wrap items-start justify-between gap-3">
           <div>
             <h1 className="tytul-sekcji-panelu">Panel sołtysa</h1>
-            <p className="mt-2 max-w-2xl text-sm leading-relaxed text-stone-600">
+            <p className="mt-2 max-w-4xl text-sm leading-relaxed text-stone-600">
               Moderacja, rezerwacje, dokumenty i komunikacja z mieszkańcami — w jednym miejscu. Zacznij od{" "}
               <Link href="/panel/soltys#kolejka-pracy" className="link-panel">
                 kolejki pracy

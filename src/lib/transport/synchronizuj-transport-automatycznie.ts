@@ -308,7 +308,62 @@ export async function synchronizujTransportAutomatycznie(
       .eq("is_active", true)
       .eq("is_manual_override", true);
 
-    if (candidates.length === 0 && (reczneStacje ?? []).length === 0) continue;
+    if (candidates.length === 0 && (reczneStacje ?? []).length === 0) {
+      const frazaHub = frazaStacjiDlaPowiatu(v.county ?? "");
+      if (frazaHub) {
+        try {
+          const hubStacje = await wyszukajStacjePkpPoNazwie(frazaHub);
+          const hub = hubStacje[0];
+          if (hub) {
+            summary.villagesProcessed += 1;
+            summary.stationsObserved += 1;
+            await supabase.from("village_transport_stations").upsert(
+              {
+                village_id: v.id,
+                poi_id: null,
+                station_id: hub.id,
+                station_name: hub.name,
+                station_name_source: `hub powiatu: ${frazaHub}`,
+                distance_km: null,
+                is_active: true,
+                is_manual_override: false,
+                synced_at: new Date().toISOString(),
+              },
+              { onConflict: "village_id,station_id" },
+            );
+            const departures = await pobierzOdjazdyDlaStacjiPkp(hub.id, { hoursAhead: 24 });
+            if (departures.length > 0) {
+              const payload = departures.map((d) => ({
+                village_id: v.id,
+                station_id: hub.id,
+                station_name: hub.name,
+                departure_uid: d.departureUid,
+                train_label: d.trainLabel,
+                destination: d.destination,
+                carrier: d.carrier,
+                platform: d.platform,
+                planned_at: d.plannedWhenIso,
+                realtime_at: d.realtimeWhenIso,
+                delay_min: d.delayMinutes,
+                status: d.status,
+                is_cancelled: d.isCancelled,
+                source_updated_at: d.sourceUpdatedAtIso,
+                fetched_at: new Date().toISOString(),
+                raw: d,
+              }));
+              const { error: depErr } = await supabase
+                .from("transport_departures_cache")
+                .upsert(payload, { onConflict: "village_id,station_id,departure_uid" });
+              if (!depErr) summary.departuresUpserted += payload.length;
+            }
+          }
+        } catch (e) {
+          const msg = e instanceof Error ? e.message : String(e);
+          summary.errors.push(`${v.name} (hub PKP): ${msg}`);
+        }
+      }
+      continue;
+    }
     summary.villagesProcessed += 1;
 
     let allDepartures: Awaited<ReturnType<typeof pobierzOdjazdyDlaStacjiPkp>> = [];

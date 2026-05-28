@@ -3,6 +3,7 @@ import { czyZapytanieCronAutoryzowane } from "@/lib/api/autoryzacja-cron";
 import { pobierzIpIUserAgentZRequestu, zapiszCronRun } from "@/lib/api/zapisz-cron-run";
 import { synchronizujAdresyPrgAutomatycznie } from "@/lib/mapa/synchronizuj-adresy-prg-automatycznie";
 import { synchronizujKontekstGeoportalAutomatycznie } from "@/lib/mapa/synchronizuj-kontekst-geoportal-automatycznie";
+import { synchronizujPoiZGeoportalAutomatycznie } from "@/lib/mapa/synchronizuj-poi-z-geoportal-automatycznie";
 import { synchronizujPoiOsmAutomatycznie } from "@/lib/mapa/synchronizuj-poi-osm-automatycznie";
 import { synchronizujGranicePrgAutomatycznie } from "@/lib/mapa/synchronizuj-granice-prg-automatycznie";
 import { sprawdzJakoscDanychMapy } from "@/lib/mapa/sprawdz-jakosc-danych-mapy";
@@ -165,6 +166,9 @@ async function runAutomation(request: Request) {
     fallbackVillages: 0,
     errors: [],
   };
+  let poiGeoportalAuto:
+    | { ok: true; added: number; processedVillages: number; scannedVillages: number; errors: string[] }
+    | { ok: false; error: string } = { ok: true, added: 0, processedVillages: 0, scannedVillages: 0, errors: [] };
   let geoDataQuality:
     | {
         ok: true;
@@ -284,6 +288,23 @@ async function runAutomation(request: Request) {
     }
 
     try {
+      const poiGeo = await synchronizujPoiZGeoportalAutomatycznie(supabase);
+      poiGeoportalAuto = {
+        ok: true,
+        added: poiGeo.added,
+        processedVillages: poiGeo.processedVillages,
+        scannedVillages: poiGeo.scannedVillages,
+        errors: poiGeo.errors,
+      };
+      rows.push({ action: "sync_auto_poi_from_geoportal", affected_rows: poiGeo.added });
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      console.error("[api/automatyzacje/run] geoportal poi sync", msg);
+      poiGeoportalAuto = { ok: false, error: msg };
+      rows.push({ action: "sync_auto_poi_from_geoportal_failed", affected_rows: 0 });
+    }
+
+    try {
       const summary = await synchronizujTransportAutomatycznie(supabase);
       transportAuto = {
         enabled: summary.enabled,
@@ -354,6 +375,7 @@ async function runAutomation(request: Request) {
       granicePrgAuto,
       adresyPrgAuto,
       kontekstGeoportalAuto,
+      poiGeoportalAuto,
       transportAuto,
       geoDataQuality,
     },
@@ -369,6 +391,7 @@ async function runAutomation(request: Request) {
     granicePrgAuto,
     adresyPrgAuto,
     kontekstGeoportalAuto,
+    poiGeoportalAuto,
     transportAuto,
     geoDataQuality,
     ranAt: new Date().toISOString(),

@@ -4,6 +4,7 @@ import {
   propStr,
   type GeoJsonFeatureCollection,
 } from "@/lib/geoportal/geojson-utils";
+import { pobierzWfsFeatureCollection } from "@/lib/geoportal/wfs-get-feature";
 
 export type InstitutionalFeature = {
   layerName: string;
@@ -23,6 +24,7 @@ export type InstitutionalFetchResult =
       sourceName: string;
       sourceTypeName: string;
       featureCount: number;
+      layerErrors: string[];
     }
   | {
       ok: false;
@@ -31,6 +33,9 @@ export type InstitutionalFetchResult =
     };
 
 const DEFAULT_PRG_WFS_URL = "https://mapy.geoportal.gov.pl/wss/service/PZGIK/PRG/WFS/AdministrativeBoundaries";
+
+const DOMYSLNE_WARSTWY =
+  "K07_Komenda_powiatowa_strazy_pozarnej,K02_Komenda_powiatowa_policji,K05_Komisariat_policji,U06_Nadlesnictwo,U02_Urzad_skarbowy,U09_Regionalny_zarzad_gospodarki_wodnej_PGWWP";
 
 function env(name: string): string | null {
   const v = process.env[name]?.trim();
@@ -48,59 +53,21 @@ async function fetchLayer(
   wfsVersion: string,
   typeName: string,
   bbox: string,
-): Promise<InstitutionalFetchResult> {
-  const params = new URLSearchParams({
-    SERVICE: "WFS",
-    VERSION: wfsVersion,
-    REQUEST: "GetFeature",
-    SRSNAME: "EPSG:4326",
-    outputFormat: "application/json",
-    BBOX: bbox,
+): Promise<{ ok: true; features: InstitutionalFeature[]; count: number } | { ok: false; reason: string }> {
+  const wfs = await pobierzWfsFeatureCollection({
+    wfsUrl,
+    wfsVersion,
+    typeName,
+    bbox,
+    maxFeatures: 150,
+    timeoutMs: 40_000,
   });
-  if (wfsVersion.startsWith("1.")) {
-    params.set("TYPENAME", typeName);
-    params.set("MAXFEATURES", "150");
-  } else {
-    params.set("TYPENAMES", typeName);
-    params.set("COUNT", "150");
+
+  if (!wfs.ok) {
+    return { ok: false, reason: `${typeName}: ${wfs.reason}` };
   }
 
-  let res: Response;
-  try {
-    res = await fetch(`${wfsUrl}?${params.toString()}`, {
-      method: "GET",
-      cache: "no-store",
-      signal: AbortSignal.timeout(40_000),
-      headers: {
-        Accept: "application/json, application/geo+json, text/xml",
-        "User-Agent": "NaszawiesPl/1.0 (+https://naszawies.pl/)",
-      },
-    });
-  } catch (e) {
-    const msg = e instanceof Error ? e.message : String(e);
-    return { ok: false, reason: `Błąd połączenia PRG WFS (${typeName}): ${msg}`, retryable: true };
-  }
-
-  if (!res.ok) {
-    return {
-      ok: false,
-      reason: `PRG WFS (${typeName}) zwrócił HTTP ${res.status}.`,
-      retryable: res.status >= 500 || res.status === 429,
-    };
-  }
-
-  let json: unknown;
-  try {
-    json = (await res.json()) as unknown;
-  } catch {
-    return { ok: false, reason: `PRG WFS (${typeName}) nie zwrócił JSON.`, retryable: false };
-  }
-
-  const fc = json as GeoJsonFeatureCollection;
-  if (fc?.type !== "FeatureCollection" || !Array.isArray(fc.features)) {
-    return { ok: false, reason: `PRG WFS (${typeName}) zwrócił nieoczekiwany format.`, retryable: false };
-  }
-
+  const fc = wfs.collection as GeoJsonFeatureCollection;
   const out: InstitutionalFeature[] = [];
   for (const f of fc.features) {
     const extId = featureExternalId(f);
@@ -118,13 +85,7 @@ async function fetchLayer(
     });
   }
 
-  return {
-    ok: true,
-    features: out,
-    sourceName: wfsUrl,
-    sourceTypeName: typeName,
-    featureCount: fc.features.length,
-  };
+  return { ok: true, features: out, count: fc.features.length };
 }
 
 export async function pobierzWarstwyInstytucjonalnePrgWokolWsi(
@@ -135,10 +96,7 @@ export async function pobierzWarstwyInstytucjonalnePrgWokolWsi(
   if (!Number.isFinite(lat) || !Number.isFinite(lon)) {
     return { ok: false, reason: "Nieprawidłowe współrzędne wejściowe.", retryable: false };
   }
-  const typenamesRaw = env("GEOPORTAL_PRG_INSTITUTIONAL_TYPENAMES");
-  if (!typenamesRaw) {
-    return { ok: false, reason: "Brak GEOPORTAL_PRG_INSTITUTIONAL_TYPENAMES.", retryable: false };
-  }
+  const typenamesRaw = env("GEOPORTAL_PRG_INSTITUTIONAL_TYPENAMES") ?? DOMYSLNE_WARSTWY;
   const typeNames = typenamesRaw
     .split(",")
     .map((s) => s.trim())
@@ -153,20 +111,35 @@ export async function pobierzWarstwyInstytucjonalnePrgWokolWsi(
   const bbox = makeBbox(lat, lon, Math.max(2000, Math.min(35_000, radiusM)));
 
   const merged: InstitutionalFeature[] = [];
+  const layerErrors: string[] = [];
   let sourceType = "";
   let count = 0;
+
   for (const tn of typeNames) {
     const one = await fetchLayer(wfsUrl, wfsVersion, tn, bbox);
-    if (!one.ok) return one;
+    if (!one.ok) {
+      layerErrors.push(one.reason);
+      continue;
+    }
     sourceType = sourceType ? `${sourceType},${tn}` : tn;
-    count += one.featureCount;
+    count += one.count;
     merged.push(...one.features);
   }
+
+  if (merged.length === 0 && layerErrors.length > 0) {
+    return {
+      ok: false,
+      reason: layerErrors.slice(0, 3).join("; "),
+      retryable: false,
+    };
+  }
+
   return {
     ok: true,
     features: merged,
     sourceName: wfsUrl,
-    sourceTypeName: sourceType,
+    sourceTypeName: sourceType || typeNames.join(","),
     featureCount: count,
+    layerErrors,
   };
 }

@@ -1,11 +1,11 @@
 #!/usr/bin/env node
 /**
- * Włącza Google / GitHub OAuth i poprawia Site URL + Redirect URLs w Supabase (Management API).
+ * Włącza Google OAuth i poprawia Site URL + Redirect URLs w Supabase (Management API).
+ * Wyłącza GitHub OAuth (aplikacja nie oferuje logowania przez GitHub).
  *
  * Wymaga w .env.local (lub zmiennych środowiska):
  *   SUPABASE_AUTH_EXTERNAL_GOOGLE_CLIENT_ID
  *   SUPABASE_AUTH_EXTERNAL_GOOGLE_SECRET
- *   (opcjonalnie GitHub: SUPABASE_AUTH_EXTERNAL_GITHUB_CLIENT_ID + _SECRET)
  *   NEXT_PUBLIC_SITE_URL (domyślnie https://naszawies.pl)
  *
  * Token: SUPABASE_ACCESS_TOKEN albo token z `supabase login` (Windows Credential Manager).
@@ -107,9 +107,6 @@ const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL?.trim() || "https://naszawies.
 
 const googleId = process.env.SUPABASE_AUTH_EXTERNAL_GOOGLE_CLIENT_ID?.trim();
 const googleSecret = process.env.SUPABASE_AUTH_EXTERNAL_GOOGLE_SECRET?.trim();
-const githubId = process.env.SUPABASE_AUTH_EXTERNAL_GITHUB_CLIENT_ID?.trim();
-const githubSecret = process.env.SUPABASE_AUTH_EXTERNAL_GITHUB_SECRET?.trim();
-
 const payload = {
   site_url: siteUrl,
   uri_allow_list: listaPrzekierowan(siteUrl),
@@ -127,17 +124,13 @@ if (!tylkoAdresy) {
     );
   }
 
-  if (githubId && githubSecret) {
-    payload.external_github_enabled = true;
-    payload.external_github_client_id = githubId;
-    payload.external_github_secret = githubSecret;
-  }
+  payload.external_github_enabled = false;
 }
 
 const url = `https://api.supabase.com/v1/projects/${ref}/config/auth`;
 
 if (dryRun) {
-  console.log(JSON.stringify({ url, payload: { ...payload, external_google_secret: payload.external_google_secret ? "***" : undefined, external_github_secret: payload.external_github_secret ? "***" : undefined } }, null, 2));
+  console.log(JSON.stringify({ url, payload: { ...payload, external_google_secret: payload.external_google_secret ? "***" : undefined } }, null, 2));
   process.exit(0);
 }
 

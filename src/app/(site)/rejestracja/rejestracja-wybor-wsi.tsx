@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { odczytajJsonOdpowiedzi } from "@/lib/api/odczytaj-json-odpowiedzi";
+import { szukajWsiDlaRejestracji } from "@/app/(site)/rejestracja/akcje-katalog-wsi";
 import { WybierzWiesKaskada } from "@/components/wies/wybierz-wies-kaskada";
 import type { WpisWsi } from "@/components/wies/wyszukiwarka-wsi";
 
@@ -40,14 +40,13 @@ export function RejestracjaWyborWsi({ wybrana, onZmiana }: Props) {
     ustawLaduje(true);
     ustawPodpowiedz("");
     try {
-      const res = await fetch(`/api/wies/szukaj?q=${encodeURIComponent(q)}`);
-      const wynik = await odczytajJsonOdpowiedzi<{ wyniki?: WpisWsi[]; blad?: string }>(res);
+      const wynik = await szukajWsiDlaRejestracji(q);
       if (!wynik.ok) {
-        ustawPodpowiedz(wynik.komunikat);
+        ustawPodpowiedz(wynik.blad);
         ustawWyniki([]);
         return;
       }
-      const lista = wynik.dane.wyniki ?? [];
+      const lista = wynik.wyniki ?? [];
       ustawWyniki(lista);
       if (lista.length === 0) {
         ustawPodpowiedz("Brak wyników. Wybierz miejscowość z katalogu albo spróbuj innej pisowni.");
@@ -109,6 +108,7 @@ export function RejestracjaWyborWsi({ wybrana, onZmiana }: Props) {
           {tryb === "katalog" ? (
             <WybierzWiesKaskada
               tekstPrzycisku="Wybierz"
+              trybRejestracji
               onWybor={(w) => wybierz(w)}
             />
           ) : (

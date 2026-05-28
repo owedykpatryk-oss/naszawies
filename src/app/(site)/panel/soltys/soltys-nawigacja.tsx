@@ -68,6 +68,7 @@ function grupyZLiczbami(
       tytul: "Administracja",
       linki: [
         { href: "/panel/soltys/zgloszenia", label: "Zgłoszenia", badge: l.zgloszenia || undefined },
+        { href: "/panel/soltys/zespol", label: "Zespół / współadmin" },
         { href: "/panel/soltys/samorzad", label: "Przewodnik samorządowy" },
         { href: "/panel/soltys/informacje-lokalne", label: "Informacje dla mieszkańców" },
         { href: "/panel/soltys/pomoc", label: "Pomoc sołtysa" },

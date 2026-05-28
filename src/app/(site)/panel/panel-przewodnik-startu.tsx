@@ -134,7 +134,7 @@ export function PanelPrzewodnikStartu({ stan }: { stan: StanPrzewodnikaStartu })
             Start w portalu
           </p>
           <h2 className="mt-1 font-serif text-xl text-green-950">Zrób pierwsze kroki — co, gdzie i po kolei</h2>
-          <p className="mt-1 max-w-2xl text-sm text-stone-600">
+          <p className="mt-1 max-w-4xl text-sm text-stone-600">
             Postęp: <strong>{stan.ukonczoneKrokow}</strong> z <strong>{stan.lacznieKrokow}</strong> kroków. Możesz
             chwilowo schować ten blok — wróci po zamknięciu karty lub po upływie 7 dni (zależnie od przycisku).
           </p>

@@ -16,7 +16,7 @@ export default function ZglosNaruszeniePage({
   const urlDomyslny = typeof urlParam === "string" ? urlParam.slice(0, 2048) : "";
 
   return (
-    <main className="mx-auto min-w-0 max-w-2xl py-16 text-stone-800">
+    <main className="mx-auto min-w-0 w-full max-w-4xl px-4 py-16 text-stone-800 sm:px-6">
       <p className="mb-6 text-sm text-stone-500">
         <Link href="/" className="text-green-800 underline">
           ← Strona główna

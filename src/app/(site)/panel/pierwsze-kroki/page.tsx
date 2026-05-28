@@ -16,7 +16,7 @@ const linkToc = [
 
 export default function PanelPierwszeKrokiPage() {
   return (
-    <main className="max-w-3xl">
+    <main className="mx-auto w-full max-w-7xl">
       <p className="mb-4 text-sm text-stone-500">
         <Link href="/panel" className="text-green-800 underline">
           ← Start panelu

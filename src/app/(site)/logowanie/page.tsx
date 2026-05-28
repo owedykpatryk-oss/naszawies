@@ -51,7 +51,7 @@ export default async function LogowaniePage({ searchParams }: Props) {
         />
         <h1 className="relative font-serif text-3xl tracking-tight text-green-950 sm:text-[2rem]">Logowanie</h1>
         <p className="relative mt-2 text-sm leading-relaxed text-stone-600">
-          Zaloguj się przez Google, GitHub albo e-mail i hasło. Po zalogowaniu wrócisz dokładnie tam,
+          Zaloguj się przez Google albo e-mail i hasło. Po zalogowaniu wrócisz dokładnie tam,
           gdzie chcesz wejść (parametr{" "}
           <code className="rounded-md bg-stone-100/90 px-1.5 py-0.5 font-mono text-xs text-stone-800">next</code>).
         </p>

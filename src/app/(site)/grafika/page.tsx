@@ -1,21 +1,12 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { KreatorGrafikiKlient } from "@/components/grafika/kreator-grafiki-klient";
-import { SZABLONY_GRAFIKI } from "@/lib/grafika/szablony";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
 
 export const metadata: Metadata = {
   title: "Kreator plakatów i zaproszeń",
-  description:
-    "Darmowe szablony zaproszeń, plakatów i dyplomów dla polskiej wsi — pobierz PDF bez konta. Po rejestracji: zapis, publikacja na profilu wsi.",
-  openGraph: {
-    title: "Kreator plakatów — naszawies.pl",
-    description: "Gotowe szablony jak prosty Canva dla wsi. PDF od razu, konto odblokowuje więcej.",
-  },
+  description: "Kreator plakatów dla wsi — dostępny po zalogowaniu w panelu.",
 };
-
-const NEXT_PO_REJESTRACJI = "/panel/mieszkaniec/grafika";
 
 export default async function GrafikaPublicznaPage() {
   try {
@@ -27,38 +18,30 @@ export default async function GrafikaPublicznaPage() {
       redirect("/panel/mieszkaniec/grafika");
     }
   } catch {
-    /* brak env — demo dla gości */
+    /* brak env */
   }
 
-  const liczbaPublicznych = SZABLONY_GRAFIKI.filter((s) => s.dostep === "wszyscy").length;
-
   return (
-    <main className="mx-auto min-w-0 max-w-6xl px-1 py-8 sm:py-12">
-      <p className="text-sm text-stone-500">
-        <Link href="/" className="text-green-800 underline">
-          ← Strona główna
+    <main className="mx-auto min-w-0 max-w-lg px-4 py-12 text-stone-800 sm:py-16">
+      <h1 className="font-serif text-2xl text-green-950">Kreator plakatów</h1>
+      <p className="mt-3 text-sm leading-relaxed text-stone-600">
+        Szablony zaproszeń, plakatów i dyplomów są dostępne po{" "}
+        <Link href="/logowanie?next=/panel/mieszkaniec/grafika" className="font-medium text-green-800 underline">
+          zalogowaniu
+        </Link>
+        . Sołtys i mieszkaniec z aktywną rolą we wsi mają pełną bibliotekę w panelu.
+      </p>
+      <p className="mt-6 flex flex-wrap gap-3 text-sm">
+        <Link
+          href="/logowanie?next=/panel/mieszkaniec/grafika"
+          className="rounded-lg bg-green-800 px-4 py-2 font-medium text-white hover:bg-green-900"
+        >
+          Zaloguj się
+        </Link>
+        <Link href="/rejestracja" className="rounded-lg border border-stone-300 px-4 py-2 hover:bg-stone-50">
+          Załóż konto
         </Link>
       </p>
-      <h1 className="mt-4 font-serif text-3xl tracking-tight text-green-950 sm:text-4xl">
-        Kreator plakatów i zaproszeń
-      </h1>
-      <p className="mt-3 max-w-2xl text-sm leading-relaxed text-stone-600 sm:text-base">
-        Wypróbuj <strong>bez logowania</strong>: wybierz szablon, uzupełnij treść, pobierz PDF lub PNG na social.
-        Dostępnych jest <strong>{liczbaPublicznych}</strong> projektów dla każdego — po założeniu konta odblokujesz
-        pełną bibliotę ({SZABLONY_GRAFIKI.length}+) i zapis w chmurze.
-      </p>
-
-      <div className="mt-10">
-        <KreatorGrafikiKlient
-          kontekst={{ wies: "Twoja wieś", gmina: "" }}
-          trybSoltys={false}
-          trybKgw={false}
-          trybOsp={false}
-          zapisDoBazy={false}
-          trybPubliczny
-          nextPoRejestracji={NEXT_PO_REJESTRACJI}
-        />
-      </div>
     </main>
   );
 }

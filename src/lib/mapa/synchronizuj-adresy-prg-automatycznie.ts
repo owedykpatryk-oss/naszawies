@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { simcDlaZapytaniaKin } from "@/lib/geoportal/normalizuj-simc";
 import { pobierzAdresyWsiZPrgWfs } from "@/lib/geoportal/prg-address-wfs-client";
 
 type VillageRow = {
@@ -56,8 +57,8 @@ function radiusForVillage(population: number | null): number {
 }
 
 export async function synchronizujAdresyPrgAutomatycznie(supabase: SupabaseClient): Promise<PrgAddressSyncSummary> {
-  const maxPerRun = parseIntEnv("GEOPORTAL_ADDRESS_SYNC_VILLAGES_PER_RUN", 1, 1, 20);
-  const maxScanned = parseIntEnv("GEOPORTAL_ADDRESS_SYNC_VILLAGES_SCANNED", 10, 3, 200);
+  const maxPerRun = parseIntEnv("GEOPORTAL_ADDRESS_SYNC_VILLAGES_PER_RUN", 5, 1, 30);
+  const maxScanned = parseIntEnv("GEOPORTAL_ADDRESS_SYNC_VILLAGES_SCANNED", 40, 3, 500);
   const minDays = parseIntEnv("GEOPORTAL_ADDRESS_SYNC_MIN_DAYS", 30, 1, 180);
   const minSyncMs = minDays * 24 * 60 * 60 * 1000;
 
@@ -102,7 +103,8 @@ export async function synchronizujAdresyPrgAutomatycznie(supabase: SupabaseClien
 
   for (const village of villages) {
     if (summary.attemptedVillages >= maxPerRun) break;
-    if (!village.teryt_id) {
+    const simc = simcDlaZapytaniaKin(village.teryt_id);
+    if (!simc) {
       summary.skippedMissingTeryt += 1;
       continue;
     }
@@ -122,7 +124,7 @@ export async function synchronizujAdresyPrgAutomatycznie(supabase: SupabaseClien
 
     summary.attemptedVillages += 1;
     const radius = radiusForVillage(village.population);
-    const wynik = await pobierzAdresyWsiZPrgWfs(village.teryt_id, lat, lon, radius);
+    const wynik = await pobierzAdresyWsiZPrgWfs(simc, lat, lon, radius);
     const nowIso = new Date().toISOString();
 
     if (!wynik.ok) {

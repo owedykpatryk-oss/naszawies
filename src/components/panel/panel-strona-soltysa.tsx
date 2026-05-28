@@ -34,10 +34,10 @@ export function PanelStronaSoltysa({
 
       <header className="panel-informacji-hero">
         <h1 className="tytul-sekcji-panelu relative">{tytul}</h1>
-        {opis ? <div className="relative mt-2 max-w-3xl text-sm leading-relaxed text-stone-600">{opis}</div> : null}
+        {opis ? <div className="relative mt-2 max-w-4xl text-sm leading-relaxed text-stone-600">{opis}</div> : null}
       </header>
 
-      <div className={szeroki ? "mt-8" : "mt-8 max-w-5xl"}>{dzieci}</div>
+      <div className={szeroki ? "mt-8" : "mt-8 max-w-7xl"}>{dzieci}</div>
     </main>
   );
 }

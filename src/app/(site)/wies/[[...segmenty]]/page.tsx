@@ -219,7 +219,7 @@ export default async function WiesCatchAllPage({ params, searchParams }: Props) 
     const supabase = createPublicSupabaseClient();
     if (!supabase) {
       return (
-        <main className="mx-auto min-w-0 max-w-2xl py-16 text-stone-800">
+        <main className="mx-auto min-w-0 w-full max-w-7xl px-4 py-16 text-stone-800 sm:px-6">
           <h1 className="font-serif text-2xl text-green-950">Strona chwilowo niedostępna</h1>
         </main>
       );
@@ -259,7 +259,7 @@ export default async function WiesCatchAllPage({ params, searchParams }: Props) 
   const supabase = createPublicSupabaseClient();
   if (!supabase) {
     return (
-      <main className="mx-auto min-w-0 max-w-2xl py-16 text-stone-800">
+      <main className="mx-auto min-w-0 w-full max-w-7xl px-4 py-16 text-stone-800 sm:px-6">
         <p className="mb-4">
           <Link href="/" className="text-green-800 underline">
             ← Strona główna
@@ -596,7 +596,7 @@ export default async function WiesCatchAllPage({ params, searchParams }: Props) 
     }[];
 
     return (
-      <main className="mx-auto min-w-0 max-w-2xl py-16 text-stone-800">
+      <main className="mx-auto min-w-0 w-full max-w-7xl px-4 py-10 sm:px-6 sm:py-14 text-stone-800">
         <p className="mb-6 text-sm text-stone-500">
           <Link href="/" className="text-green-800 underline">
             ← Strona główna
@@ -682,7 +682,7 @@ export default async function WiesCatchAllPage({ params, searchParams }: Props) 
     const profile = profileRynek ?? [];
 
     return (
-      <main className="mx-auto min-w-0 max-w-5xl py-8 sm:py-12 text-stone-800">
+      <main className="mx-auto min-w-0 w-full max-w-7xl px-4 py-8 sm:px-6 sm:py-12 text-stone-800">
         <OkruszkiRynku sciezkaWsi={sciezka} nazwaWsi={wies.name} />
         <NaglowekStronyRynku
           tytul={`Rynek lokalny — ${wies.name}`}
@@ -749,7 +749,7 @@ export default async function WiesCatchAllPage({ params, searchParams }: Props) 
     const { OkruszkiRynku } = await import("@/components/wies/rynek-ui");
 
     return (
-      <main className="mx-auto min-w-0 max-w-4xl py-8 sm:py-12 text-stone-800">
+      <main className="mx-auto min-w-0 w-full max-w-7xl px-4 py-8 text-stone-800 sm:px-6 sm:py-12">
         <OkruszkiRynku sciezkaWsi={sciezka} nazwaWsi={wies.name} biezacy={profil.business_name} />
         <RynekProfilUslugPubliczny
           profil={profil}
@@ -816,7 +816,7 @@ export default async function WiesCatchAllPage({ params, searchParams }: Props) 
     })();
 
     return (
-      <main className="mx-auto min-w-0 max-w-4xl py-8 sm:py-12 text-stone-800">
+      <main className="mx-auto min-w-0 w-full max-w-7xl px-4 py-8 text-stone-800 sm:px-6 sm:py-12">
         <OkruszkiRynku sciezkaWsi={sciezka} nazwaWsi={wies.name} biezacy={ogl.title.slice(0, 60)} />
         <RynekOgloszenieSzczegoly
           ogloszenie={{
@@ -858,7 +858,7 @@ export default async function WiesCatchAllPage({ params, searchParams }: Props) 
     }
     const sciezka = sciezkaProfiluWsi(wies);
     return (
-      <main className="mx-auto min-w-0 max-w-5xl py-12 sm:py-16 text-stone-800">
+      <main className="mx-auto min-w-0 w-full max-w-7xl px-4 py-12 text-stone-800 sm:px-6 sm:py-16">
         <StudzienkiProjektSwietlicy sciezkaWsi={sciezka} nazwaWsi={wies.name} />
       </main>
     );
@@ -883,7 +883,7 @@ export default async function WiesCatchAllPage({ params, searchParams }: Props) 
     const sciezka = sciezkaProfiluWsi(wies);
 
     return (
-      <main className="mx-auto min-w-0 max-w-2xl py-16 text-stone-800">
+      <main className="mx-auto min-w-0 w-full max-w-7xl px-4 py-16 text-stone-800 sm:px-6">
         <WiesPostPubliczny
           tytul={post.title}
           typ={post.type}
@@ -911,7 +911,7 @@ export default async function WiesCatchAllPage({ params, searchParams }: Props) 
       notFound();
     }
     return (
-      <main className="mx-auto min-w-0 max-w-2xl py-16 text-stone-800">
+      <main className="mx-auto min-w-0 w-full max-w-7xl px-4 py-16 text-stone-800 sm:px-6">
         <p className="mb-4 text-sm text-stone-500">
           <Link href={sciezkaProfiluWsi(wies)} className="text-green-800 underline">
             ← {wies.name}
@@ -945,7 +945,7 @@ export default async function WiesCatchAllPage({ params, searchParams }: Props) 
       notFound();
     }
     return (
-      <main className="mx-auto min-w-0 max-w-2xl py-16 text-stone-800">
+      <main className="mx-auto min-w-0 w-full max-w-7xl px-4 py-16 text-stone-800 sm:px-6">
         <p className="mb-4 text-sm text-stone-500">
           <Link href={sciezkaProfiluWsi(wies)} className="text-green-800 underline">
             ← {wies.name}
@@ -976,7 +976,7 @@ export default async function WiesCatchAllPage({ params, searchParams }: Props) 
       .limit(60);
     const lista = (wpisy ?? []) as BlogWpis[];
     return (
-      <main className="mx-auto min-w-0 max-w-2xl py-16 text-stone-800">
+      <main className="mx-auto min-w-0 w-full max-w-7xl px-4 py-16 text-stone-800 sm:px-6">
         <p className="mb-4 text-sm text-stone-500">
           <Link href={sciezkaProfiluWsi(wies)} className="text-green-800 underline">
             ← {wies.name}
@@ -1029,7 +1029,7 @@ export default async function WiesCatchAllPage({ params, searchParams }: Props) 
     );
     const sciezka = sciezkaProfiluWsi(wies);
     return (
-      <main className="mx-auto min-w-0 max-w-2xl py-16 text-stone-800">
+      <main className="mx-auto min-w-0 w-full max-w-7xl px-4 py-16 text-stone-800 sm:px-6">
         <p className="mb-4 text-sm text-stone-500">
           <Link href={`${sciezka}/wydarzenia`} className="text-green-800 underline">
             ← Kalendarz wydarzeń
@@ -1080,7 +1080,7 @@ export default async function WiesCatchAllPage({ params, searchParams }: Props) 
     const lista = (listaRaw ?? []) as unknown as W[];
     const sciezka = sciezkaProfiluWsi(wies);
     return (
-      <main className="mx-auto min-w-0 max-w-2xl py-16 text-stone-800">
+      <main className="mx-auto min-w-0 w-full max-w-7xl px-4 py-16 text-stone-800 sm:px-6">
         <p className="mb-4 text-sm text-stone-500">
           <Link href={sciezka} className="text-green-800 underline">
             ← {wies.name}
@@ -1136,7 +1136,7 @@ export default async function WiesCatchAllPage({ params, searchParams }: Props) 
     }
     const sciezka = sciezkaProfiluWsi(wies);
     return (
-      <main className="mx-auto min-w-0 max-w-2xl py-16 text-stone-800">
+      <main className="mx-auto min-w-0 w-full max-w-7xl px-4 py-16 text-stone-800 sm:px-6">
         <p className="mb-4 text-sm text-stone-500">
           <Link href={`${sciezka}/dotacje`} className="text-green-800 underline">
             ← Źródła dofinansowania
@@ -1192,7 +1192,7 @@ export default async function WiesCatchAllPage({ params, searchParams }: Props) 
     }[];
     const sciezka = sciezkaProfiluWsi(wies);
     return (
-      <main className="mx-auto min-w-0 max-w-2xl py-16 text-stone-800">
+      <main className="mx-auto min-w-0 w-full max-w-7xl px-4 py-16 text-stone-800 sm:px-6">
         <p className="mb-4 text-sm text-stone-500">
           <Link href={sciezka} className="text-green-800 underline">
             ← {wies.name}
@@ -1240,7 +1240,7 @@ export default async function WiesCatchAllPage({ params, searchParams }: Props) 
       .limit(60);
     const lista = (wpisy ?? []) as HistoriaWpis[];
     return (
-      <main className="mx-auto min-w-0 max-w-2xl py-16 text-stone-800">
+      <main className="mx-auto min-w-0 w-full max-w-7xl px-4 py-16 text-stone-800 sm:px-6">
         <p className="mb-4 text-sm text-stone-500">
           <Link href={sciezkaProfiluWsi(wies)} className="text-green-800 underline">
             ← {wies.name}
@@ -1276,7 +1276,7 @@ export default async function WiesCatchAllPage({ params, searchParams }: Props) 
 
   const podstrona = reszta.join(" / ");
   return (
-    <main className="mx-auto min-w-0 max-w-2xl py-16 text-stone-800">
+    <main className="mx-auto min-w-0 w-full max-w-7xl px-4 py-16 text-stone-800 sm:px-6">
       <p className="mb-4 text-sm text-stone-500">
         <Link href={sciezkaProfiluWsi(wies)} className="text-green-800 underline">
           ← {wies.name}
