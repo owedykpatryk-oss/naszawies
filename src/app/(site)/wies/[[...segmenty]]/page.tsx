@@ -63,6 +63,7 @@ type RynekOferta = {
   currency: string | null;
   with_operator?: boolean | null;
   image_urls?: string[] | null;
+  seller_verified?: boolean | null;
   published_at: string | null;
   created_at: string;
 };
@@ -133,6 +134,65 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
         description:
           "Rozbudowa i przebudowa świetlicy wiejskiej w Studzienkach: rzut parteru, zestawienie pomieszczeń, elewacje i kolorystyka.",
       };
+    }
+  }
+  if (s.length === 5 && s[4] === "rynek") {
+    if (!supabase) return { title: "Rynek lokalny" };
+    const wiesMeta = await znajdzWiesPoSciezce(supabase, s[0], s[1], s[2], s[3]);
+    if (wiesMeta) {
+      return {
+        title: `Rynek lokalny — ${wiesMeta.name}`,
+        description: `Ogłoszenia mieszkańców i gospodarstw we wsi ${wiesMeta.name}: miód, sery, maszyny, usługi i praca.`,
+      };
+    }
+  }
+  if (s.length === 6 && s[4] === "rynek") {
+    const id = z.string().uuid().safeParse(s[5]);
+    if (id.success) {
+      if (!supabase) return { title: "Ogłoszenie — rynek lokalny" };
+      const wiesMeta = await znajdzWiesPoSciezce(supabase, s[0], s[1], s[2], s[3]);
+      if (wiesMeta) {
+        const { data: ogl } = await supabase
+          .from("marketplace_listings")
+          .select("title, description, image_urls")
+          .eq("id", id.data)
+          .eq("village_id", wiesMeta.id)
+          .eq("status", "approved")
+          .maybeSingle();
+        if (ogl?.title) {
+          const opis = ogl.description?.replace(/\s+/g, " ").trim().slice(0, 160);
+          const zdjecie = ogl.image_urls?.[0];
+          return {
+            title: `${ogl.title} — rynek · ${wiesMeta.name}`,
+            description: opis || `Ogłoszenie na lokalnym rynku we wsi ${wiesMeta.name}.`,
+            openGraph: zdjecie ? { images: [{ url: zdjecie }] } : undefined,
+          };
+        }
+      }
+    }
+  }
+  if (s.length === 7 && s[4] === "rynek" && s[5] === "uslugi") {
+    const idProfilu = z.string().uuid().safeParse(s[6]);
+    if (idProfilu.success) {
+      if (!supabase) return { title: "Profil usługodawcy" };
+      const wiesMeta = await znajdzWiesPoSciezce(supabase, s[0], s[1], s[2], s[3]);
+      if (wiesMeta) {
+        const { data: profil } = await supabase
+          .from("marketplace_profiles")
+          .select("business_name, short_description")
+          .eq("id", idProfilu.data)
+          .eq("village_id", wiesMeta.id)
+          .eq("is_active", true)
+          .maybeSingle();
+        if (profil?.business_name) {
+          return {
+            title: `${profil.business_name} — usługi · ${wiesMeta.name}`,
+            description:
+              profil.short_description?.slice(0, 160) ??
+              `Profil usługodawcy na lokalnym rynku we wsi ${wiesMeta.name}.`,
+          };
+        }
+      }
     }
   }
   if (s.length === 6 && s[4] === "ogloszenie") {
@@ -284,7 +344,7 @@ export default async function WiesCatchAllPage({ params, searchParams }: Props) 
       supabase
         .from("marketplace_listings")
         .select(
-          "id, title, listing_type, category, equipment_category, location_text, price_amount, price_unit, currency, with_operator, image_urls, published_at, created_at",
+          "id, title, listing_type, category, equipment_category, location_text, price_amount, price_unit, currency, with_operator, image_urls, published_at, created_at, seller_verified",
         )
         .eq("village_id", wies.id)
         .eq("status", "approved")
@@ -306,7 +366,9 @@ export default async function WiesCatchAllPage({ params, searchParams }: Props) 
         .limit(6),
       supabase
         .from("village_community_groups")
-        .select("id, group_type, name, short_description, meeting_place, schedule_text, contact_phone")
+        .select(
+          "id, group_type, name, short_description, meeting_place, schedule_text, contact_phone, contact_email, profile_data",
+        )
         .eq("village_id", wies.id)
         .eq("is_active", true)
         .order("name"),
@@ -439,6 +501,8 @@ export default async function WiesCatchAllPage({ params, searchParams }: Props) 
       meeting_place: string | null;
       schedule_text: string | null;
       contact_phone: string | null;
+      contact_email: string | null;
+      profile_data: unknown;
     }[];
     const wydarzenia = ((wydRaw ?? []) as unknown as WierszWydarzeniaRaw[]).map((r) => ({
       id: r.id,
@@ -591,34 +655,106 @@ export default async function WiesCatchAllPage({ params, searchParams }: Props) 
 
   if (reszta.length === 1 && reszta[0] === "rynek") {
     const sciezka = sciezkaProfiluWsi(wies);
-    const { data: rynekPelny } = await supabase
-      .from("marketplace_listings")
-      .select(
-        "id, title, listing_type, category, equipment_category, location_text, price_amount, price_unit, currency, with_operator, image_urls, published_at, created_at",
-      )
-      .eq("village_id", wies.id)
-      .eq("status", "approved")
-      .order("published_at", { ascending: false, nullsFirst: false })
-      .limit(100);
+    const [{ data: rynekPelny }, { data: profileRynek }] = await Promise.all([
+      supabase
+        .from("marketplace_listings")
+        .select(
+          "id, title, listing_type, category, equipment_category, location_text, price_amount, price_unit, currency, with_operator, image_urls, published_at, created_at, seller_verified",
+        )
+        .eq("village_id", wies.id)
+        .eq("status", "approved")
+        .order("published_at", { ascending: false, nullsFirst: false })
+        .limit(100),
+      supabase
+        .from("marketplace_profiles")
+        .select("id, business_name, short_description, categories, phone, is_verified")
+        .eq("village_id", wies.id)
+        .eq("is_active", true)
+        .order("is_verified", { ascending: false })
+        .order("business_name"),
+    ]);
 
     const { MarketplaceListaKlient } = await import("@/components/wies/marketplace-lista-klient");
+    const { OkruszkiRynku, NaglowekStronyRynku } = await import("@/components/wies/rynek-ui");
+    const { KartaProfiluRynku } = await import("@/components/wies/karta-profilu-rynku");
+
+    const ogloszenia = (rynekPelny ?? []) as RynekOferta[];
+    const profile = profileRynek ?? [];
 
     return (
-      <main className="mx-auto min-w-0 max-w-3xl py-8 sm:py-12 text-stone-800">
-        <p className="mb-4 text-sm">
-          <Link href={sciezka} className="text-green-800 underline">
-            ← {wies.name}
-          </Link>
-        </p>
-        <h1 className="font-serif text-3xl text-green-950">Rynek lokalny — wszystkie ogłoszenia</h1>
-        <p className="mt-2 text-sm text-stone-600">
-          Miód, sery, mięso, warzywa, maszyny rolnicze, konie — oferty mieszkańców i gospodarstw.
-        </p>
-        <MarketplaceListaKlient
-          oferty={(rynekPelny ?? []) as RynekOferta[]}
+      <main className="mx-auto min-w-0 max-w-5xl py-8 sm:py-12 text-stone-800">
+        <OkruszkiRynku sciezkaWsi={sciezka} nazwaWsi={wies.name} />
+        <NaglowekStronyRynku
+          tytul={`Rynek lokalny — ${wies.name}`}
+          opis="Miód, sery, mięso, warzywa z gospodarstw, maszyny rolnicze, konie i usługi mieszkańców. Ogłoszenia są darmowe — wygasłe archiwizują się automatycznie."
+          liczbaOgloszen={ogloszenia.length}
+          liczbaProfili={profile.length}
+        />
+
+        {profile.length > 0 ? (
+          <section className="mt-8">
+            <h2 className="text-sm font-semibold text-stone-800">Profile usługodawców</h2>
+            <ul className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
+              {profile.map((p) => (
+                <li key={p.id}>
+                  <KartaProfiluRynku profil={p} sciezkaWsi={sciezka} />
+                </li>
+              ))}
+            </ul>
+          </section>
+        ) : null}
+
+        <section className="mt-8">
+          <h2 className="text-sm font-semibold text-stone-800">Wszystkie ogłoszenia</h2>
+          <MarketplaceListaKlient
+            oferty={ogloszenia}
+            sciezkaWsi={sciezka}
+            kotwicaZasadSwietlicy={`${sciezka}#swietlica-regulamin`}
+            pokazLinkWszystkie={false}
+            tryb="pelny"
+          />
+        </section>
+      </main>
+    );
+  }
+
+  if (reszta.length === 3 && reszta[0] === "rynek" && reszta[1] === "uslugi") {
+    const idProfilu = z.string().uuid().safeParse(reszta[2]);
+    if (!idProfilu.success) notFound();
+
+    const { data: profil } = await supabase
+      .from("marketplace_profiles")
+      .select(
+        "id, business_name, short_description, details, phone, email, website, categories, service_area, is_verified",
+      )
+      .eq("id", idProfilu.data)
+      .eq("village_id", wies.id)
+      .eq("is_active", true)
+      .maybeSingle();
+
+    if (!profil) notFound();
+
+    const { data: ogloszeniaProfilu } = await supabase
+      .from("marketplace_listings")
+      .select(
+        "id, title, listing_type, category, equipment_category, location_text, price_amount, price_unit, currency, with_operator, image_urls, published_at, created_at, seller_verified",
+      )
+      .eq("village_id", wies.id)
+      .eq("profile_id", profil.id)
+      .eq("status", "approved")
+      .order("published_at", { ascending: false, nullsFirst: false });
+
+    const sciezka = sciezkaProfiluWsi(wies);
+    const { RynekProfilUslugPubliczny } = await import("@/components/wies/rynek-profil-uslug-publiczny");
+    const { OkruszkiRynku } = await import("@/components/wies/rynek-ui");
+
+    return (
+      <main className="mx-auto min-w-0 max-w-4xl py-8 sm:py-12 text-stone-800">
+        <OkruszkiRynku sciezkaWsi={sciezka} nazwaWsi={wies.name} biezacy={profil.business_name} />
+        <RynekProfilUslugPubliczny
+          profil={profil}
+          ogloszenia={(ogloszeniaProfilu ?? []) as RynekOferta[]}
           sciezkaWsi={sciezka}
-          kotwicaZasadSwietlicy={`${sciezka}#swietlica-regulamin`}
-          pokazLinkWszystkie={false}
         />
       </main>
     );
@@ -634,7 +770,7 @@ export default async function WiesCatchAllPage({ params, searchParams }: Props) 
     const { data: ogl } = await supabase
       .from("marketplace_listings")
       .select(
-        "id, village_id, title, description, listing_type, category, equipment_category, price_amount, price_unit, with_operator, phone, location_text, image_urls, published_at, created_at, owner_user_id, status, seller_verified, latitude, longitude, pickup_in_village, delivery_radius_km, seasonal_note, product_produced_at, product_best_before, is_organic, allergens_text, sales_poi_id, pois(name)",
+        "id, village_id, title, description, listing_type, category, equipment_category, price_amount, price_unit, with_operator, phone, location_text, image_urls, published_at, created_at, owner_user_id, status, seller_verified, latitude, longitude, pickup_in_village, delivery_radius_km, seasonal_note, product_produced_at, product_best_before, is_organic, allergens_text, sales_poi_id, profile_id, pois(name), marketplace_profiles(id, business_name, is_verified)",
       )
       .eq("id", idOgl.data)
       .eq("village_id", wies.id)
@@ -671,18 +807,17 @@ export default async function WiesCatchAllPage({ params, searchParams }: Props) 
     const { data: podobneRaw } = await zapytaniePodobne;
 
     const { RynekOgloszenieSzczegoly } = await import("@/components/wies/rynek-ogloszenie-szczegoly");
+    const { OkruszkiRynku } = await import("@/components/wies/rynek-ui");
+
+    const profilPowiazany = (() => {
+      const p = Array.isArray(ogl.marketplace_profiles) ? ogl.marketplace_profiles[0] : ogl.marketplace_profiles;
+      if (!p || typeof p !== "object" || !("id" in p)) return null;
+      return p as { id: string; business_name: string; is_verified: boolean };
+    })();
 
     return (
-      <main className="mx-auto min-w-0 max-w-3xl py-8 sm:py-12 text-stone-800">
-        <p className="mb-4 text-sm">
-          <Link href={sciezka} className="text-green-800 underline">
-            ← {wies.name}
-          </Link>
-          {" · "}
-          <Link href={`${sciezka}/rynek`} className="text-green-800 underline">
-            Wszystkie ogłoszenia
-          </Link>
-        </p>
+      <main className="mx-auto min-w-0 max-w-4xl py-8 sm:py-12 text-stone-800">
+        <OkruszkiRynku sciezkaWsi={sciezka} nazwaWsi={wies.name} biezacy={ogl.title.slice(0, 60)} />
         <RynekOgloszenieSzczegoly
           ogloszenie={{
             ...ogl,
@@ -697,6 +832,7 @@ export default async function WiesCatchAllPage({ params, searchParams }: Props) 
           zalogowany={!!authRes.user}
           toJa={authRes.user?.id === ogl.owner_user_id}
           zapisaneId={zapisaneId}
+          profilSprzedawcy={profilPowiazany}
           podobne={(podobneRaw ?? []) as {
             id: string;
             title: string;

@@ -21,9 +21,9 @@ export function CzatListaGrupKlient({ wsie }: { wsie: { id: string; name: string
   }
 
   return (
-    <section className="mt-6 rounded-xl border border-violet-200/80 bg-violet-50/30 p-4">
-      <h2 className="font-serif text-lg text-green-950">Grupy wsi</h2>
-      <p className="mt-1 text-xs text-stone-600">Jedno kliknięcie — dołączasz do kanału (mieszkańcy, KGW, myśliwi…).</p>
+    <section className="mt-6 rounded-2xl border border-violet-200/80 bg-gradient-to-br from-violet-50/60 to-white p-4 shadow-sm">
+      <h2 className="font-serif text-lg text-green-950">Dołącz do grupy wsi</h2>
+      <p className="mt-1 text-xs text-stone-600">Jedno kliknięcie — kanał mieszkańców, KGW, myśliwi, OSP lub własna grupa.</p>
       {blad ? (
         <p className="mt-2 text-sm text-red-800" role="alert">
           {blad}

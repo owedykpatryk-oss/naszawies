@@ -13,6 +13,7 @@ type Props = {
     description: string | null;
     contact_phone: string | null;
     contact_email: string | null;
+    contact_duty_hours: string | null;
     caretaker_name: string | null;
   };
 };
@@ -44,6 +45,7 @@ export function ProfilBudynkuSwietlicyKlient({ hallId, poczatek }: Props) {
         caretaker_name: String(fd.get("caretaker_name") ?? "").trim() || null,
         contact_phone: String(fd.get("contact_phone") ?? "").trim() || null,
         contact_email: String(fd.get("contact_email") ?? "").trim() || null,
+        contact_duty_hours: String(fd.get("contact_duty_hours") ?? "").trim() || null,
       });
       if ("blad" in wynik) {
         ustawKomunikat(wynik.blad);
@@ -163,6 +165,26 @@ export function ProfilBudynkuSwietlicyKlient({ hallId, poczatek }: Props) {
               defaultValue={poczatek.contact_email ?? ""}
               className="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
             />
+          </div>
+          <div className="sm:col-span-2">
+            <label className="mb-1 block text-xs font-medium text-stone-600" htmlFor="pb-duty">
+              Godziny dyżurów opiekuna
+            </label>
+            <input
+              id="pb-duty"
+              name="contact_duty_hours"
+              maxLength={500}
+              defaultValue={poczatek.contact_duty_hours ?? ""}
+              placeholder="np. pon.–pt. 16:00–18:00, sob. przed wydarzeniami"
+              className="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
+            />
+            <p className="mt-1 text-xs text-stone-500">
+              Te dane trafią na profil publiczny wsi i do dokumentu wynajmu. Kontakty urzędowe (sołtys, rada) edytujesz w{" "}
+              <a href="/panel/soltys/spolecznosc" className="text-emerald-800 underline">
+                Społeczność → Kontakty
+              </a>
+              .
+            </p>
           </div>
           <div className="sm:col-span-2">
             <label className="mb-1 block text-xs font-medium text-stone-600" htmlFor="pb-desc">

@@ -4,12 +4,17 @@ import {
   MarketplaceListaKlient,
   type RynekOfertaPubliczna,
 } from "@/components/wies/marketplace-lista-klient";
+import { KartaProfiluRynku } from "@/components/wies/karta-profilu-rynku";
 import type { WierszKalendarzaPublicznego } from "@/components/swietlica/kalendarz-zajetosci-publiczny";
 import type { SalaPublicznaWsi } from "@/lib/swietlica/pobierz-sale-publiczne-wsi";
 import type { WiesPubliczna } from "@/lib/wies/znajdz-wies-po-sciezce";
 import { sciezkaProfiluWsi, sciezkaGminy, sciezkaPowiatu, sciezkaWojewodztwa } from "@/lib/wies/sciezka-publiczna";
 import { ListaZakupowWsiKlient, type PozycjaListyZakupow } from "@/components/wies/lista-zakupow-wsi-klient";
 import { etykietaRodzajuWydarzenia, etykietaTypuGrupy } from "@/lib/wies/teksty-organizacji";
+import { parsujProfilParafii, parsujProfilKgw, parsujProfilLowiecki } from "@/lib/wies/profil-organizacji";
+import { KartaParafiiPubliczna } from "@/components/wies/karta-parafii-publiczna";
+import { KartaKgwPubliczna } from "@/components/wies/karta-kgw-publiczna";
+import { KartaMysliwiPubliczna } from "@/components/wies/karta-mysliwi-publiczna";
 import { etykietaKategoriiDotacji, nazwaDniaTygodnia } from "@/lib/wies/teksty-dotacji";
 import {
   SekcjaPrzewodnikSamorzadowy,
@@ -139,6 +144,8 @@ export function WiesProfilPubliczny({
     meeting_place: string | null;
     schedule_text: string | null;
     contact_phone: string | null;
+    contact_email?: string | null;
+    profile_data?: unknown;
   }[];
   wydarzenia?: {
     id: string;
@@ -204,6 +211,12 @@ export function WiesProfilPubliczny({
   zapisaneTresci?: Record<string, string>;
 }) {
   const sciezka = sciezkaProfiluWsi(wies);
+  const parafie = organizacje.filter((o) => o.group_type === "parafia");
+  const kolaKgw = organizacje.filter((o) => o.group_type === "kgw");
+  const kolaLowieckie = organizacje.filter((o) => o.group_type === "lowiectwo");
+  const organizacjePozostale = organizacje.filter(
+    (o) => o.group_type !== "parafia" && o.group_type !== "kgw" && o.group_type !== "lowiectwo",
+  );
   const prefixOgloszenia = `${sciezka}/ogloszenie`;
   const pilneAlerty = filtrujPilneAlerty(posty);
   const laczonyFeed = zbudujLaczonyFeedAktualnosci(
@@ -345,7 +358,11 @@ export function WiesProfilPubliczny({
       </header>
 
       <WiesPilneAlerty alerty={pilneAlerty} sciezkaOgloszenia={prefixOgloszenia} />
-      <OstrzezeniaLowieckieWsi ostrzezenia={ostrzezeniaLowieckie} nazwaWsi={wies.name} />
+      <OstrzezeniaLowieckieWsi
+        ostrzezenia={ostrzezeniaLowieckie}
+        nazwaWsi={wies.name}
+        maProfilKola={kolaLowieckie.length > 0}
+      />
       <WiesKontaktSzybkiPasek kontakty={kontaktyUrzedowe} />
 
       {wies.description ? (
@@ -551,7 +568,7 @@ export function WiesProfilPubliczny({
         </OslonaSekcjiWies>
       ) : null}
 
-      {(organizacje.length > 0 || wydarzenia.length > 0) ? (
+      {(parafie.length > 0 || kolaKgw.length > 0 || kolaLowieckie.length > 0 || organizacjePozostale.length > 0 || wydarzenia.length > 0) ? (
         <OslonaSekcjiWies>
           <TytulSekcjiWies
             etykieta="Organizacje"
@@ -563,12 +580,84 @@ export function WiesProfilPubliczny({
               Zobacz pełny kalendarz wydarzeń
             </Link>
           </p>
-          <div className="mt-5 grid gap-6 lg:grid-cols-2">
-            {organizacje.length > 0 ? (
+
+          {parafie.length > 0 ? (
+            <div className="mt-5 space-y-4">
+              {parafie.map((p) => (
+                <KartaParafiiPubliczna
+                  key={p.id}
+                  parafia={{
+                    id: p.id,
+                    name: p.name,
+                    short_description: p.short_description,
+                    meeting_place: p.meeting_place,
+                    schedule_text: p.schedule_text,
+                    contact_phone: p.contact_phone,
+                    contact_email: p.contact_email ?? null,
+                    profil: parsujProfilParafii(p.profile_data),
+                  }}
+                  sciezkaWydarzenia={`${sciezka}/wydarzenia`}
+                />
+              ))}
+            </div>
+          ) : null}
+
+          {kolaKgw.length > 0 ? (
+            <div className={`space-y-4 ${parafie.length > 0 ? "mt-6" : "mt-5"}`}>
+              {kolaKgw.map((k) => (
+                <KartaKgwPubliczna
+                  key={k.id}
+                  kgw={{
+                    id: k.id,
+                    name: k.name,
+                    short_description: k.short_description,
+                    meeting_place: k.meeting_place,
+                    schedule_text: k.schedule_text,
+                    contact_phone: k.contact_phone,
+                    contact_email: k.contact_email ?? null,
+                    profil: parsujProfilKgw(k.profile_data),
+                  }}
+                  sciezkaWydarzenia={`${sciezka}/wydarzenia`}
+                  sciezkaDotacje={`${sciezka}/dotacje`}
+                />
+              ))}
+            </div>
+          ) : null}
+
+          {kolaLowieckie.length > 0 ? (
+            <div
+              className={`space-y-4 ${parafie.length > 0 || kolaKgw.length > 0 ? "mt-6" : "mt-5"}`}
+            >
+              {kolaLowieckie.map((k) => (
+                <KartaMysliwiPubliczna
+                  key={k.id}
+                  kolo={{
+                    id: k.id,
+                    name: k.name,
+                    short_description: k.short_description,
+                    meeting_place: k.meeting_place,
+                    schedule_text: k.schedule_text,
+                    contact_phone: k.contact_phone,
+                    contact_email: k.contact_email ?? null,
+                    profil: parsujProfilLowiecki(k.profile_data),
+                  }}
+                  maAktywneOstrzezenia={ostrzezeniaLowieckie.length > 0}
+                  sciezkaWydarzenia={`${sciezka}/wydarzenia`}
+                />
+              ))}
+            </div>
+          ) : null}
+
+          <div
+            className={`grid gap-6 lg:grid-cols-2 ${
+              parafie.length > 0 || kolaKgw.length > 0 || kolaLowieckie.length > 0 ? "mt-6" : "mt-5"
+            }`}
+          >
+            {organizacjePozostale.length > 0 ? (
               <div>
                 <h3 className="text-xs font-semibold uppercase tracking-wide text-stone-500">Organizacje</h3>
                 <ul className="mt-3 space-y-3">
-                  {organizacje.map((o) => (
+                  {organizacjePozostale.map((o) => (
                     <li key={o.id} className={KARTA_LISTY_WIES}>
                       <p className="text-xs text-rose-800">{etykietaTypuGrupy(o.group_type)}</p>
                       <p className="mt-1 font-medium text-stone-900">{o.name}</p>
@@ -641,7 +730,7 @@ export function WiesProfilPubliczny({
       ) : null}
 
       {mozeZobaczycListeZakupow ? (
-        <OslonaSekcjiWies>
+        <OslonaSekcjiWies id="lista-zakupow-kgw">
           <TytulSekcjiWies
             etykieta="KGW"
             tytul="Lista zakupów KGW"
@@ -723,32 +812,52 @@ export function WiesProfilPubliczny({
           <TytulSekcjiWies
             etykieta="Rynek"
             tytul="Darmowy rynek lokalny"
-            opis="Produkty z gospodarstw (miód, sery, mięso), maszyny, usługi mieszkańców — bezpłatnie, wygasłe ogłoszenia archiwizują się same."
+            opis="Produkty z gospodarstw, maszyny i usługi mieszkańców — bezpłatnie, z wiadomościami między zalogowanymi użytkownikami."
           />
+
+          <div className="mt-4 flex flex-wrap gap-2">
+            <Link
+              href={`${sciezka}/rynek`}
+              className="rounded-xl bg-green-800 px-4 py-2 text-sm font-semibold text-white hover:bg-green-900"
+            >
+              Przeglądaj wszystkie ogłoszenia
+            </Link>
+            <Link
+              href="/panel/mieszkaniec/marketplace"
+              className="rounded-xl border border-green-800 px-4 py-2 text-sm font-semibold text-green-900 hover:bg-green-50"
+            >
+              Dodaj ogłoszenie
+            </Link>
+          </div>
+
           {profileUslug.length > 0 ? (
-            <ul className="mt-4 grid gap-3 sm:grid-cols-2">
-              {profileUslug.map((p) => (
-                <li key={p.id} className={KARTA_LISTY_WIES}>
-                  <p className="font-medium text-stone-900">{p.business_name}</p>
-                  <p className="mt-1 text-xs text-stone-600">{p.short_description ?? "Profil usług lokalnych."}</p>
-                  <p className="mt-2 text-xs text-stone-500">
-                    {(p.categories ?? []).slice(0, 3).join(" · ") || "Usługi lokalne"}
-                    {p.phone ? ` · tel. ${p.phone}` : ""}
-                    {p.is_verified ? " · zweryfikowany" : ""}
-                  </p>
-                </li>
-              ))}
-            </ul>
+            <section className="mt-6">
+              <h3 className="text-sm font-semibold text-stone-800">Profile usługodawców</h3>
+              <ul className="mt-3 grid gap-3 sm:grid-cols-2">
+                {profileUslug.map((p) => (
+                  <li key={p.id}>
+                    <KartaProfiluRynku profil={p} sciezkaWsi={sciezka} />
+                  </li>
+                ))}
+              </ul>
+            </section>
           ) : null}
+
           {rynek.length > 0 ? (
-            <div className="mt-4">
+            <section className={profileUslug.length > 0 ? "mt-8" : "mt-6"}>
+              <h3 className="text-sm font-semibold text-stone-800">
+                {profileUslug.length > 0 ? "Najnowsze ogłoszenia" : "Ogłoszenia"}
+              </h3>
               <MarketplaceListaKlient
                 oferty={rynek}
                 sciezkaWsi={sciezka}
                 kotwicaZasadSwietlicy={`${sciezka}#swietlica-regulamin`}
-                limitWyswietlania={8}
+                limitWyswietlania={6}
+                tryb="skrot"
               />
-            </div>
+            </section>
+          ) : profileUslug.length > 0 ? (
+            <p className="mt-4 text-sm text-stone-500">Brak aktywnych ogłoszeń — zobacz profile usługodawców powyżej.</p>
           ) : null}
         </OslonaSekcjiWies>
       ) : null}

@@ -146,7 +146,7 @@ export async function WiesSzukajTresci({
       klucz: `m-${r.id}`,
       typ: "Rynek lokalny",
       tytul: r.title,
-      href: `${sciezka}#sekcja-rynek-lokalny`,
+      href: `${sciezka}/rynek/${r.id}`,
       meta: `${r.listing_type} · ${new Date(r.published_at ?? r.created_at).toLocaleDateString("pl-PL")}`,
     });
   }

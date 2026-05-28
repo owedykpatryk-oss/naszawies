@@ -12,6 +12,7 @@ export const ETYKIETA_TYP_GRUPY: Record<string, string> = {
   sport: "Klub / sport",
   taniec: "Grupa taneczna",
   muzyka: "Zespół / muzyka",
+  lowiectwo: "Koło łowieckie / myśliwi",
   kolo: "Koło / stowarzyszenie",
   inne: "Inna organizacja",
 };
@@ -23,6 +24,18 @@ export const ETYKIETA_RODZAJU_WYDARZENIA: Record<string, string> = {
   wystep: "Występ / koncert",
   spotkanie: "Spotkanie",
   festyn: "Festyn / impreza",
+  msza: "Msza św.",
+  nabozenstwo: "Nabożeństwo",
+  katecheza: "Katecheza / formacja",
+  sakrament: "Chrzest / ślub / pogrzeb",
+  zebranie_kgw: "Zebranie KGW",
+  kiermasz: "Kiermasz / jarmark",
+  warsztaty: "Warsztaty / zajęcia",
+  piknik: "Piknik / festyn wiejski",
+  polowanie: "Polowanie (informacja)",
+  zebranie_lowieckie: "Zebranie koła",
+  szkolenie_lowieckie: "Szkolenie / egzamin",
+  hubertus: "Hubertus / uroczystość",
   inne: "Wydarzenie",
 };
 

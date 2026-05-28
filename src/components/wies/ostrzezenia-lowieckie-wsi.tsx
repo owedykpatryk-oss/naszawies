@@ -6,7 +6,15 @@ function formatujZakres(start: string, end: string): string {
   return `${fmt.format(new Date(start))} – ${fmt.format(new Date(end))}`;
 }
 
-export function OstrzezeniaLowieckieWsi({ ostrzezenia, nazwaWsi }: { ostrzezenia: OstrzezenieLowieckie[]; nazwaWsi: string }) {
+export function OstrzezeniaLowieckieWsi({
+  ostrzezenia,
+  nazwaWsi,
+  maProfilKola = false,
+}: {
+  ostrzezenia: OstrzezenieLowieckie[];
+  nazwaWsi: string;
+  maProfilKola?: boolean;
+}) {
   if (ostrzezenia.length === 0) return null;
 
   return (
@@ -16,6 +24,14 @@ export function OstrzezeniaLowieckieWsi({ ostrzezenia, nazwaWsi }: { ostrzezenia
         <h2 className="mt-1 font-serif text-xl text-amber-950">Informacja dla mieszkańców i gości</h2>
         <p className="mt-2 text-sm text-amber-950/90">
           W rejonie {nazwaWsi} prowadzone są polowania. Prosimy o ostrożność i unikanie oznaczonych terenów w podanym czasie.
+          {maProfilKola ? (
+            <>
+              {" "}
+              <a href="#mysliwi" className="font-medium underline hover:text-amber-950">
+                Profil koła łowieckiego ↑
+              </a>
+            </>
+          ) : null}
         </p>
         <ul className="mt-4 space-y-4">
           {ostrzezenia.map((o) => (

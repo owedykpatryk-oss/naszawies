@@ -4,6 +4,7 @@ export const typyElementuPlanu = [
   "stol_prostokatny",
   "stol_okragly",
   "lawka",
+  "strefa",
   "inne",
 ] as const;
 
@@ -30,6 +31,14 @@ export type PlanSaliJson = {
   szerokosc_sali_m: number | null;
   dlugosc_sali_m: number | null;
   elementy: ElementPlanuSali[];
+};
+
+/** Zapisany wariant planu sali (nazwane presety sołtysa). */
+export type PresetPlanuSali = {
+  id: string;
+  nazwa: string;
+  plan: PlanSaliJson;
+  utworzono_at?: string;
 };
 
 export const pustyPlanSali = (): PlanSaliJson => ({
@@ -121,4 +130,30 @@ export function klonPlanuSali(p: PlanSaliJson): PlanSaliJson {
 
 export function sumaMiejscWPlanie(plan: PlanSaliJson): number {
   return plan.elementy.reduce((s, e) => s + (e.miejsca ?? 0), 0);
+}
+
+const schemaPresetPlanu = z.object({
+  id: z.string().uuid(),
+  nazwa: z.string().trim().min(1).max(80),
+  plan: schemaPlanSali,
+  utworzono_at: z.string().optional(),
+});
+
+export function parsujPresetyPlanu(raw: unknown): PresetPlanuSali[] {
+  if (!Array.isArray(raw)) return [];
+  const out: PresetPlanuSali[] = [];
+  for (const item of raw) {
+    const w = schemaPresetPlanu.safeParse(item);
+    if (w.success) out.push(mapZodDoPlanSaliPreset(w.data));
+  }
+  return out;
+}
+
+function mapZodDoPlanSaliPreset(p: z.infer<typeof schemaPresetPlanu>): PresetPlanuSali {
+  return {
+    id: p.id,
+    nazwa: p.nazwa,
+    plan: mapZodDoPlanSali(p.plan),
+    utworzono_at: p.utworzono_at,
+  };
 }

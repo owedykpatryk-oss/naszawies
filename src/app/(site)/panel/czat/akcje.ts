@@ -6,7 +6,14 @@ import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
 
 const uuid = z.string().uuid();
 
-export type WynikCzat = { blad: string } | { ok: true; conversationId?: string };
+export type WynikCzat = { blad: string } | { ok: true; conversationId?: string; wiadomosc?: WiadomoscCzatZwrot };
+
+export type WiadomoscCzatZwrot = {
+  id: string;
+  body: string;
+  created_at: string;
+  sender_id: string;
+};
 
 export async function rozpocznijCzatZOgloszenia(listingId: string): Promise<WynikCzat> {
   const id = uuid.safeParse(listingId);
@@ -106,13 +113,17 @@ export async function wyslijWiadomoscCzat(conversationId: string, body: string):
   } = await supabase.auth.getUser();
   if (!user) return { blad: "Zaloguj się." };
 
-  const { error } = await supabase.from("chat_messages").insert({
-    conversation_id: cid.data,
-    sender_id: user.id,
-    body: tekst.data,
-  });
+  const { data: wiersz, error } = await supabase
+    .from("chat_messages")
+    .insert({
+      conversation_id: cid.data,
+      sender_id: user.id,
+      body: tekst.data,
+    })
+    .select("id, body, created_at, sender_id")
+    .single();
 
-  if (error) return { blad: "Nie udało się wysłać." };
+  if (error || !wiersz) return { blad: "Nie udało się wysłać." };
 
   await supabase
     .from("chat_members")
@@ -161,7 +172,57 @@ export async function wyslijWiadomoscCzat(conversationId: string, body: string):
 
   revalidatePath(`/panel/czat/${cid.data}`);
   revalidatePath("/panel/czat");
-  return { ok: true };
+  return { ok: true, wiadomosc: wiersz };
+}
+
+export async function pobierzStarszeWiadomosciCzat(
+  conversationId: string,
+  przedCreatedAt: string,
+): Promise<{ blad: string } | { ok: true; wiadomosci: WiadomoscCzatZwrot[]; nadawcy: Record<string, string> }> {
+  const cid = uuid.safeParse(conversationId);
+  const przed = z.string().min(10).safeParse(przedCreatedAt);
+  if (!cid.success || !przed.success) return { blad: "Niepoprawne dane." };
+
+  const supabase = utworzKlientaSupabaseSerwer();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { blad: "Zaloguj się." };
+
+  const { data: czlonkostwo } = await supabase
+    .from("chat_members")
+    .select("user_id")
+    .eq("conversation_id", cid.data)
+    .eq("user_id", user.id)
+    .maybeSingle();
+
+  if (!czlonkostwo) return { blad: "Brak dostępu." };
+
+  const { data: wiadRaw } = await supabase
+    .from("chat_messages")
+    .select("id, body, created_at, sender_id, users(display_name)")
+    .eq("conversation_id", cid.data)
+    .lt("created_at", przed.data)
+    .order("created_at", { ascending: false })
+    .limit(50);
+
+  const wiersze = (wiadRaw ?? []).reverse();
+  const nadawcy: Record<string, string> = {};
+  for (const w of wiersze) {
+    const u = Array.isArray(w.users) ? w.users[0] : w.users;
+    nadawcy[w.sender_id] = (u as { display_name: string } | null)?.display_name ?? "Użytkownik";
+  }
+
+  return {
+    ok: true,
+    wiadomosci: wiersze.map((w) => ({
+      id: w.id,
+      body: w.body,
+      created_at: w.created_at,
+      sender_id: w.sender_id,
+    })),
+    nadawcy,
+  };
 }
 
 export async function zaprosDoGrupyCzatu(conversationId: string, inviteUserId: string): Promise<WynikCzat> {

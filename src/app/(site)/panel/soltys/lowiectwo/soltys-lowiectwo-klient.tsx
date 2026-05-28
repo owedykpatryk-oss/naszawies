@@ -107,6 +107,10 @@ export function SoltysLowiectwoKlient({ wsie, wiersze: poczatkowe }: Props) {
           </div>
         </form>
         <p className="mt-3 text-xs text-stone-500">
+          <Link href="/panel/soltys/spolecznosc?tryb=mysliwi" className="link-panel">
+            Profil koła łowieckiego (Społeczność)
+          </Link>
+          {" · "}
           <Link href="/pomoc?rola=mysliwi" className="link-panel">
             Przewodnik dla myśliwych
           </Link>

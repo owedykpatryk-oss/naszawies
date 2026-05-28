@@ -21,7 +21,10 @@ import {
   generujWyspyWarsztatowe,
 } from "@/lib/swietlica/plan-sali-presety";
 import { zapiszPlanSali } from "@/app/(site)/panel/soltys/akcje";
-import { PlanSaliRysunek } from "./plan-sali-rysunek";
+import { PlanSaliRysunek, type ZnacznikNaPlanie } from "./plan-sali-rysunek";
+import { PresetyPlanuSaliKlient } from "./presety-planu-sali-klient";
+import type { PresetPlanuSali } from "@/lib/swietlica/plan-sali";
+import { ograniczElementDoObszaru, type ProstokatProc } from "@/lib/swietlica/mapowanie-rzutu-plan";
 
 type SzablonLokalny = { id: string; nazwa: string; json: string };
 
@@ -32,6 +35,12 @@ type Props = {
   pojemnoscSali?: number | null;
   /** Wymiary bryły z rzutu parteru — do przeniesienia na plan stołów. */
   wymiaryZRzutu?: { bryla_szer_m: number; bryla_gleb_m: number } | null;
+  /** Znaczniki wejść/okien z rzutu parteru */
+  znacznikiRzutu?: ZnacznikNaPlanie[];
+  /** Obszar do ograniczenia stołów */
+  obszarStolow?: ProstokatProc;
+  /** Zapisane warianty planu */
+  layoutPresety?: PresetPlanuSali[];
 };
 
 const MAX_COFANIA = 22;
@@ -67,6 +76,19 @@ function useEkranMinLg(): boolean {
 }
 
 function nowyStol(typ: TypElementuPlanu): ElementPlanuSali {
+  if (typ === "strefa") {
+    return {
+      id: crypto.randomUUID(),
+      typ: "strefa",
+      x: 15,
+      y: 10,
+      szer: 20,
+      wys: 12,
+      obrot: 0,
+      etykieta: "Bufet",
+      miejsca: 0,
+    };
+  }
   return {
     id: crypto.randomUUID(),
     typ,
@@ -84,7 +106,15 @@ function nowyStol(typ: TypElementuPlanu): ElementPlanuSali {
 
 const KLUCZ_SZABLONOW = (h: string) => `plan-sali-szablony-v1-${h}`;
 
-export function PlanSaliEdytor({ hallId, poczatkowyPlan, pojemnoscSali = null, wymiaryZRzutu = null }: Props) {
+export function PlanSaliEdytor({
+  hallId,
+  poczatkowyPlan,
+  pojemnoscSali = null,
+  wymiaryZRzutu = null,
+  znacznikiRzutu = [],
+  obszarStolow = { x: 0, y: 0, w: 100, h: 70 },
+  layoutPresety = [],
+}: Props) {
   const [plan, ustawPlan] = useState<PlanSaliJson>(() => ({
     wersja: 1,
     szerokosc_sali_m: poczatkowyPlan.szerokosc_sali_m,
@@ -327,8 +357,12 @@ export function PlanSaliEdytor({ hallId, poczatkowyPlan, pojemnoscSali = null, w
         if (!el) return p;
         const dx = ((e.clientX - d.startClientX) / r.width) * 100;
         const dy = ((e.clientY - d.startClientY) / r.height) * 70;
-        const nx = Math.min(100 - el.szer, Math.max(0, d.startX + dx));
-        const ny = Math.min(70 - el.wys, Math.max(0, d.startY + dy));
+        const pos = ograniczElementDoObszaru(
+          { x: d.startX + dx, y: d.startY + dy, szer: el.szer, wys: el.wys },
+          obszarStolow,
+        );
+        const nx = pos.x;
+        const ny = pos.y;
         return {
           ...p,
           elementy: p.elementy.map((x) => (x.id === d.id ? { ...x, x: nx, y: ny } : x)),
@@ -1074,6 +1108,13 @@ export function PlanSaliEdytor({ hallId, poczatkowyPlan, pojemnoscSali = null, w
             >
               + Ławka
             </button>
+            <button
+              type="button"
+              onClick={() => mutujZOstatnimStanie((p) => ({ ...p, elementy: [...p.elementy, nowyStol("strefa")] }))}
+              className="min-h-11 touch-manipulation rounded-xl border border-violet-300 bg-violet-50 px-3.5 py-2.5 text-xs font-medium text-violet-950 active:bg-violet-100 sm:min-h-0 sm:py-2 sm:text-sm"
+            >
+              + Strefa
+            </button>
           </div>
         </div>
         <div>
@@ -1241,8 +1282,15 @@ export function PlanSaliEdytor({ hallId, poczatkowyPlan, pojemnoscSali = null, w
 
       <div className="mt-5 overflow-hidden rounded-xl border border-stone-200/90 bg-stone-100/50 p-3.5 print:hidden sm:p-4">
         <p className="text-xs font-bold uppercase tracking-widest text-stone-500">Podgląd (jak u mieszkańca)</p>
-        <PlanSaliRysunek plan={plan} className="mt-3 h-auto max-h-48 w-full max-w-lg sm:max-h-64" />
+        <PlanSaliRysunek plan={plan} znaczniki={znacznikiRzutu} className="mt-3 h-auto max-h-48 w-full max-w-lg sm:max-h-64" />
       </div>
+
+      <PresetyPlanuSaliKlient
+        hallId={hallId}
+        aktualnyPlan={plan}
+        presety={layoutPresety}
+        onWczytajPreset={(p) => mutujZOstatnimStanie(() => klonPlanuSali(p))}
+      />
 
       {!ekranLg ? (
         <div

@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { FormEvent, useEffect, useMemo, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import {
@@ -27,6 +28,12 @@ import {
   TRYBY_PRACY_OPCJE,
   type TrybOrganizacji,
 } from "./tryby-pracy";
+import {
+  ProfilParafiiKlient,
+} from "@/components/panel/soltys/profil-parafii-klient";
+import { ProfilKgwKlient } from "@/components/panel/soltys/profil-kgw-klient";
+import { ProfilMysliwiKlient } from "@/components/panel/soltys/profil-mysliwi-klient";
+import type { OrganizacjaPelna } from "@/lib/wies/profil-organizacji";
 
 export type WiesDoModeracjiSpolecznosci = {
   id: string;
@@ -95,6 +102,7 @@ type SekcjaPracy =
 export function SoltysSpolecznoscKlient({
   wsie,
   grupyOrganizacji = [],
+  organizacjePelne = [],
   slotyHarmonogramu = [],
   zrodlaDotacji = [],
   kontaktyUrzedowe = [],
@@ -103,6 +111,7 @@ export function SoltysSpolecznoscKlient({
 }: {
   wsie: WiesDoModeracjiSpolecznosci[];
   grupyOrganizacji?: GrupaOrganizacjiWiersz[];
+  organizacjePelne?: OrganizacjaPelna[];
   slotyHarmonogramu?: SlotHarmonogramuWiersz[];
   zrodlaDotacji?: ZrodloDotacjiWiersz[];
   kontaktyUrzedowe?: KontaktUrzedowyWiersz[];
@@ -177,7 +186,7 @@ export function SoltysSpolecznoscKlient({
 
   const sekcjaHint: Record<SekcjaPracy, string> = {
     kontakt_urzedowy: "Kluczowe osoby funkcyjne, dyżury i szybkie CTA dla mieszkańców.",
-    organizacje: "Dodaj strukturę KGW/OSP i kontakty.",
+    organizacje: "Dodaj strukturę KGW/OSP/parafii i kontakty.",
     wydarzenia: "Plan działań publicznych i wydarzeń.",
     harmonogram: "Stały rytm tygodniowy dla grup.",
     dotacje: "Baza możliwości finansowania inicjatyw.",
@@ -197,6 +206,13 @@ export function SoltysSpolecznoscKlient({
     organizacje: [
       "W nazwie grupy dodaj skrót miejscowości (łatwiejsze wyszukiwanie).",
       "Uzupełnij kontakt i harmonogram — to najczęściej sprawdzają mieszkańcy.",
+      tryb === "parafia"
+        ? "Msze i kancelaria trafiają na wyróżnioną sekcję #parafia na profilu wsi."
+        : tryb === "kgw"
+          ? "Zebrania i przewodnicząca trafiają na sekcję #kgw — mieszkańcy łatwo znajdą kontakt."
+          : tryb === "mysliwi"
+            ? "Profil koła i ostrzeżenia polowań — sekcja #mysliwi i baner bezpieczeństwa na profilu wsi."
+            : "Parafię, KGW i myśliwych najlepiej uzupełnić w dedykowanych trybach pracy.",
     ],
     wydarzenia: [
       "W tytule użyj formatu: co + kiedy (np. Trening OSP — wtorek 18:00).",
@@ -440,6 +456,18 @@ export function SoltysSpolecznoscKlient({
             | "wystep"
             | "spotkanie"
             | "festyn"
+            | "msza"
+            | "nabozenstwo"
+            | "katecheza"
+            | "sakrament"
+            | "zebranie_kgw"
+            | "kiermasz"
+            | "warsztaty"
+            | "piknik"
+            | "polowanie"
+            | "zebranie_lowieckie"
+            | "szkolenie_lowieckie"
+            | "hubertus"
             | "inne",
           title: String(fd.get("title") ?? ""),
           description: String(fd.get("description") ?? "") || null,
@@ -613,6 +641,32 @@ export function SoltysSpolecznoscKlient({
         </ul>
       </aside>
       <div className="flex flex-wrap gap-2 text-xs">
+        {tryb === "parafia" ? (
+          <>
+            <button type="button" onClick={() => setSekcjaAktywna("organizacje")} className="sekcja-form-nav-link">
+              Start parafii: profil
+            </button>
+            <button type="button" onClick={() => setSekcjaAktywna("wydarzenia")} className="sekcja-form-nav-link">
+              Wydarzenia liturgiczne
+            </button>
+            <button type="button" onClick={() => setSekcjaAktywna("harmonogram")} className="sekcja-form-nav-link">
+              Grupy tygodniowe
+            </button>
+          </>
+        ) : null}
+        {tryb === "mysliwi" ? (
+          <>
+            <button type="button" onClick={() => setSekcjaAktywna("organizacje")} className="sekcja-form-nav-link">
+              Start: profil koła
+            </button>
+            <Link href="/panel/soltys/lowiectwo" className="sekcja-form-nav-link">
+              Ostrzeżenia polowań
+            </Link>
+            <button type="button" onClick={() => setSekcjaAktywna("wydarzenia")} className="sekcja-form-nav-link">
+              Hubertus / zebrania
+            </button>
+          </>
+        ) : null}
         {tryb === "kgw" ? (
           <>
             <button type="button" onClick={() => setSekcjaAktywna("organizacje")} className="sekcja-form-nav-link">
@@ -743,7 +797,23 @@ export function SoltysSpolecznoscKlient({
       </section>
       ) : null}
 
-      {sekcjaAktywna === "organizacje" ? (
+      {sekcjaAktywna === "organizacje" && tryb === "parafia" ? (
+        <ProfilParafiiKlient
+          villageId={villageId}
+          villageName={villageName}
+          organizacje={organizacjePelne}
+        />
+      ) : null}
+
+      {sekcjaAktywna === "organizacje" && tryb === "kgw" ? (
+        <ProfilKgwKlient villageId={villageId} villageName={villageName} organizacje={organizacjePelne} />
+      ) : null}
+
+      {sekcjaAktywna === "organizacje" && tryb === "mysliwi" ? (
+        <ProfilMysliwiKlient villageId={villageId} villageName={villageName} organizacje={organizacjePelne} />
+      ) : null}
+
+      {sekcjaAktywna === "organizacje" && tryb !== "parafia" && tryb !== "kgw" && tryb !== "mysliwi" ? (
       <form
         id="sekcja-organizacje"
         onSubmit={onDodajOrganizacje}
@@ -803,13 +873,54 @@ export function SoltysSpolecznoscKlient({
         </p>
         <div className="mt-4 grid gap-3 md:grid-cols-2">
           <select name="event_kind" className="rounded border border-stone-300 px-3 py-2 text-sm">
-            <option value="mecz">Mecz / zawody</option>
-            <option value="wyjazd">Wyjazd / wycieczka</option>
-            <option value="proba">Próba / zajęcia</option>
-            <option value="wystep">Występ / koncert</option>
-            <option value="spotkanie">Spotkanie</option>
-            <option value="festyn">Festyn / impreza</option>
-            <option value="inne">Inne</option>
+            {tryb === "kgw" ? (
+              <>
+                <option value="zebranie_kgw">Zebranie KGW</option>
+                <option value="kiermasz">Kiermasz / jarmark</option>
+                <option value="warsztaty">Warsztaty / zajęcia</option>
+                <option value="piknik">Piknik / festyn wiejski</option>
+                <option value="festyn">Impreza / festyn</option>
+                <option value="wystep">Występ / pokaz</option>
+                <option value="wyjazd">Wyjazd / wycieczka</option>
+                <option value="spotkanie">Spotkanie</option>
+                <option value="inne">Inne</option>
+              </>
+            ) : tryb === "mysliwi" ? (
+              <>
+                <option value="polowanie">Polowanie (informacja)</option>
+                <option value="zebranie_lowieckie">Zebranie koła</option>
+                <option value="hubertus">Hubertus</option>
+                <option value="szkolenie_lowieckie">Szkolenie / egzamin</option>
+                <option value="spotkanie">Spotkanie</option>
+                <option value="wyjazd">Wyjazd</option>
+                <option value="inne">Inne</option>
+              </>
+            ) : tryb === "parafia" ? (
+              <>
+                <option value="msza">Msza św.</option>
+                <option value="nabozenstwo">Nabożeństwo</option>
+                <option value="katecheza">Katecheza / formacja</option>
+                <option value="sakrament">Chrzest / ślub / pogrzeb</option>
+                <option value="spotkanie">Spotkanie parafialne</option>
+                <option value="wyjazd">Pielgrzymka / wyjazd</option>
+                <option value="wystep">Koncert / występ</option>
+                <option value="inne">Inne</option>
+              </>
+            ) : (
+              <>
+                <option value="mecz">Mecz / zawody</option>
+                <option value="wyjazd">Wyjazd / wycieczka</option>
+                <option value="proba">Próba / zajęcia</option>
+                <option value="wystep">Występ / koncert</option>
+                <option value="spotkanie">Spotkanie</option>
+                <option value="festyn">Festyn / impreza</option>
+                <option value="msza">Msza św.</option>
+                <option value="nabozenstwo">Nabożeństwo</option>
+                <option value="katecheza">Katecheza</option>
+                <option value="sakrament">Chrzest / ślub / pogrzeb</option>
+                <option value="inne">Inne</option>
+              </>
+            )}
           </select>
           <select name="group_id" className="rounded border border-stone-300 px-3 py-2 text-sm">
             <option value="">— bez przypisanej grupy —</option>

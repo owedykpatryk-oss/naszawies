@@ -6,12 +6,15 @@ import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
 import { NawigacjaSali } from "@/components/swietlica/nawigacja-sali";
 import { KartaBudynkuSwietlicy } from "@/components/swietlica/karta-budynku-swietlicy";
 import { ProfilBudynkuSwietlicyKlient } from "@/components/swietlica/profil-budynku-swietlicy-klient";
-import { GeneratorRzutuParteruSaliKlient } from "@/components/swietlica/generator-rzutu-parteru-sali-klient";
+import { EdytorRzutuParteruSaliKlient } from "@/components/swietlica/edytor-rzutu-parteru-sali-klient";
 import { PlanSaliEdytor } from "@/components/swietlica/plan-sali-edytor";
+import { StatystykiSwietlicyKlient } from "@/components/swietlica/statystyki-swietlicy-klient";
+import { SoltysOnboardingSwietlicyKlient } from "@/components/swietlica/soltys-onboarding-swietlicy-klient";
 import { RegulaminPlacuZabawKlient } from "@/components/swietlica/regulamin-placu-zabaw-klient";
 import { RegulaminSaliKlient } from "@/components/swietlica/regulamin-sali-klient";
-import { parsujPlanZJsonb } from "@/lib/swietlica/plan-sali";
+import { parsujPlanZJsonb, parsujPresetyPlanu } from "@/lib/swietlica/plan-sali";
 import { parsujRzutParteruZJsonb } from "@/lib/swietlica/rzut-parteru-sali";
+import { wyznaczObszarStolow, znacznikiNaPlanieStolow } from "@/lib/swietlica/mapowanie-rzutu-plan";
 import { pojedynczaWies } from "@/lib/supabase/wies-z-zapytania";
 import { AsortymentSwietlicyKlient, type PozycjaWyposazenia } from "./asortyment-klient";
 
@@ -39,7 +42,7 @@ export default async function SoltysSwietlicaHallPage({ params }: Props) {
   const { data: sala, error: salaErr } = await supabase
     .from("halls")
     .select(
-      "id, name, description, address, area_m2, max_capacity, parking_spaces, village_id, layout_data, floor_plan_data, rules_text, rules_file_url, rules_file_name, deposit, price_resident, price_external, contact_phone, contact_email, caretaker_name, villages(id, name, playground_rules_text)"
+      "id, name, description, address, area_m2, max_capacity, parking_spaces, village_id, layout_data, layout_presets, floor_plan_data, rules_text, rules_file_url, rules_file_name, deposit, price_resident, price_external, contact_phone, contact_email, contact_duty_hours, caretaker_name, villages(id, name, playground_rules_text)"
     )
     .eq("id", hallId)
     .maybeSingle();
@@ -69,9 +72,18 @@ export default async function SoltysSwietlicaHallPage({ params }: Props) {
     console.error("[soltys swietlica hall] inventory", invErr.message);
   }
 
+  const { data: rezerwacje } = await supabase
+    .from("hall_bookings")
+    .select("status, expected_guests, layout_data")
+    .eq("hall_id", hallId);
+
   const pozycje = (inv ?? []) as PozycjaWyposazenia[];
   const plan = parsujPlanZJsonb(sala.layout_data);
+  const layoutPresety = parsujPresetyPlanu(sala.layout_presets);
   const rzutParteru = parsujRzutParteruZJsonb(sala.floor_plan_data);
+  const znacznikiRzutu = znacznikiNaPlanieStolow(rzutParteru);
+  const obszarStolow = wyznaczObszarStolow(rzutParteru);
+
   const dep = sala.deposit != null ? Number(sala.deposit) : null;
   const pr = sala.price_resident != null ? Number(sala.price_resident) : null;
   const pe = sala.price_external != null ? Number(sala.price_external) : null;
@@ -82,6 +94,31 @@ export default async function SoltysSwietlicaHallPage({ params }: Props) {
     rzutParteru && rzutParteru.bryla_szer_m > 0 && rzutParteru.bryla_gleb_m > 0
       ? { bryla_szer_m: rzutParteru.bryla_szer_m, bryla_gleb_m: rzutParteru.bryla_gleb_m }
       : null;
+
+  const rezerw = rezerwacje ?? [];
+  const oczek = rezerw.filter((r) => r.status === "pending").length;
+  const zatw = rezerw.filter((r) => r.status === "approved").length;
+  const odrz = rezerw.filter((r) => r.status === "rejected").length;
+  const goscie = rezerw.map((r) => r.expected_guests).filter((g): g is number => typeof g === "number" && g > 0);
+  const sredniaGosci = goscie.length ? Math.round(goscie.reduce((a, b) => a + b, 0) / goscie.length) : null;
+  const presetCounts: Record<string, number> = {};
+  for (const r of rezerw) {
+    const preset =
+      r.layout_data && typeof r.layout_data === "object" && r.layout_data !== null
+        ? (r.layout_data as { preset?: string }).preset
+        : null;
+    if (preset) presetCounts[preset] = (presetCounts[preset] ?? 0) + 1;
+  }
+  const popularnyPreset =
+    Object.entries(presetCounts).sort((a, b) => b[1] - a[1])[0]?.[0] ?? null;
+
+  const krokiOnboarding = [
+    { id: "profil", label: "Uzupełnij profil budynku (adres, kontakt)", href: `#profil-budynku`, gotowe: Boolean(sala.address?.trim() && sala.contact_phone?.trim()) },
+    { id: "rzut", label: "Zapisz rzut parteru z wejściami/oknami", href: "#rzut-parteru-sali", gotowe: rzutParteru != null },
+    { id: "plan", label: "Ustaw plan stołów", href: "#plan-sali-edytor", gotowe: plan.elementy.length > 0 },
+    { id: "regulamin", label: "Opublikuj regulamin i ceny", href: "#regulamin-sali", gotowe: Boolean(sala.rules_text?.trim() || sala.rules_file_url) },
+    { id: "asortyment", label: "Dodaj asortyment sali", href: "#asortyment-sali", gotowe: pozycje.length > 0 },
+  ];
 
   return (
     <main>
@@ -94,7 +131,17 @@ export default async function SoltysSwietlicaHallPage({ params }: Props) {
       <h1 className="tytul-sekcji-panelu">{sala.name}</h1>
       <p className="mt-1 text-sm text-stone-600">{podpisWsi}</p>
 
-      <div className="mt-6">
+      <SoltysOnboardingSwietlicyKlient kroki={krokiOnboarding} />
+
+      <StatystykiSwietlicyKlient
+        rezerwacjeOczekujace={oczek}
+        rezerwacjeZatwierdzone={zatw}
+        rezerwacjeOdrzucone={odrz}
+        sredniaGosci={sredniaGosci}
+        popularnyPreset={popularnyPreset}
+      />
+
+      <div className="mt-6" id="profil-budynku">
         <KartaBudynkuSwietlicy
           nazwa={sala.name}
           adres={sala.address}
@@ -113,29 +160,37 @@ export default async function SoltysSwietlicaHallPage({ params }: Props) {
             description: sala.description,
             contact_phone: sala.contact_phone,
             contact_email: sala.contact_email,
+            contact_duty_hours: sala.contact_duty_hours as string | null,
             caretaker_name: sala.caretaker_name,
           }}
         />
       </div>
 
-      <GeneratorRzutuParteruSaliKlient hallId={hallId} poczatkowyRzut={rzutParteru} />
+      <EdytorRzutuParteruSaliKlient hallId={hallId} poczatkowyRzut={rzutParteru} />
 
-      <PlanSaliEdytor
-        hallId={hallId}
-        poczatkowyPlan={plan}
-        pojemnoscSali={sala.max_capacity}
-        wymiaryZRzutu={wymiaryZRzutu}
-      />
+      <div id="plan-sali-edytor">
+        <PlanSaliEdytor
+          hallId={hallId}
+          poczatkowyPlan={plan}
+          pojemnoscSali={sala.max_capacity}
+          wymiaryZRzutu={wymiaryZRzutu}
+          znacznikiRzutu={znacznikiRzutu}
+          obszarStolow={obszarStolow}
+          layoutPresety={layoutPresety}
+        />
+      </div>
 
-      <RegulaminSaliKlient
-        hallId={hallId}
-        rulesTextPoczatek={sala.rules_text}
-        rulesFileUrlPoczatek={sala.rules_file_url as string | null}
-        rulesFileNamePoczatek={sala.rules_file_name as string | null}
-        depositPoczatek={dep}
-        priceResidentPoczatek={pr}
-        priceExternalPoczatek={pe}
-      />
+      <div id="regulamin-sali">
+        <RegulaminSaliKlient
+          hallId={hallId}
+          rulesTextPoczatek={sala.rules_text}
+          rulesFileUrlPoczatek={sala.rules_file_url as string | null}
+          rulesFileNamePoczatek={sala.rules_file_name as string | null}
+          depositPoczatek={dep}
+          priceResidentPoczatek={pr}
+          priceExternalPoczatek={pe}
+        />
+      </div>
 
       {wies?.id ? (
         <RegulaminPlacuZabawKlient
@@ -145,7 +200,9 @@ export default async function SoltysSwietlicaHallPage({ params }: Props) {
         />
       ) : null}
 
-      <AsortymentSwietlicyKlient hallId={hallId} nazwaSali={sala.name} nazwaWsi={podpisWsi} pozycje={pozycje} />
+      <div id="asortyment-sali">
+        <AsortymentSwietlicyKlient hallId={hallId} nazwaSali={sala.name} nazwaWsi={podpisWsi} pozycje={pozycje} />
+      </div>
     </main>
   );
 }

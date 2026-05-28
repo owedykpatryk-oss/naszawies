@@ -7,7 +7,14 @@ export const metadata: Metadata = {
   description: "Zgłaszanie nielegalnych lub szkodliwych treści (DSA).",
 };
 
-export default function ZglosNaruszeniePage() {
+export default function ZglosNaruszeniePage({
+  searchParams,
+}: {
+  searchParams?: { url?: string | string[] };
+}) {
+  const urlParam = Array.isArray(searchParams?.url) ? searchParams.url[0] : searchParams?.url;
+  const urlDomyslny = typeof urlParam === "string" ? urlParam.slice(0, 2048) : "";
+
   return (
     <main className="mx-auto min-w-0 max-w-2xl py-16 text-stone-800">
       <p className="mb-6 text-sm text-stone-500">
@@ -15,7 +22,7 @@ export default function ZglosNaruszeniePage() {
           ← Strona główna
         </Link>
       </p>
-      <h1 className="font-serif text-3xl text-green-950">Zgłaszanie naruszeń (DSA)</h1>
+      <h1 className="font-serif text-3xl text-green-950">Zgłoś naruszenie (DSA)</h1>
       <p className="mt-3 text-sm leading-relaxed text-stone-600">
         Jeśli na naszawies.pl znalazłeś treść niezgodną z prawem lub regulaminem, możesz zgłosić to poniżej. W razie
         problemów z formularzem napisz na{" "}
@@ -28,7 +35,7 @@ export default function ZglosNaruszeniePage() {
         </a>{" "}
         — podaj URL, opis i dane kontaktowe.
       </p>
-      <ZglosNaruszenieFormularz />
+      <ZglosNaruszenieFormularz urlDomyslny={urlDomyslny} />
     </main>
   );
 }

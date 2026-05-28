@@ -9,7 +9,7 @@ import { pobierzMojePowiazania } from "@/lib/panel/pobierz-moje-powiazania";
 
 export const metadata = { title: "Parafia / KGW / OSP — Moje" };
 
-const KOLEJNOSC = ["parafia", "kgw", "osp", "sport"] as const;
+const KOLEJNOSC = ["parafia", "kgw", "lowiectwo", "osp", "sport"] as const;
 
 export default async function MojeOrganizacjePage() {
   const dane = await pobierzMojePowiazania();
@@ -53,8 +53,42 @@ export default async function MojeOrganizacjePage() {
                       <p className="text-xs text-stone-500">{o.nazwaWsi}</p>
                       <p className="mt-1 font-medium text-stone-900">{o.name}</p>
                       {o.short_description ? <p className="mt-1 text-sm text-stone-600">{o.short_description}</p> : null}
+                      {o.group_type === "parafia" && o.mszeSkrot ? (
+                        <p className="mt-2 text-xs text-violet-900">
+                          <span className="font-medium">Msze:</span> {o.mszeSkrot}
+                        </p>
+                      ) : null}
+                      {o.group_type === "kgw" && o.zebraniaSkrot ? (
+                        <p className="mt-2 text-xs text-rose-900">
+                          <span className="font-medium">Zebrania:</span> {o.zebraniaSkrot}
+                        </p>
+                      ) : null}
+                      {o.group_type === "lowiectwo" && o.obszarSkrot ? (
+                        <p className="mt-2 text-xs text-emerald-900">
+                          <span className="font-medium">Rejon:</span> {o.obszarSkrot}
+                          {o.obszarSkrot.length >= 120 ? "…" : ""}
+                        </p>
+                      ) : null}
+                      {(o.group_type === "parafia" || o.group_type === "kgw" || o.group_type === "lowiectwo") &&
+                      !o.profilUzupelniony ? (
+                        <p className="mt-1 text-xs text-amber-800">Profil w trakcie uzupełniania.</p>
+                      ) : null}
+                      {(o.contact_phone || o.contact_email) &&
+                      (o.group_type === "parafia" || o.group_type === "kgw" || o.group_type === "lowiectwo") ? (
+                        <p className="mt-1 text-xs text-stone-500">
+                          {o.contact_phone ? <>Tel. {o.contact_phone}</> : null}
+                          {o.contact_phone && o.contact_email ? " · " : null}
+                          {o.contact_email ? <>{o.contact_email}</> : null}
+                        </p>
+                      ) : null}
                       <Link href={o.sciezkaProfilu} className="mt-2 inline-block text-xs font-medium text-green-800 underline">
-                        Profil wsi →
+                        {o.group_type === "parafia"
+                          ? "Sekcja parafii →"
+                          : o.group_type === "kgw"
+                            ? "Sekcja KGW →"
+                            : o.group_type === "lowiectwo"
+                              ? "Sekcja myśliwych →"
+                              : "Profil wsi →"}
                       </Link>
                     </li>
                   ))}

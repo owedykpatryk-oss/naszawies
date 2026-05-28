@@ -8,6 +8,7 @@ import { PlanSaliRysunek } from "@/components/swietlica/plan-sali-rysunek";
 import { RzutParteruSaliSvg } from "@/components/swietlica/rzut-parteru-sali-svg";
 import { parsujPlanZJsonb } from "@/lib/swietlica/plan-sali";
 import { parsujRzutParteruZJsonb } from "@/lib/swietlica/rzut-parteru-sali";
+import { znacznikiNaPlanieStolow } from "@/lib/swietlica/mapowanie-rzutu-plan";
 import { pojedynczaWies } from "@/lib/supabase/wies-z-zapytania";
 import { DokumentacjaZniszczenRezerwacji } from "@/components/swietlica/dokumentacja-zniszczen-rezerwacji";
 import {
@@ -105,6 +106,7 @@ export default async function MieszkaniecSwietlicaHallPage({ params }: Props) {
   const rezerwacje = (mojeRezerwacje ?? []) as WpisRezerwacji[];
   const plan = parsujPlanZJsonb(sala.layout_data);
   const rzutParteru = parsujRzutParteruZJsonb(sala.floor_plan_data);
+  const znacznikiRzutu = znacznikiNaPlanieStolow(rzutParteru);
   const zajeteTerminy = await pobierzKalendarzZajetosciDlaHali(supabase, hallId);
 
   function dostepne(p: PozycjaWyposazenia) {
@@ -234,6 +236,8 @@ export default async function MieszkaniecSwietlicaHallPage({ params }: Props) {
           cenaObcy={sala.price_external != null ? Number(sala.price_external) : null}
           regulaminText={sala.rules_text as string | null}
           regulaminPlikUrl={(sala.rules_file_url as string | null)?.trim() || null}
+          planSali={plan}
+          znacznikiRzutu={znacznikiRzutu}
         />
       </section>
 

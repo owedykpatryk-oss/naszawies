@@ -3,6 +3,10 @@
 import { useRouter } from "next/navigation";
 import { FormEvent, useMemo, useState, useTransition } from "react";
 import { WyborTerminuSwietlicyKlient } from "@/components/swietlica/wybor-terminu-swietlicy-klient";
+import { PlanRezerwacjiEdytorKlient } from "@/components/swietlica/plan-rezerwacji-edytor-klient";
+import type { ZnacznikNaPlanie } from "@/components/swietlica/plan-sali-rysunek";
+import type { PlanSaliJson } from "@/lib/swietlica/plan-sali";
+import { zbudujPlanRezerwacji } from "@/lib/swietlica/rezerwacja-plan-sali";
 import { zlozRezerwacjeSwietlicy } from "../../akcje";
 
 const typyWydarzen = ["urodziny", "wesele", "zebranie", "zajecia", "inne"] as const;
@@ -18,6 +22,8 @@ type Props = {
   cenaObcy: number | null;
   regulaminText: string | null;
   regulaminPlikUrl: string | null;
+  planSali: PlanSaliJson;
+  znacznikiRzutu?: ZnacznikNaPlanie[];
 };
 
 function domyslnyStart(): string {
@@ -51,6 +57,8 @@ export function RezerwacjaSwietlicyFormularz({
   cenaObcy,
   regulaminText,
   regulaminPlikUrl,
+  planSali,
+  znacznikiRzutu = [],
 }: Props) {
   const router = useRouter();
   const [blad, ustawBlad] = useState("");
@@ -60,6 +68,7 @@ export function RezerwacjaSwietlicyFormularz({
   const [expectedGuestsInput, setExpectedGuestsInput] = useState<number>(20);
   const [seatingPresetInput, setSeatingPresetInput] =
     useState<(typeof typyUstawienia)[number]>("auto_bankiet");
+  const [planWlasny, setPlanWlasny] = useState<PlanSaliJson | null>(null);
   const [startAt, setStartAt] = useState(domyslnyStart);
   const [endAt, setEndAt] = useState(() => domyslnyKoniec(domyslnyStart()));
 
@@ -75,6 +84,18 @@ export function RezerwacjaSwietlicyFormularz({
     [sortedInventory]
   );
   const estimatedTables = useMemo(() => Math.max(1, Math.ceil(expectedGuestsInput / 8)), [expectedGuestsInput]);
+
+  const podgladPlanu = useMemo(
+    () =>
+      zbudujPlanRezerwacji(
+        planSali,
+        seatingPresetInput,
+        expectedGuestsInput,
+        seatingPresetInput === "wlasny" ? planWlasny : null,
+      ),
+    [planSali, seatingPresetInput, expectedGuestsInput, planWlasny],
+  );
+
   const maxRequestedGap = useMemo(() => {
     let gap = 0;
     for (const it of sortedInventory) {
@@ -166,6 +187,7 @@ export function RezerwacjaSwietlicyFormularz({
         hasAlcohol,
         contactPhone: contactPhone.length ? contactPhone : null,
         acceptRules: true as const,
+        customLayoutData: seatingPreset === "wlasny" ? planWlasny : null,
       });
       if ("blad" in wynik) {
         ustawBlad(wynik.blad);
@@ -285,8 +307,20 @@ export function RezerwacjaSwietlicyFormularz({
           <option value="teatralny">Teatralny (rzędy)</option>
           <option value="warsztatowy">Warsztatowy (wyspy)</option>
           <option value="u_ksztalt">U-kształt</option>
-          <option value="wlasny">Własny / bez zmian</option>
+          <option value="wlasny">Własny układ (edytor)</option>
         </select>
+        {seatingPresetInput === "wlasny" ? (
+          <PlanRezerwacjiEdytorKlient
+            poczatkowyPlan={planWlasny ?? planSali}
+            znaczniki={znacznikiRzutu}
+            maxGosci={maxGosci}
+            onPlanChange={setPlanWlasny}
+          />
+        ) : podgladPlanu && podgladPlanu.elementy.length > 0 ? (
+          <p className="mt-2 text-xs text-stone-600">
+            Plan bazuje na układzie sali sołtysa — preset wygeneruje ok. {podgladPlanu.elementy.length} elementów.
+          </p>
+        ) : null}
       </div>
 
       <div>

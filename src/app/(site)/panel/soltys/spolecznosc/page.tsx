@@ -5,6 +5,7 @@ import { pobierzVillageIdsRoliPaneluSoltysaDlaUzytkownikaCache } from "@/lib/pan
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
 import { SoltysSpolecznoscKlient, type WiesDoModeracjiSpolecznosci } from "./spolecznosc-klient";
 import { type TrybOrganizacji } from "./tryby-pracy";
+import type { OrganizacjaPelna } from "@/lib/wies/profil-organizacji";
 
 export const metadata: Metadata = {
   title: "Społeczność i WOW (sołtys)",
@@ -42,7 +43,9 @@ export default async function SoltysSpolecznoscPage({
 
   const { data: grupyRows } = await supabase
     .from("village_community_groups")
-    .select("id, village_id, name, group_type")
+    .select(
+      "id, village_id, name, group_type, short_description, contact_phone, contact_email, meeting_place, schedule_text, profile_data",
+    )
     .in("village_id", villageIds)
     .eq("is_active", true)
     .order("name");
@@ -52,6 +55,7 @@ export default async function SoltysSpolecznoscPage({
     name: string;
     group_type: string;
   }[];
+  const organizacjePelne = (grupyRows ?? []) as OrganizacjaPelna[];
 
   const { data: slotyRows } = await supabase
     .from("village_weekly_schedule_slots")
@@ -113,7 +117,11 @@ export default async function SoltysSpolecznoscPage({
   }[];
 
   const trybZUrl: TrybOrganizacji =
-    searchParams?.tryb === "kgw" || searchParams?.tryb === "osp" || searchParams?.tryb === "ogolny"
+    searchParams?.tryb === "kgw" ||
+    searchParams?.tryb === "osp" ||
+    searchParams?.tryb === "parafia" ||
+    searchParams?.tryb === "mysliwi" ||
+    searchParams?.tryb === "ogolny"
       ? searchParams.tryb
       : "ogolny";
 
@@ -159,6 +167,7 @@ export default async function SoltysSpolecznoscPage({
       <SoltysSpolecznoscKlient
         wsie={wsie}
         grupyOrganizacji={grupyOrganizacji}
+        organizacjePelne={organizacjePelne}
         slotyHarmonogramu={slotyHarmonogramu}
         zrodlaDotacji={zrodlaDotacji}
         kontaktyUrzedowe={kontaktyUrzedowe}

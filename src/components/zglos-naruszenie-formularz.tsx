@@ -5,7 +5,7 @@ import { TurnstileAntybot } from "@/components/turnstile/TurnstileAntybot";
 
 const TURNSTILE_SITE_KEY = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY?.trim() ?? "";
 
-export function ZglosNaruszenieFormularz() {
+export function ZglosNaruszenieFormularz({ urlDomyslny = "" }: { urlDomyslny?: string }) {
   const [blad, ustawBlad] = useState("");
   const [ok, ustawOk] = useState(false);
   const [laduje, ustawLaduje] = useState(false);
@@ -103,6 +103,7 @@ export function ZglosNaruszenieFormularz() {
           name="urlStrony"
           type="url"
           required
+          defaultValue={urlDomyslny}
           placeholder="https://naszawies.pl/…"
           maxLength={2048}
           className="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"

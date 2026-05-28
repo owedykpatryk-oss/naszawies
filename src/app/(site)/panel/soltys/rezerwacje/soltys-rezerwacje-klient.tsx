@@ -5,7 +5,7 @@ import { useState, useTransition } from "react";
 import { PlanSaliRysunek } from "@/components/swietlica/plan-sali-rysunek";
 import { parsujPlanZJsonb } from "@/lib/swietlica/plan-sali";
 import { otoczenieHtmlDoDruku } from "@/lib/marka/html-marki-druku";
-import { odrzucRezerwacjeSwietlicy, zatwierdzRezerwacjeSwietlicy } from "../akcje";
+import { odrzucRezerwacjeSwietlicy, zatwierdzRezerwacjeMasowo, zatwierdzRezerwacjeSwietlicy } from "../akcje";
 
 export type WierszRezerwacji = {
   id: string;
@@ -34,6 +34,7 @@ export function SoltysRezerwacjeKlient({ wiersze: poczatkowe }: Props) {
   const [odrzucDla, ustawOdrzucDla] = useState<string | null>(null);
   const [powod, ustawPowod] = useState("");
   const [blad, ustawBlad] = useState("");
+  const [zaznaczone, ustawZaznaczone] = useState<Set<string>>(new Set());
   const [oczekuje, startTransition] = useTransition();
 
   function formatRange(a: string, b: string) {
@@ -116,6 +117,29 @@ export function SoltysRezerwacjeKlient({ wiersze: poczatkowe }: Props) {
     w.print();
   }
 
+  async function zatwierdzMasowo() {
+    if (zaznaczone.size === 0) return;
+    ustawBlad("");
+    startTransition(async () => {
+      const w = await zatwierdzRezerwacjeMasowo(Array.from(zaznaczone));
+      if ("blad" in w) {
+        ustawBlad(w.blad);
+        return;
+      }
+      ustawZaznaczone(new Set());
+      router.refresh();
+    });
+  }
+
+  function toggleZaznacz(id: string) {
+    ustawZaznaczone((prev) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  }
+
   if (poczatkowe.length === 0) {
     return <p className="mt-4 text-sm text-stone-600">Brak oczekujących wniosków o rezerwację.</p>;
   }
@@ -127,9 +151,34 @@ export function SoltysRezerwacjeKlient({ wiersze: poczatkowe }: Props) {
           {blad}
         </p>
       ) : null}
+      {zaznaczone.size > 0 ? (
+        <div className="flex flex-wrap items-center gap-2 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2">
+          <span className="text-sm text-emerald-900">Zaznaczono: {zaznaczone.size}</span>
+          <button
+            type="button"
+            disabled={oczekuje}
+            onClick={zatwierdzMasowo}
+            className="rounded-lg bg-green-800 px-3 py-1.5 text-sm font-medium text-white disabled:opacity-60"
+          >
+            Zatwierdź zaznaczone
+          </button>
+          <button type="button" onClick={() => ustawZaznaczone(new Set())} className="text-sm text-stone-600 underline">
+            Wyczyść
+          </button>
+        </div>
+      ) : null}
       <ul className="space-y-4">
       {poczatkowe.map((r) => (
         <li key={r.id} className="rounded-xl border border-stone-200 bg-white p-4 shadow-sm">
+          <label className="flex items-start gap-3">
+            <input
+              type="checkbox"
+              checked={zaznaczone.has(r.id)}
+              onChange={() => toggleZaznacz(r.id)}
+              className="mt-1"
+              aria-label={`Zaznacz rezerwację ${r.sala_nazwa}`}
+            />
+            <span className="flex-1">
           <p className="font-medium text-stone-900">{r.sala_nazwa}</p>
           <p className="text-xs text-stone-500">
             {r.mieszkaniec} · złożono {new Date(r.created_at).toLocaleString("pl-PL")}
@@ -253,6 +302,8 @@ export function SoltysRezerwacjeKlient({ wiersze: poczatkowe }: Props) {
               </button>
             </div>
           )}
+            </span>
+          </label>
         </li>
       ))}
       </ul>

@@ -9,6 +9,7 @@ import { sprawdzJakoscDanychMapy } from "@/lib/mapa/sprawdz-jakosc-danych-mapy";
 import { synchronizujAutobusyAutomatycznie } from "@/lib/transport/synchronizuj-autobusy-automatycznie";
 import { synchronizujTransportAutomatycznie } from "@/lib/transport/synchronizuj-transport-automatycznie";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin-client";
+import { powiadomOWygasajacychOgloszeniachMarketplace } from "@/lib/marketplace/powiadom-wygasajace-ogloszenia";
 
 type AutomationRunRow = {
   action: string;
@@ -327,6 +328,15 @@ async function runAutomation(request: Request) {
       console.error("[api/automatyzacje/run] geo data quality check", msg);
       geoDataQuality = { ok: false, error: msg };
       rows.push({ action: "geo_data_quality_check_failed", affected_rows: 0 });
+    }
+
+    try {
+      const wyslane = await powiadomOWygasajacychOgloszeniachMarketplace();
+      rows.push({ action: "marketplace_listing_expiring_reminders", affected_rows: wyslane });
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      console.error("[api/automatyzacje/run] marketplace expiring reminders", msg);
+      rows.push({ action: "marketplace_listing_expiring_reminders_failed", affected_rows: 0 });
     }
   }
 

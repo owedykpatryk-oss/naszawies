@@ -1,9 +1,17 @@
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
 import { pojedynczaWies } from "@/lib/supabase/wies-z-zapytania";
 import { sciezkaProfiluWsi } from "@/lib/wies/sciezka-publiczna";
+import {
+  parsujProfilParafii,
+  parsujProfilKgw,
+  parsujProfilLowiecki,
+  czyProfilParafiiUzupelniony,
+  czyProfilKgwUzupelniony,
+  czyProfilLowieckiUzupelniony,
+} from "@/lib/wies/profil-organizacji";
 import { etykietaRodzajuWydarzenia, etykietaTypuGrupy } from "@/lib/wies/teksty-organizacji";
 
-const TYPY_ORGANIZACJI = ["parafia", "kgw", "osp", "sport"] as const;
+const TYPY_ORGANIZACJI = ["parafia", "kgw", "osp", "sport", "lowiectwo"] as const;
 
 export type MojaOrganizacja = {
   id: string;
@@ -12,6 +20,12 @@ export type MojaOrganizacja = {
   short_description: string | null;
   nazwaWsi: string;
   sciezkaProfilu: string;
+  contact_phone: string | null;
+  contact_email: string | null;
+  mszeSkrot: string | null;
+  zebraniaSkrot: string | null;
+  obszarSkrot: string | null;
+  profilUzupelniony: boolean;
 };
 
 export type MojeWydarzenieOrganizacji = {
@@ -35,7 +49,9 @@ export async function pobierzMojeOrganizacje(villageIds: string[]) {
   const [{ data: orgRaw }, { data: wydRaw }, { data: wsieRaw }] = await Promise.all([
     supabase
       .from("village_community_groups")
-      .select("id, group_type, name, short_description, village_id, villages(name, slug, voivodeship, county, commune)")
+      .select(
+        "id, group_type, name, short_description, contact_phone, contact_email, profile_data, village_id, villages(name, slug, voivodeship, county, commune)",
+      )
       .in("village_id", villageIds)
       .in("group_type", [...TYPY_ORGANIZACJI])
       .eq("is_active", true)
@@ -64,13 +80,43 @@ export async function pobierzMojeOrganizacje(villageIds: string[]) {
       commune: string;
     }>(o.villages);
     const sciezka = v ? sciezkaProfiluWsi(v) : "#";
+    const profilParafii = o.group_type === "parafia" ? parsujProfilParafii(o.profile_data) : null;
+    const profilKgw = o.group_type === "kgw" ? parsujProfilKgw(o.profile_data) : null;
+    const profilLow = o.group_type === "lowiectwo" ? parsujProfilLowiecki(o.profile_data) : null;
+    const mszeSkrot =
+      profilParafii?.msze_niedziele?.trim() ||
+      profilParafii?.msze_dni_powszednie?.trim() ||
+      null;
+    const zebraniaSkrot = profilKgw?.zebrania?.trim() || null;
+    const obszarSkrot = profilLow?.obszar_lowiecki?.trim()?.slice(0, 120) || null;
+    const sciezkaProfilu =
+      o.group_type === "parafia"
+        ? `${sciezka}#parafia`
+        : o.group_type === "kgw"
+          ? `${sciezka}#kgw`
+          : o.group_type === "lowiectwo"
+            ? `${sciezka}#mysliwi`
+            : sciezka;
     return {
       id: o.id,
       group_type: o.group_type,
       name: o.name,
       short_description: o.short_description,
       nazwaWsi: v?.name ?? mapaNazw.get(o.village_id) ?? "—",
-      sciezkaProfilu: sciezka,
+      sciezkaProfilu,
+      contact_phone: o.contact_phone,
+      contact_email: o.contact_email,
+      mszeSkrot,
+      zebraniaSkrot,
+      obszarSkrot,
+      profilUzupelniony:
+        o.group_type === "parafia"
+          ? czyProfilParafiiUzupelniony(profilParafii)
+          : o.group_type === "kgw"
+            ? czyProfilKgwUzupelniony(profilKgw)
+            : o.group_type === "lowiectwo"
+              ? czyProfilLowieckiUzupelniony(profilLow)
+              : true,
     };
   });
 

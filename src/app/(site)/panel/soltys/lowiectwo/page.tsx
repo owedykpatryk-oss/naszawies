@@ -57,9 +57,14 @@ export default async function SoltysLowiectwoPage() {
       tytul="Polowania — ostrzeżenia"
       opis="Informuj mieszkańców i gości, gdzie i kiedy prowadzone są polowania. Ostrzeżenie jest widoczne na publicznym profilu wsi."
       akcje={
-        <a href="/pomoc?rola=mysliwi" className="btn-panel-secondary text-sm">
-          Przewodnik myśliwi
-        </a>
+        <>
+          <a href="/panel/soltys/spolecznosc?tryb=mysliwi" className="btn-panel-secondary text-sm">
+            Profil koła
+          </a>
+          <a href="/pomoc?rola=mysliwi" className="btn-panel-secondary text-sm">
+            Przewodnik myśliwi
+          </a>
+        </>
       }
       dzieci={<SoltysLowiectwoKlient wsie={wsie} wiersze={wiersze} />}
     />

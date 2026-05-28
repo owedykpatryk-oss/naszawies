@@ -22,12 +22,8 @@ import { createAdminSupabaseClient } from "@/lib/supabase/admin-client";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
 import { SZABLONY_LISTY_ZAKUPOW } from "@/lib/zakupy/szablony-listy-zakupow";
 import { sciezkaProfiluWsi } from "@/lib/wies/sciezka-publiczna";
-import {
-  generujBankietDlaGosci,
-  generujKsztaltU,
-  generujUkladTeatralny,
-  generujWyspyWarsztatowe,
-} from "@/lib/swietlica/plan-sali-presety";
+import { parsujPlanZJsonb, schemaPlanSali, type PlanSaliJson } from "@/lib/swietlica/plan-sali";
+import { zbudujPlanRezerwacji } from "@/lib/swietlica/rezerwacja-plan-sali";
 
 const uuid = z.string().uuid();
 
@@ -236,6 +232,8 @@ const schemaRezerwacjaSwietlicy = z.object({
   hasAlcohol: z.boolean(),
   contactPhone: z.string().trim().max(40).optional().nullable(),
   acceptRules: z.literal(true),
+  /** Plan własny (JSON) — tylko przy seatingPreset = wlasny */
+  customLayoutData: z.unknown().optional().nullable(),
 });
 
 export async function zlozRezerwacjeSwietlicy(
@@ -272,23 +270,16 @@ export async function zlozRezerwacjeSwietlicy(
   const endIso = end.toISOString();
   const requestedInventory = Array.isArray(p.requestedInventory) ? p.requestedInventory : [];
 
-  const hallLayoutData =
-    p.seatingPreset === "wlasny"
-      ? null
-      : {
-          wersja: 1 as const,
-          szerokosc_sali_m: null,
-          dlugosc_sali_m: null,
-          preset: p.seatingPreset,
-          elementy:
-            p.seatingPreset === "auto_bankiet"
-              ? generujBankietDlaGosci(p.expectedGuests)
-              : p.seatingPreset === "teatralny"
-                ? generujUkladTeatralny(Math.ceil(p.expectedGuests / 20))
-                : p.seatingPreset === "warsztatowy"
-                  ? generujWyspyWarsztatowe(Math.ceil(p.expectedGuests / 6))
-                  : generujKsztaltU(),
-        };
+  const { data: sala } = await supabase.from("halls").select("layout_data").eq("id", p.hallId).maybeSingle();
+  const planSali = parsujPlanZJsonb(sala?.layout_data);
+
+  let planWlasny: PlanSaliJson | null = null;
+  if (p.seatingPreset === "wlasny" && p.customLayoutData) {
+    const sp = schemaPlanSali.safeParse(p.customLayoutData);
+    if (sp.success) planWlasny = parsujPlanZJsonb(sp.data);
+  }
+
+  const hallLayoutData = zbudujPlanRezerwacji(planSali, p.seatingPreset, p.expectedGuests, planWlasny);
 
   if (requestedInventory.length > 0) {
     const walidacjaAsort = await walidujDostepnoscAsortymentuWTerminie(

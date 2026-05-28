@@ -19,8 +19,10 @@ import { powiadomObserwujacychOOpublikowanyPost } from "@/lib/powiadomienia/powi
 import { synchronizujKanalyRssDlaWsi } from "@/lib/rss/synchronizuj-kanaly-rss";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin-client";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
+import { powiadomOWygasajacychOgloszeniachMarketplace } from "@/lib/marketplace/powiadom-wygasajace-ogloszenia";
+import { schemaProfilParafii, schemaProfilKgw, schemaProfilLowiecki } from "@/lib/wies/profil-organizacji";
 import { sciezkaProfiluWsi } from "@/lib/wies/sciezka-publiczna";
-import { schemaPlanSali, type PlanSaliJson } from "@/lib/swietlica/plan-sali";
+import { schemaPlanSali, parsujPresetyPlanu, type PlanSaliJson } from "@/lib/swietlica/plan-sali";
 import { schemaRzutParteruSali, type RzutParteruSaliJson } from "@/lib/swietlica/rzut-parteru-sali";
 
 const uuid = z.string().uuid();
@@ -633,7 +635,7 @@ export async function zatwierdzRezerwacjeSwietlicy(bookingId: string): Promise<W
 
   const { data: b, error: readE } = await supabase
     .from("hall_bookings")
-    .select("id, hall_id, start_at, end_at, status, booked_by, requested_inventory, halls!inner(village_id)")
+    .select("id, hall_id, start_at, end_at, status, booked_by, event_title, requested_inventory, halls!inner(village_id, name)")
     .eq("id", id.data)
     .maybeSingle();
 
@@ -703,8 +705,25 @@ export async function zatwierdzRezerwacjeSwietlicy(bookingId: string): Promise<W
     return { blad: "Wniosek został w międzyczasie rozpatrzony — odśwież stronę." };
   }
 
-  const halls = b.halls as { village_id: string } | { village_id: string }[] | null;
+  const halls = b.halls as { village_id: string; name?: string } | { village_id: string; name?: string }[] | null;
   const wiesId = Array.isArray(halls) ? halls[0]?.village_id : halls?.village_id;
+  const nazwaSali = Array.isArray(halls) ? halls[0]?.name : halls?.name;
+
+  if (wiesId) {
+    const tytulKalendarz =
+      (b.event_title as string | null)?.trim() ||
+      (nazwaSali ? `Rezerwacja: ${nazwaSali}` : "Rezerwacja sali");
+    await supabase.from("village_soltys_calendar_entries").insert({
+      village_id: wiesId,
+      created_by: user.id,
+      entry_kind: "termin",
+      title: tytulKalendarz,
+      description: "Automatyczny wpis po zatwierdzeniu rezerwacji świetlicy.",
+      starts_at: b.start_at,
+      ends_at: b.end_at,
+    });
+  }
+
   if (b.booked_by && wiesId) {
     const tStart = new Date(b.start_at).toLocaleString("pl-PL", { dateStyle: "short", timeStyle: "short" });
     const tKoniec = new Date(b.end_at).toLocaleString("pl-PL", { dateStyle: "short", timeStyle: "short" });
@@ -741,6 +760,7 @@ export async function zatwierdzRezerwacjeSwietlicy(bookingId: string): Promise<W
   }
 
   revalidatePath("/panel/soltys/rezerwacje");
+  revalidatePath("/panel/soltys/kalendarz");
   revalidatePath("/panel/mieszkaniec/swietlica");
   revalidatePath("/panel/powiadomienia");
   revalidatePath(`/panel/mieszkaniec/swietlica/${b.hall_id}`);
@@ -1062,6 +1082,7 @@ const schemaProfilBudynkuSwietlicy = z.object({
   caretaker_name: z.string().trim().max(120).nullable().optional(),
   contact_phone: z.string().trim().max(40).nullable().optional(),
   contact_email: z.string().trim().max(120).nullable().optional(),
+  contact_duty_hours: z.string().trim().max(500).nullable().optional(),
 });
 
 export async function aktualizujProfilBudynkuSwietlicy(
@@ -1092,6 +1113,7 @@ export async function aktualizujProfilBudynkuSwietlicy(
       caretaker_name: p.caretaker_name?.trim().length ? p.caretaker_name.trim() : null,
       contact_phone: p.contact_phone?.trim().length ? p.contact_phone.trim() : null,
       contact_email: p.contact_email?.trim().length ? p.contact_email.trim() : null,
+      contact_duty_hours: p.contact_duty_hours?.trim().length ? p.contact_duty_hours.trim() : null,
     })
     .eq("id", p.hallId);
 
@@ -1180,6 +1202,108 @@ export async function zapiszRzutParteruSali(
   revalidatePath(`/panel/soltys/swietlica/${idHall.data}/dokument`);
   revalidatePath(`/panel/mieszkaniec/swietlica/${idHall.data}/dokument`);
   return { ok: true };
+}
+
+export async function zapiszPresetPlanuSali(
+  hallId: string,
+  nazwa: string,
+  plan: PlanSaliJson,
+): Promise<WynikProsty> {
+  const idHall = uuid.safeParse(hallId);
+  if (!idHall.success) return { blad: "Niepoprawny identyfikator sali." };
+  const nazwaOk = z.string().trim().min(1).max(80).safeParse(nazwa);
+  if (!nazwaOk.success) return { blad: "Podaj nazwę wariantu (1–80 znaków)." };
+  const parsed = schemaPlanSali.safeParse(plan);
+  if (!parsed.success) return { blad: "Niepoprawna struktura planu." };
+
+  const supabase = utworzKlientaSupabaseSerwer();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { blad: "Zaloguj się." };
+
+  const { data: sala } = await supabase.from("halls").select("layout_presets").eq("id", idHall.data).maybeSingle();
+  const istniejace = parsujPresetyPlanu(sala?.layout_presets);
+  const nowy = {
+    id: crypto.randomUUID(),
+    nazwa: nazwaOk.data,
+    plan: parsed.data,
+    utworzono_at: new Date().toISOString(),
+  };
+  const { error } = await supabase
+    .from("halls")
+    .update({ layout_presets: [...istniejace, nowy] as unknown as Record<string, unknown>[] })
+    .eq("id", idHall.data);
+  if (error) {
+    console.error("[zapiszPresetPlanuSali]", error.message);
+    return { blad: "Nie udało się zapisać wariantu planu." };
+  }
+  revalidatePath(`/panel/soltys/swietlica/${idHall.data}`);
+  return { ok: true };
+}
+
+export async function usunPresetPlanuSali(hallId: string, presetId: string): Promise<WynikProsty> {
+  const idHall = uuid.safeParse(hallId);
+  const idPreset = uuid.safeParse(presetId);
+  if (!idHall.success || !idPreset.success) return { blad: "Niepoprawny identyfikator." };
+
+  const supabase = utworzKlientaSupabaseSerwer();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { blad: "Zaloguj się." };
+
+  const { data: sala } = await supabase.from("halls").select("layout_presets").eq("id", idHall.data).maybeSingle();
+  const poFiltrze = parsujPresetyPlanu(sala?.layout_presets).filter((p) => p.id !== idPreset.data);
+  const { error } = await supabase
+    .from("halls")
+    .update({ layout_presets: poFiltrze as unknown as Record<string, unknown>[] })
+    .eq("id", idHall.data);
+  if (error) return { blad: "Nie udało się usunąć wariantu." };
+  revalidatePath(`/panel/soltys/swietlica/${idHall.data}`);
+  return { ok: true };
+}
+
+export async function zapiszPlanRezerwacjiSoltys(
+  bookingId: string,
+  plan: PlanSaliJson,
+): Promise<WynikProsty> {
+  const id = uuid.safeParse(bookingId);
+  if (!id.success) return { blad: "Niepoprawny identyfikator rezerwacji." };
+  const parsed = schemaPlanSali.safeParse(plan);
+  if (!parsed.success) return { blad: "Niepoprawna struktura planu." };
+
+  const supabase = utworzKlientaSupabaseSerwer();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { blad: "Zaloguj się." };
+
+  const { error } = await supabase
+    .from("hall_bookings")
+    .update({ layout_data: { ...parsed.data, preset: "wlasny" } as unknown as Record<string, unknown> })
+    .eq("id", id.data);
+  if (error) {
+    console.error("[zapiszPlanRezerwacjiSoltys]", error.message);
+    return { blad: "Nie udało się zapisać planu rezerwacji." };
+  }
+  revalidatePath("/panel/soltys/rezerwacje");
+  return { ok: true };
+}
+
+export async function zatwierdzRezerwacjeMasowo(bookingIds: string[]): Promise<WynikProsty & { liczba?: number }> {
+  const ids = z.array(uuid).min(1).max(20).safeParse(bookingIds);
+  if (!ids.success) return { blad: "Wybierz od 1 do 20 rezerwacji." };
+  let ok = 0;
+  let ostatniBlad = "";
+  for (const id of ids.data) {
+    const w = await zatwierdzRezerwacjeSwietlicy(id);
+    if ("ok" in w && w.ok) ok += 1;
+    else if ("blad" in w) ostatniBlad = w.blad;
+  }
+  if (ok === 0) return { blad: ostatniBlad || "Nie udało się zatwierdzić żadnej rezerwacji." };
+  revalidatePath("/panel/soltys/rezerwacje");
+  return { ok: true, liczba: ok };
 }
 
 const schemaRegulaminSali = z.object({
@@ -2037,6 +2161,9 @@ export async function uruchomAutomatyzacjeWsi(dane: z.infer<typeof schemaVillage
     console.error("[uruchomAutomatyzacjeWsi]", error.message);
     return { blad: "Nie udało się uruchomić automatyzacji." };
   }
+  void powiadomOWygasajacychOgloszeniachMarketplace(parsed.data.villageId).catch((e) =>
+    console.warn("[uruchomAutomatyzacjeWsi] przypomnienia rynku", e),
+  );
   revalidatePath("/panel/soltys/spolecznosc");
   revalidatePath("/mapa");
   return { ok: true };
@@ -2077,6 +2204,7 @@ const schemaOrganizacjaWsi = z.object({
     "taniec",
     "muzyka",
     "kolo",
+    "lowiectwo",
     "inne",
   ]),
   name: z.string().trim().min(2).max(160),
@@ -2085,7 +2213,58 @@ const schemaOrganizacjaWsi = z.object({
   contact_email: z.string().trim().max(200).nullable().optional(),
   meeting_place: z.string().trim().max(200).nullable().optional(),
   schedule_text: z.string().trim().max(500).nullable().optional(),
+  profile_data: z.unknown().optional().nullable(),
 });
+
+function mapProfileData(groupType: string, raw: unknown): Record<string, unknown> {
+  if (groupType === "parafia" && raw != null) {
+    const w = schemaProfilParafii.safeParse(raw);
+    if (w.success) return w.data as unknown as Record<string, unknown>;
+  }
+  if (groupType === "kgw" && raw != null) {
+    const w = schemaProfilKgw.safeParse(raw);
+    if (w.success) return w.data as unknown as Record<string, unknown>;
+  }
+  if (groupType === "lowiectwo" && raw != null) {
+    const w = schemaProfilLowiecki.safeParse(raw);
+    if (w.success) return w.data as unknown as Record<string, unknown>;
+  }
+  if (raw != null && typeof raw === "object") return raw as Record<string, unknown>;
+  return {};
+}
+
+function daneSpotkaniaOrganizacji(
+  groupType: string,
+  profil: Record<string, unknown>,
+  meetingPlaceInput: string | null | undefined,
+  scheduleTextInput: string | null | undefined,
+): { meetingPlace: string | null; scheduleText: string | null } {
+  const miejsceParafii =
+    groupType === "parafia" && typeof profil.adres_kosciola === "string" ? profil.adres_kosciola.trim() : "";
+  const miejsceKgw =
+    groupType === "kgw" && typeof profil.miejsce_spotkan === "string" ? profil.miejsce_spotkan.trim() : "";
+  const zebraniaKgw =
+    groupType === "kgw" && typeof profil.zebrania === "string" ? profil.zebrania.trim() : "";
+  const siedzibaLow =
+    groupType === "lowiectwo" && typeof profil.siedziba_kola === "string" ? profil.siedziba_kola.trim() : "";
+  const zebraniaLow =
+    groupType === "lowiectwo" && typeof profil.zebrania === "string" ? profil.zebrania.trim() : "";
+  const kancelariaParafii =
+    groupType === "parafia" && typeof profil.kancelaria === "string" ? profil.kancelaria.trim() : "";
+
+  const meetingPlace =
+    meetingPlaceInput?.trim() ||
+    (miejsceParafii.length ? miejsceParafii : null) ||
+    (miejsceKgw.length ? miejsceKgw : null) ||
+    (siedzibaLow.length ? siedzibaLow : null);
+  const scheduleText =
+    scheduleTextInput?.trim() ||
+    (kancelariaParafii.length ? kancelariaParafii : null) ||
+    (zebraniaKgw.length ? zebraniaKgw : null) ||
+    (zebraniaLow.length ? zebraniaLow : null);
+
+  return { meetingPlace, scheduleText };
+}
 
 export async function dodajOrganizacjeWsi(dane: z.infer<typeof schemaOrganizacjaWsi>): Promise<WynikProsty> {
   const parsed = schemaOrganizacjaWsi.safeParse(dane);
@@ -2101,6 +2280,14 @@ export async function dodajOrganizacjeWsi(dane: z.infer<typeof schemaOrganizacja
     return { blad: "Brak uprawnień do tej wsi." };
   }
 
+  const profil = mapProfileData(parsed.data.group_type, parsed.data.profile_data);
+  const { meetingPlace, scheduleText } = daneSpotkaniaOrganizacji(
+    parsed.data.group_type,
+    profil,
+    parsed.data.meeting_place,
+    parsed.data.schedule_text,
+  );
+
   const { error } = await supabase.from("village_community_groups").insert({
     village_id: parsed.data.villageId,
     group_type: parsed.data.group_type,
@@ -2108,8 +2295,9 @@ export async function dodajOrganizacjeWsi(dane: z.infer<typeof schemaOrganizacja
     short_description: parsed.data.short_description?.trim() || null,
     contact_phone: parsed.data.contact_phone?.trim() || null,
     contact_email: parsed.data.contact_email?.trim() || null,
-    meeting_place: parsed.data.meeting_place?.trim() || null,
-    schedule_text: parsed.data.schedule_text?.trim() || null,
+    meeting_place: meetingPlace,
+    schedule_text: scheduleText,
+    profile_data: profil,
     is_active: true,
     created_by: user.id,
   });
@@ -2118,6 +2306,93 @@ export async function dodajOrganizacjeWsi(dane: z.infer<typeof schemaOrganizacja
     return { blad: "Nie udało się dodać organizacji." };
   }
   await revalidateProfilWsiDlaWioski(supabase, parsed.data.villageId);
+  return { ok: true };
+}
+
+const schemaAktualizujOrganizacja = schemaOrganizacjaWsi.extend({
+  id: z.string().uuid(),
+});
+
+export async function aktualizujOrganizacjeWsi(
+  dane: z.infer<typeof schemaAktualizujOrganizacja>,
+): Promise<WynikProsty> {
+  const parsed = schemaAktualizujOrganizacja.safeParse(dane);
+  if (!parsed.success) {
+    return { blad: "Sprawdź dane organizacji." };
+  }
+  const supabase = utworzKlientaSupabaseSerwer();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { blad: "Zaloguj się." };
+  if (!(await czyUzytkownikMozeZarzadzacWsia(supabase, user.id, parsed.data.villageId))) {
+    return { blad: "Brak uprawnień do tej wsi." };
+  }
+
+  const { data: istniejaca } = await supabase
+    .from("village_community_groups")
+    .select("id, village_id")
+    .eq("id", parsed.data.id)
+    .maybeSingle();
+  if (!istniejaca || istniejaca.village_id !== parsed.data.villageId) {
+    return { blad: "Nie znaleziono organizacji w tej wsi." };
+  }
+
+  const profil = mapProfileData(parsed.data.group_type, parsed.data.profile_data);
+  const { meetingPlace, scheduleText } = daneSpotkaniaOrganizacji(
+    parsed.data.group_type,
+    profil,
+    parsed.data.meeting_place,
+    parsed.data.schedule_text,
+  );
+
+  const { error } = await supabase
+    .from("village_community_groups")
+    .update({
+      group_type: parsed.data.group_type,
+      name: parsed.data.name,
+      short_description: parsed.data.short_description?.trim() || null,
+      contact_phone: parsed.data.contact_phone?.trim() || null,
+      contact_email: parsed.data.contact_email?.trim() || null,
+      meeting_place: meetingPlace,
+      schedule_text: scheduleText,
+      profile_data: profil,
+    })
+    .eq("id", parsed.data.id);
+
+  if (error) {
+    console.error("[aktualizujOrganizacjeWsi]", error.message);
+    return { blad: "Nie udało się zaktualizować organizacji." };
+  }
+  await revalidateProfilWsiDlaWioski(supabase, parsed.data.villageId);
+  return { ok: true };
+}
+
+export async function dezaktywujOrganizacjeWsi(groupId: string, villageId: string): Promise<WynikProsty> {
+  const idOk = uuid.safeParse(groupId);
+  const vOk = uuid.safeParse(villageId);
+  if (!idOk.success || !vOk.success) return { blad: "Niepoprawny identyfikator." };
+
+  const supabase = utworzKlientaSupabaseSerwer();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { blad: "Zaloguj się." };
+  if (!(await czyUzytkownikMozeZarzadzacWsia(supabase, user.id, vOk.data))) {
+    return { blad: "Brak uprawnień." };
+  }
+
+  const { error } = await supabase
+    .from("village_community_groups")
+    .update({ is_active: false })
+    .eq("id", idOk.data)
+    .eq("village_id", vOk.data);
+
+  if (error) {
+    console.error("[dezaktywujOrganizacjeWsi]", error.message);
+    return { blad: "Nie udało się ukryć organizacji." };
+  }
+  await revalidateProfilWsiDlaWioski(supabase, vOk.data);
   return { ok: true };
 }
 
@@ -2254,7 +2529,27 @@ export async function dodajKadencjeFunkcyjnaWsi(
 const schemaWydarzenieSpolecznosci = z.object({
   villageId: z.string().uuid(),
   group_id: z.string().trim().max(40).optional().default(""),
-  event_kind: z.enum(["mecz", "wyjazd", "proba", "wystep", "spotkanie", "festyn", "inne"]),
+  event_kind: z.enum([
+    "mecz",
+    "wyjazd",
+    "proba",
+    "wystep",
+    "spotkanie",
+    "festyn",
+    "msza",
+    "nabozenstwo",
+    "katecheza",
+    "sakrament",
+    "zebranie_kgw",
+    "kiermasz",
+    "warsztaty",
+    "piknik",
+    "polowanie",
+    "zebranie_lowieckie",
+    "szkolenie_lowieckie",
+    "hubertus",
+    "inne",
+  ]),
   title: z.string().trim().min(4).max(200),
   description: z.string().trim().max(8000).nullable().optional(),
   location_text: z.string().trim().max(240).nullable().optional(),
