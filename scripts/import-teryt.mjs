@@ -21,35 +21,13 @@ import { readFile } from "node:fs/promises";
 import { createClient } from "@supabase/supabase-js";
 import { XMLParser } from "fast-xml-parser";
 import slugify from "slugify";
-
-const VOIVODESHIPS = {
-  "02": "dolnośląskie",
-  "04": "kujawsko-pomorskie",
-  "06": "lubelskie",
-  "08": "lubuskie",
-  "10": "łódzkie",
-  "12": "małopolskie",
-  "14": "mazowieckie",
-  "16": "opolskie",
-  "18": "podkarpackie",
-  "20": "podlaskie",
-  "22": "pomorskie",
-  "24": "śląskie",
-  "26": "świętokrzyskie",
-  "28": "warmińsko-mazurskie",
-  "30": "wielkopolskie",
-  "32": "zachodniopomorskie",
-};
-
-const COMMUNE_TYPES = {
-  "1": "gmina_miejska",
-  "2": "gmina_wiejska",
-  "3": "gmina_miejsko_wiejska",
-  "4": "miasto_w_gminie_miejsko_wiejskiej",
-  "5": "obszar_wiejski_w_gminie_miejsko_wiejskiej",
-  "8": "dzielnica_m_st_warszawy",
-  "9": "delegatura_w_miastach",
-};
+import {
+  COMMUNE_TYPES,
+  VOIVODESHIPS,
+  kodTeryt2,
+  kluczGminyTeryt,
+  kluczPowiatuTeryt,
+} from "./teryt-kody.mjs";
 
 /** Tylko dla --zawez-do-rm: podzbiór kodów RM (SIMC) — kiedyś używany do mniejszego testu. */
 const RURAL_PLACE_TYPES = new Set(["01", "02", "03", "04", "07", "99"]);
@@ -116,7 +94,7 @@ async function buildCommunesMap(tercPath) {
   for (const row of iterRows(data)) {
     const r = rowToObj(row);
     if (r.GMI && r.RODZ) {
-      const key = `${r.WOJ}-${r.POW}-${r.GMI}`;
+      const key = kluczGminyTeryt(r.WOJ, r.POW, r.GMI);
       communes.set(key, {
         name: r.NAZWA,
         type: COMMUNE_TYPES[r.RODZ] || "inna",
@@ -132,8 +110,7 @@ async function buildCountiesMap(tercPath) {
   for (const row of iterRows(data)) {
     const r = rowToObj(row);
     if (r.POW && !r.GMI) {
-      const key = `${r.WOJ}-${r.POW}`;
-      counties.set(key, r.NAZWA);
+      counties.set(kluczPowiatuTeryt(r.WOJ, r.POW), r.NAZWA);
     }
   }
   return counties;
@@ -153,11 +130,12 @@ async function importSIMC(simcPath, communes, counties, supabase, dryRun, zawezD
     if (zawezDoRm && !RURAL_PLACE_TYPES.has(r.RM)) continue;
     if (!r.SYM || !r.NAZWA) continue;
 
-    const communeKey = `${r.WOJ}-${r.POW}-${r.GMI}`;
-    const countyKey = `${r.WOJ}-${r.POW}`;
+    const woj = kodTeryt2(r.WOJ);
+    const communeKey = kluczGminyTeryt(woj, r.POW, r.GMI);
+    const countyKey = kluczPowiatuTeryt(woj, r.POW);
     const commune = communes.get(communeKey);
     const county = counties.get(countyKey);
-    const voivodeship = VOIVODESHIPS[r.WOJ];
+    const voivodeship = VOIVODESHIPS[woj];
 
     if (!r.GMI || !commune || !county || !voivodeship) continue;
 

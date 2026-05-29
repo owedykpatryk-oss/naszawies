@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { RynekUdostepnijPrzycisk } from "@/components/wies/rynek-udostepnij-przycisk";
+import { etykietaRodzajuWydarzenia } from "@/lib/wies/teksty-organizacji";
 import type { ProfilKgwJson } from "@/lib/wies/profil-organizacji";
 
 export type DaneKgwPubliczne = {
@@ -10,6 +12,14 @@ export type DaneKgwPubliczne = {
   contact_phone: string | null;
   contact_email: string | null;
   profil: ProfilKgwJson | null;
+};
+
+export type WydarzenieKgwSkrot = {
+  id: string;
+  event_kind: string;
+  title: string;
+  location_text: string | null;
+  starts_at: string;
 };
 
 function Blok({
@@ -42,14 +52,24 @@ export function KartaKgwPubliczna({
   kgw,
   sciezkaWydarzenia,
   sciezkaDotacje,
+  sciezkaProfilu,
+  sciezkaRynek,
+  linkMiejsceNaMapie,
+  nadchodzaceWydarzenia = [],
 }: {
   kgw: DaneKgwPubliczne;
   sciezkaWydarzenia?: string;
   sciezkaDotacje?: string;
+  sciezkaProfilu?: string;
+  sciezkaRynek?: string;
+  linkMiejsceNaMapie?: string | null;
+  nadchodzaceWydarzenia?: WydarzenieKgwSkrot[];
 }) {
   const p = kgw.profil;
   const wwwHref = linkZTekstu(p?.strona_www);
   const fbHref = linkZTekstu(p?.facebook);
+  const igHref = linkZTekstu(p?.instagram);
+  const kotwicaUdostepnij = sciezkaProfilu ? `${sciezkaProfilu}#kgw` : "#kgw";
 
   return (
     <section
@@ -107,11 +127,39 @@ export function KartaKgwPubliczna({
               Facebook
             </a>
           ) : null}
+          {igHref ? (
+            <a
+              href={igHref}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="rounded-lg border border-rose-300 bg-white px-3 py-2 text-sm font-medium text-rose-900 hover:bg-rose-50"
+            >
+              Instagram
+            </a>
+          ) : null}
+          {sciezkaProfilu ? (
+            <RynekUdostepnijPrzycisk
+              url={kotwicaUdostepnij}
+              tytul={kgw.name}
+              tekst={`KGW — zebrania i kontakt: ${kgw.name}`}
+            />
+          ) : null}
         </div>
       </div>
 
       {kgw.short_description ? (
         <p className="mt-4 text-sm leading-relaxed text-stone-700">{kgw.short_description}</p>
+      ) : null}
+
+      {linkMiejsceNaMapie ? (
+        <div className="mt-4">
+          <Link
+            href={linkMiejsceNaMapie}
+            className="inline-flex rounded-lg border border-rose-200 bg-rose-50/80 px-3 py-1.5 text-xs font-medium text-rose-900 hover:bg-rose-100"
+          >
+            🏡 Miejsce spotkań na mapie
+          </Link>
+        </div>
       ) : null}
 
       <div className="mt-5 grid gap-3 sm:grid-cols-2">
@@ -145,6 +193,18 @@ export function KartaKgwPubliczna({
           </Blok>
         ) : null}
 
+        {p?.sprzedaz_produkty ? (
+          <Blok tytul="Gdzie kupić wyroby" ikona="🛒">
+            {p.sprzedaz_produkty}
+          </Blok>
+        ) : null}
+
+        {p?.skladka_czlonkowska ? (
+          <Blok tytul="Składka członkowska" ikona="💳">
+            {p.skladka_czlonkowska}
+          </Blok>
+        ) : null}
+
         {p?.jak_dolaczyc ? (
           <Blok tytul="Jak dołączyć" ikona="🤝">
             {p.jak_dolaczyc}
@@ -158,6 +218,29 @@ export function KartaKgwPubliczna({
         ) : null}
       </div>
 
+      {nadchodzaceWydarzenia.length > 0 ? (
+        <div className="mt-5">
+          <h3 className="text-xs font-semibold uppercase tracking-wide text-rose-800">Zbliżające się wydarzenia</h3>
+          <ul className="mt-2 space-y-2">
+            {nadchodzaceWydarzenia.slice(0, 4).map((ev) => (
+              <li key={ev.id}>
+                <Link
+                  href={sciezkaWydarzenia ? `${sciezkaWydarzenia}/${ev.id}` : "#"}
+                  className="block rounded-lg border border-rose-100 bg-white/80 px-3 py-2 text-sm transition hover:border-rose-300 hover:bg-rose-50/50"
+                >
+                  <p className="font-medium text-stone-900">{ev.title}</p>
+                  <p className="mt-0.5 text-xs text-stone-600">
+                    {etykietaRodzajuWydarzenia(ev.event_kind)} ·{" "}
+                    {new Date(ev.starts_at).toLocaleString("pl-PL", { dateStyle: "medium", timeStyle: "short" })}
+                    {ev.location_text ? ` · ${ev.location_text}` : ""}
+                  </p>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
+
       {p?.uwagi ? (
         <p className="mt-4 rounded-lg border border-amber-200/80 bg-amber-50/60 px-3 py-2 text-xs text-amber-950">
           {p.uwagi}
@@ -166,13 +249,24 @@ export function KartaKgwPubliczna({
 
       <div className="mt-4 flex flex-wrap gap-x-4 gap-y-1 text-sm">
         {sciezkaWydarzenia ? (
-          <Link href={sciezkaWydarzenia} className="font-medium text-rose-800 underline hover:text-rose-950">
+          <Link
+            href={`${sciezkaWydarzenia}?kgw=1`}
+            className="font-medium text-rose-800 underline hover:text-rose-950"
+          >
             Wydarzenia KGW →
           </Link>
         ) : null}
         {sciezkaDotacje ? (
           <Link href={sciezkaDotacje} className="font-medium text-rose-800 underline hover:text-rose-950">
             Źródła dofinansowania →
+          </Link>
+        ) : null}
+        {sciezkaRynek ? (
+          <Link
+            href={`${sciezkaRynek}?lokalne=1`}
+            className="font-medium text-rose-800 underline hover:text-rose-950"
+          >
+            Produkty lokalne na rynku →
           </Link>
         ) : null}
       </div>

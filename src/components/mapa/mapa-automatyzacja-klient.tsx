@@ -12,16 +12,16 @@ type ZnacznikDoSync = {
 
 type Props = {
   znaczniki: ZnacznikDoSync[];
-  villageIdsBezTransportu: string[];
+  villageIdsDoUzupelnienia: string[];
   statystyki: StatystykiMapy;
 };
 
 /**
- * W tle: granice PRG + POI/transport dla wsi bez przystanków (gdy admin skonfigurowany).
+ * W tle: granice PRG + POI/transport dla wsi z małą liczbą punktów lub bez transportu.
  */
 export function MapaAutomatyzacjaKlient({
   znaczniki,
-  villageIdsBezTransportu,
+  villageIdsDoUzupelnienia,
   statystyki,
 }: Props) {
   const router = useRouter();
@@ -33,13 +33,15 @@ export function MapaAutomatyzacjaKlient({
     if (uruchomiono.current) return;
     const bezObrysu = znaczniki.filter((z) => !z.boundary_geojson).length;
     const potrzeba =
-      bezObrysu >= 3 || (villageIdsBezTransportu.length >= 5 && statystyki.lacznie >= 10);
+      bezObrysu >= 3 ||
+      (villageIdsDoUzupelnienia.length >= 4 && statystyki.lacznie >= 8) ||
+      (statystyki.zMalymPoi >= 15 && statystyki.lacznie >= 20);
     if (!potrzeba) return;
     uruchomiono.current = true;
     setTrwa(true);
-    setStatus("Uzupełniam dane mapy w tle (granice, punkty, transport)…");
+    setStatus("Uzupełniam dane mapy w tle (granice, OSM, Geoportal, transport)…");
 
-    void uruchomUzupelnienieMapyZMapy({ villageIdsBezTransportu }).then((w) => {
+    void uruchomUzupelnienieMapyZMapy({ villageIdsDoUzupelnienia }).then((w) => {
       setTrwa(false);
       if (!w.ok) {
         setStatus(null);
@@ -50,7 +52,15 @@ export function MapaAutomatyzacjaKlient({
         czesci.push(`obrysy: ${w.granice.updatedBoundaries}`);
       }
       if (w.poi.added > 0) {
-        czesci.push(`POI: +${w.poi.added}`);
+        czesci.push(`POI OSM: +${w.poi.added}`);
+      }
+      if (w.geoKontekst.upsertedPrng + w.geoKontekst.upsertedInstitutional > 0) {
+        czesci.push(
+          `Geoportal: +${w.geoKontekst.upsertedPrng + w.geoKontekst.upsertedInstitutional}`,
+        );
+      }
+      if (w.poiGeoportal.added > 0) {
+        czesci.push(`POI PRNG: +${w.poiGeoportal.added}`);
       }
       if (w.transport.departuresUpserted > 0) {
         czesci.push(`PKP: ${w.transport.departuresUpserted} odjazdów`);
@@ -68,7 +78,7 @@ export function MapaAutomatyzacjaKlient({
       setStatus(`Zaktualizowano mapę (${czesci.join(", ")}). Odświeżam…`);
       window.setTimeout(() => router.refresh(), 2200);
     });
-  }, [znaczniki, villageIdsBezTransportu, statystyki.lacznie, router]);
+  }, [znaczniki, villageIdsDoUzupelnienia, statystyki.lacznie, statystyki.zMalymPoi, router]);
 
   if (!status) return null;
 

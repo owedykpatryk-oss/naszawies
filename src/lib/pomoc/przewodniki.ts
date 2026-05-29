@@ -70,6 +70,32 @@ export const PRZEWODNIKI: Record<RolaPrzewodnika, SekcjaPrzewodnika[]> = {
         },
       ],
     },
+    {
+      id: "gdzie-co",
+      tytul: "Gdzie co znajdę?",
+      kroki: [
+        {
+          tytul: "Panel mieszkańca",
+          opis: "Zgłoszenia, rynek, świetlica, fotokronika — po zalogowaniu: Panel → Działania.",
+          link: { href: "/panel/mieszkaniec", label: "Panel mieszkańca" },
+        },
+        {
+          tytul: "Panel sołtysa",
+          opis: "Moderacja, profil wsi, rezerwacje — Panel → Sołtys.",
+          link: { href: "/panel/soltys", label: "Panel sołtysa" },
+        },
+        {
+          tytul: "Mapa i szukanie wsi",
+          opis: "Katalog miejscowości i mapa POI — wymaga konta.",
+          link: { href: "/szukaj", label: "Szukaj wsi" },
+        },
+        {
+          tytul: "Pełna mapa pomocy",
+          opis: "Tabela „Chcę… → Idę do…” na stronie pomocy i w panelu głównym.",
+          link: { href: "/pomoc", label: "Centrum pomocy" },
+        },
+      ],
+    },
   ],
   mieszkaniec: [
     {
@@ -110,6 +136,11 @@ export const PRZEWODNIKI: Record<RolaPrzewodnika, SekcjaPrzewodnika[]> = {
           tytul: "Fotokronika i konkursy",
           opis: "Dodaj zdjęcie wsi — po akceptacji sołtysa trafi na profil publiczny. W konkursie możesz głosować.",
           link: { href: "/panel/mieszkaniec/fotokronika", label: "Fotokronika" },
+        },
+        {
+          tytul: "Pomoc sąsiedzka",
+          opis: "Zaoferuj transport, zakupy lub poproś sąsiada o drobną pomoc — ogłoszenia widoczne na profilu wsi.",
+          link: { href: "/panel/mieszkaniec/pomoc-sasiedzka", label: "Pomoc sąsiedzka" },
         },
         {
           tytul: "Transport (pociąg i autobus)",

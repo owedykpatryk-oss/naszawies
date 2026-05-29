@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { pobierzVillageIdsRoliPaneluSoltysaDlaUzytkownikaCache } from "@/lib/panel/rola-panelu-soltysa";
+import { pobierzVillageIdsModeracjiTresciCache } from "@/lib/panel/rola-moderacji";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
 import {
   zatwierdzMarketplaceOferteMieszkanca,
@@ -66,7 +66,7 @@ export async function zatwierdzZdjeciaMasowoSoltys(ids: string[]): Promise<Wynik
   } = await supabase.auth.getUser();
   if (!user) return { blad: "Zaloguj się." };
 
-  const vids = await pobierzVillageIdsRoliPaneluSoltysaDlaUzytkownikaCache(user.id);
+  const vids = await pobierzVillageIdsModeracjiTresciCache(user.id);
   let zatwierdzono = 0;
   const komunikaty: string[] = [];
 
@@ -77,7 +77,7 @@ export async function zatwierdzZdjeciaMasowoSoltys(ids: string[]): Promise<Wynik
       .eq("id", photoId)
       .maybeSingle();
     if (!ph || ph.status !== "pending" || !vids.includes(ph.village_id)) {
-      komunikaty.push("Brak uprawnień lub zdjęcie już rozpatrzone.");
+      komunikaty.push("Brak uprawnień rady sołeckiej lub zdjęcie już rozpatrzone.");
       continue;
     }
     const w = await zmoderujZdjecieFotokroniki({ photoId, decyzja: "approved" });

@@ -3,6 +3,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
 import { pojedynczaWies } from "@/lib/supabase/wies-z-zapytania";
+import { sciezkaProfiluWsi } from "@/lib/wies/sciezka-publiczna";
 import type { PoiOpcja } from "./marketplace-formularz-rozszerzenia";
 import { MarketplaceFormularzMieszkanca, type MetaWsiFormularz } from "./marketplace-formularz";
 import { MarketplaceMojeLista, type MojeOgloszenieWiersz } from "./marketplace-moje-lista";
@@ -36,7 +37,9 @@ export default async function MarketplaceMieszkaniecPage() {
     villageIds.length > 0
       ? await supabase
           .from("marketplace_listings")
-          .select("id, title, status, listing_type, created_at, expires_at, moderation_note")
+          .select(
+            "id, title, status, listing_type, created_at, expires_at, moderation_note, village_id, image_urls, villages(voivodeship, county, commune, slug)",
+          )
           .eq("owner_user_id", user.id)
           .in("village_id", villageIds)
           .order("created_at", { ascending: false })
@@ -86,6 +89,22 @@ export default async function MarketplaceMieszkaniecPage() {
     ]),
   );
 
+  const mojeOgloszenia: MojeOgloszenieWiersz[] = (moje ?? []).map((o) => {
+    const v = pojedynczaWies<{ voivodeship: string; county: string; commune: string; slug: string }>(o.villages);
+    const hrefPubliczny = v ? `${sciezkaProfiluWsi(v)}/rynek/${o.id}` : null;
+    return {
+      id: o.id,
+      title: o.title,
+      status: o.status,
+      listing_type: o.listing_type,
+      created_at: o.created_at,
+      expires_at: o.expires_at,
+      moderation_note: o.moderation_note,
+      image_url: o.image_urls?.[0] ?? null,
+      hrefPubliczny,
+    };
+  });
+
   return (
     <main>
       <p className="text-sm text-stone-500">
@@ -115,7 +134,7 @@ export default async function MarketplaceMieszkaniecPage() {
       </header>
       <MarketplaceSubskrypcjeKlient wsie={wsie} subskrypcje={subskrypcje} />
       <MarketplaceSzablonKgwKlient wsie={wsie} />
-      <MarketplaceMojeLista ogloszenia={(moje ?? []) as MojeOgloszenieWiersz[]} />
+      <MarketplaceMojeLista ogloszenia={mojeOgloszenia} />
       <MarketplaceFormularzMieszkanca wsie={wsie} metaWsi={metaWsi} pois={pois} />
     </main>
   );

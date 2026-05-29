@@ -5,6 +5,7 @@ import {
   dodajZajetoscKalendarzaSaliSoltysa,
   usunZajetoscKalendarzaSaliSoltysa,
 } from "@/app/(site)/panel/soltys/akcje-kalendarz-sali-soltys";
+import { KalendarzMiesiacaSwietlicyKlient } from "@/components/swietlica/kalendarz-miesiaca-swietlicy-klient";
 
 export type WpisKalendarzaSoli = {
   id: string;
@@ -12,6 +13,8 @@ export type WpisKalendarzaSoli = {
   end_at: string;
   event_title: string | null;
   event_type: string;
+  wynajmujacy: string | null;
+  telefon: string | null;
 };
 
 type Props = {
@@ -78,9 +81,24 @@ export function KalendarzZajetosciSoltysKlient({ hallId, wpisy }: Props) {
     <section id="kalendarz-zajetosci-sali" className="scroll-mt-24 mt-10 rounded-2xl border border-emerald-200/80 bg-emerald-50/30 p-5 sm:p-6">
       <h2 className="font-serif text-xl text-green-950">Kalendarz zajętości sali</h2>
       <p className="mt-1 text-sm text-stone-600">
-        <strong>Tylko sołtys</strong> uzupełnia kalendarz — mieszkańcy widzą wolne/zajęte terminy, ale nie składają wniosków
-        online. Wpisy od razu blokują salę na mapie i profilu wsi.
+        <strong>Tylko sołtys</strong> uzupełnia kalendarz i widzi, kto wynajął salę. Mieszkańcy widzą wyłącznie
+        „zarezerwowane” oraz dni buforowe (pomarańcz) na przygotowanie i sprzątanie.
       </p>
+
+      <div className="mt-4">
+        <KalendarzMiesiacaSwietlicyKlient
+          terminy={wpisy}
+          trybSoltys
+          wpisySzczegolowe={wpisy.map((w) => ({
+            id: w.id,
+            start_at: w.start_at,
+            end_at: w.end_at,
+            event_title: w.event_title,
+            wynajmujacy: w.wynajmujacy,
+            telefon: w.telefon,
+          }))}
+        />
+      </div>
 
       {blad ? (
         <p className="mt-3 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-800" role="alert">
@@ -140,7 +158,15 @@ export function KalendarzZajetosciSoltysKlient({ hallId, wpisy }: Props) {
               >
                 <div>
                   <p className="font-medium text-stone-900">{formatZakres(w.start_at, w.end_at)}</p>
+                  {w.wynajmujacy ? (
+                    <p className="text-sm text-stone-800">
+                      Wynajmujący: <span className="font-medium">{w.wynajmujacy}</span>
+                    </p>
+                  ) : (
+                    <p className="text-sm text-stone-600">Blokada kalendarza (bez mieszkańca)</p>
+                  )}
                   {w.event_title ? <p className="text-xs text-stone-600">{w.event_title}</p> : null}
+                  {w.telefon ? <p className="text-xs text-stone-600">tel. {w.telefon}</p> : null}
                 </div>
                 <button
                   type="button"

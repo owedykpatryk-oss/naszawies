@@ -1,4 +1,5 @@
 import type { LicznikiOczekujacychSoltysa } from "./liczniki-oczekujacych-soltysa";
+import { escapeHtml } from "@/lib/tekst/escape-html";
 
 export type WierszRaportuKolejki = {
   typ: string;
@@ -30,7 +31,7 @@ export function zbudujHtmlRaportuSoltysa(opts: {
   const tabelaKpi = wierszeKpi
     .map(
       ([nazwa, n]) =>
-        `<tr><td style="padding:6px 8px;border-bottom:1px solid #e7e5e4">${nazwa}</td><td style="padding:6px 8px;border-bottom:1px solid #e7e5e4;text-align:right;font-weight:600">${n}</td></tr>`,
+        `<tr><td style="padding:6px 8px;border-bottom:1px solid #e7e5e4">${escapeHtml(String(nazwa))}</td><td style="padding:6px 8px;border-bottom:1px solid #e7e5e4;text-align:right;font-weight:600">${n}</td></tr>`,
     )
     .join("");
 
@@ -48,10 +49,10 @@ export function zbudujHtmlRaportuSoltysa(opts: {
         .map(
           (p) =>
             `<tr>
-              <td style="padding:6px 8px;border-bottom:1px solid #e7e5e4">${p.typ}</td>
-              <td style="padding:6px 8px;border-bottom:1px solid #e7e5e4">${p.tytul}</td>
-              <td style="padding:6px 8px;border-bottom:1px solid #e7e5e4">${p.wies}</td>
-              <td style="padding:6px 8px;border-bottom:1px solid #e7e5e4">${p.data}</td>
+              <td style="padding:6px 8px;border-bottom:1px solid #e7e5e4">${escapeHtml(p.typ)}</td>
+              <td style="padding:6px 8px;border-bottom:1px solid #e7e5e4">${escapeHtml(p.tytul)}</td>
+              <td style="padding:6px 8px;border-bottom:1px solid #e7e5e4">${escapeHtml(p.wies)}</td>
+              <td style="padding:6px 8px;border-bottom:1px solid #e7e5e4">${escapeHtml(p.data)}</td>
             </tr>`,
         )
         .join("")}</tbody></table>`;
@@ -59,8 +60,8 @@ export function zbudujHtmlRaportuSoltysa(opts: {
   return `
     <div style="font-family:Georgia,'Times New Roman',serif;color:#1c1917;padding:8px 4px;max-width:720px">
       <p style="font-size:11px;color:#57534e;margin:0 0 4px">naszawies.pl · panel sołtysa</p>
-      <h1 style="font-size:20px;margin:0 0 8px;color:#14532d">Podsumowanie pracy — ${data}</h1>
-      ${nazwyWsi.length ? `<p style="font-size:12px;color:#57534e;margin:0 0 16px">Wsie: ${nazwyWsi.join(", ")}</p>` : ""}
+      <h1 style="font-size:20px;margin:0 0 8px;color:#14532d">Podsumowanie pracy — ${escapeHtml(data)}</h1>
+      ${nazwyWsi.length ? `<p style="font-size:12px;color:#57534e;margin:0 0 16px">Wsie: ${escapeHtml(nazwyWsi.join(", "))}</p>` : ""}
       <h2 style="font-size:14px;margin:16px 0 8px;color:#14532d">Licznik oczekujących</h2>
       <table style="width:100%;max-width:400px;border-collapse:collapse;font-size:13px">${tabelaKpi}</table>
       <h2 style="font-size:14px;margin:20px 0 8px;color:#14532d">Kolejka pracy (skrót)</h2>

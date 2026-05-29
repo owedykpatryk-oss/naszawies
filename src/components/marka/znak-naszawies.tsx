@@ -1,17 +1,26 @@
-import { ZnakNaszawiesSvg } from "./znak-naszawies-svg";
+import Image from "next/image";
+import { LOGO_MARKI_SRC } from "./logo-naszawies";
 
 type Props = {
-  /** Rozmiar ikony w px (średnica okręgu). */
+  /** Rozmiar ikony w px. */
   rozmiar?: number;
   className?: string;
 };
 
-/** Okrągły emblemat marki (wieś w kole) — favicon, logo, małe znaki. */
+/** Kwadratowy emblem marki (oficjalna ikona). */
 export function ZnakNaszawies({ rozmiar = 24, className = "" }: Props) {
-  return <ZnakNaszawiesSvg rozmiar={rozmiar} className={`shrink-0 rounded-full ${className}`} />;
+  return (
+    <Image
+      src={LOGO_MARKI_SRC}
+      alt="naszawies.pl"
+      width={rozmiar}
+      height={rozmiar}
+      className={`shrink-0 rounded-lg ${className}`}
+    />
+  );
 }
 
-/** Okrągły kontener ze znakiem — używany w logo i stopce. */
+/** Emblem w zaokrąglonym kwadracie — nagłówek, stopka. */
 export function ZnakNaszawiesOkrag({
   rozmiarKola = 44,
   className = "",
@@ -21,10 +30,17 @@ export function ZnakNaszawiesOkrag({
 }) {
   return (
     <span
-      className={`inline-flex shrink-0 overflow-hidden rounded-full shadow-md shadow-green-950/15 ring-2 ring-white/25 ${className}`}
-      style={{ width: rozmiarKola, height: rozmiarKola, minWidth: rozmiarKola, minHeight: rozmiarKola }}
+      className={`inline-flex shrink-0 overflow-hidden rounded-xl shadow-md shadow-green-950/15 ring-1 ring-white/25 ${className}`}
+      style={{ width: rozmiarKola, height: rozmiarKola }}
     >
-      <ZnakNaszawiesSvg rozmiar={rozmiarKola} className="h-full w-full" />
+      <Image
+        src={LOGO_MARKI_SRC}
+        alt=""
+        width={rozmiarKola}
+        height={Math.round(rozmiarKola * 1.42)}
+        className="h-auto max-w-none object-cover object-top"
+        style={{ width: rozmiarKola }}
+      />
     </span>
   );
 }

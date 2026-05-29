@@ -8,6 +8,7 @@ import { sprawdzLimitApi } from "@/lib/rate-limit/sprawdz-limit-upstash";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin-client";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
 import { escapeHtml } from "@/lib/tekst/escape-html";
+import { walidujOdpowiedzTurnstile } from "@/lib/turnstile/waliduj-token-serwer";
 
 const schema = z
   .object({
@@ -16,6 +17,7 @@ const schema = z
     description: z.string().trim().min(10).max(8000),
     pageUrl: z.string().max(2048).optional(),
     contactEmail: z.string().email().optional().or(z.literal("")),
+    cfTurnstileResponse: z.string().max(4096).optional(),
     bottrap: z.string().optional(),
   })
   .strict()
@@ -45,6 +47,15 @@ export async function POST(request: Request) {
   }
 
   const d = parsed.data;
+
+  const turnstile = await walidujOdpowiedzTurnstile(d.cfTurnstileResponse);
+  if (!turnstile.ok) {
+    return NextResponse.json(
+      { error: "Weryfikacja antybotowa nie powiodła się. Odśwież stronę i spróbuj ponownie." },
+      { status: 400 },
+    );
+  }
+
   const supabase = utworzKlientaSupabaseSerwer();
   const {
     data: { user },

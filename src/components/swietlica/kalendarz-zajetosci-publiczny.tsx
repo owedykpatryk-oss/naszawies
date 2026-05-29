@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { ReactNode } from "react";
+import { KalendarzMiesiacaSwietlicyKlient } from "@/components/swietlica/kalendarz-miesiaca-swietlicy-klient";
 
 export type WierszKalendarzaPublicznego = {
   hall_id: string;
@@ -8,13 +9,6 @@ export type WierszKalendarzaPublicznego = {
   end_at: string;
   status: "pending" | "approved" | string;
 };
-
-function etykietujStatus(s: string): { krotka: string; opis: string } {
-  if (s === "approved") {
-    return { krotka: "Zajęte", opis: "Sala w tym przedziale jest zajęta (wpis sołtysa)." };
-  }
-  return { krotka: s, opis: "" };
-}
 
 function formatZakres(a: string, b: string) {
   const s = new Date(a).toLocaleString("pl-PL", { dateStyle: "short", timeStyle: "short" });
@@ -64,25 +58,34 @@ export function KalendarzZajetosciDlaHaliSekcja({
   naglowekDod,
   pustyKomunikat = "W tym miejscu nie ma zajętych terminów w kalendarzu (sołtys uzupełnia wpisy w panelu świetlicy).",
 }: PropsHala) {
+  const terminy = wiersze.map((r) => ({ start_at: r.start_at, end_at: r.end_at }));
+
   return (
     <section className="mt-10 rounded-2xl border border-stone-200 bg-stone-50/80 p-5 sm:p-6" aria-label="Kalendarz zajętości sali">
       <h2 className="font-serif text-xl text-green-950">{tytul}</h2>
       {naglowekDod ? <div className="mt-2 text-sm text-stone-600">{naglowekDod}</div> : null}
+
+      <div className="mt-4">
+        <KalendarzMiesiacaSwietlicyKlient terminy={terminy} />
+      </div>
+
       {wiersze.length === 0 ? (
         <p className="mt-4 text-sm text-stone-600">{pustyKomunikat}</p>
       ) : (
-        <ul className="mt-4 space-y-3 text-sm text-stone-800">
-          {wiersze.map((r, i) => {
-            const etyk = etykietujStatus(r.status);
-            return (
+        <div className="mt-6">
+          <h3 className="text-sm font-semibold text-stone-800">Lista zajętych przedziałów</h3>
+          <p className="mt-1 text-xs text-stone-500">
+            Bez danych wynajmującego — tylko sołtys widzi, kto zarezerwował salę.
+          </p>
+          <ul className="mt-3 space-y-3 text-sm text-stone-800">
+            {wiersze.map((r, i) => (
               <li key={`${r.start_at}-${i}`} className="rounded-lg border border-stone-200 bg-white px-3 py-2">
-                <p className="font-medium text-stone-900">{etyk.krotka}</p>
+                <p className="font-medium text-stone-900">Zarezerwowane</p>
                 <p className="text-stone-800">{formatZakres(r.start_at, r.end_at)}</p>
-                {etyk.opis ? <p className="mt-1 text-xs text-stone-500">{etyk.opis}</p> : null}
               </li>
-            );
-          })}
-        </ul>
+            ))}
+          </ul>
+        </div>
       )}
     </section>
   );
@@ -113,19 +116,16 @@ export function KalendarzZajetosciWsiSekcja({ wies, wiersze }: PropsWies) {
         rezerwacji.
       </p>
       <ul className="mt-4 space-y-3 text-sm text-stone-800">
-        {wiersze.map((r, i) => {
-          const etyk = etykietujStatus(r.status);
-          return (
-            <li
-              key={`${r.hall_id}-${r.start_at}-${i}`}
-              className="rounded-lg border border-stone-200 bg-white px-3 py-2"
-            >
-              <p className="text-xs font-semibold text-stone-500">{r.hall_name}</p>
-              <p className="font-medium text-stone-900">{etyk.krotka}</p>
-              <p className="text-stone-800">{formatZakres(r.start_at, r.end_at)}</p>
-            </li>
-          );
-         })}
+        {wiersze.map((r, i) => (
+          <li
+            key={`${r.hall_id}-${r.start_at}-${i}`}
+            className="rounded-lg border border-stone-200 bg-white px-3 py-2"
+          >
+            <p className="text-xs font-semibold text-stone-500">{r.hall_name}</p>
+            <p className="font-medium text-stone-900">Zarezerwowane</p>
+            <p className="text-stone-800">{formatZakres(r.start_at, r.end_at)}</p>
+          </li>
+        ))}
       </ul>
     </section>
   );

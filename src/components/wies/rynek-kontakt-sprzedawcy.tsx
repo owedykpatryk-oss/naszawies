@@ -119,3 +119,73 @@ export function RynekKontaktSprzedawcy({
     </div>
   );
 }
+
+/** Sticky pasek kontaktu na mobile — widoczny przy scrollu szczegółów ogłoszenia. */
+export function RynekPasekMobilnyKontakt({
+  ogloszenieId,
+  telefon,
+  tytul,
+  urlOgloszenia,
+  sciezkaWsi,
+  nazwaWsi,
+  zalogowany,
+  toJa,
+}: Props) {
+  const router = useRouter();
+  const [czek, startT] = useTransition();
+
+  const tekstKontaktu = tekstWiadomosciDoSprzedawcy({ tytul, url: urlOgloszenia, nazwaWsi });
+  const whatsapp = telefon ? linkWhatsApp(telefon, tekstKontaktu) : null;
+
+  if (toJa) return null;
+
+  return (
+    <div className="fixed inset-x-0 bottom-0 z-40 border-t border-stone-200/90 bg-white/95 p-3 shadow-[0_-4px_20px_rgba(0,0,0,0.08)] backdrop-blur-md lg:hidden pb-[max(0.75rem,env(safe-area-inset-bottom))]">
+      <div className="mx-auto flex max-w-lg gap-2">
+        {zalogowany ? (
+          <button
+            type="button"
+            disabled={czek}
+            className="flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-green-800 px-3 py-2.5 text-sm font-semibold text-white disabled:opacity-50"
+            onClick={() => {
+              startT(async () => {
+                const w = await rozpocznijCzatZOgloszenia(ogloszenieId);
+                if ("blad" in w) return;
+                if (w.conversationId) router.push(`/panel/czat/${w.conversationId}`);
+              });
+            }}
+          >
+            💬 Napisz
+          </button>
+        ) : (
+          <Link
+            href={`/logowanie?next=${encodeURIComponent(`${sciezkaWsi}/rynek/${ogloszenieId}`)}`}
+            className="flex flex-1 items-center justify-center gap-1.5 rounded-xl bg-green-800 px-3 py-2.5 text-sm font-semibold text-white"
+          >
+            💬 Napisz
+          </Link>
+        )}
+        {telefon ? (
+          <a
+            href={`tel:${telefon.replace(/\s/g, "")}`}
+            className="flex items-center justify-center rounded-xl border border-green-800 px-3 py-2.5 text-sm font-semibold text-green-900"
+            aria-label="Zadzwoń"
+          >
+            📞
+          </a>
+        ) : null}
+        {whatsapp ? (
+          <a
+            href={whatsapp}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="flex items-center justify-center rounded-xl border border-[#25D366]/50 bg-[#25D366]/10 px-3 py-2.5 text-sm font-semibold text-[#128C7E]"
+            aria-label="WhatsApp"
+          >
+            WA
+          </a>
+        ) : null}
+      </div>
+    </div>
+  );
+}

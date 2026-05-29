@@ -1,14 +1,14 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   etykietaJednostkiCeny,
   etykietaKategoriiSprzetu,
   etykietaTypuOgloszenia,
 } from "@/lib/marketplace/kategorie-ogloszen";
 import { ZapiszTrescPrzycisk } from "@/components/panel/moje/zapisz-tresc-przycisk";
-import { RynekKontaktSprzedawcy } from "@/components/wies/rynek-kontakt-sprzedawcy";
+import { RynekKontaktSprzedawcy, RynekPasekMobilnyKontakt } from "@/components/wies/rynek-kontakt-sprzedawcy";
 import { RynekObserwujCene } from "@/components/wies/rynek-obserwuj-cene";
 import { RynekRejestrujWyswietlenie } from "@/components/wies/rynek-licznik-wyswietlen";
 import { RynekUdostepnijPrzycisk } from "@/components/wies/rynek-udostepnij-przycisk";
@@ -105,6 +105,7 @@ export function RynekOgloszenieSzczegoly({
   podobne?: OgloszenieRynekSkrot[];
 }) {
   const [zdjecieAktywne, ustawZdjecieAktywne] = useState(0);
+  const [lightbox, ustawLightbox] = useState(false);
   const zdjecia = ogloszenie.image_urls ?? [];
   const kat = ogloszenie.equipment_category ?? ogloszenie.category;
   const bazaUrl = process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") ?? "https://naszawies.pl";
@@ -121,6 +122,21 @@ export function RynekOgloszenieSzczegoly({
     nazwaWsi,
   });
 
+  useEffect(() => {
+    if (!lightbox) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") ustawLightbox(false);
+      if (e.key === "ArrowLeft" && zdjecia.length > 1) {
+        ustawZdjecieAktywne((i) => (i - 1 + zdjecia.length) % zdjecia.length);
+      }
+      if (e.key === "ArrowRight" && zdjecia.length > 1) {
+        ustawZdjecieAktywne((i) => (i + 1) % zdjecia.length);
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [lightbox, zdjecia.length]);
+
   const maSzczegolyProduktu =
     ogloszenie.pickup_in_village ||
     (ogloszenie.delivery_radius_km != null && ogloszenie.delivery_radius_km > 0) ||
@@ -132,7 +148,8 @@ export function RynekOgloszenieSzczegoly({
     ogloszenie.sales_poi_name;
 
   return (
-    <article className="wow-wejscie overflow-hidden rounded-2xl border border-orange-200/70 bg-white shadow-lg shadow-orange-950/5 ring-1 ring-stone-950/[0.03]">
+    <>
+    <article className="wow-wejscie overflow-hidden rounded-2xl border border-orange-200/70 bg-white shadow-lg shadow-orange-950/5 ring-1 ring-stone-950/[0.03] pb-20 lg:pb-0">
       <div className="lg:grid lg:grid-cols-[1fr_minmax(240px,280px)] lg:gap-0">
         <div className="border-b border-stone-100 p-5 sm:p-6 lg:border-b-0 lg:border-r">
           <p className="inline-flex flex-wrap items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-orange-900">
@@ -150,7 +167,12 @@ export function RynekOgloszenieSzczegoly({
 
           {zdjecia.length > 0 ? (
             <div className="mt-5">
-              <div className="relative overflow-hidden rounded-2xl ring-1 ring-stone-200/80">
+              <button
+                type="button"
+                onClick={() => ustawLightbox(true)}
+                className="relative block w-full overflow-hidden rounded-2xl ring-1 ring-stone-200/80 focus:outline-none focus:ring-2 focus:ring-orange-400"
+                aria-label="Powiększ zdjęcie"
+              >
                 <ObrazR2
                   src={zdjecia[zdjecieAktywne]}
                   preset="pelny"
@@ -161,7 +183,12 @@ export function RynekOgloszenieSzczegoly({
                 <p className="absolute bottom-3 left-3 rounded-xl bg-white/95 px-3 py-1.5 text-lg font-bold text-green-900 shadow-lg backdrop-blur-sm">
                   <FormatujCeneOgloszenia kwota={ogloszenie.price_amount} jednostka={ogloszenie.price_unit} />
                 </p>
-              </div>
+                {zdjecia.length > 1 ? (
+                  <span className="absolute right-3 top-3 rounded-lg bg-black/55 px-2 py-1 text-xs font-medium text-white">
+                    {zdjecieAktywne + 1} / {zdjecia.length}
+                  </span>
+                ) : null}
+              </button>
               {zdjecia.length > 1 ? (
                 <div className="mt-2 flex gap-2 overflow-x-auto pb-1">
                   {zdjecia.map((url, i) => (
@@ -387,5 +414,69 @@ export function RynekOgloszenieSzczegoly({
         </section>
       ) : null}
     </article>
+
+    {lightbox && zdjecia.length > 0 ? (
+      <div
+        className="fixed inset-0 z-50 flex items-center justify-center bg-black/90 p-4"
+        role="dialog"
+        aria-modal="true"
+        aria-label="Galeria zdjęć"
+        onClick={() => ustawLightbox(false)}
+      >
+        <button
+          type="button"
+          className="absolute right-4 top-4 rounded-full bg-white/15 px-3 py-1.5 text-sm font-medium text-white hover:bg-white/25"
+          onClick={() => ustawLightbox(false)}
+        >
+          Zamknij
+        </button>
+        {zdjecia.length > 1 ? (
+          <button
+            type="button"
+            className="absolute left-2 top-1/2 -translate-y-1/2 rounded-full bg-white/15 px-3 py-2 text-white hover:bg-white/25 sm:left-4"
+            onClick={(e) => {
+              e.stopPropagation();
+              ustawZdjecieAktywne((i) => (i - 1 + zdjecia.length) % zdjecia.length);
+            }}
+            aria-label="Poprzednie zdjęcie"
+          >
+            ‹
+          </button>
+        ) : null}
+        <div className="max-h-[85vh] max-w-full" onClick={(e) => e.stopPropagation()}>
+          <ObrazR2
+            src={zdjecia[zdjecieAktywne]}
+            preset="pelny"
+            alt=""
+            className="max-h-[85vh] max-w-full object-contain"
+          />
+        </div>
+        {zdjecia.length > 1 ? (
+          <button
+            type="button"
+            className="absolute right-2 top-1/2 -translate-y-1/2 rounded-full bg-white/15 px-3 py-2 text-white hover:bg-white/25 sm:right-4"
+            onClick={(e) => {
+              e.stopPropagation();
+              ustawZdjecieAktywne((i) => (i + 1) % zdjecia.length);
+            }}
+            aria-label="Następne zdjęcie"
+          >
+            ›
+          </button>
+        ) : null}
+      </div>
+    ) : null}
+
+    <RynekPasekMobilnyKontakt
+      ogloszenieId={ogloszenie.id}
+      telefon={ogloszenie.phone}
+      tytul={ogloszenie.title}
+      urlOgloszenia={urlOgloszenia}
+      sciezkaWsi={sciezkaWsi}
+      nazwaWsi={nazwaWsi}
+      zalogowany={zalogowany}
+      toJa={toJa}
+    />
+    </>
   );
 }

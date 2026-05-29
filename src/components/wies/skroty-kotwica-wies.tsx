@@ -9,7 +9,9 @@ const IKONY_SKROTOW: Record<string, string> = {
   "#sekcja-aktualnosci-laczone": "A",
   "#sekcja-transport": "T",
   "#sekcja-rynek-lokalny": "R",
-  "#sekcja-dotacje": "D",
+  "#sekcja-blog-historia": "B",
+  "#sekcja-organizacje": "O",
+  "#sekcja-pomoc-sasiedzka": "P",
 };
 
 type Skrot = { href: string; label: string };

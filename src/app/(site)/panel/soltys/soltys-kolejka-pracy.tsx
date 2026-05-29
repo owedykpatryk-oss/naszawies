@@ -14,9 +14,11 @@ export type PozycjaKolejki = {
 export function SoltysKolejkaPracy({
   pozycje,
   liczniki,
+  pokazModeracje = true,
 }: {
   pozycje: PozycjaKolejki[];
   liczniki: LicznikiOczekujacychSoltysa;
+  pokazModeracje?: boolean;
 }) {
   const sumaRynekPomoc = liczniki.rynek + liczniki.pomoc;
 
@@ -33,17 +35,17 @@ export function SoltysKolejkaPracy({
             Zgłoszenia: {liczniki.zgloszenia}
           </Link>
         ) : null}
-        {liczniki.zdjecia > 0 ? (
+        {pokazModeracje && liczniki.zdjecia > 0 ? (
           <Link href="/panel/soltys/fotokronika" className="rounded-full bg-violet-100 px-2 py-0.5 font-medium text-violet-900">
             Zdjęcia: {liczniki.zdjecia}
           </Link>
         ) : null}
-        {sumaRynekPomoc > 0 ? (
+        {pokazModeracje && sumaRynekPomoc > 0 ? (
           <Link href="/panel/soltys#moderacja-mieszkancow" className="rounded-full bg-orange-100 px-2 py-0.5 font-medium text-orange-900">
             Rynek + pomoc: {sumaRynekPomoc}
           </Link>
         ) : null}
-        {liczniki.raportySpolecznosci > 0 ? (
+        {pokazModeracje && liczniki.raportySpolecznosci > 0 ? (
           <Link
             href="/panel/soltys/spolecznosc/moderacja"
             className="rounded-full bg-indigo-100 px-2 py-0.5 font-medium text-indigo-900"

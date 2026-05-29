@@ -1,12 +1,17 @@
 "use client";
 
 import { FormEvent, useState } from "react";
+import { TurnstileAntybot } from "@/components/turnstile/TurnstileAntybot";
 import { KATEGORIE_ZGLOSZENIA_STRONY } from "@/lib/pomoc/przewodniki";
+
+const TURNSTILE_SITE_KEY = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY?.trim() ?? "";
 
 export function ZglosProblemStronyFormularz() {
   const [blad, ustawBlad] = useState("");
   const [sukces, ustawSukces] = useState(false);
   const [czek, ustawCzek] = useState(false);
+  const [turnstileToken, ustawTurnstileToken] = useState<string | null>(null);
+  const [turnstileKey, ustawTurnstileKey] = useState(0);
 
   async function onSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -25,6 +30,7 @@ export function ZglosProblemStronyFormularz() {
           pageUrl: fd.get("page_url") || "",
           contactEmail: fd.get("contact_email") || "",
           bottrap: fd.get("bottrap"),
+          ...(turnstileToken ? { cfTurnstileResponse: turnstileToken } : {}),
         }),
       });
       const data = (await res.json()) as { error?: string; ok?: boolean };
@@ -34,6 +40,8 @@ export function ZglosProblemStronyFormularz() {
       }
       ustawSukces(true);
       (e.target as HTMLFormElement).reset();
+      ustawTurnstileToken(null);
+      ustawTurnstileKey((k) => k + 1);
     } catch {
       ustawBlad("Błąd połączenia. Spróbuj ponownie lub napisz na kontakt@naszawies.pl.");
     } finally {
@@ -100,6 +108,12 @@ export function ZglosProblemStronyFormularz() {
         E-mail do odpowiedzi (opcjonalnie)
         <input name="contact_email" type="email" className="form-control mt-1" />
       </label>
+      {TURNSTILE_SITE_KEY ? (
+        <div className="rounded-xl border border-stone-200 bg-stone-50 p-3">
+          <p className="mb-2 text-xs text-stone-600">Weryfikacja antyspamowa (Cloudflare)</p>
+          <TurnstileAntybot key={turnstileKey} siteKey={TURNSTILE_SITE_KEY} onToken={ustawTurnstileToken} />
+        </div>
+      ) : null}
       <button type="submit" disabled={czek} className="btn-panel-primary w-full sm:w-auto">
         {czek ? "Wysyłam…" : "Wyślij zgłoszenie"}
       </button>

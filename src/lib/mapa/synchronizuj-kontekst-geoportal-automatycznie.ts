@@ -75,8 +75,9 @@ async function upsertSyncState(
 
 export async function synchronizujKontekstGeoportalAutomatycznie(
   supabase: SupabaseClient,
+  opts?: { tylkoVillageIds?: string[]; maxVillagesPerRun?: number },
 ): Promise<GeoportalContextSyncSummary> {
-  const maxPerRun = parseIntEnv("GEOPORTAL_CONTEXT_SYNC_VILLAGES_PER_RUN", 5, 1, 30);
+  const maxPerRun = opts?.maxVillagesPerRun ?? parseIntEnv("GEOPORTAL_CONTEXT_SYNC_VILLAGES_PER_RUN", 5, 1, 30);
   const maxScanned = parseIntEnv("GEOPORTAL_CONTEXT_SYNC_VILLAGES_SCANNED", 40, 3, 500);
   const minDays = parseIntEnv("GEOPORTAL_CONTEXT_SYNC_MIN_DAYS", 21, 1, 180);
   const minSyncMs = minDays * 24 * 60 * 60 * 1000;
@@ -92,12 +93,18 @@ export async function synchronizujKontekstGeoportalAutomatycznie(
     errors: [],
   };
 
-  const { data: wsie, error: errWsie } = await supabase
+  let zapytanieWsi = supabase
     .from("villages")
     .select("id,name,latitude,longitude,population")
-    .eq("is_active", true)
-    .order("updated_at", { ascending: true })
-    .limit(maxScanned);
+    .eq("is_active", true);
+
+  if (opts?.tylkoVillageIds?.length) {
+    zapytanieWsi = zapytanieWsi.in("id", opts.tylkoVillageIds);
+  } else {
+    zapytanieWsi = zapytanieWsi.order("updated_at", { ascending: true }).limit(maxScanned);
+  }
+
+  const { data: wsie, error: errWsie } = await zapytanieWsi;
   if (errWsie) throw new Error(`Nie udało się pobrać wsi do sync kontekstu: ${errWsie.message}`);
   const villages = (wsie ?? []) as VillageRow[];
   summary.scannedVillages = villages.length;

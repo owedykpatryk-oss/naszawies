@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useMemo, useState } from "react";
+import { ObrazR2 } from "@/components/media/obraz-r2";
 import { skrotCzasWiadomosci, skrotPodgladuWiadomosci } from "@/lib/czat/formatuj-czas-wiadomosci";
 import { etykietaPresetu } from "@/lib/czat/grupy-preset";
 
@@ -11,6 +12,8 @@ export type WierszKonwersacjiCzat = {
   wies: string;
   kind: string;
   preset: string | null;
+  listing_id: string | null;
+  listing_image_url: string | null;
   updated_at: string;
   ostatnia_wiadomosc: string | null;
   ostatnia_wiadomosc_at: string | null;
@@ -29,7 +32,7 @@ export function CzatListaKonwersacjiKlient({ konwersacje }: { konwersacje: Wiers
     return konwersacje.filter((k) => {
       if (filtr === "nieprzeczytane" && k.nieprzeczytane === 0) return false;
       if (filtr === "grupy" && k.kind !== "group") return false;
-      if (filtr === "ogloszenia" && k.kind !== "direct") return false;
+      if (filtr === "ogloszenia" && !k.listing_id) return false;
       if (!q) return true;
       const haystack = [k.tytul, k.wies, k.ostatnia_wiadomosc, k.preset ? etykietaPresetu(k.preset) : ""]
         .filter(Boolean)
@@ -103,14 +106,23 @@ export function CzatListaKonwersacjiKlient({ konwersacje }: { konwersacje: Wiers
                       k.nieprzeczytane > 0 ? "bg-green-50/40" : ""
                     }`}
                   >
-                    <div
-                      className={`mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-sm font-bold ${
-                        k.kind === "group" ? "bg-violet-100 text-violet-900" : "bg-orange-100 text-orange-900"
-                      }`}
-                      aria-hidden
-                    >
-                      {k.kind === "group" ? "G" : "💬"}
-                    </div>
+                    {k.listing_image_url ? (
+                      <ObrazR2
+                        src={k.listing_image_url}
+                        preset="miniatura"
+                        alt=""
+                        className="mt-0.5 h-10 w-10 shrink-0 rounded-lg object-cover ring-1 ring-orange-200/80"
+                      />
+                    ) : (
+                      <div
+                        className={`mt-0.5 flex h-10 w-10 shrink-0 items-center justify-center rounded-full text-sm font-bold ${
+                          k.kind === "group" ? "bg-violet-100 text-violet-900" : "bg-orange-100 text-orange-900"
+                        }`}
+                        aria-hidden
+                      >
+                        {k.kind === "group" ? "G" : "💬"}
+                      </div>
+                    )}
                     <div className="min-w-0 flex-1">
                       <div className="flex items-start justify-between gap-2">
                         <p className={`truncate ${k.nieprzeczytane > 0 ? "font-semibold text-stone-900" : "font-medium text-stone-900"}`}>
@@ -120,7 +132,7 @@ export function CzatListaKonwersacjiKlient({ konwersacje }: { konwersacje: Wiers
                       </div>
                       <p className="text-xs text-stone-500">
                         {k.wies}
-                        {k.kind === "group" ? " · grupa" : " · ogłoszenie"}
+                        {k.kind === "group" ? " · grupa" : k.listing_id ? " · ogłoszenie" : " · rozmowa"}
                       </p>
                       <p className={`mt-0.5 truncate text-sm ${k.nieprzeczytane > 0 ? "font-medium text-stone-800" : "text-stone-600"}`}>
                         {podglad}

@@ -19,6 +19,15 @@ import {
   KATEGORIA_LADNE_MIEJSCE,
 } from "@/lib/mapa/kategorie-poi";
 import { formatujGodzinyOtwarcia } from "@/lib/mapa/formatuj-godziny-otwarcia";
+import { bezpiecznyHref } from "@/lib/tekst/bezpieczny-url";
+import {
+  CZY_KIEG_WMS_DOSTEPNY,
+  KIEG_WMS_MIN_ZOOM,
+  KIEG_WMS_URL,
+  PANE_KIEG_WMS,
+  czyKiegWidocznyNaZoomie,
+  opcjeWarstwyKiegWms,
+} from "@/lib/geoportal/kieg-wms";
 import "./mapa-wsi-leaflet.css";
 import "./mapa-wow.css";
 
@@ -62,6 +71,33 @@ export type ZnacznikPoi = {
   phone?: string | null;
   openingHours?: unknown;
   linkedEntityId?: string | null;
+  /** Link do interaktywnego planu cmentarza (gdy opublikowany). */
+  linkPlanuCmentarza?: string | null;
+};
+
+/** Opublikowany obrys cmentarza z planu wsi (polygon OSM). */
+export type ZnacznikCmentarzObrys = {
+  id: string;
+  villageId: string;
+  name: string;
+  villageName: string;
+  sciezkaWsi: string;
+  hrefPlan: string;
+  boundaryGeojson: unknown;
+};
+
+/** Nazwy geograficzne (PRNG) i instytucje PRG z Geoportalu — warstwa referencyjna. */
+export type ZnacznikGeoKontekst = {
+  id: string;
+  villageId: string;
+  villageName: string;
+  sciezkaWsi: string;
+  dataset: string;
+  name: string;
+  rodzaj: string | null;
+  lat: number;
+  lon: number;
+  layerLabel: string;
 };
 
 /** Zgłoszenie mieszkańców z GPS (dla członków wsi na mapie). */
@@ -217,6 +253,11 @@ function promienPrzyblizonyMetrow(z: ZnacznikWsi): number {
 }
 
 function ustawPaneWarstwicyGranicy(map: import("leaflet").Map) {
+  if (!map.getPane(PANE_KIEG_WMS)) {
+    const egib = map.createPane(PANE_KIEG_WMS);
+    /** Nad podkładem (200), pod obrysami wsi z bazy (500). */
+    egib.style.zIndex = "220";
+  }
   if (map.getPane(PANE_GRANICE)) return;
   const pane = map.createPane(PANE_GRANICE);
   /** Nad kafelkami (200), pod pinezkami (markerPane 600) — granice czytelne, klik zostaje na znaczniku. */
@@ -310,8 +351,16 @@ function bboxDlaPunktowMapy(
   rynek: ZnacznikRynek[] = [],
   polowania: ZnacznikPolowanie[] = [],
   rynekDzialki: ZnacznikRynekDzialka[] = [],
+  cmentarze: ZnacznikCmentarzObrys[] = [],
 ): [[number, number], [number, number]] | null {
-  if (znaczniki.length === 0 && pois.length === 0 && rynek.length === 0 && polowania.length === 0 && rynekDzialki.length === 0)
+  if (
+    znaczniki.length === 0 &&
+    pois.length === 0 &&
+    rynek.length === 0 &&
+    polowania.length === 0 &&
+    rynekDzialki.length === 0 &&
+    cmentarze.length === 0
+  )
     return null;
   let minLat = 90;
   let maxLat = -90;
@@ -343,6 +392,10 @@ function bboxDlaPunktowMapy(
     const gj = granicaJakoGeoJson(d.parcelGeojson);
     if (gj) rozszerzBboxZOGeojson(gj, visit);
   }
+  for (const c of cmentarze) {
+    const gj = granicaJakoGeoJson(c.boundaryGeojson);
+    if (gj) rozszerzBboxZOGeojson(gj, visit);
+  }
   const pad = 0.12;
   return [
     [minLat - pad, minLon - pad],
@@ -369,7 +422,9 @@ type InstancjaLeaflet = {
   podkladSatelita: import("leaflet").TileLayer;
   podkladEtykietySatelita: import("leaflet").TileLayer;
   geoportalWmsLayer: import("leaflet").TileLayer.WMS | null;
+  egibWmsLayer: import("leaflet").TileLayer.WMS | null;
   adresyGroup: import("leaflet").LayerGroup;
+  geoKontekstGroup: import("leaflet").LayerGroup;
   markersById: Map<string, import("leaflet").Marker>;
   polowaniaById: Map<string, import("leaflet").Layer>;
   rynekDzialkiById: Map<string, import("leaflet").Layer>;
@@ -381,6 +436,27 @@ type InstancjaLeaflet = {
 const GEO_WMS_URL = process.env.NEXT_PUBLIC_GEOPORTAL_WMS_URL?.trim() ?? "";
 const GEO_WMS_LAYERS = process.env.NEXT_PUBLIC_GEOPORTAL_WMS_LAYERS?.trim() ?? "";
 const CZY_GEO_WMS_DOSTEPNY = GEO_WMS_URL.length > 0 && GEO_WMS_LAYERS.length > 0;
+const KLUCZ_EGIB_STORAGE = "naszawies-mapa-egib";
+
+function wczytajZapisanyEgib(): boolean {
+  if (typeof window === "undefined") return true;
+  try {
+    const v = window.sessionStorage.getItem(KLUCZ_EGIB_STORAGE);
+    if (v === "0") return false;
+    if (v === "1") return true;
+  } catch {
+    /* ignore */
+  }
+  return true;
+}
+
+function ustawWarstweEgib(inst: InstancjaLeaflet, pokaz: boolean) {
+  const warstwa = inst.egibWmsLayer;
+  if (!warstwa) return;
+  const onMap = inst.map.hasLayer(warstwa);
+  if (pokaz && !onMap) warstwa.addTo(inst.map);
+  else if (!pokaz && onMap) inst.map.removeLayer(warstwa);
+}
 
 function wczytajZapisanyPodklad(): RodzajPodkladuMapy {
   if (typeof window === "undefined") return "mapa";
@@ -562,9 +638,12 @@ function podlaczInterakcjeDoPopupPoi(pin: import("leaflet").Marker, p: ZnacznikP
           html.push(`<p class="text-xs"><strong>E-mail:</strong> <a href="mailto:${escapeHtml(pm.email)}">${escapeHtml(pm.email)}</a></p>`);
         }
         if (pm.strona) {
-          html.push(
-            `<p class="text-xs"><a href="${escapeHtml(pm.strona)}" target="_blank" rel="noopener noreferrer">Strona ↗</a></p>`,
-          );
+          const hrefStrona = bezpiecznyHref(pm.strona);
+          if (hrefStrona) {
+            html.push(
+              `<p class="text-xs"><a href="${escapeHtml(hrefStrona)}" target="_blank" rel="noopener noreferrer">Strona ↗</a></p>`,
+            );
+          }
         }
       }
 
@@ -668,6 +747,7 @@ function htmlPopupPoi(z: ZnacznikPoi): string {
       : "";
   const kontaktHtml = htmlKontaktPoi(z);
   const czyOspWoda = katNorm === "osp_punkt_czerpania_wody";
+  const czyCmentarz = katNorm === "cmentarz";
   const czyStacja = katNorm === "stacja_kolejowa";
   const czyPrzystanek = katNorm === "przystanek";
   const stacjaLink = `/transport/rozklad?stacja=${encodeURIComponent(z.name)}`;
@@ -720,6 +800,7 @@ function htmlPopupPoi(z: ZnacznikPoi): string {
         <span aria-hidden="true"> · </span>
         <a href="${osm}" target="_blank" rel="noopener noreferrer">OSM ↗</a>
         ${czyStacja ? `<span aria-hidden="true"> · </span><a href="${stacjaLink}">Rozkład PKP 🚆</a>` : ""}
+        ${czyCmentarz && z.linkPlanuCmentarza ? `<span aria-hidden="true"> · </span><a href="${z.linkPlanuCmentarza.replace(/"/g, "")}">Plan cmentarza 🗺</a>` : ""}
         ${czyPrzystanek ? `<span aria-hidden="true"> · </span><a href="${epodroznikLink}" target="_blank" rel="noopener noreferrer">PKS / bus ↗</a>` : ""}
         ${czyOspWoda ? `<span aria-hidden="true"> · </span><a href="${zglosAktualizacjeLink}">Zgłoś aktualizację punktu</a>` : ""}
       </p>
@@ -736,12 +817,16 @@ export const MapaWsiLeaflet = forwardRef<
     punktyRynekDzialki?: ZnacznikRynekDzialka[];
     punktyZgloszenia?: ZnacznikZgloszenie[];
     punktyPolowania?: ZnacznikPolowanie[];
+    punktyCmentarze?: ZnacznikCmentarzObrys[];
+    punktyGeoKontekst?: ZnacznikGeoKontekst[];
     punktyAdresy?: ZnacznikAdres[];
     /** Obrysy wszystkich wsi w wybranej gminie (pomarańczowy kontur). */
     obrysyGminy?: ZnacznikWsi[];
     pozycjaUzytkownika?: { lat: number; lon: number } | null;
     promienKm?: number | null;
     pokazGranice?: boolean;
+    /** Warstwa EGiB (obręby + działki) z Geoportalu — domyślnie włączona. */
+    pokazEgib?: boolean;
     pokazPoi?: boolean;
     pokazRynek?: boolean;
     wysokoscMapy?: "pelna" | "kompakt";
@@ -754,11 +839,14 @@ export const MapaWsiLeaflet = forwardRef<
     punktyRynekDzialki = [],
     punktyZgloszenia = [],
     punktyPolowania = [],
+    punktyCmentarze = [],
+    punktyGeoKontekst = [],
     punktyAdresy = [],
     obrysyGminy = [],
     pozycjaUzytkownika = null,
     promienKm = null,
     pokazGranice = true,
+    pokazEgib = true,
     pokazPoi = true,
     pokazRynek = true,
     wysokoscMapy = "pelna",
@@ -773,9 +861,12 @@ export const MapaWsiLeaflet = forwardRef<
     pozycjaRef.current = pozycjaUzytkownika;
     const [rodzajPodkladu, setRodzajPodkladu] = useState<RodzajPodkladuMapy>("mapa");
     const [pokazGraniceStan, setPokazGraniceStan] = useState(pokazGranice);
+    const [pokazEgibStan, setPokazEgibStan] = useState(() => pokazEgib && wczytajZapisanyEgib());
+    const [zoomMapy, setZoomMapy] = useState(7);
     const [pokazPoiStan, setPokazPoiStan] = useState(pokazPoi);
     const [pokazRynekStan, setPokazRynekStan] = useState(pokazRynek);
     const [pokazAdresyStan, setPokazAdresyStan] = useState(false);
+    const [pokazGeoKontekstStan, setPokazGeoKontekstStan] = useState(false);
     const [pelnyEkran, setPelnyEkran] = useState(false);
     const znacznikiRef = useRef(znaczniki);
     znacznikiRef.current = znaczniki;
@@ -789,12 +880,18 @@ export const MapaWsiLeaflet = forwardRef<
     punktyZgloszeniaRef.current = punktyZgloszenia;
     const punktyPolowaniaRef = useRef(punktyPolowania);
     punktyPolowaniaRef.current = punktyPolowania;
+    const punktyCmentarzeRef = useRef(punktyCmentarze);
+    punktyCmentarzeRef.current = punktyCmentarze;
+    const punktyGeoKontekstRef = useRef(punktyGeoKontekst);
+    punktyGeoKontekstRef.current = punktyGeoKontekst;
     const punktyAdresyRef = useRef(punktyAdresy);
     punktyAdresyRef.current = punktyAdresy;
     const obrysyGminyRef = useRef(obrysyGminy);
     obrysyGminyRef.current = obrysyGminy;
     const pokazGraniceRef = useRef(pokazGraniceStan);
     pokazGraniceRef.current = pokazGraniceStan;
+    const pokazEgibRef = useRef(pokazEgibStan);
+    pokazEgibRef.current = pokazEgibStan;
     const pokazPoiRef = useRef(pokazPoiStan);
     pokazPoiRef.current = pokazPoiStan;
     const pokazRynekRef = useRef(pokazRynekStan);
@@ -810,8 +907,9 @@ export const MapaWsiLeaflet = forwardRef<
           pokazRynekStan ? punktyRynek : [],
           punktyPolowania,
           pokazRynekStan ? punktyRynekDzialki : [],
+          punktyCmentarze,
         ),
-      [znaczniki, punktyPoi, punktyRynek, punktyRynekDzialki, punktyPolowania, pokazPoiStan, pokazRynekStan],
+      [znaczniki, punktyPoi, punktyRynek, punktyRynekDzialki, punktyPolowania, punktyCmentarze, pokazPoiStan, pokazRynekStan],
     );
 
     useImperativeHandle(ref, () => ({
@@ -925,6 +1023,13 @@ export const MapaWsiLeaflet = forwardRef<
               opacity: 1,
             })
           : null;
+        const egibWmsLayer = CZY_KIEG_WMS_DOSTEPNY
+          ? L.tileLayer.wms(KIEG_WMS_URL, {
+              ...opcjeWarstwyKiegWms(),
+              attribution:
+                'Granice EGiB &copy; <a href="https://www.geoportal.gov.pl/">GUGiK</a>',
+            })
+          : null;
 
         const podkladStart = wczytajZapisanyPodklad();
 
@@ -940,6 +1045,7 @@ export const MapaWsiLeaflet = forwardRef<
 
         const boundaryGroup = L.layerGroup().addTo(map);
         const adresyGroup = L.layerGroup();
+        const geoKontekstGroup = L.layerGroup();
         const userLayer = L.layerGroup().addTo(map);
         map.addLayer(cluster);
 
@@ -952,6 +1058,12 @@ export const MapaWsiLeaflet = forwardRef<
         };
         container.addEventListener("mouseenter", enter);
         container.addEventListener("mouseleave", leave);
+
+        const onZoom = () => {
+          setZoomMapy(map.getZoom());
+        };
+        map.on("zoomend", onZoom);
+        setZoomMapy(map.getZoom());
 
         const resizeHandler = () => {
           map.invalidateSize();
@@ -968,7 +1080,9 @@ export const MapaWsiLeaflet = forwardRef<
           podkladSatelita,
           podkladEtykietySatelita,
           geoportalWmsLayer,
+          egibWmsLayer,
           adresyGroup,
+          geoKontekstGroup,
           markersById: new Map(),
           polowaniaById: new Map(),
           rynekDzialkiById: new Map(),
@@ -977,13 +1091,14 @@ export const MapaWsiLeaflet = forwardRef<
           wheelHandlers: { enter, leave },
         };
         ustawPodkladMapy(instancja.current, podkladStart);
+        ustawWarstweEgib(instancja.current, pokazEgibRef.current);
         setRodzajPodkladu(podkladStart);
 
         const z0 = znacznikiRef.current;
         const p0 = pokazPoiRef.current ? punktyPoiRef.current : [];
         const r0 = pokazRynekRef.current ? punktyRynekRef.current : [];
         const rd0 = pokazRynekRef.current ? punktyRynekDzialkiRef.current : [];
-        const bb0 = bboxDlaPunktowMapy(z0, p0, r0, punktyPolowaniaRef.current, rd0);
+        const bb0 = bboxDlaPunktowMapy(z0, p0, r0, punktyPolowaniaRef.current, rd0, punktyCmentarzeRef.current);
         syncWarstwy(
           L,
           instancja.current,
@@ -994,9 +1109,10 @@ export const MapaWsiLeaflet = forwardRef<
           punktyZgloszeniaRef.current,
           punktyPolowaniaRef.current,
           obrysyGminyRef.current,
+          punktyCmentarzeRef.current,
           ikona,
           bb0,
-          { pokazGranice: pokazGraniceRef.current },
+          { pokazGranice: pokazGraniceRef.current, pokazEgib: pokazEgibRef.current },
         );
         syncWarstwaUzytkownika(L, instancja.current, pozycjaRef.current, promienRef.current);
       })();
@@ -1005,6 +1121,7 @@ export const MapaWsiLeaflet = forwardRef<
         cancelled = true;
         const inst = instancja.current;
         if (inst) {
+          inst.map.off("zoomend");
           window.removeEventListener("resize", inst.resizeHandler);
           const c = inst.map.getContainer();
           c.removeEventListener("mouseenter", inst.wheelHandlers.enter);
@@ -1033,9 +1150,10 @@ export const MapaWsiLeaflet = forwardRef<
         punktyZgloszenia,
         punktyPolowania,
         obrysyGminy,
+        punktyCmentarze,
         ikona,
         bboxPoczatkowy,
-        { pokazGranice: pokazGraniceStan },
+        { pokazGranice: pokazGraniceStan, pokazEgib: pokazEgibStan },
       );
     }, [
       znaczniki,
@@ -1044,9 +1162,12 @@ export const MapaWsiLeaflet = forwardRef<
       punktyRynekDzialki,
       punktyZgloszenia,
       punktyPolowania,
+      punktyCmentarze,
       obrysyGminy,
       bboxPoczatkowy,
       pokazGraniceStan,
+      pokazEgibStan,
+      zoomMapy,
       pokazPoiStan,
       pokazRynekStan,
     ]);
@@ -1057,6 +1178,13 @@ export const MapaWsiLeaflet = forwardRef<
       if (!inst || !L) return;
       syncWarstwaAdresow(L, inst, pokazAdresyStan ? punktyAdresyRef.current : []);
     }, [pokazAdresyStan, punktyAdresy]);
+
+    useEffect(() => {
+      const inst = instancja.current;
+      const L = leafletRef.current;
+      if (!inst || !L) return;
+      syncWarstwaGeoKontekst(L, inst, pokazGeoKontekstStan ? punktyGeoKontekstRef.current : []);
+    }, [pokazGeoKontekstStan, punktyGeoKontekst]);
 
     useEffect(() => {
       const inst = instancja.current;
@@ -1074,6 +1202,17 @@ export const MapaWsiLeaflet = forwardRef<
         inst.map.removeLayer(inst.boundaryGroup);
       }
     }, [pokazGraniceStan]);
+
+    useEffect(() => {
+      const inst = instancja.current;
+      if (!inst) return;
+      ustawWarstweEgib(inst, pokazEgibStan);
+      try {
+        window.sessionStorage.setItem(KLUCZ_EGIB_STORAGE, pokazEgibStan ? "1" : "0");
+      } catch {
+        /* ignore */
+      }
+    }, [pokazEgibStan]);
 
     useEffect(() => {
       const onChange = () => {
@@ -1171,6 +1310,14 @@ export const MapaWsiLeaflet = forwardRef<
           </div>
           <button
             type="button"
+            onClick={() => setPokazEgibStan((v) => !v)}
+            className="rounded-lg border border-fuchsia-200/90 bg-fuchsia-50/95 px-3 py-1.5 text-[11px] font-medium text-fuchsia-950 shadow-sm backdrop-blur hover:bg-fuchsia-100"
+            title="Granice obrębów i działek z EGiB (Geoportal GUGiK) — widoczne od zoomu 11"
+          >
+            {pokazEgibStan ? "Ukryj granice EGiB" : "Pokaż granice EGiB"}
+          </button>
+          <button
+            type="button"
             onClick={() => setPokazGraniceStan((v) => !v)}
             className="rounded-lg border border-stone-200/80 bg-white/90 px-3 py-1.5 text-[11px] font-medium text-stone-700 shadow-sm backdrop-blur hover:bg-white"
           >
@@ -1199,6 +1346,15 @@ export const MapaWsiLeaflet = forwardRef<
               {pokazAdresyStan ? "Ukryj adresy KIN" : `Adresy KIN (${punktyAdresy.length})`}
             </button>
           ) : null}
+          {punktyGeoKontekst.length > 0 ? (
+            <button
+              type="button"
+              onClick={() => setPokazGeoKontekstStan((v) => !v)}
+              className="rounded-lg border border-teal-200/80 bg-teal-50/90 px-3 py-1.5 text-[11px] font-medium text-teal-950 shadow-sm backdrop-blur hover:bg-teal-100"
+            >
+              {pokazGeoKontekstStan ? "Ukryj PRNG / PRG" : `PRNG / instytucje (${punktyGeoKontekst.length})`}
+            </button>
+          ) : null}
           <button
             type="button"
             onClick={togglePelnyEkran}
@@ -1213,6 +1369,10 @@ export const MapaWsiLeaflet = forwardRef<
         >
           <p className="font-semibold text-stone-800">Legenda</p>
           <ul className="mt-1 list-inside list-disc space-y-0.5 text-stone-600">
+            <li>
+              <span className="font-medium text-fuchsia-800">Magenta + zielone linie</span> — granice
+              obrębów i działek EGiB (Geoportal), włącz od zoomu 11
+            </li>
             <li>
               <span className="font-medium text-[#1d4d1d]">Ciągła zielona linia</span> — obrys z bazy (PRG / GeoJSON,
               zwykle obręb ewidencyjny)
@@ -1245,12 +1405,21 @@ export const MapaWsiLeaflet = forwardRef<
               <span className="font-medium text-stone-800">Kółko z liczbą</span> — kilka punktów w obszarze
             </li>
             <li>
+              <span className="font-medium text-teal-700">Turkusowy punkt</span> — nazwy geograficzne (PRNG) i instytucje PRG
+              (OSP, policja, nadleśnictwo…)
+            </li>
+            <li>
+              <span className="font-medium text-sky-700">Niebieski punkt (mały)</span> — adres urzędowy KIN (Geoportal)
+            </li>
+            <li>
               <span className="font-medium text-stone-800">Mapa / Satelita / Ortofoto</span> — przełącznik podkładu (prawy górny róg)
             </li>
           </ul>
         </div>
         <p className="mapa-wsi-podpowiedz-wow pointer-events-none absolute bottom-2 left-1/2 z-[400] w-[min(100%,340px)] -translate-x-1/2 rounded-lg border border-green-900/10 bg-gradient-to-r from-white/95 via-emerald-50/90 to-white/95 px-3 py-1.5 text-center text-[10px] font-medium text-stone-600 shadow-md backdrop-blur-sm">
-          Zoom kółkiem działa, gdy kursor jest nad mapą — nie przewijasz wtedy strony.
+          {pokazEgibStan && zoomMapy < KIEG_WMS_MIN_ZOOM
+            ? `Przybliż mapę (zoom ${KIEG_WMS_MIN_ZOOM}+), aby zobaczyć granice obrębów i działek jak na Geoportalu.`
+            : "Zoom kółkiem działa, gdy kursor jest nad mapą — nie przewijasz wtedy strony."}
         </p>
       </div>
     );
@@ -1316,6 +1485,53 @@ function syncWarstwaAdresow(
   }
 }
 
+function syncWarstwaGeoKontekst(L: LeafletNs, inst: InstancjaLeaflet, punkty: ZnacznikGeoKontekst[]) {
+  const { map, geoKontekstGroup } = inst;
+  geoKontekstGroup.clearLayers();
+  if (punkty.length === 0) {
+    if (map.hasLayer(geoKontekstGroup)) map.removeLayer(geoKontekstGroup);
+    return;
+  }
+  if (!map.hasLayer(geoKontekstGroup)) geoKontekstGroup.addTo(map);
+  for (const g of punkty) {
+    const kolor = g.dataset === "PRNG" ? "#0d9488" : "#6366f1";
+    const pin = L.circleMarker([g.lat, g.lon], {
+      radius: g.dataset === "PRNG" ? 5 : 6,
+      color: kolor,
+      weight: 1.5,
+      fillColor: g.dataset === "PRNG" ? "#99f6e4" : "#c7d2fe",
+      fillOpacity: 0.85,
+    });
+    const profil = g.sciezkaWsi.replace(/"/g, "");
+    const rodzaj = g.rodzaj ? `<p class="text-xs text-stone-600">${escapeHtml(g.rodzaj)}</p>` : "";
+    pin.bindPopup(
+      `<div class="mapa-wsi-popup">
+        <p class="mapa-wsi-popup-meta">${escapeHtml(g.layerLabel)} · Geoportal</p>
+        <h3>${escapeHtml(g.name)}</h3>
+        ${rodzaj}
+        <p class="text-xs text-stone-500">${escapeHtml(g.villageName)}</p>
+        <p class="mapa-wsi-popup-foot"><a href="${profil}">Profil wsi →</a></p>
+      </div>`,
+    );
+    geoKontekstGroup.addLayer(pin);
+  }
+}
+
+function htmlPopupCmentarzObrys(z: ZnacznikCmentarzObrys): string {
+  const profil = z.sciezkaWsi.replace(/"/g, "");
+  const plan = z.hrefPlan.replace(/"/g, "");
+  return `<div class="mapa-wsi-popup">
+    <p class="mapa-wsi-popup-meta">Cmentarz · obrys z OSM</p>
+    <h3>${escapeHtml(z.name)}</h3>
+    <p class="text-xs text-stone-600">${escapeHtml(z.villageName)} — kwatery, rzędy, wyszukiwarka grobów</p>
+    <p class="mapa-wsi-popup-foot">
+      <a href="${plan}">Plan cmentarza →</a>
+      <span aria-hidden="true"> · </span>
+      <a href="${profil}">Profil wsi</a>
+    </p>
+  </div>`;
+}
+
 function syncWarstwy(
   L: LeafletNs,
   inst: InstancjaLeaflet,
@@ -1326,11 +1542,14 @@ function syncWarstwy(
   punktyZgloszenia: ZnacznikZgloszenie[],
   punktyPolowania: ZnacznikPolowanie[],
   obrysyGminy: ZnacznikWsi[],
+  punktyCmentarze: ZnacznikCmentarzObrys[],
   ikona: import("leaflet").DivIcon,
   bbox: [[number, number], [number, number]] | null,
-  opts?: { pokazGranice?: boolean },
+  opts?: { pokazGranice?: boolean; pokazEgib?: boolean },
 ) {
   const pokazGranice = opts?.pokazGranice !== false;
+  const pokazEgib = opts?.pokazEgib !== false;
+  const egibWidoczny = pokazEgib && czyKiegWidocznyNaZoomie(inst.map.getZoom());
   const { map, cluster, boundaryGroup, markersById, polowaniaById, rynekDzialkiById, poiMarkersById } = inst;
   ustawPaneWarstwicyGranicy(map);
 
@@ -1391,7 +1610,7 @@ function syncWarstwy(
         mamyPrawdziwaGranice = false;
       }
     }
-    if (pokazGranice && !mamyPrawdziwaGranice) {
+    if (pokazGranice && !mamyPrawdziwaGranice && !egibWidoczny) {
       const prom = promienPrzyblizonyMetrow(z);
       const kolo = L.circle([z.lat, z.lon], {
         radius: prom,
@@ -1453,6 +1672,28 @@ function syncWarstwy(
       warstwa.bindPopup(htmlPopupRynekDzialka(d));
       boundaryGroup.addLayer(warstwa);
       rynekDzialkiById.set(d.id, warstwa);
+    } catch {
+      /* ignore */
+    }
+  }
+
+  for (const cem of punktyCmentarze) {
+    const gj = granicaJakoGeoJson(cem.boundaryGeojson);
+    if (!gj) continue;
+    try {
+      const warstwa = L.geoJSON(gj, {
+        pane: PANE_GRANICE,
+        interactive: true,
+        style: {
+          color: "#44403c",
+          weight: 2.5,
+          fillColor: "#a8a29e",
+          fillOpacity: 0.28,
+          opacity: 0.9,
+        },
+      } as import("leaflet").GeoJSONOptions);
+      warstwa.bindPopup(htmlPopupCmentarzObrys(cem));
+      boundaryGroup.addLayer(warstwa);
     } catch {
       /* ignore */
     }

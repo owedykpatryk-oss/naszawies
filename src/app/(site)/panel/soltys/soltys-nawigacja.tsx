@@ -3,16 +3,14 @@ import {
   NawigacjaPaneluGrupowana,
   type GrupaNawigacjiPanelu,
 } from "@/components/panel/nawigacja-panelu-grupowana";
-import { pobierzLicznikiOczekujacychSoltysa } from "@/lib/panel/liczniki-oczekujacych-soltysa";
+import { pobierzLicznikiOczekujacychSoltysa, lacznaLiczbaZadanSoltysa } from "@/lib/panel/liczniki-oczekujacych-soltysa";
 import { pobierzVillageIdsRoliPaneluSoltysaDlaUzytkownikaCache } from "@/lib/panel/rola-panelu-soltysa";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
 
 function grupyZLiczbami(
   l: Awaited<ReturnType<typeof pobierzLicznikiOczekujacychSoltysa>>,
 ): GrupaNawigacjiPanelu[] {
-  const moderacjaSpolecznosci = l.raportySpolecznosci;
-  const przeglad =
-    l.wnioski + l.posty + l.wiadomosci + l.rynek + l.pomoc;
+  const przeglad = l ? lacznaLiczbaZadanSoltysa(l) : 0;
   return [
     {
       id: "start",
@@ -25,9 +23,7 @@ function grupyZLiczbami(
       linki: [
         { href: "/panel/soltys/moja-wies", label: "Profil wsi" },
         { href: "/panel/soltys/grafika", label: "Kreator grafiki", highlight: true },
-        { href: "/panel/soltys/fotokronika", label: "Fotokronika", badge: l.zdjecia || undefined },
         { href: "/panel/soltys/konkursy", label: "Konkursy zdjęć" },
-        { href: "/panel/soltys/lowiectwo", label: "Polowania" },
         { href: "/panel/soltys/transport", label: "Transport PKP" },
       ],
     },
@@ -35,27 +31,9 @@ function grupyZLiczbami(
       id: "spolecznosc",
       tytul: "Społeczność",
       linki: [
-        {
-          href: "/panel/soltys/spolecznosc",
-          label: "Społeczność i WOW",
-          badge: moderacjaSpolecznosci || undefined,
-        },
-        {
-          href: "/panel/soltys",
-          label: "Moderacja rynku",
-          badge: l.rynek || undefined,
-        },
-        {
-          href: "/panel/soltys/spolecznosc/moderacja",
-          label: "Raporty treści",
-          badge: moderacjaSpolecznosci || undefined,
-        },
-        {
-          href: "/panel/soltys/wiadomosci-lokalne",
-          label: "Wiadomości lokalne",
-          badge: l.wiadomosci || undefined,
-        },
+        { href: "/panel/soltys/spolecznosc", label: "Społeczność i WOW" },
         { href: "/panel/soltys/kanaly-rss", label: "Kanały RSS" },
+        { href: "/panel/rada", label: "Moderacja (rada sołecka)" },
       ],
     },
     {
@@ -65,6 +43,7 @@ function grupyZLiczbami(
         { href: "/panel/soltys/kalendarz", label: "Kalendarz", highlight: true },
         { href: "/panel/soltys/rezerwacje", label: "Rezerwacje sal", badge: l.rezerwacje || undefined },
         { href: "/panel/soltys/swietlica", label: "Świetlica" },
+        { href: "/panel/soltys/cmentarz", label: "Plan cmentarza" },
         { href: "/panel/soltys/dokumenty", label: "Generator dokumentów" },
       ],
     },

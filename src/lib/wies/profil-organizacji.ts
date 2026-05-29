@@ -21,12 +21,15 @@ export const schemaProfilParafii = z.object({
   wikary: z.string().trim().max(160).nullable().optional(),
   adres_kosciola: z.string().trim().max(300).nullable().optional(),
   strona_www: z.string().trim().max(500).nullable().optional(),
+  facebook: z.string().trim().max(500).nullable().optional(),
   msze_niedziele: z.string().trim().max(800).nullable().optional(),
   msze_dni_powszednie: z.string().trim().max(800).nullable().optional(),
   spowiedz: z.string().trim().max(500).nullable().optional(),
   kancelaria: z.string().trim().max(500).nullable().optional(),
   sakramenty: z.string().trim().max(1200).nullable().optional(),
   grupy_duszpasterskie: z.string().trim().max(800).nullable().optional(),
+  intencje_mszalne: z.string().trim().max(600).nullable().optional(),
+  info_cmentarz: z.string().trim().max(600).nullable().optional(),
   uwagi: z.string().trim().max(800).nullable().optional(),
 });
 
@@ -54,12 +57,15 @@ export function profilParafiiZFormularza(fd: FormData): ProfilParafiiJson {
     wikary: pole("parafia_wikary"),
     adres_kosciola: pole("parafia_adres_kosciola"),
     strona_www: pole("parafia_strona_www"),
+    facebook: pole("parafia_facebook"),
     msze_niedziele: pole("parafia_msze_niedziele"),
     msze_dni_powszednie: pole("parafia_msze_dni_powszednie"),
     spowiedz: pole("parafia_spowiedz"),
     kancelaria: pole("parafia_kancelaria"),
     sakramenty: pole("parafia_sakramenty"),
     grupy_duszpasterskie: pole("parafia_grupy"),
+    intencje_mszalne: pole("parafia_intencje"),
+    info_cmentarz: pole("parafia_info_cmentarz"),
     uwagi: pole("parafia_uwagi"),
   };
 }
@@ -89,6 +95,9 @@ export const schemaProfilKgw = z.object({
   jak_dolaczyc: z.string().trim().max(800).nullable().optional(),
   produkty_lokalne: z.string().trim().max(800).nullable().optional(),
   wspolpraca_dotacje: z.string().trim().max(800).nullable().optional(),
+  instagram: z.string().trim().max(500).nullable().optional(),
+  skladka_czlonkowska: z.string().trim().max(400).nullable().optional(),
+  sprzedaz_produkty: z.string().trim().max(600).nullable().optional(),
   uwagi: z.string().trim().max(800).nullable().optional(),
 });
 
@@ -119,6 +128,9 @@ export function profilKgwZFormularza(fd: FormData): ProfilKgwJson {
     jak_dolaczyc: pole("kgw_jak_dolaczyc"),
     produkty_lokalne: pole("kgw_produkty_lokalne"),
     wspolpraca_dotacje: pole("kgw_wspolpraca_dotacje"),
+    instagram: pole("kgw_instagram"),
+    skladka_czlonkowska: pole("kgw_skladka"),
+    sprzedaz_produkty: pole("kgw_sprzedaz_produkty"),
     uwagi: pole("kgw_uwagi"),
   };
 }
@@ -143,12 +155,14 @@ export const schemaProfilLowiecki = z.object({
   obszar_lowiecki: z.string().trim().max(800).nullable().optional(),
   strona_www: z.string().trim().max(500).nullable().optional(),
   facebook: z.string().trim().max(500).nullable().optional(),
+  instagram: z.string().trim().max(500).nullable().optional(),
   siedziba_kola: z.string().trim().max(300).nullable().optional(),
   zebrania: z.string().trim().max(800).nullable().optional(),
   sezon_lowiecki: z.string().trim().max(500).nullable().optional(),
   zasady_bezpieczenstwa: z.string().trim().max(1200).nullable().optional(),
   wspolpraca_rolnicy: z.string().trim().max(800).nullable().optional(),
   kontakt_dla_mieszkancow: z.string().trim().max(800).nullable().optional(),
+  zgloszenie_szkod: z.string().trim().max(600).nullable().optional(),
   uwagi: z.string().trim().max(800).nullable().optional(),
 });
 
@@ -174,12 +188,14 @@ export function profilLowieckiZFormularza(fd: FormData): ProfilLowieckiJson {
     obszar_lowiecki: pole("mysliwi_obszar"),
     strona_www: pole("mysliwi_strona_www"),
     facebook: pole("mysliwi_facebook"),
+    instagram: pole("mysliwi_instagram"),
     siedziba_kola: pole("mysliwi_siedziba"),
     zebrania: pole("mysliwi_zebrania"),
     sezon_lowiecki: pole("mysliwi_sezon"),
     zasady_bezpieczenstwa: pole("mysliwi_bezpieczenstwo"),
     wspolpraca_rolnicy: pole("mysliwi_rolnicy"),
     kontakt_dla_mieszkancow: pole("mysliwi_kontakt_info"),
+    zgloszenie_szkod: pole("mysliwi_zgloszenie_szkod"),
     uwagi: pole("mysliwi_uwagi"),
   };
 }
@@ -203,4 +219,75 @@ export function czyOrganizacjaLowiecka(groupType: string, name: string): boolean
     groupType === "kolo" &&
     (n.includes("łow") || n.includes("low") || n.includes("myśliw") || n.includes("mysliw") || n.includes(" hunters"))
   );
+}
+
+/** Rozszerzony profil OSP — `village_community_groups.profile_data`. */
+export const schemaProfilOsp = z.object({
+  wersja: z.literal(1).default(1),
+  naczelnik: z.string().trim().max(160).nullable().optional(),
+  zastepca_naczelnika: z.string().trim().max(160).nullable().optional(),
+  numer_jednostki: z.string().trim().max(80).nullable().optional(),
+  siedziba_remizy: z.string().trim().max(300).nullable().optional(),
+  strona_www: z.string().trim().max(500).nullable().optional(),
+  facebook: z.string().trim().max(500).nullable().optional(),
+  instagram: z.string().trim().max(500).nullable().optional(),
+  cwiczenia: z.string().trim().max(800).nullable().optional(),
+  dyzury: z.string().trim().max(500).nullable().optional(),
+  rekrutacja: z.string().trim().max(800).nullable().optional(),
+  zasady_bezpieczenstwa: z.string().trim().max(1200).nullable().optional(),
+  punkty_wody: z.string().trim().max(600).nullable().optional(),
+  wsparcie_finansowe: z.string().trim().max(600).nullable().optional(),
+  uwagi: z.string().trim().max(800).nullable().optional(),
+});
+
+export type ProfilOspJson = z.infer<typeof schemaProfilOsp>;
+
+export function parsujProfilOsp(raw: unknown): ProfilOspJson | null {
+  if (raw == null || typeof raw !== "object") return null;
+  const w = schemaProfilOsp.safeParse(raw);
+  if (!w.success) return null;
+  return w.data;
+}
+
+export function profilOspZFormularza(fd: FormData): ProfilOspJson {
+  const pole = (k: string) => {
+    const t = String(fd.get(k) ?? "").trim();
+    return t.length ? t : null;
+  };
+  return {
+    wersja: 1,
+    naczelnik: pole("osp_naczelnik"),
+    zastepca_naczelnika: pole("osp_zastepca"),
+    numer_jednostki: pole("osp_numer_jednostki"),
+    siedziba_remizy: pole("osp_siedziba"),
+    strona_www: pole("osp_strona_www"),
+    facebook: pole("osp_facebook"),
+    instagram: pole("osp_instagram"),
+    cwiczenia: pole("osp_cwiczenia"),
+    dyzury: pole("osp_dyzury"),
+    rekrutacja: pole("osp_rekrutacja"),
+    zasady_bezpieczenstwa: pole("osp_bezpieczenstwo"),
+    punkty_wody: pole("osp_punkty_wody"),
+    wsparcie_finansowe: pole("osp_wsparcie"),
+    uwagi: pole("osp_uwagi"),
+  };
+}
+
+export function czyProfilOspUzupelniony(p: ProfilOspJson | null): boolean {
+  if (!p) return false;
+  return Boolean(
+    p.naczelnik?.trim() ||
+      p.cwiczenia?.trim() ||
+      p.dyzury?.trim() ||
+      p.siedziba_remizy?.trim() ||
+      p.zasady_bezpieczenstwa?.trim() ||
+      p.rekrutacja?.trim(),
+  );
+}
+
+/** Czy organizacja to OSP (typ lub nazwa). */
+export function czyOrganizacjaOsp(groupType: string, name: string): boolean {
+  if (groupType === "osp") return true;
+  const n = name.toLowerCase();
+  return n.includes("osp") || n.includes("straż") || n.includes("straz") || n.includes("fire");
 }

@@ -46,3 +46,77 @@ export function etykietaTypuGrupy(kod: string): string {
 export function etykietaRodzajuWydarzenia(kod: string): string {
   return ETYKIETA_RODZAJU_WYDARZENIA[kod] ?? kod;
 }
+
+const RODZAJE_WYDARZEN_PARAFIALNYCH = new Set([
+  "msza",
+  "nabozenstwo",
+  "katecheza",
+  "sakrament",
+  "hubertus",
+]);
+
+/** Wydarzenie liturgiczne lub przypisane do profilu parafii. */
+export function czyWydarzenieParafialne(
+  eventKind: string,
+  nazwaGrupy: string | null | undefined,
+  nazwaParafii?: string | null,
+): boolean {
+  if (RODZAJE_WYDARZEN_PARAFIALNYCH.has(eventKind)) return true;
+  if (!nazwaParafii?.trim() || !nazwaGrupy?.trim()) return false;
+  return nazwaGrupy.trim().toLowerCase() === nazwaParafii.trim().toLowerCase();
+}
+
+const RODZAJE_WYDARZEN_KGW = new Set([
+  "zebranie_kgw",
+  "kiermasz",
+  "festyn",
+  "warsztaty",
+  "piknik",
+  "wystep",
+]);
+
+/** Wydarzenie KGW lub przypisane do profilu koła. */
+export function czyWydarzenieKgw(
+  eventKind: string,
+  nazwaGrupy: string | null | undefined,
+  nazwaKola?: string | null,
+): boolean {
+  if (RODZAJE_WYDARZEN_KGW.has(eventKind)) return true;
+  if (!nazwaKola?.trim() || !nazwaGrupy?.trim()) return false;
+  return nazwaGrupy.trim().toLowerCase() === nazwaKola.trim().toLowerCase();
+}
+
+const RODZAJE_WYDARZEN_OSP = new Set(["proba"]);
+
+/** Wydarzenie OSP — ćwiczenia lub przypisane do jednostki. */
+export function czyWydarzenieOsp(
+  eventKind: string,
+  nazwaGrupy: string | null | undefined,
+  nazwaJednostki?: string | null,
+): boolean {
+  if (RODZAJE_WYDARZEN_OSP.has(eventKind)) return true;
+  if (!nazwaGrupy?.trim()) return false;
+  const ng = nazwaGrupy.trim().toLowerCase();
+  if (nazwaJednostki?.trim() && ng === nazwaJednostki.trim().toLowerCase()) return true;
+  return ng.includes("osp") || ng.includes("straż") || ng.includes("straz");
+}
+
+const RODZAJE_WYDARZEN_LOWIECKICH = new Set([
+  "polowanie",
+  "zebranie_lowieckie",
+  "szkolenie_lowieckie",
+  "hubertus",
+]);
+
+/** Wydarzenie koła łowieckiego lub przypisane do profilu myśliwych. */
+export function czyWydarzenieLowieckie(
+  eventKind: string,
+  nazwaGrupy: string | null | undefined,
+  nazwaKola?: string | null,
+): boolean {
+  if (RODZAJE_WYDARZEN_LOWIECKICH.has(eventKind)) return true;
+  if (!nazwaKola?.trim() || !nazwaGrupy?.trim()) return false;
+  const ng = nazwaGrupy.trim().toLowerCase();
+  if (ng === nazwaKola.trim().toLowerCase()) return true;
+  return ng.includes("łow") || ng.includes("low") || ng.includes("myśliw") || ng.includes("mysliw");
+}

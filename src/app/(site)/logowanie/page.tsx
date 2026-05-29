@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { bezpiecznaSciezkaNastepna } from "@/lib/auth/bezpieczna-sciezka-nastepna";
+import { ponowJesliRedirect } from "@/lib/next/ponow-redirect";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
 import { pobierzPochodzeniePubliczne } from "@/lib/zadanie/pochodzenie-publiczne";
 import { LogowanieFormularz } from "./logowanie-formularz";
@@ -37,7 +38,8 @@ export default async function LogowaniePage({ searchParams }: Props) {
     if (user) {
       redirect(nastepna);
     }
-  } catch {
+  } catch (error) {
+    ponowJesliRedirect(error);
     // Brak zmiennych env — strona pokaże komunikat z formularza OAuth / konfiguracji
   }
 
@@ -51,12 +53,8 @@ export default async function LogowaniePage({ searchParams }: Props) {
         />
         <h1 className="relative font-serif text-3xl tracking-tight text-green-950 sm:text-[2rem]">Logowanie</h1>
         <p className="relative mt-2 text-sm leading-relaxed text-stone-600">
-          Zaloguj się przez Google albo e-mail i hasło. Po zalogowaniu wrócisz dokładnie tam,
-          gdzie chcesz wejść (parametr{" "}
-          <code className="rounded-md bg-stone-100/90 px-1.5 py-0.5 font-mono text-xs text-stone-800">next</code>).
-        </p>
-        <p className="relative mt-3 inline-flex items-center rounded-full border border-emerald-200 bg-emerald-50 px-3 py-1 text-xs text-emerald-900">
-          Docelowo po logowaniu: <strong className="ml-1">{nastepna}</strong>
+          Zaloguj się przez Google albo e-mail i hasło. Po zalogowaniu wrócisz do miejsca, z którego przyszedłeś
+          lub przejdziesz do panelu konta.
         </p>
         <div className="relative mt-6">
           <LogowanieProwiderzy pochodzeniePubliczne={pochodzenie} nastepnaSciezka={nastepna} />

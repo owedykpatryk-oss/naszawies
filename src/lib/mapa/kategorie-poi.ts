@@ -19,6 +19,11 @@ export const ETYKIETA_KATEGORII_POI: Record<string, string> = {
   biblioteka: "Biblioteka, filia",
   urzad: "Urząd, instytucja",
   ladne_miejsce: "Ładne miejsce (zdjęcie)",
+  nazwa_geo: "Nazwa geograficzna (PRNG)",
+  skup_zboz: "Skup / elewator zbożowy",
+  sklep_rolniczy: "Sklep rolniczy",
+  sprzedaz_z_gospodarstwa: "Sprzedaż z gospodarstwa",
+  spoldzielnia_rolna: "Spółdzielnia rolnicza",
   inne: "Miejsce",
 };
 
@@ -38,6 +43,11 @@ const EMOJI_KATEGORII: Record<string, string> = {
   boisko: "⚽",
   biblioteka: "📚",
   urzad: "🏢",
+  nazwa_geo: "🏞",
+  skup_zboz: "🌾",
+  sklep_rolniczy: "🧑‍🌾",
+  sprzedaz_z_gospodarstwa: "🚜",
+  spoldzielnia_rolna: "🏭",
   inne: "📍",
 };
 
@@ -58,6 +68,11 @@ const KOLOR_OBRAMOWANIA: Record<string, string> = {
   biblioteka: "#7c3aed",
   urzad: "#475569",
   ladne_miejsce: "#b45309",
+  nazwa_geo: "#0d9488",
+  skup_zboz: "#ca8a04",
+  sklep_rolniczy: "#65a30d",
+  sprzedaz_z_gospodarstwa: "#16a34a",
+  spoldzielnia_rolna: "#854d0e",
   inne: "#57534e",
 };
 

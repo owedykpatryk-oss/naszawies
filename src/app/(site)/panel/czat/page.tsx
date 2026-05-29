@@ -62,6 +62,7 @@ export default async function CzatPage() {
         wies: v?.name ?? "",
         kind: conv.kind,
         preset: conv.group_preset,
+        listing_id: conv.listing_id ?? null,
         updated_at: conv.updated_at,
       };
     })
@@ -94,11 +95,27 @@ export default async function CzatPage() {
 
   const nieprzeczytane = await pobierzNieprzeczytanePoKonwersacji(supabase, user.id);
 
+  const listingIds = Array.from(
+    new Set(listaBazowa.map((k) => k.listing_id).filter((id): id is string => Boolean(id))),
+  );
+  const listingMiniatury = new Map<string, string>();
+  if (listingIds.length > 0) {
+    const { data: listingRows } = await supabase
+      .from("marketplace_listings")
+      .select("id, image_urls")
+      .in("id", listingIds);
+    for (const row of listingRows ?? []) {
+      const url = row.image_urls?.[0];
+      if (url) listingMiniatury.set(row.id, url);
+    }
+  }
+
   const konwersacje: WierszKonwersacjiCzat[] = listaBazowa
     .map((k) => {
       const ost = ostatnieMap.get(k.id);
       return {
         ...k,
+        listing_image_url: k.listing_id ? listingMiniatury.get(k.listing_id) ?? null : null,
         ostatnia_wiadomosc: ost?.body ?? null,
         ostatnia_wiadomosc_at: ost?.created_at ?? null,
         ostatnia_od_mnie: ost ? ost.sender_id === user.id : false,

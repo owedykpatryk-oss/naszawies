@@ -11,35 +11,13 @@ import { spawnSync } from "node:child_process";
 import { join } from "node:path";
 import { XMLParser } from "fast-xml-parser";
 import slugify from "slugify";
-
-const VOIVODESHIPS = {
-  "02": "dolnośląskie",
-  "04": "kujawsko-pomorskie",
-  "06": "lubelskie",
-  "08": "lubuskie",
-  "10": "łódzkie",
-  "12": "małopolskie",
-  "14": "mazowieckie",
-  "16": "opolskie",
-  "18": "podkarpackie",
-  "20": "podlaskie",
-  "22": "pomorskie",
-  "24": "śląskie",
-  "26": "świętokrzyskie",
-  "28": "warmińsko-mazurskie",
-  "30": "wielkopolskie",
-  "32": "zachodniopomorskie",
-};
-
-const COMMUNE_TYPES = {
-  "1": "gmina_miejska",
-  "2": "gmina_wiejska",
-  "3": "gmina_miejsko_wiejska",
-  "4": "miasto_w_gminie_miejsko_wiejskiej",
-  "5": "obszar_wiejski_w_gminie_miejsko_wiejskiej",
-  "8": "dzielnica_m_st_warszawy",
-  "9": "delegatura_w_miastach",
-};
+import {
+  COMMUNE_TYPES,
+  VOIVODESHIPS,
+  kodTeryt2,
+  kluczGminyTeryt,
+  kluczPowiatuTeryt,
+} from "./teryt-kody.mjs";
 
 const parser = new XMLParser({
   ignoreAttributes: false,
@@ -92,11 +70,14 @@ async function buildCommunesMap(tercPath) {
   for (const row of iterRows(data)) {
     const r = rowToObj(row);
     if (r.GMI && r.RODZ) {
-      communes.set(`${r.WOJ}-${r.POW}-${r.GMI}`, {
+      const woj = kodTeryt2(r.WOJ);
+      const pow = kodTeryt2(r.POW);
+      const gmi = kodTeryt2(r.GMI);
+      communes.set(kluczGminyTeryt(woj, pow, gmi), {
         name: r.NAZWA,
         type: COMMUNE_TYPES[r.RODZ] || "inna",
         rodz: r.RODZ,
-        gminaTerytKod: `${String(r.WOJ).trim().padStart(2, "0")}${String(r.POW).trim().padStart(2, "0")}${String(r.GMI).trim().padStart(2, "0")}${r.RODZ}`,
+        gminaTerytKod: `${woj}${pow}${gmi}${r.RODZ}`,
       });
     }
   }
@@ -108,24 +89,27 @@ async function buildCountiesMap(tercPath) {
   const counties = new Map();
   for (const row of iterRows(data)) {
     const r = rowToObj(row);
-    if (r.POW && !r.GMI) counties.set(`${r.WOJ}-${r.POW}`, r.NAZWA);
+    if (r.POW && !r.GMI) counties.set(kluczPowiatuTeryt(r.WOJ, r.POW), r.NAZWA);
   }
   return counties;
 }
 
-async function zbudujRekordy() {
+async function zbudujRekordy(tylkoWoj = null) {
   const counties = await buildCountiesMap(TERC_PATH);
   const communes = await buildCommunesMap(TERC_PATH);
   const data = await parseTerytXml(SIMC_PATH);
   const villages = [];
+  const filtrWoj = tylkoWoj ? new Set(tylkoWoj.map((w) => kodTeryt2(w))) : null;
 
   for (const row of iterRows(data)) {
     const r = rowToObj(row);
     if (!r.SYM || !r.NAZWA) continue;
-    const communeKey = `${r.WOJ}-${r.POW}-${r.GMI}`;
-    const county = counties.get(`${r.WOJ}-${r.POW}`);
+    const woj = kodTeryt2(r.WOJ);
+    if (filtrWoj && !filtrWoj.has(woj)) continue;
+    const communeKey = kluczGminyTeryt(woj, r.POW, r.GMI);
+    const county = counties.get(kluczPowiatuTeryt(woj, r.POW));
     const commune = communes.get(communeKey);
-    const voivodeship = VOIVODESHIPS[r.WOJ];
+    const voivodeship = VOIVODESHIPS[woj];
     if (!r.GMI || !commune || !county || !voivodeship) continue;
 
     const baza = slugify(r.NAZWA, { lower: true, strict: true, locale: "pl" });
@@ -199,10 +183,18 @@ async function main() {
   const resume = process.argv.includes("--resume");
   const batchArg = process.argv.find((a) => a.startsWith("--batch-size="));
   const startBatchArg = process.argv.find((a) => a.startsWith("--start-batch="));
+  const tylkoWojArg = process.argv.find((a) => a.startsWith("--tylko-woj="));
   const batchSize = batchArg ? Number.parseInt(batchArg.split("=")[1], 10) : 500;
+  const tylkoWoj = tylkoWojArg
+    ? tylkoWojArg
+        .split("=")[1]
+        .split(",")
+        .map((s) => s.trim())
+        .filter(Boolean)
+    : null;
 
   console.log("Budowanie rekordów z SIMC/TERC…");
-  const villages = await zbudujRekordy();
+  const villages = await zbudujRekordy(tylkoWoj);
   console.log(`Przygotowano ${villages.length} miejscowości.`);
 
   if (dryRun) {

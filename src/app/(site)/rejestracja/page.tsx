@@ -46,11 +46,6 @@ export default async function RejestracjaPage({ searchParams }: Props) {
         naszawies.pl przy roli sołtysa). Tutaj tylko zakładasz logowanie — bez wyboru „jestem
         sołtysem” w sensie prawnym.
       </p>
-      {nastepna !== "/panel" ? (
-        <p className="mt-3 rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-xs text-emerald-900">
-          Po rejestracji wrócisz do: <strong>{nastepna}</strong>
-        </p>
-      ) : null}
       <LogowanieProwiderzy pochodzeniePubliczne={pochodzenie} nastepnaSciezka={nastepna} />
       <p className="mt-8 text-center text-sm text-stone-500">lub zarejestruj się e-mailem</p>
       <RejestracjaFormularz pochodzeniePubliczne={pochodzenie} nastepnaSciezka={nastepna} />

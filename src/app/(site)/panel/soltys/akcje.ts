@@ -7,6 +7,7 @@ import { wyciagnijBucketIKluczZUrlaR2 } from "@/lib/cloudflare/r2-url-pomoc";
 import { usunObiektR2JesliUrlNasz } from "@/lib/storage/usun-plik-r2-po-url";
 import { etykietaRoliWsi } from "@/lib/panel/role-definicje";
 import { pobierzVillageIdsRoliPaneluSoltysa, czyUzytkownikJestSoltysemDlaSali } from "@/lib/panel/rola-panelu-soltysa";
+import { czyUzytkownikMozeModerowacTresc } from "@/lib/panel/rola-moderacji";
 import { walidujDostepnoscAsortymentuWTerminie } from "@/lib/swietlica/dostepnosc-asortymentu-w-terminie";
 import {
   schemaProtokolOdbioru,
@@ -20,6 +21,7 @@ import { synchronizujKanalyRssDlaWsi } from "@/lib/rss/synchronizuj-kanaly-rss";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin-client";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
 import { powiadomOWygasajacychOgloszeniachMarketplace } from "@/lib/marketplace/powiadom-wygasajace-ogloszenia";
+import { dataWygasnieciaOgloszeniaRynek, DNI_WAZNOSCI_OGLOSZENIA_RYNEK } from "@/lib/marketplace/waznosc-ogloszenia";
 import { schemaProfilParafii, schemaProfilKgw, schemaProfilLowiecki } from "@/lib/wies/profil-organizacji";
 import { sciezkaProfiluWsi } from "@/lib/wies/sciezka-publiczna";
 import { schemaPlanSali, parsujPresetyPlanu, type PlanSaliJson } from "@/lib/swietlica/plan-sali";
@@ -1547,6 +1549,10 @@ export async function zatwierdzPostSoltysa(postId: string): Promise<WynikProsty>
     return { blad: "Nie znaleziono posta lub został już rozpatrzony." };
   }
 
+  if (!(await czyUzytkownikMozeModerowacTresc(supabase, user.id, w.village_id))) {
+    return { blad: "Akceptacją ogłoszeń zajmuje się rada sołecka, nie sołtys." };
+  }
+
   const teraz = new Date().toISOString();
   const { error } = await supabase
     .from("posts")
@@ -1652,6 +1658,10 @@ export async function odrzucPostSoltysa(postId: string, notatka: string): Promis
 
   if (readErr || !wiersz || wiersz.status !== "pending") {
     return { blad: "Nie znaleziono posta lub został już rozpatrzony." };
+  }
+
+  if (!(await czyUzytkownikMozeModerowacTresc(supabase, user.id, wiersz.village_id))) {
+    return { blad: "Moderacją zajmuje się rada sołecka, nie sołtys." };
   }
 
   const teraz = new Date().toISOString();
@@ -2096,7 +2106,7 @@ const schemaMarketplaceOferta = z.object({
     .transform((v) => (v == null || String(v).trim() === "" ? null : Number(v))),
   phone: z.string().trim().max(40).nullable().optional(),
   location_text: z.string().trim().max(200).nullable().optional(),
-  expires_in_days: z.coerce.number().int().min(1).max(180).optional().default(30),
+  expires_in_days: z.coerce.number().int().min(1).max(14).optional().default(DNI_WAZNOSCI_OGLOSZENIA_RYNEK),
 });
 
 export async function dodajMarketplaceOferte(dane: z.infer<typeof schemaMarketplaceOferta>): Promise<WynikProsty> {
@@ -2114,7 +2124,7 @@ export async function dodajMarketplaceOferte(dane: z.infer<typeof schemaMarketpl
     return { blad: "Kwota musi być liczbą albo pozostać pusta." };
   }
   const teraz = new Date();
-  const expiresAt = new Date(teraz.getTime() + parsed.data.expires_in_days * 24 * 60 * 60 * 1000).toISOString();
+  const expiresAt = dataWygasnieciaOgloszeniaRynek(teraz).toISOString();
   const { data: profil } = await supabase
     .from("marketplace_profiles")
     .select("id")
@@ -2213,7 +2223,9 @@ export async function uruchomAutomatyzacjeWsi(dane: z.infer<typeof schemaVillage
     return { blad: "Brak uprawnień do uruchomienia automatyzacji dla tej wsi." };
   }
 
-  const { error } = await supabase.rpc("run_village_automation");
+  const { error } = await supabase.rpc("run_village_automation_for_village", {
+    p_village_id: parsed.data.villageId,
+  });
   if (error) {
     console.error("[uruchomAutomatyzacjeWsi]", error.message);
     return { blad: "Nie udało się uruchomić automatyzacji." };
@@ -2793,8 +2805,8 @@ export async function usunSlotHarmonogramuTygodniaWsi(slotId: string): Promise<W
   if (readErr || !row) {
     return { blad: "Nie znaleziono wpisu harmonogramu." };
   }
-  if (!(await czyUzytkownikMozeZarzadzacWsia(supabase, user.id, row.village_id))) {
-    return { blad: "Brak uprawnień." };
+  if (!(await czyUzytkownikMozeModerowacTresc(supabase, user.id, row.village_id))) {
+    return { blad: "Moderacją zajmuje się rada sołecka." };
   }
 
   const { error } = await supabase.from("village_weekly_schedule_slots").delete().eq("id", id.data);
@@ -2887,8 +2899,8 @@ export async function usunZrodloDotacjiWsi(sourceId: string): Promise<WynikProst
   if (readErr || !row) {
     return { blad: "Nie znaleziono wpisu." };
   }
-  if (!(await czyUzytkownikMozeZarzadzacWsia(supabase, user.id, row.village_id))) {
-    return { blad: "Brak uprawnień." };
+  if (!(await czyUzytkownikMozeModerowacTresc(supabase, user.id, row.village_id))) {
+    return { blad: "Moderacją zajmuje się rada sołecka." };
   }
 
   const { error } = await supabase.from("village_funding_sources").delete().eq("id", id.data);
@@ -2967,8 +2979,8 @@ export async function zatwierdzWiadomoscLokalnaSoltys(newsId: string): Promise<W
     .eq("id", id.data)
     .maybeSingle();
   if (rErr || !row) return { blad: "Nie znaleziono wiadomości." };
-  if (!(await czyUzytkownikMozeZarzadzacWsia(supabase, user.id, row.village_id))) {
-    return { blad: "Brak uprawnień." };
+  if (!(await czyUzytkownikMozeModerowacTresc(supabase, user.id, row.village_id))) {
+    return { blad: "Moderacją zajmuje się rada sołecka." };
   }
   const teraz = new Date().toISOString();
   const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
@@ -3007,8 +3019,8 @@ export async function odrzucWiadomoscLokalnaSoltys(newsId: string, notatka: stri
     .eq("id", id.data)
     .maybeSingle();
   if (rErr || !row) return { blad: "Nie znaleziono wiadomości." };
-  if (!(await czyUzytkownikMozeZarzadzacWsia(supabase, user.id, row.village_id))) {
-    return { blad: "Brak uprawnień." };
+  if (!(await czyUzytkownikMozeModerowacTresc(supabase, user.id, row.village_id))) {
+    return { blad: "Moderacją zajmuje się rada sołecka." };
   }
   const teraz = new Date().toISOString();
   const { error } = await supabase
@@ -3080,8 +3092,8 @@ export async function usunKanalRssWsi(sourceId: string): Promise<WynikProsty> {
     .eq("id", id.data)
     .maybeSingle();
   if (rErr || !row) return { blad: "Nie znaleziono kanału." };
-  if (!(await czyUzytkownikMozeZarzadzacWsia(supabase, user.id, row.village_id))) {
-    return { blad: "Brak uprawnień." };
+  if (!(await czyUzytkownikMozeModerowacTresc(supabase, user.id, row.village_id))) {
+    return { blad: "Moderacją zajmuje się rada sołecka." };
   }
   const { error } = await supabase.from("village_news_feed_sources").delete().eq("id", id.data);
   if (error) {
@@ -3291,10 +3303,11 @@ export async function zatwierdzMarketplaceOferteMieszkanca(listingId: string): P
     .eq("id", id.data)
     .maybeSingle();
   if (!row || row.status !== "pending") return { blad: "Oferta nie oczekuje na moderację." };
-  if (!(await czyUzytkownikMozeZarzadzacWsia(supabase, user.id, row.village_id))) {
-    return { blad: "Brak uprawnień." };
+  if (!(await czyUzytkownikMozeModerowacTresc(supabase, user.id, row.village_id))) {
+    return { blad: "Moderacją rynku zajmuje się rada sołecka." };
   }
   const teraz = new Date().toISOString();
+  const expiresAt = dataWygasnieciaOgloszeniaRynek(new Date()).toISOString();
   const { error } = await supabase
     .from("marketplace_listings")
     .update({
@@ -3302,6 +3315,7 @@ export async function zatwierdzMarketplaceOferteMieszkanca(listingId: string): P
       moderated_by: user.id,
       moderated_at: teraz,
       published_at: teraz,
+      expires_at: expiresAt,
       moderation_note: null,
       seller_verified: true,
     })
@@ -3392,8 +3406,8 @@ export async function odrzucMarketplaceOferteMieszkanca(
     .maybeSingle();
 
   if (!row || row.status !== "pending") return { blad: "Oferta nie oczekuje na moderację." };
-  if (!(await czyUzytkownikMozeZarzadzacWsia(supabase, user.id, row.village_id))) {
-    return { blad: "Brak uprawnień." };
+  if (!(await czyUzytkownikMozeModerowacTresc(supabase, user.id, row.village_id))) {
+    return { blad: "Moderacją rynku zajmuje się rada sołecka." };
   }
 
   const teraz = new Date().toISOString();
@@ -3447,8 +3461,8 @@ export async function ustawWeryfikacjeProfiluRynek(
     .maybeSingle();
 
   if (!profil) return { blad: "Nie znaleziono profilu." };
-  if (!(await czyUzytkownikMozeZarzadzacWsia(supabase, user.id, profil.village_id))) {
-    return { blad: "Brak uprawnień do tej wsi." };
+  if (!(await czyUzytkownikMozeModerowacTresc(supabase, user.id, profil.village_id))) {
+    return { blad: "Weryfikacją profili rynku zajmuje się rada sołecka." };
   }
 
   const { error } = await supabase
@@ -3480,8 +3494,8 @@ export async function zatwierdzOfertePomocySasiedzkiej(offerId: string): Promise
     .eq("id", id.data)
     .maybeSingle();
   if (!row || row.status !== "pending") return { blad: "Oferta nie oczekuje na moderację." };
-  if (!(await czyUzytkownikMozeZarzadzacWsia(supabase, user.id, row.village_id))) {
-    return { blad: "Brak uprawnień." };
+  if (!(await czyUzytkownikMozeModerowacTresc(supabase, user.id, row.village_id))) {
+    return { blad: "Moderacją rynku zajmuje się rada sołecka." };
   }
   const teraz = new Date().toISOString();
   const { error } = await supabase
@@ -3514,8 +3528,8 @@ export async function odrzucOfertePomocySasiedzkiej(
     .maybeSingle();
 
   if (!row || row.status !== "pending") return { blad: "Oferta nie oczekuje na moderację." };
-  if (!(await czyUzytkownikMozeZarzadzacWsia(supabase, user.id, row.village_id))) {
-    return { blad: "Brak uprawnień." };
+  if (!(await czyUzytkownikMozeModerowacTresc(supabase, user.id, row.village_id))) {
+    return { blad: "Moderacją rynku zajmuje się rada sołecka." };
   }
 
   const teraz = new Date().toISOString();

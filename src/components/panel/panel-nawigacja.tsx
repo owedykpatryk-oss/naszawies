@@ -15,11 +15,14 @@ type PanelNawigacjaProps = {
   /** Gdy `true`, pokaż wejście „Działania” (panel sołtysa / współadmina). */
   pokazLinkSoltysa?: boolean;
   liczbaWiadomosciNieprzeczytanych?: number;
+  /** Tylko administrator platformy widzi link Admin. */
+  pokazAdmin?: boolean;
 };
 
 export function PanelNawigacja({
   pokazLinkSoltysa = false,
   liczbaWiadomosciNieprzeczytanych = 0,
+  pokazAdmin = false,
 }: PanelNawigacjaProps) {
   const pathname = usePathname();
 
@@ -27,7 +30,9 @@ export function PanelNawigacja({
   if (pokazLinkSoltysa) {
     linki.splice(3, 0, { href: "/panel/soltys", label: "Działania" });
   }
-  linki.push({ href: "/panel/admin", label: "Admin" });
+  if (pokazAdmin) {
+    linki.push({ href: "/panel/admin", label: "Admin" });
+  }
 
   return (
     <nav

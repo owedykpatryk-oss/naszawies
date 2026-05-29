@@ -26,6 +26,8 @@ import { MarketplaceFormularzRozszerzenia,
 } from "./marketplace-formularz-rozszerzenia";
 import { MarketplaceChecklistaJakosci } from "@/components/marketplace/marketplace-checklista-jakosci";
 import { RynekInfoKontaktMiedzyLudzmi } from "@/components/wies/rynek-info-kontakt-miedzy-ludzmi";
+import { PrzyciskLadowania } from "@/components/ui/przycisk-ladowania";
+import { PasekAkcjiMobilny } from "@/components/ui/pasek-akcji-mobilny";
 import { wskazowkiKategorii } from "@/lib/marketplace/jakosc-ogloszenia";
 
 type WiesOpcja = { id: string; name: string };
@@ -219,10 +221,7 @@ export function MarketplaceFormularzMieszkanca({
 
       const w = edycja
         ? await edytujOgloszenieMarketplaceMieszkanca({ ...payload, listingId: edycja.id })
-        : await dodajOgloszenieMarketplaceMieszkanca({
-            ...payload,
-            dniWaznosci: Number(fd.get("dni_waznosci") || 30),
-          });
+        : await dodajOgloszenieMarketplaceMieszkanca(payload);
       if ("blad" in w) {
         ustawBlad(w.blad);
         return;
@@ -248,7 +247,7 @@ export function MarketplaceFormularzMieszkanca({
         ) : null}
         {edycja
           ? " Po zapisie opublikowane ogłoszenie wraca do akceptacji sołtysa."
-          : " Po zatwierdzeniu przez sołtysa widoczne na profilu wsi."}
+          : " Po zatwierdzeniu przez sołtysa widoczne na profilu wsi przez 2 tygodnie — potem wygasa i trzeba je aktywować ponownie."}
       </p>
       <RynekInfoKontaktMiedzyLudzmi />
       {blad ? (
@@ -414,14 +413,10 @@ export function MarketplaceFormularzMieszkanca({
             onChange={(e) => ustawMiejsce(e.target.value)}
           />
         </div>
-        {!edycja ? (
-          <div>
-            <label className="mb-1 block text-sm" htmlFor="mk-dni">
-              Ogłoszenie ważne (dni)
-            </label>
-            <input id="mk-dni" name="dni_waznosci" type="number" min={7} max={90} defaultValue={30} />
-          </div>
-        ) : null}
+        <p className="sm:col-span-2 text-xs text-stone-600">
+          Każde ogłoszenie jest widoczne <strong>2 tygodnie</strong>. Po tym czasie znika z rynku — możesz je ponownie
+          aktywować w liście „Twoje ogłoszenia” (kolejne 2 tygodnie).
+        </p>
         <div className="sm:col-span-2">
           <label className="mb-1 block text-sm font-medium" htmlFor="mk-foto">
             Zdjęcia (opcjonalnie, max {maxZdjec})
@@ -483,13 +478,15 @@ export function MarketplaceFormularzMieszkanca({
 
       {pokazDzialke ? <InformacjaPrawnaNieruchomosci /> : <InformacjaPrawnaRol />}
 
-      <button
-        type="submit"
-        disabled={czek}
-        className="w-full rounded-xl bg-green-800 px-4 py-3 text-sm font-semibold text-white hover:bg-green-900 disabled:opacity-50 sm:w-auto"
-      >
-        {czek ? "Wysyłanie…" : edycja ? "Zapisz zmiany" : "Opublikuj (do akceptacji sołtysa)"}
-      </button>
+      <PasekAkcjiMobilny>
+        <PrzyciskLadowania
+          type="submit"
+          laduje={czek}
+          tekst={edycja ? "Zapisz zmiany" : "Opublikuj (do akceptacji sołtysa)"}
+          tekstLadowania="Wysyłanie…"
+          className="w-full sm:w-auto"
+        />
+      </PasekAkcjiMobilny>
     </form>
 
     <MarketplaceChecklistaJakosci

@@ -53,26 +53,27 @@
     display: block;
     width: 100%;
     height: 100%;
-    object-fit: contain;
+    object-fit: cover;
+    object-position: center top;
+    border-radius: 0.65rem;
   }
   .logo-mark {
-    width: 44px; height: 44px; min-width: 44px; min-height: 44px; border-radius: 50%;
-    background: linear-gradient(135deg, var(--green-medium) 0%, var(--green-dark) 100%);
-    display: flex; align-items: center; justify-content: center;
+    width: 44px; height: 44px; min-width: 44px; min-height: 44px; border-radius: 0.65rem;
+    overflow: hidden;
+    display: flex; align-items: flex-start; justify-content: center;
     flex-shrink: 0;
     box-shadow: 0 4px 14px rgba(45, 90, 45, 0.22), 0 0 0 2px rgba(255, 255, 255, 0.35);
   }
   .logo-text {
-    font-family: var(--font-fraunces), ui-serif, Georgia, serif, serif;
+    font-family: var(--font-inter), ui-sans-serif, system-ui, sans-serif, -apple-system, sans-serif;
     font-weight: 600;
     font-size: clamp(1rem, 3.5vw, 1.35rem);
     letter-spacing: -0.02em;
     white-space: nowrap;
     flex-shrink: 0;
   }
-  .logo-text .p1 { color: var(--green-dark); }
-  .logo-text .p2 { color: var(--green-medium); }
-  .logo-text .p3 { color: var(--gold); font-weight: 500; }
+  .logo-text .p1 { color: #7cb342; }
+  .logo-text .p2 { color: var(--gold); font-weight: 500; }
   .nav-links { display: flex; gap: 2.5rem; align-items: center; }
   .nav-links a { color: var(--text-dark); text-decoration: none; font-size: 0.95rem; font-weight: 500; transition: color 0.2s; }
   .nav-links a:hover { color: var(--green-medium); }
@@ -313,8 +314,8 @@
   /* FOOTER */
   footer { background: var(--green-darkest); color: rgba(255,255,255,0.7); padding: 4rem 0 2rem; }
   .footer-grid { display: grid; grid-template-columns: 1.5fr 1fr 1fr 1fr; gap: 3rem; margin-bottom: 3rem; }
-  .footer-brand .logo-text .p1, .footer-brand .logo-text .p2 { color: var(--white); }
-  .footer-brand .logo-text .p3 { color: var(--gold-light); }
+  .footer-brand .logo-text .p1 { color: #c5e1a5; }
+  .footer-brand .logo-text .p2 { color: var(--gold-light); }
   .footer-brand .logo-mark {
     box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35), 0 0 0 2px rgba(255, 255, 255, 0.2);
   }

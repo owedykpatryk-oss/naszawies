@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useMemo } from "react";
 import { PrzewodnikKrokow } from "@/components/pomoc/przewodnik-krokow";
+import { MapaGdzieCoKlient } from "@/components/pomoc/mapa-gdzie-co-klient";
 import { ETYKIETA_ROLI, PRZEWODNIKI, type RolaPrzewodnika } from "@/lib/pomoc/przewodniki";
 
 const ROLE: RolaPrzewodnika[] = ["ogolne", "mieszkaniec", "soltys", "kgw", "osp", "mysliwi"];
@@ -52,6 +53,12 @@ export function CentrumPomocyKlient({ rola, pokazLinkSoltys }: Props) {
 
       <div className="mt-8">
         <PrzewodnikKrokow sekcje={sekcje} />
+      </div>
+
+      <div className="mt-10">
+        <MapaGdzieCoKlient
+          domyslnyFiltr={rola === "soltys" ? "soltys" : rola === "mieszkaniec" ? "mieszkaniec" : "wszystkie"}
+        />
       </div>
 
       <section className="mt-10 rounded-2xl border border-stone-200 bg-stone-50/80 p-5">

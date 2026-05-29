@@ -26,10 +26,13 @@ import { linkChroniony } from "@/lib/auth/sciezki-chronione";
 import { sciezkaProfiluWsi } from "@/lib/wies/sciezka-publiczna";
 import { znajdzWiesPoSciezce } from "@/lib/wies/znajdz-wies-po-sciezce";
 import { etykietaKategoriiDotacji } from "@/lib/wies/teksty-dotacji";
+import { czyWydarzenieKgw, czyWydarzenieLowieckie, czyWydarzenieOsp, czyWydarzenieParafialne, etykietaRodzajuWydarzenia } from "@/lib/wies/teksty-organizacji";
 import { normalizujKategorieLinku, type LinkPrzydatnyPubliczny } from "@/lib/wies/linki-przydatne";
 import { pobierzKonkursFotoDlaProfiluWsi } from "@/lib/konkurs-foto/pobierz-konkurs-publiczny";
 import { pobierzFotokronikePublicznaWsi } from "@/lib/fotokronika/pobierz-fotokronike-publiczna";
 import { pobierzAktywneOstrzezeniaLowieckie } from "@/lib/lowiectwo/pobierz-ostrzezenia-publiczne";
+import { pobierzPlanCmentarzaPubliczny } from "@/lib/cmentarz/pobierz-cmentarz-publiczny";
+import { CmentarzPublicznyKlient } from "@/components/cmentarz/cmentarz-publiczny-klient";
 import { pobierzDaneMapyWsi } from "@/lib/mapa/pobierz-dane-mapy-wsi";
 import { mapujOgloszeniaRynekDlaMapy } from "@/lib/mapa/rynek-na-mapie";
 import { mapujDzialkiRynekDlaMapy } from "@/lib/mapa/rynek-dzialki-na-mapie";
@@ -39,7 +42,7 @@ import type { ZnacznikPoi, ZnacznikRynek, ZnacznikRynekDzialka, ZnacznikWsi } fr
 
 type Props = {
   params: { segmenty?: string[] };
-  searchParams?: { q?: string | string[] };
+  searchParams?: { q?: string | string[]; liturgia?: string | string[]; kgw?: string | string[]; osp?: string | string[]; mysliwi?: string | string[] };
 };
 
 type BlogWpis = {
@@ -138,6 +141,16 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     const wies = await znajdzWiesPoSciezce(supabase, s[0], s[1], s[2], s[3]);
     if (wies) {
       return { title: `${wies.name} — profil wsi`, description: wies.description?.slice(0, 160) ?? undefined };
+    }
+  }
+  if (s.length === 5 && s[4] === "cmentarz") {
+    if (!supabase) return { title: "Plan cmentarza" };
+    const wiesMeta = await znajdzWiesPoSciezce(supabase, s[0], s[1], s[2], s[3]);
+    if (wiesMeta) {
+      return {
+        title: `Plan cmentarza — ${wiesMeta.name}`,
+        description: `Wyszukiwarka grobów, układ kwater i rzędów — cmentarz we wsi ${wiesMeta.name}.`,
+      };
     }
   }
   if (s.length === 5 && s[4] === "projekt-swietlicy") {
@@ -301,36 +314,15 @@ export default async function WiesCatchAllPage({ params, searchParams }: Props) 
   }
 
   if (reszta.length === 0) {
-    const { data: postyRaw } = await supabase
-      .from("posts")
-      .select("id, title, type, created_at, is_pinned, event_end_at")
-      .eq("village_id", wies.id)
-      .eq("status", "approved")
-      .order("is_pinned", { ascending: false })
-      .order("created_at", { ascending: false })
-      .limit(25);
-
-    const posty = (postyRaw ?? []) as {
-      id: string;
-      title: string;
-      type: string;
-      created_at: string;
-      is_pinned?: boolean | null;
-      event_end_at?: string | null;
-    }[];
-
-    const plakatyPubliczne = wies.is_active ? await pobierzPublicznePlakatyWsi(wies.id) : [];
-
     const supabaseSerwer = utworzKlientaSupabaseSerwer();
-    const konkursFoto =
-      wies.is_active ? await pobierzKonkursFotoDlaProfiluWsi(supabaseSerwer, wies.id) : null;
-    const fotokronikaPubliczna =
-      wies.is_active ? await pobierzFotokronikePublicznaWsi(supabase, wies.id) : [];
-    const ostrzezeniaLowieckie =
-      wies.is_active ? await pobierzAktywneOstrzezeniaLowieckie(supabase, wies.id) : [];
-
     const odWydarzen = new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString();
+
     const [
+      { data: postyRaw },
+      plakatyPubliczne,
+      konkursFoto,
+      fotokronikaPubliczna,
+      ostrzezeniaLowieckie,
       authRes,
       { data: blogRaw },
       { data: historiaRaw },
@@ -347,7 +339,20 @@ export default async function WiesCatchAllPage({ params, searchParams }: Props) 
       { data: kadencjeFunkcyjneRaw },
       { data: pomocSasiedzkaRaw },
       { data: zgloszeniaPubliczneRaw },
+      planCmentarzaRes,
     ] = await Promise.all([
+      supabase
+        .from("posts")
+        .select("id, title, type, created_at, is_pinned, event_end_at")
+        .eq("village_id", wies.id)
+        .eq("status", "approved")
+        .order("is_pinned", { ascending: false })
+        .order("created_at", { ascending: false })
+        .limit(25),
+      wies.is_active ? pobierzPublicznePlakatyWsi(wies.id) : Promise.resolve([]),
+      wies.is_active ? pobierzKonkursFotoDlaProfiluWsi(supabaseSerwer, wies.id) : Promise.resolve(null),
+      wies.is_active ? pobierzFotokronikePublicznaWsi(supabase, wies.id) : Promise.resolve([]),
+      wies.is_active ? pobierzAktywneOstrzezeniaLowieckie(supabase, wies.id) : Promise.resolve([]),
       supabaseSerwer.auth.getUser(),
       supabase
         .from("village_blog_posts")
@@ -461,38 +466,73 @@ export default async function WiesCatchAllPage({ params, searchParams }: Props) 
         .not("resolution_note", "is", null)
         .order("resolved_at", { ascending: false, nullsFirst: false })
         .limit(12),
+      wies.is_active
+        ? supabase
+            .from("village_cemetery_plans")
+            .select("id")
+            .eq("village_id", wies.id)
+            .eq("is_published", true)
+            .maybeSingle()
+        : Promise.resolve({ data: null }),
     ]);
+
+    const posty = (postyRaw ?? []) as {
+      id: string;
+      title: string;
+      type: string;
+      created_at: string;
+      is_pinned?: boolean | null;
+      event_end_at?: string | null;
+    }[];
 
     const userSesji = authRes.data.user;
     let mapaZnacznik: ZnacznikWsi | null = null;
     let mapaPoi: ZnacznikPoi[] = [];
-    if (userSesji) {
-      const daneMapy = await pobierzDaneMapyWsi(supabase, wies);
-      mapaZnacznik = daneMapy.znacznik;
-      mapaPoi = daneMapy.pois;
-    }
+    const maPlanCmentarza = !!planCmentarzaRes.data;
     let mozeEdytowacListeZakupow = false;
     let mozeZobaczycListeZakupow = false;
     const zapisaneTresci: Record<string, string> = {};
-    if (userSesji) {
-      const { data: uvr } = await supabaseSerwer
-        .from("user_village_roles")
-        .select("id")
-        .eq("user_id", userSesji.id)
-        .eq("village_id", wies.id)
-        .eq("status", "active")
-        .in("role", [...roleDlaUprawnienia("zarzadzanie_kgw")])
-        .maybeSingle();
-      mozeZobaczycListeZakupow = !!uvr;
-      mozeEdytowacListeZakupow = !!uvr;
+    let listaZakupow: {
+      id: string;
+      title: string;
+      note: string | null;
+      quantity_text: string | null;
+      is_done: boolean;
+      created_by: string | null;
+    }[] = [];
 
-      const { data: zapisaneRaw } = await supabaseSerwer
-        .from("user_saved_content")
-        .select("id, content_type, content_id")
-        .eq("user_id", userSesji.id)
-        .eq("village_id", wies.id);
-      for (const row of zapisaneRaw ?? []) {
+    if (userSesji) {
+      const [daneMapy, uvrResult, zapisaneResult] = await Promise.all([
+        pobierzDaneMapyWsi(supabase, wies),
+        supabaseSerwer
+          .from("user_village_roles")
+          .select("id")
+          .eq("user_id", userSesji.id)
+          .eq("village_id", wies.id)
+          .eq("status", "active")
+          .in("role", [...roleDlaUprawnienia("zarzadzanie_kgw")])
+          .maybeSingle(),
+        supabaseSerwer
+          .from("user_saved_content")
+          .select("id, content_type, content_id")
+          .eq("user_id", userSesji.id)
+          .eq("village_id", wies.id),
+      ]);
+      mapaZnacznik = daneMapy.znacznik;
+      mapaPoi = daneMapy.pois;
+      mozeZobaczycListeZakupow = !!uvrResult.data;
+      mozeEdytowacListeZakupow = !!uvrResult.data;
+      for (const row of zapisaneResult.data ?? []) {
         zapisaneTresci[`${row.content_type}:${row.content_id}`] = row.id;
+      }
+      if (mozeZobaczycListeZakupow) {
+        const { data: zakupyRaw } = await supabaseSerwer
+          .from("village_shopping_list_items")
+          .select("id, title, note, quantity_text, is_done, created_by")
+          .eq("village_id", wies.id)
+          .order("is_done", { ascending: true })
+          .order("created_at", { ascending: true });
+        listaZakupow = (zakupyRaw ?? []) as typeof listaZakupow;
       }
     }
 
@@ -561,22 +601,6 @@ export default async function WiesCatchAllPage({ params, searchParams }: Props) 
       nazwa_grupy: nazwaPowiazanejGrupy(r.village_community_groups),
     }));
 
-    const { data: zakupyRaw } = mozeZobaczycListeZakupow
-      ? await supabaseSerwer
-          .from("village_shopping_list_items")
-          .select("id, title, note, quantity_text, is_done, created_by")
-          .eq("village_id", wies.id)
-          .order("is_done", { ascending: true })
-          .order("created_at", { ascending: true })
-      : { data: [] };
-    const listaZakupow = (zakupyRaw ?? []) as {
-      id: string;
-      title: string;
-      note: string | null;
-      quantity_text: string | null;
-      is_done: boolean;
-      created_by: string | null;
-    }[];
     const dotacjeSkrot = (dotacjeSkrotRaw ?? []) as {
       id: string;
       category: string;
@@ -676,6 +700,7 @@ export default async function WiesCatchAllPage({ params, searchParams }: Props) 
           zalogowany={!!userSesji}
           mapaZnacznik={mapaZnacznik}
           mapaPoi={mapaPoi}
+          maPlanCmentarza={maPlanCmentarza}
           zapisaneTresci={zapisaneTresci}
         />
       </main>
@@ -778,7 +803,7 @@ export default async function WiesCatchAllPage({ params, searchParams }: Props) 
         {bannerTekst ? <RynekBannerSezonowy tekst={bannerTekst} /> : null}
         <NaglowekStronyRynku
           tytul={`Rynek lokalny — ${wies.name}`}
-          opis="Miód, sery, mięso, warzywa z gospodarstw, maszyny rolnicze, działki z mapą Geoportalu, konie i usługi mieszkańców. Ogłoszenia są darmowe — wygasłe archiwizują się automatycznie."
+          opis="Miód, sery, mięso, warzywa z gospodarstw, maszyny rolnicze, działki z mapą Geoportalu, konie i usługi mieszkańców. Ogłoszenia są darmowe — każde jest widoczne 2 tygodnie, potem wygasa i można je aktywować ponownie."
           liczbaOgloszen={ogloszenia.length}
           liczbaProfili={profile.length}
         />
@@ -992,6 +1017,22 @@ export default async function WiesCatchAllPage({ params, searchParams }: Props) 
   if (reszta.length === 1 && reszta[0] === "szukaj") {
     const qParam = Array.isArray(searchParams?.q) ? searchParams.q[0] : searchParams?.q;
     return <WiesSzukajTresci supabase={supabase} wies={wies} qSurowe={qParam ?? ""} />;
+  }
+
+  if (reszta.length === 1 && reszta[0] === "cmentarz") {
+    if (!wies.is_active) {
+      notFound();
+    }
+    const plan = await pobierzPlanCmentarzaPubliczny(supabase, wies.id);
+    if (!plan) {
+      notFound();
+    }
+    const sciezka = sciezkaProfiluWsi(wies);
+    return (
+      <main className="mx-auto min-w-0 w-full max-w-7xl px-4 py-12 text-stone-800 sm:px-6 sm:py-16">
+        <CmentarzPublicznyKlient nazwaWsi={wies.name} sciezkaWsi={sciezka} plan={plan} />
+      </main>
+    );
   }
 
   if (reszta.length === 1 && reszta[0] === "projekt-swietlicy") {
@@ -1221,22 +1262,99 @@ export default async function WiesCatchAllPage({ params, searchParams }: Props) 
     };
     const lista = (listaRaw ?? []) as unknown as W[];
     const sciezka = sciezkaProfiluWsi(wies);
+    const tylkoLiturgia =
+      searchParams?.liturgia === "1" ||
+      searchParams?.liturgia === "true" ||
+      (Array.isArray(searchParams?.liturgia) && searchParams.liturgia.includes("1"));
+    const tylkoKgw =
+      searchParams?.kgw === "1" ||
+      searchParams?.kgw === "true" ||
+      (Array.isArray(searchParams?.kgw) && searchParams.kgw.includes("1"));
+    const tylkoOsp =
+      searchParams?.osp === "1" ||
+      searchParams?.osp === "true" ||
+      (Array.isArray(searchParams?.osp) && searchParams.osp.includes("1"));
+    const tylkoMysliwi =
+      searchParams?.mysliwi === "1" ||
+      searchParams?.mysliwi === "true" ||
+      (Array.isArray(searchParams?.mysliwi) && searchParams.mysliwi.includes("1"));
+    const listaWidoczna = tylkoLiturgia
+      ? lista.filter((w) => czyWydarzenieParafialne(w.event_kind, nazwaPowiazanejGrupy(w.village_community_groups)))
+      : tylkoKgw
+        ? lista.filter((w) => czyWydarzenieKgw(w.event_kind, nazwaPowiazanejGrupy(w.village_community_groups)))
+        : tylkoOsp
+          ? lista.filter((w) => czyWydarzenieOsp(w.event_kind, nazwaPowiazanejGrupy(w.village_community_groups)))
+          : tylkoMysliwi
+            ? lista.filter((w) => czyWydarzenieLowieckie(w.event_kind, nazwaPowiazanejGrupy(w.village_community_groups)))
+            : lista;
     return (
       <main className="mx-auto min-w-0 w-full max-w-7xl px-4 py-16 text-stone-800 sm:px-6">
         <p className="mb-4 text-sm text-stone-500">
           <Link href={sciezka} className="text-green-800 underline">
             ← {wies.name}
           </Link>
+          {tylkoLiturgia || tylkoKgw || tylkoOsp || tylkoMysliwi ? (
+            <>
+              {" · "}
+              <Link href={`${sciezka}/wydarzenia`} className="text-green-800 underline">
+                Wszystkie wydarzenia
+              </Link>
+            </>
+          ) : null}
         </p>
-        <h1 className="font-serif text-2xl text-green-950">Kalendarz wydarzeń</h1>
+        <h1 className="font-serif text-2xl text-green-950">
+          {tylkoLiturgia
+            ? "Kalendarz wydarzeń parafialnych"
+            : tylkoKgw
+              ? "Kalendarz wydarzeń KGW"
+              : tylkoOsp
+                ? "Kalendarz wydarzeń OSP"
+                : tylkoMysliwi
+                  ? "Kalendarz wydarzeń koła łowieckiego"
+                  : "Kalendarz wydarzeń"}
+        </h1>
         <p className="mt-2 text-sm text-stone-600">
-          Mecze, wyjazdy, próby zespołów, festyny i spotkania — wg daty rozpoczęcia.
+          {tylkoLiturgia
+            ? "Msze św., nabożeństwa, katechezy i spotkania przypisane do parafii."
+            : tylkoKgw
+              ? "Zebrania, kiermasze, festyny i warsztaty KGW."
+              : tylkoOsp
+                ? "Ćwiczenia, zebrania i uroczystości jednostki OSP."
+                : tylkoMysliwi
+                  ? "Polowania, zebrania koła, szkolenia i uroczystości myśliwskie."
+                  : "Mecze, wyjazdy, próby zespołów, festyny i spotkania — wg daty rozpoczęcia."}
         </p>
-        {lista.length === 0 ? (
-          <p className="mt-6 text-sm text-stone-500">Brak zaplanowanych wydarzeń.</p>
+        {!tylkoLiturgia && !tylkoKgw && !tylkoOsp && !tylkoMysliwi ? (
+          <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm">
+            <Link href={`${sciezka}/wydarzenia?liturgia=1`} className="text-violet-800 underline">
+              Tylko wydarzenia parafialne →
+            </Link>
+            <Link href={`${sciezka}/wydarzenia?kgw=1`} className="text-rose-800 underline">
+              Tylko wydarzenia KGW →
+            </Link>
+            <Link href={`${sciezka}/wydarzenia?osp=1`} className="text-red-800 underline">
+              Tylko wydarzenia OSP →
+            </Link>
+            <Link href={`${sciezka}/wydarzenia?mysliwi=1`} className="text-emerald-800 underline">
+              Tylko wydarzenia myśliwych →
+            </Link>
+          </div>
+        ) : null}
+        {listaWidoczna.length === 0 ? (
+          <p className="mt-6 text-sm text-stone-500">
+            {tylkoLiturgia
+              ? "Brak zaplanowanych wydarzeń parafialnych."
+              : tylkoKgw
+                ? "Brak zaplanowanych wydarzeń KGW."
+                : tylkoOsp
+                  ? "Brak zaplanowanych wydarzeń OSP."
+                  : tylkoMysliwi
+                    ? "Brak zaplanowanych wydarzeń koła łowieckiego."
+                    : "Brak zaplanowanych wydarzeń."}
+          </p>
         ) : (
           <ul className="mt-6 space-y-3">
-            {lista.map((w) => {
+            {listaWidoczna.map((w) => {
               const ng = nazwaPowiazanejGrupy(w.village_community_groups);
               return (
               <li key={w.id}>
@@ -1246,6 +1364,7 @@ export default async function WiesCatchAllPage({ params, searchParams }: Props) 
                 >
                   <p className="font-medium text-stone-900">{w.title}</p>
                   <p className="mt-1 text-xs text-stone-600">
+                    {etykietaRodzajuWydarzenia(w.event_kind)} ·{" "}
                     {new Date(w.starts_at).toLocaleString("pl-PL", { dateStyle: "medium", timeStyle: "short" })}
                     {w.location_text ? ` · ${w.location_text}` : ""}
                     {ng ? ` · ${ng}` : ""}

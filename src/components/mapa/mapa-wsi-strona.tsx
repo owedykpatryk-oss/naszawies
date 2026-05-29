@@ -24,6 +24,8 @@ import {
   MapaWsiLeaflet,
   type MapaWsiLeafletRef,
   type ZnacznikAdres,
+  type ZnacznikCmentarzObrys,
+  type ZnacznikGeoKontekst,
   type ZnacznikPoi,
   type ZnacznikPolowanie,
   type ZnacznikRynek,
@@ -91,6 +93,8 @@ export function MapaWsiStrona({
   punktyRynekDzialki = [],
   punktyZgloszenia = [],
   punktyPolowania = [],
+  punktyCmentarze = [],
+  punktyGeoKontekst = [],
   statystykiMapy,
 }: {
   znaczniki: ZnacznikWsi[];
@@ -100,6 +104,8 @@ export function MapaWsiStrona({
   punktyRynekDzialki?: ZnacznikRynekDzialka[];
   punktyZgloszenia?: ZnacznikZgloszenie[];
   punktyPolowania?: ZnacznikPolowanie[];
+  punktyCmentarze?: ZnacznikCmentarzObrys[];
+  punktyGeoKontekst?: ZnacznikGeoKontekst[];
   statystykiMapy?: StatystykiMapy;
 }) {
   const searchParams = useSearchParams();
@@ -247,6 +253,16 @@ export function MapaWsiStrona({
     const idWsi = new Set(odfiltrowane.map((z) => z.id));
     return punktyAdresy.filter((a) => idWsi.has(a.villageId));
   }, [punktyAdresy, odfiltrowane]);
+
+  const punktyCmentarzeFiltrowane = useMemo(() => {
+    const idWsi = new Set(odfiltrowane.map((z) => z.id));
+    return punktyCmentarze.filter((c) => idWsi.has(c.villageId));
+  }, [punktyCmentarze, odfiltrowane]);
+
+  const punktyGeoKontekstFiltrowane = useMemo(() => {
+    const idWsi = new Set(odfiltrowane.map((z) => z.id));
+    return punktyGeoKontekst.filter((g) => idWsi.has(g.villageId));
+  }, [punktyGeoKontekst, odfiltrowane]);
 
   const wierszeListy = useMemo(() => {
     if (!pozycjaUzytkownika) return odfiltrowane;
@@ -772,6 +788,8 @@ export function MapaWsiStrona({
             punktyRynekDzialki={punktyRynekDzialkiWidoczne}
             punktyZgloszenia={punktyZgloszeniaWidoczne}
             punktyPolowania={punktyPolowaniaWidoczne}
+            punktyCmentarze={punktyCmentarzeFiltrowane}
+            punktyGeoKontekst={punktyGeoKontekstFiltrowane}
             obrysyGminy={pokazObrysGminy ? obrysyGminy : []}
             pozycjaUzytkownika={pozycjaUzytkownika}
             promienKm={promienKm > 0 ? promienKm : null}

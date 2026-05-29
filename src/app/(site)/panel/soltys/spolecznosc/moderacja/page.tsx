@@ -1,12 +1,12 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { pobierzVillageIdsRoliPaneluSoltysaDlaUzytkownikaCache } from "@/lib/panel/rola-panelu-soltysa";
+import { pobierzVillageIdsModeracjiTresciCache } from "@/lib/panel/rola-moderacji";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
 import { SoltysModeracjaDyskusjiKlient, type RaportModeracji } from "./moderacja-klient";
 
 export const metadata: Metadata = {
-  title: "Moderacja społeczności (sołtys)",
+  title: "Moderacja społeczności — rada sołecka",
   description: "Zgłoszenia mieszkańców i szybka moderacja dyskusji.",
 };
 
@@ -19,12 +19,18 @@ export default async function SoltysModeracjaDyskusjiPage() {
     redirect("/logowanie?next=/panel/soltys/spolecznosc/moderacja");
   }
 
-  const villageIds = await pobierzVillageIdsRoliPaneluSoltysaDlaUzytkownikaCache(user.id);
+  const villageIds = await pobierzVillageIdsModeracjiTresciCache(user.id);
   if (villageIds.length === 0) {
     return (
       <main>
         <h1 className="tytul-sekcji-panelu">Moderacja społeczności</h1>
-        <p className="mt-2 text-sm text-stone-600">Nie masz przypisanej wsi w panelu sołtysa.</p>
+        <p className="mt-2 text-sm text-stone-600">
+          Nie masz uprawnień do moderacji treści w żadnej wsi. Sołtys nie moderuje dyskusji — to zadanie rady
+          sołeckiej lub współadmina.
+        </p>
+        <Link href="/panel/rada" className="mt-4 inline-block text-green-800 underline">
+          Panel rady sołeckiej →
+        </Link>
       </main>
     );
   }

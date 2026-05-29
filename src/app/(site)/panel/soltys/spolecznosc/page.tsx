@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { Suspense } from "react";
 import { redirect } from "next/navigation";
 import { pobierzVillageIdsRoliPaneluSoltysaDlaUzytkownikaCache } from "@/lib/panel/rola-panelu-soltysa";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
@@ -38,8 +39,19 @@ export default async function SoltysSpolecznoscPage({
     );
   }
 
-  const { data: rows } = await supabase.from("villages").select("id, name").in("id", villageIds).order("name");
-  const wsie: WiesDoModeracjiSpolecznosci[] = (rows ?? []).map((r) => ({ id: r.id, name: r.name }));
+  const { data: rows } = await supabase
+    .from("villages")
+    .select("id, name, voivodeship, county, commune, slug")
+    .in("id", villageIds)
+    .order("name");
+  const wsie: WiesDoModeracjiSpolecznosci[] = (rows ?? []).map((r) => ({
+    id: r.id,
+    name: r.name,
+    voivodeship: r.voivodeship,
+    county: r.county,
+    commune: r.commune,
+    slug: r.slug,
+  }));
 
   const { data: grupyRows } = await supabase
     .from("village_community_groups")
@@ -137,8 +149,8 @@ export default async function SoltysSpolecznoscPage({
           pomoc krok po kroku
         </Link>
         {" · "}
-        <Link href="/panel/soltys/spolecznosc/moderacja" className="text-green-800 underline">
-          moderacja zgłoszeń
+        <Link href="/panel/rada" className="text-green-800 underline">
+          moderacja zgłoszeń (rada sołecka)
         </Link>
         .
       </p>
@@ -164,16 +176,22 @@ export default async function SoltysSpolecznoscPage({
           </li>
         </ol>
       </div>
-      <SoltysSpolecznoscKlient
-        wsie={wsie}
-        grupyOrganizacji={grupyOrganizacji}
-        organizacjePelne={organizacjePelne}
-        slotyHarmonogramu={slotyHarmonogramu}
-        zrodlaDotacji={zrodlaDotacji}
-        kontaktyUrzedowe={kontaktyUrzedowe}
-        kadencjeFunkcyjne={kadencjeFunkcyjne}
-        domyslnyTryb={trybZUrl}
-      />
+      <Suspense
+        fallback={
+          <div className="mt-6 h-40 animate-pulse rounded-2xl border border-stone-200 bg-stone-100" aria-hidden />
+        }
+      >
+        <SoltysSpolecznoscKlient
+          wsie={wsie}
+          grupyOrganizacji={grupyOrganizacji}
+          organizacjePelne={organizacjePelne}
+          slotyHarmonogramu={slotyHarmonogramu}
+          zrodlaDotacji={zrodlaDotacji}
+          kontaktyUrzedowe={kontaktyUrzedowe}
+          kadencjeFunkcyjne={kadencjeFunkcyjne}
+          domyslnyTryb={trybZUrl}
+        />
+      </Suspense>
     </main>
   );
 }

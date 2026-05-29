@@ -3,6 +3,8 @@
 import { useRouter } from "next/navigation";
 import { FormEvent, useMemo, useState, useTransition } from "react";
 import { dodajZgloszenieProblemu } from "../akcje-zgloszenia";
+import { PasekAkcjiMobilny } from "@/components/ui/pasek-akcji-mobilny";
+import { PrzyciskLadowania } from "@/components/ui/przycisk-ladowania";
 import { WyborPunktuMapyKlient } from "@/components/zgloszenia/wybor-punktu-mapy-klient";
 import { kategorieZgloszen, SZYBKIE_OZNACZENIA } from "@/lib/zgloszenia/szybkie-etykiety";
 import { utworzKlientaSupabasePrzegladarka } from "@/lib/supabase/przegladarka";
@@ -309,13 +311,14 @@ export function ZgloszeniaFormularzKlient({ wiesOpcje, uzytkownik, prefill }: Pr
         ) : null}
       </div>
 
-      <button
-        type="submit"
-        disabled={oczekuje}
-        className="rounded-lg bg-green-800 px-4 py-2.5 text-sm font-medium text-white hover:bg-green-900 disabled:opacity-50"
-      >
-        {oczekuje ? "Wysyłanie…" : "Wyślij zgłoszenie"}
-      </button>
+      <PasekAkcjiMobilny>
+        <PrzyciskLadowania
+          type="submit"
+          laduje={oczekuje}
+          tekst="Wyślij zgłoszenie"
+          tekstLadowania="Wysyłanie…"
+        />
+      </PasekAkcjiMobilny>
     </form>
   );
 }

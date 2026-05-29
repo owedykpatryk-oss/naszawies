@@ -5,6 +5,7 @@ import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
 import { AdminNowaWiesKlient } from "./admin-nowa-wies-klient";
 import { AdminKolejkaSoltysowKlient } from "./admin-kolejka-soltysow-klient";
 import type { WniosekAdminWiersz } from "@/lib/admin/typy-wniosek-soltysa";
+import { czyAdminPlatformy } from "@/lib/admin/czy-admin-platformy";
 import { pobierzJakoscKatalogu } from "@/lib/admin/pobierz-jakosc-katalogu";
 import { pobierzKolejkeWnioskowSoltysaAdmin } from "@/lib/admin/pobierz-kolejke-wnioskow-soltysa";
 
@@ -19,6 +20,10 @@ export default async function AdminPage() {
   } = await supabase.auth.getUser();
   if (!user) {
     redirect("/logowanie?next=/panel/admin");
+  }
+
+  if (!(await czyAdminPlatformy(supabase))) {
+    redirect("/panel");
   }
 
   const wnioskiSoltys: WniosekAdminWiersz[] = await pobierzKolejkeWnioskowSoltysaAdmin();

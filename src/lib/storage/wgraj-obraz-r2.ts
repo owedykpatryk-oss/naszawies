@@ -19,6 +19,7 @@ import {
   pobierzVillageIdsRoliPaneluSoltysaDlaUzytkownikaCache,
 } from "@/lib/panel/rola-panelu-soltysa";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
+import { czyBuforZgodnyZMimeObrazu } from "@/lib/storage/waliduj-magic-bytes-obrazu";
 
 const uuid = z.string().uuid();
 const MIME_OBRAZ = new Set(["image/jpeg", "image/png", "image/webp"]);
@@ -101,6 +102,10 @@ export async function wgrajObrazDoMagazynuR2(formData: FormData): Promise<WynikW
   }
 
   const buf = Buffer.from(await plik.arrayBuffer());
+
+  if (!czyBuforZgodnyZMimeObrazu(buf, plik.type)) {
+    return { blad: "Nieprawidłowy format pliku (JPEG, PNG lub WebP)." };
+  }
 
   if (typ === "avatar") {
     if (buf.length > 2 * 1024 * 1024) {

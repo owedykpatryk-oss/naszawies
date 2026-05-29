@@ -38,18 +38,28 @@ export type WiesKatalogu = {
 };
 
 export async function pobierzWojewodztwaKatalog(supabase: SupabaseClient): Promise<ElementKatalogu[]> {
-  const wyniki = await Promise.all(
-    NAZWY_WOJEWODZTW.map(async (nazwa) => {
-      const slug = slugCzesciZBazy(nazwa);
-      const { data, error } = await supabase.rpc("hub_powiaty_w_wojewodztwie", { p_woj_slug: slug });
-      const liczba =
-        error || !data?.length
-          ? 0
-          : (data as { liczba_wsi?: number }[]).reduce((s, r) => s + Number(r.liczba_wsi ?? 0), 0);
-      return { nazwa, slug, liczba };
-    }),
+  const { data, error } = await supabase.rpc("hub_podsumowanie_wojewodztw");
+  if (error) {
+    console.warn("[pobierzWojewodztwaKatalog]", error.message);
+    return NAZWY_WOJEWODZTW.map((nazwa) => ({
+      nazwa,
+      slug: slugCzesciZBazy(nazwa),
+      liczba: undefined,
+    })).sort((a, b) => a.nazwa.localeCompare(b.nazwa, "pl"));
+  }
+
+  const poSlug = new Map(
+    ((data ?? []) as { voivodeship: string; voivodeship_slug: string; liczba_wsi: number }[]).map((r) => [
+      r.voivodeship_slug,
+      { nazwa: r.voivodeship, liczba: Number(r.liczba_wsi) },
+    ]),
   );
-  return wyniki.sort((a, b) => a.nazwa.localeCompare(b.nazwa, "pl"));
+
+  return NAZWY_WOJEWODZTW.map((nazwa) => {
+    const slug = slugCzesciZBazy(nazwa);
+    const wiersz = poSlug.get(slug);
+    return { nazwa, slug, liczba: wiersz?.liczba ?? 0 };
+  }).sort((a, b) => a.nazwa.localeCompare(b.nazwa, "pl"));
 }
 
 export async function pobierzPowiatyKatalog(

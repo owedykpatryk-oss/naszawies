@@ -257,6 +257,10 @@ export function PanelPrzewodnikStartu({ stan }: { stan: StanPrzewodnikaStartu })
       </ol>
       <p className="mt-4 text-xs text-stone-500">
         Więcej wskazówek:{" "}
+        <Link href="/pomoc" className="text-green-800 underline">
+          centrum pomocy
+        </Link>
+        {" · "}
         <Link href="/panel/mieszkaniec/pomoc" className="text-green-800 underline">
           pomoc — mieszkaniec
         </Link>

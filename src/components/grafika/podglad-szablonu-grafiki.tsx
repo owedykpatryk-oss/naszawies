@@ -3,6 +3,7 @@
 import { useDeferredValue, useEffect, useState } from "react";
 import type { FormatSocialGrafiki, MotywGrafiki, SzablonGrafiki, WartosciPolGrafiki } from "@/lib/grafika/typy";
 import { RamkaMarkiDokument } from "@/components/marka/ramka-marki-dokument";
+import { LOGO_GRAFIKA_SRC } from "@/lib/grafika/logo-marki";
 import { WYMIARY_SOCIAL } from "@/lib/grafika/eksport-social";
 import { formatDatyPolskiej } from "@/lib/grafika/szablony";
 import { generujQrDataUrl } from "@/lib/grafika/qr-kod";
@@ -48,14 +49,26 @@ function wymiaryKontenera(
   return szablon.orientacja === "poziom" ? { szer: 794, wys: 560 } : { szer: 560, wys: 794 };
 }
 
-function Logo({ logoDataUrl, motyw }: { logoDataUrl?: string | null; motyw: MotywGrafiki }) {
-  if (!logoDataUrl) return null;
+function Logo({
+  logoDataUrl,
+  motyw,
+  rozmiar = "standard",
+}: {
+  logoDataUrl?: string | null;
+  motyw: MotywGrafiki;
+  rozmiar?: "standard" | "plakat";
+}) {
+  const src = logoDataUrl || LOGO_GRAFIKA_SRC;
+  const klasy =
+    rozmiar === "plakat"
+      ? "mx-auto mb-3 max-h-24 max-w-[180px] object-contain drop-shadow-md"
+      : "mx-auto mb-4 max-h-20 max-w-[140px] object-contain";
   return (
     // eslint-disable-next-line @next/next/no-img-element
     <img
-      src={logoDataUrl}
-      alt=""
-      className="mx-auto mb-4 max-h-20 max-w-[140px] object-contain"
+      src={src}
+      alt="Logo"
+      className={klasy}
       style={{ filter: motyw.id === "klasyczny-bialy" ? undefined : "none" }}
     />
   );
@@ -339,32 +352,78 @@ function LayoutDyplomOzdobny({ wartosci, motyw, logoDataUrl }: Omit<Props, "szab
 }
 
 function LayoutPlakat({ wartosci, motyw, logoDataUrl }: Omit<Props, "szablon" | "elementId">) {
+  const data = formatDatyPolskiej(w(wartosci, "data", ""));
+  const godzina = w(wartosci, "godzina", "");
   return (
     <div className="flex h-full flex-col">
       <div
-        className="px-6 py-8 text-center text-white"
-        style={{ background: `linear-gradient(135deg, ${motyw.akcent}, ${motyw.akcent2 ?? motyw.akcent})` }}
+        className="relative overflow-hidden px-6 py-8 text-center text-white"
+        style={{
+          background: `linear-gradient(145deg, ${motyw.akcent} 0%, ${motyw.akcent2 ?? motyw.akcent} 55%, ${motyw.akcent} 100%)`,
+          boxShadow: "inset 0 -1px 0 rgba(255,255,255,0.2)",
+        }}
       >
-        <Logo logoDataUrl={logoDataUrl} motyw={motyw} />
-        <p className="text-sm font-bold uppercase tracking-wider opacity-95">{w(wartosci, "naglowek")}</p>
-        <h2 className="mt-2 font-serif text-4xl font-black leading-none">{w(wartosci, "tytul")}</h2>
+        <div
+          className="pointer-events-none absolute inset-0 opacity-[0.12]"
+          aria-hidden
+          style={{
+            backgroundImage:
+              "radial-gradient(circle at 20% 30%, #fff 1px, transparent 1px), radial-gradient(circle at 80% 70%, #fff 1px, transparent 1px)",
+            backgroundSize: "28px 28px",
+          }}
+        />
+        <div className="relative">
+          <Logo logoDataUrl={logoDataUrl} motyw={motyw} rozmiar="plakat" />
+          <p className="text-xs font-bold uppercase tracking-[0.35em] opacity-90">{w(wartosci, "naglowek")}</p>
+          <h2 className="mt-3 font-serif text-[2.35rem] font-black leading-[1.05] tracking-tight drop-shadow-sm">
+            {w(wartosci, "tytul")}
+          </h2>
+        </div>
       </div>
       <div className="flex flex-1 flex-col px-6 py-5">
-        <div className="flex-1 text-base leading-relaxed" style={{ color: motyw.tekst }}>
+        <div
+          className="flex-1 rounded-xl border px-4 py-4 text-base leading-relaxed"
+          style={{
+            color: motyw.tekst,
+            borderColor: `${motyw.akcent}30`,
+            backgroundColor: `${motyw.akcent}08`,
+          }}
+        >
           {linie(w(wartosci, "opis"))}
         </div>
         <div
-          className="mt-4 rounded-lg px-4 py-3 text-center text-white"
+          className="mt-5 overflow-hidden rounded-xl text-center text-white shadow-md"
           style={{ backgroundColor: motyw.akcent }}
         >
-          <p className="text-lg font-bold">{formatDatyPolskiej(w(wartosci, "data", ""))}</p>
-          {w(wartosci, "godzina", "") !== "…" ? (
-            <p className="text-sm opacity-90">godz. {w(wartosci, "godzina")}</p>
-          ) : null}
-          <p className="mt-1 text-sm opacity-90">{w(wartosci, "miejsce")}</p>
+          <div className="grid grid-cols-1 divide-y divide-white/15 sm:grid-cols-3 sm:divide-x sm:divide-y-0">
+            <div className="px-3 py-3">
+              <p className="text-[10px] font-bold uppercase tracking-wider opacity-80">Data</p>
+              <p className="text-lg font-bold">{data}</p>
+            </div>
+            <div className="px-3 py-3">
+              <p className="text-[10px] font-bold uppercase tracking-wider opacity-80">Godzina</p>
+              <p className="text-lg font-bold">{godzina !== "…" ? `godz. ${godzina}` : "—"}</p>
+            </div>
+            <div className="px-3 py-3">
+              <p className="text-[10px] font-bold uppercase tracking-wider opacity-80">Miejsce</p>
+              <p className="text-sm font-semibold leading-snug">{w(wartosci, "miejsce")}</p>
+            </div>
+          </div>
         </div>
-        <p className="mt-3 text-center text-xs" style={{ color: motyw.tekstDrugorzedny }}>
-          {w(wartosci, "organizator")} · {w(wartosci, "kontakt")}
+        <p className="mt-4 text-center text-xs leading-relaxed" style={{ color: motyw.tekstDrugorzedny }}>
+          {w(wartosci, "organizator")}
+          {w(wartosci, "kontakt", "") !== "…" ? (
+            <>
+              <br />
+              <span className="font-medium">{w(wartosci, "kontakt")}</span>
+            </>
+          ) : null}
+        </p>
+        <p
+          className="mt-3 text-center text-[10px] font-semibold uppercase tracking-[0.2em] opacity-50"
+          style={{ color: motyw.tekstDrugorzedny }}
+        >
+          naszawies.pl · plakat dla Twojej wsi
         </p>
       </div>
     </div>
@@ -404,12 +463,8 @@ function LayoutKartaInformacyjna({ wartosci, motyw, logoDataUrl }: Omit<Props, "
           // eslint-disable-next-line @next/next/no-img-element
           <img src={logoDataUrl} alt="" className="h-14 w-14 shrink-0 rounded-lg object-cover" />
         ) : (
-          <div
-            className="flex h-14 w-14 shrink-0 items-center justify-center rounded-lg text-xl font-bold text-white"
-            style={{ backgroundColor: motyw.akcent }}
-          >
-            i
-          </div>
+          // eslint-disable-next-line @next/next/no-img-element
+          <img src={LOGO_GRAFIKA_SRC} alt="" className="h-14 w-14 shrink-0 rounded-lg object-contain" />
         )}
         <div>
           <h2 className="font-serif text-xl font-bold" style={{ color: motyw.tekst }}>
@@ -603,15 +658,28 @@ export function MiniaturaSzablonuGrafiki({
 }) {
   return (
     <div
-      className="flex aspect-[3/4] w-full flex-col justify-end overflow-hidden rounded-lg border border-stone-200 p-2 shadow-sm"
+      className="relative flex aspect-[3/4] w-full flex-col justify-end overflow-hidden rounded-lg border border-stone-200 p-2 shadow-sm"
       style={{
         backgroundColor: motyw.tlo,
         color: motyw.tekst,
         borderColor: motyw.ramka ?? undefined,
       }}
     >
-      <p className="text-[9px] font-semibold uppercase tracking-wide opacity-70">{szablon.kategoria}</p>
-      <p className="mt-0.5 line-clamp-2 font-serif text-[11px] font-semibold leading-tight">{szablon.tytul}</p>
+      <div
+        className="pointer-events-none absolute inset-x-0 top-0 h-1/2 opacity-90"
+        style={{
+          background: `linear-gradient(180deg, ${motyw.akcent}22 0%, transparent 100%)`,
+        }}
+        aria-hidden
+      />
+      {/* eslint-disable-next-line @next/next/no-img-element */}
+      <img
+        src={LOGO_GRAFIKA_SRC}
+        alt=""
+        className="absolute left-2 top-2 h-7 w-7 rounded-full bg-white/80 object-contain p-0.5 shadow-sm"
+      />
+      <p className="relative text-[9px] font-semibold uppercase tracking-wide opacity-70">{szablon.kategoria}</p>
+      <p className="relative mt-0.5 line-clamp-2 font-serif text-[11px] font-semibold leading-tight">{szablon.tytul}</p>
     </div>
   );
 }

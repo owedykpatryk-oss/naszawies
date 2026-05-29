@@ -2,21 +2,21 @@ import { createAdminSupabaseClient } from "@/lib/supabase/admin-client";
 import { wyslijWebPushDlaUzytkownika } from "@/lib/pwa/wyslij-web-push";
 import { sciezkaProfiluWsi } from "@/lib/wies/sciezka-publiczna";
 
-/** Przypomnienie 7 dni przed wygaśnięciem ogłoszenia (raz na ogłoszenie w oknie). */
+/** Przypomnienie 3 dni przed wygaśnięciem ogłoszenia (raz na ogłoszenie w oknie). */
 export async function powiadomOWygasajacychOgloszeniachMarketplace(villageId?: string): Promise<number> {
   const admin = createAdminSupabaseClient();
   if (!admin) return 0;
 
   const teraz = new Date();
-  const za7Dni = new Date(teraz);
-  za7Dni.setDate(za7Dni.getDate() + 7);
+  const za3Dni = new Date(teraz);
+  za3Dni.setDate(za3Dni.getDate() + 3);
 
   let zapytanie = admin
     .from("marketplace_listings")
     .select("id, title, owner_user_id, village_id, expires_at, villages(name, slug, voivodeship, county, commune)")
     .eq("status", "approved")
     .gte("expires_at", teraz.toISOString())
-    .lte("expires_at", za7Dni.toISOString());
+    .lte("expires_at", za3Dni.toISOString());
 
   if (villageId) {
     zapytanie = zapytanie.eq("village_id", villageId);
@@ -46,7 +46,7 @@ export async function powiadomOWygasajacychOgloszeniachMarketplace(villageId?: s
 
     const dataWygasniecia = o.expires_at ? new Date(o.expires_at).toLocaleDateString("pl-PL") : "wkrótce";
     const tytul = "Ogłoszenie wkrótce wygaśnie";
-    const tresc = `„${o.title}” — ważne do ${dataWygasniecia}. Przedłuż w panelu Rynku lokalnego.`;
+    const tresc = `„${o.title}” — ważne do ${dataWygasniecia}. Po tym terminie zniknie z rynku — aktywuj ponownie w panelu Rynku lokalnego.`;
 
     const { error } = await admin.from("notifications").insert({
       user_id: o.owner_user_id,

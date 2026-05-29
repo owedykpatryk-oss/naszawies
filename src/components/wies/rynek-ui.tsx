@@ -281,6 +281,9 @@ export function KartaOgloszeniaRynek({
                 {katEtykieta}
               </span>
             ) : null}
+            {oferta.with_operator ? (
+              <span className="rounded-md bg-sky-50 px-1.5 py-0.5 font-medium text-sky-900">z operatorem</span>
+            ) : null}
           </p>
           {powierzchnia ? (
             <p className="mt-1.5 inline-flex items-center gap-1 text-xs font-semibold text-amber-900">

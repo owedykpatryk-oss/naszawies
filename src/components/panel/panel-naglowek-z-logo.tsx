@@ -5,12 +5,14 @@ import { PanelNawigacja } from "@/components/panel/panel-nawigacja";
 type Props = {
   pokazLinkSoltysa?: boolean;
   liczbaWiadomosciNieprzeczytanych?: number;
+  pokazAdmin?: boolean;
 };
 
 /** Pasek panelu: logo + nawigacja — spójnie na wszystkich podstronach. */
 export function PanelNaglowekZLogo({
   pokazLinkSoltysa = true,
   liczbaWiadomosciNieprzeczytanych = 0,
+  pokazAdmin = false,
 }: Props) {
   return (
     <div className="no-print mb-8 space-y-4">
@@ -28,6 +30,7 @@ export function PanelNaglowekZLogo({
       <PanelNawigacja
         pokazLinkSoltysa={pokazLinkSoltysa}
         liczbaWiadomosciNieprzeczytanych={liczbaWiadomosciNieprzeczytanych}
+        pokazAdmin={pokazAdmin}
       />
     </div>
   );

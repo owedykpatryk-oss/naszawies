@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { Suspense } from "react";
+import { PrzewodnikModuluLeniwy } from "@/components/pomoc/przewodnik-modulu-leniwy";
 import { SoltysNawigacja } from "./soltys-nawigacja";
 
 export default function SoltysLayout({ children }: { children: React.ReactNode }) {
@@ -41,6 +42,9 @@ export default function SoltysLayout({ children }: { children: React.ReactNode }
         }
       >
         <SoltysNawigacja />
+      </Suspense>
+      <Suspense fallback={null}>
+        <PrzewodnikModuluLeniwy />
       </Suspense>
       {children}
     </div>

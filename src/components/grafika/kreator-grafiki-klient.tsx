@@ -43,6 +43,7 @@ import {
   wczytajProjektyGrafiki,
   zapiszProjektGrafiki,
 } from "@/app/(site)/panel/grafika/akcje";
+import { wczytajLogoMarkiJakoDataUrl } from "@/lib/grafika/logo-marki";
 
 const ID_PODGLADU = "podglad-grafiki-export";
 const KLUCZ_LOCAL_STORAGE = "naszawies-grafika-szkic";
@@ -148,6 +149,20 @@ export function KreatorGrafikiKlient({
   useEffect(() => {
     void wczytajProjekty();
   }, [wczytajProjekty]);
+
+  useEffect(() => {
+    let anuluj = false;
+    void wczytajLogoMarkiJakoDataUrl()
+      .then((url) => {
+        if (!anuluj) ustawLogoDataUrl((prev) => prev ?? url);
+      })
+      .catch(() => {
+        /* logo marki opcjonalne — podgląd ma fallback z /marka/ */
+      });
+    return () => {
+      anuluj = true;
+    };
+  }, []);
 
   useEffect(() => {
     if (!prefill) return;

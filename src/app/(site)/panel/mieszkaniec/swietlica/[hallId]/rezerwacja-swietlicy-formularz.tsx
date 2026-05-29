@@ -1,7 +1,9 @@
 "use client";
 
-import { useRouter } from "next/navigation";
 import { FormEvent, useMemo, useState, useTransition } from "react";
+import { useRouter } from "next/navigation";
+import { PasekAkcjiMobilny } from "@/components/ui/pasek-akcji-mobilny";
+import { PrzyciskLadowania } from "@/components/ui/przycisk-ladowania";
 import { WyborTerminuSwietlicyKlient } from "@/components/swietlica/wybor-terminu-swietlicy-klient";
 import { PlanRezerwacjiEdytorKlient } from "@/components/swietlica/plan-rezerwacji-edytor-klient";
 import type { ZnacznikNaPlanie } from "@/components/swietlica/plan-sali-rysunek";
@@ -450,13 +452,14 @@ export function RezerwacjaSwietlicyFormularz({
         </span>
       </label>
 
-      <button
-        type="submit"
-        disabled={oczekuje}
-        className="rounded-lg bg-green-800 px-4 py-2.5 text-sm font-medium text-white hover:bg-green-900 disabled:opacity-60"
-      >
-        {oczekuje ? "Wysyłanie…" : "Wyślij wniosek o rezerwację"}
-      </button>
+      <PasekAkcjiMobilny>
+        <PrzyciskLadowania
+          type="submit"
+          laduje={oczekuje}
+          tekst="Wyślij wniosek o rezerwację"
+          tekstLadowania="Wysyłanie…"
+        />
+      </PasekAkcjiMobilny>
     </form>
   );
 }

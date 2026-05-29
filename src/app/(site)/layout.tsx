@@ -1,5 +1,6 @@
 import { NaglowekStrony } from "@/components/marka/naglowek-strony";
 import { TrybSeniorProvider } from "@/components/ui/tryb-senior-provider";
+import { sciezkaKreatoraGrafikiDlaUzytkownika } from "@/lib/grafika/sciezka-kreatora";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
 
 const LINKI_PUBLICZNE = [
@@ -10,15 +11,17 @@ const LINKI_PUBLICZNE = [
   { href: "/kontakt", label: "Kontakt" },
 ] as const;
 
-const LINKI_PO_ZALOGOWANIU = [
-  { href: "/rynek", label: "Rynek lokalny" },
-  { href: "/panel", label: "Panel" },
-  { href: "/grafika", label: "Kreator plakatów" },
-  { href: "/szukaj", label: "Szukaj wsi" },
-  { href: "/mapa", label: "Mapa wsi" },
-  { href: "/pomoc", label: "Pomoc" },
-  { href: "/kontakt", label: "Kontakt" },
-] as const;
+function linkiPoZalogowaniu(sciezkaKreatora: string) {
+  return [
+    { href: "/rynek", label: "Rynek lokalny" },
+    { href: "/panel", label: "Panel" },
+    { href: sciezkaKreatora, label: "Kreator plakatów" },
+    { href: "/szukaj", label: "Szukaj wsi" },
+    { href: "/mapa", label: "Mapa wsi" },
+    { href: "/pomoc", label: "Pomoc" },
+    { href: "/kontakt", label: "Kontakt" },
+  ] as const;
+}
 
 export default async function LayoutWitryny({ children }: { children: React.ReactNode }) {
   let linkiGlowne: { href: string; label: string }[] = [...LINKI_PUBLICZNE];
@@ -34,7 +37,8 @@ export default async function LayoutWitryny({ children }: { children: React.Reac
       data: { user },
     } = await supabase.auth.getUser();
     if (user) {
-      linkiGlowne = [...LINKI_PO_ZALOGOWANIU];
+      const sciezkaKreatora = await sciezkaKreatoraGrafikiDlaUzytkownika(supabase, user.id);
+      linkiGlowne = [...linkiPoZalogowaniu(sciezkaKreatora)];
       linkiAkcje = [
         { href: "/panel/profil", label: "Profil" },
         { href: "/panel/powiadomienia", label: "Powiadomienia" },

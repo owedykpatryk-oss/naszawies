@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
+import { czyAdminPlatformy } from "@/lib/admin/czy-admin-platformy";
 import slugify from "slugify";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
 
@@ -41,6 +42,9 @@ export async function adminUtworzWiesISoltysa(niesprawdzone: unknown): Promise<W
   } = await supabase.auth.getUser();
   if (!user) {
     return { blad: "Zaloguj się." };
+  }
+  if (!(await czyAdminPlatformy(supabase))) {
+    return { blad: "Brak uprawnień administratora platformy." };
   }
 
   const slug = slugZNazwy(x.nazwa, x.slugReczny);

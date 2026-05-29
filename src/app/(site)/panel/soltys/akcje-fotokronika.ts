@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { pobierzVillageIdsRoliPaneluSoltysaDlaUzytkownikaCache } from "@/lib/panel/rola-panelu-soltysa";
+import { pobierzVillageIdsModeracjiTresciCache } from "@/lib/panel/rola-moderacji";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
 
 const uuid = z.string().uuid();
@@ -30,7 +30,7 @@ export async function utworzAlbumFotokroniki(dane: z.infer<typeof schemaAlbum>):
   if (!user) {
     return { blad: "Zaloguj się." };
   }
-  const vids = await pobierzVillageIdsRoliPaneluSoltysaDlaUzytkownikaCache(user.id);
+  const vids = await pobierzVillageIdsModeracjiTresciCache(user.id);
   if (!vids.includes(p.data.villageId)) {
     return { blad: "Nie możesz tworzyć albumu w tej wsi." };
   }
@@ -77,7 +77,7 @@ export async function zmoderujZdjecieFotokroniki(dane: z.infer<typeof schemaMod>
   if (!user) {
     return { blad: "Zaloguj się." };
   }
-  const vids = await pobierzVillageIdsRoliPaneluSoltysaDlaUzytkownikaCache(user.id);
+  const vids = await pobierzVillageIdsModeracjiTresciCache(user.id);
   const { data: ph, error: re } = await supabase
     .from("photos")
     .select("id, village_id, status, album_id")
@@ -123,7 +123,7 @@ export async function ustawOkladkeAlbumu(dane: z.infer<typeof schemaOkladka>): P
   if (!user) {
     return { blad: "Zaloguj się." };
   }
-  const vids = await pobierzVillageIdsRoliPaneluSoltysaDlaUzytkownikaCache(user.id);
+  const vids = await pobierzVillageIdsModeracjiTresciCache(user.id);
   const { data: al, error: aE } = await supabase
     .from("photo_albums")
     .select("id, village_id")

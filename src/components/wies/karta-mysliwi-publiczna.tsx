@@ -1,4 +1,7 @@
 import Link from "next/link";
+import { RynekUdostepnijPrzycisk } from "@/components/wies/rynek-udostepnij-przycisk";
+import { linkChroniony } from "@/lib/auth/sciezki-chronione";
+import { etykietaRodzajuWydarzenia } from "@/lib/wies/teksty-organizacji";
 import type { ProfilLowieckiJson } from "@/lib/wies/profil-organizacji";
 
 export type DaneMysliwiPubliczne = {
@@ -10,6 +13,22 @@ export type DaneMysliwiPubliczne = {
   contact_phone: string | null;
   contact_email: string | null;
   profil: ProfilLowieckiJson | null;
+};
+
+export type WydarzenieLowieckieSkrot = {
+  id: string;
+  event_kind: string;
+  title: string;
+  location_text: string | null;
+  starts_at: string;
+};
+
+export type OstrzezenieLowieckieSkrot = {
+  id: string;
+  title: string;
+  startsAt: string;
+  endsAt: string;
+  maObszarMapy: boolean;
 };
 
 function Blok({
@@ -41,15 +60,25 @@ function linkZTekstu(url: string | null | undefined): string | null {
 export function KartaMysliwiPubliczna({
   kolo,
   maAktywneOstrzezenia = false,
+  ostrzezenieAktywne = null,
   sciezkaWydarzenia,
+  sciezkaProfilu,
+  zalogowany = false,
+  nadchodzaceWydarzenia = [],
 }: {
   kolo: DaneMysliwiPubliczne;
   maAktywneOstrzezenia?: boolean;
+  ostrzezenieAktywne?: OstrzezenieLowieckieSkrot | null;
   sciezkaWydarzenia?: string;
+  sciezkaProfilu?: string;
+  zalogowany?: boolean;
+  nadchodzaceWydarzenia?: WydarzenieLowieckieSkrot[];
 }) {
   const p = kolo.profil;
   const wwwHref = linkZTekstu(p?.strona_www);
   const fbHref = linkZTekstu(p?.facebook);
+  const igHref = linkZTekstu(p?.instagram);
+  const kotwicaUdostepnij = sciezkaProfilu ? `${sciezkaProfilu}#mysliwi` : "#mysliwi";
 
   return (
     <section
@@ -114,16 +143,60 @@ export function KartaMysliwiPubliczna({
               Facebook
             </a>
           ) : null}
+          {igHref ? (
+            <a
+              href={igHref}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="rounded-lg border border-emerald-700/40 bg-white px-3 py-2 text-sm font-medium text-emerald-950 hover:bg-emerald-50"
+            >
+              Instagram
+            </a>
+          ) : null}
+          {sciezkaProfilu ? (
+            <RynekUdostepnijPrzycisk
+              url={kotwicaUdostepnij}
+              tytul={kolo.name}
+              tekst={`Koło łowieckie — kontakt i bezpieczeństwo: ${kolo.name}`}
+            />
+          ) : null}
         </div>
       </div>
 
       {maAktywneOstrzezenia ? (
-        <p className="mt-4 rounded-lg border border-amber-400/70 bg-amber-100/80 px-3 py-2 text-sm text-amber-950">
-          <strong>Aktywne ostrzeżenie polowania</strong> —{" "}
-          <a href="#ostrzezenia-lowieckie" className="font-medium underline hover:text-amber-900">
-            zobacz rejon i terminy ↓
-          </a>
-        </p>
+        <div className="mt-4 rounded-lg border border-amber-400/70 bg-amber-100/80 px-3 py-2 text-sm text-amber-950">
+          <p className="font-semibold">Aktywne ostrzeżenie polowania</p>
+          {ostrzezenieAktywne ? (
+            <p className="mt-1 text-xs">
+              {ostrzezenieAktywne.title} ·{" "}
+              {new Date(ostrzezenieAktywne.startsAt).toLocaleString("pl-PL", {
+                dateStyle: "medium",
+                timeStyle: "short",
+              })}
+              {" – "}
+              {new Date(ostrzezenieAktywne.endsAt).toLocaleString("pl-PL", {
+                dateStyle: "medium",
+                timeStyle: "short",
+              })}
+            </p>
+          ) : null}
+          <div className="mt-2 flex flex-wrap gap-3 text-xs font-medium">
+            <a href="#ostrzezenia-lowieckie" className="underline hover:text-amber-900">
+              Szczegóły ostrzeżenia ↓
+            </a>
+            {ostrzezenieAktywne?.maObszarMapy ? (
+              <Link
+                href={linkChroniony(
+                  `/mapa?polowanie=${encodeURIComponent(ostrzezenieAktywne.id)}`,
+                  zalogowany,
+                )}
+                className="underline hover:text-amber-900"
+              >
+                Obszar na mapie
+              </Link>
+            ) : null}
+          </div>
+        </div>
       ) : null}
 
       {kolo.short_description ? (
@@ -167,8 +240,14 @@ export function KartaMysliwiPubliczna({
           </Blok>
         ) : null}
 
+        {p?.zgloszenie_szkod ? (
+          <Blok tytul="Szkody w uprawach — zgłoszenia" ikona="🌾">
+            {p.zgloszenie_szkod}
+          </Blok>
+        ) : null}
+
         {p?.wspolpraca_rolnicy ? (
-          <Blok tytul="Współpraca z rolnikami" ikona="🌾">
+          <Blok tytul="Współpraca z rolnikami" ikona="🚜">
             {p.wspolpraca_rolnicy}
           </Blok>
         ) : null}
@@ -179,6 +258,29 @@ export function KartaMysliwiPubliczna({
           </Blok>
         ) : null}
       </div>
+
+      {nadchodzaceWydarzenia.length > 0 ? (
+        <div className="mt-5">
+          <h3 className="text-xs font-semibold uppercase tracking-wide text-emerald-900">Zbliżające się wydarzenia</h3>
+          <ul className="mt-2 space-y-2">
+            {nadchodzaceWydarzenia.slice(0, 4).map((ev) => (
+              <li key={ev.id}>
+                <Link
+                  href={sciezkaWydarzenia ? `${sciezkaWydarzenia}/${ev.id}` : "#"}
+                  className="block rounded-lg border border-emerald-100 bg-white/80 px-3 py-2 text-sm transition hover:border-emerald-300 hover:bg-emerald-50/50"
+                >
+                  <p className="font-medium text-stone-900">{ev.title}</p>
+                  <p className="mt-0.5 text-xs text-stone-600">
+                    {etykietaRodzajuWydarzenia(ev.event_kind)} ·{" "}
+                    {new Date(ev.starts_at).toLocaleString("pl-PL", { dateStyle: "medium", timeStyle: "short" })}
+                    {ev.location_text ? ` · ${ev.location_text}` : ""}
+                  </p>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
 
       {p?.uwagi ? (
         <p className="mt-4 rounded-lg border border-amber-200/80 bg-amber-50/60 px-3 py-2 text-xs text-amber-950">
@@ -191,7 +293,10 @@ export function KartaMysliwiPubliczna({
           Ostrzeżenia polowań →
         </a>
         {sciezkaWydarzenia ? (
-          <Link href={sciezkaWydarzenia} className="font-medium text-emerald-900 underline hover:text-emerald-950">
+          <Link
+            href={`${sciezkaWydarzenia}?mysliwi=1`}
+            className="font-medium text-emerald-900 underline hover:text-emerald-950"
+          >
             Wydarzenia koła →
           </Link>
         ) : null}

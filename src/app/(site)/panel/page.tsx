@@ -1,9 +1,30 @@
 import type { Metadata } from "next";
+import dynamic from "next/dynamic";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { pobierzStanPrzewodnikaStartu } from "@/lib/panel/stan-przewodnika-startu";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
-import { PanelPrzewodnikStartu } from "./panel-przewodnik-startu";
+
+const PanelPrzewodnikStartu = dynamic(
+  () => import("./panel-przewodnik-startu").then((m) => ({ default: m.PanelPrzewodnikStartu })),
+  { ssr: false },
+);
+const CoMogeZrobic = dynamic(
+  () => import("@/components/panel/co-moge-zrobic").then((m) => ({ default: m.CoMogeZrobic })),
+  {
+    loading: () => (
+      <div className="mb-10 h-48 animate-pulse rounded-2xl border border-stone-200 bg-stone-100/80" aria-hidden />
+    ),
+  },
+);
+const MapaGdzieCoKlient = dynamic(
+  () => import("@/components/pomoc/mapa-gdzie-co-klient").then((m) => ({ default: m.MapaGdzieCoKlient })),
+  {
+    loading: () => (
+      <div className="mb-10 h-56 animate-pulse rounded-2xl border border-stone-200 bg-stone-100/80" aria-hidden />
+    ),
+  },
+);
 
 export const metadata: Metadata = {
   title: "Panel",
@@ -20,18 +41,15 @@ export default async function PanelPage() {
     redirect("/logowanie?next=/panel");
   }
 
-  const { data: profil } = await supabase
-    .from("users")
-    .select("display_name")
-    .eq("id", user.id)
-    .maybeSingle();
-
   const signupVillageIdRaw =
     user.user_metadata && typeof user.user_metadata === "object" ? user.user_metadata.signup_village_id : null;
   const maWyborWsiZRejestracji =
     typeof signupVillageIdRaw === "string" && signupVillageIdRaw.trim().length > 0;
 
-  const stanStartu = await pobierzStanPrzewodnikaStartu(supabase, user.id, maWyborWsiZRejestracji);
+  const [{ data: profil }, stanStartu] = await Promise.all([
+    supabase.from("users").select("display_name").eq("id", user.id).maybeSingle(),
+    pobierzStanPrzewodnikaStartu(supabase, user.id, maWyborWsiZRejestracji),
+  ]);
 
   return (
     <main>
@@ -54,6 +72,8 @@ export default async function PanelPage() {
           ) : null}
         </p>
       </header>
+
+      <CoMogeZrobic jestSoltysem={stanStartu.jestSoltysem} />
 
       <p className="mb-6 text-sm text-stone-600">
         <Link href="/panel/pierwsze-kroki" className="font-medium text-green-800 underline">
@@ -146,11 +166,13 @@ export default async function PanelPage() {
           <p className="mt-2 text-sm text-stone-600">Akceptacje ról i inne komunikaty.</p>
         </li>
       </ul>
+
+      <div className="mb-10">
+        <MapaGdzieCoKlient domyslnyFiltr={stanStartu.jestSoltysem ? "soltys" : "mieszkaniec"} />
+      </div>
+
       <form action="/wyloguj" method="post">
-        <button
-          type="submit"
-          className="rounded-xl border-2 border-stone-300/90 bg-white px-5 py-2.5 text-sm font-medium text-stone-800 shadow-sm transition hover:border-stone-400 hover:bg-stone-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-stone-500"
-        >
+        <button type="submit" className="btn-panel-secondary">
           Wyloguj się
         </button>
       </form>

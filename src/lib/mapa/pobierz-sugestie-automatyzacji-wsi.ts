@@ -127,7 +127,27 @@ export async function pobierzSugestieAutomatyzacjiWsi(
       klucz: "malopoi",
       waga: 70,
       tytul: "Mało punktów na mapie",
-      opis: "Szkoła, kościół, sklep, OSP — większość wsi ma je w OSM. Użyj „Uzupełnij z OSM” (promień ~2,8 km).",
+      opis: "Szkoła, kościół, sklep, OSP, boisko, przedszkole — cron i przycisk „Uzupełnij z OSM” pobierają je z OpenStreetMap.",
+      akcja: "osm",
+    });
+  }
+
+  if ((licznik.get("cmentarz") ?? 0) === 0) {
+    sugestie.push({
+      klucz: "cmentarz",
+      waga: 65,
+      tytul: "Brak cmentarza na mapie",
+      opis: "Cron szuka obrysu cemetery w OSM i dopisuje pinezkę. Po publikacji planu widać też polygon i link do wyszukiwarki grobów.",
+      akcja: "osm",
+    });
+  }
+
+  if ((licznik.get("boisko") ?? 0) === 0) {
+    sugestie.push({
+      klucz: "boisko",
+      waga: 55,
+      tytul: "Dodaj boisko / obiekt sportowy",
+      opis: "Import z OSM (leisure=pitch, sports_centre) — często jest przy szkole lub świetlicy.",
       akcja: "osm",
     });
   }

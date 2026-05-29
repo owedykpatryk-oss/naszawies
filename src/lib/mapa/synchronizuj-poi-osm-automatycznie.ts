@@ -20,7 +20,21 @@ type PoiRow = {
   is_local_override: boolean | null;
 };
 
-const KATEGORIE_BAZOWE = ["swietlica", "osp", "sklep", "kosciol", "szkola", "przystanek", "stacja_kolejowa"] as const;
+const KATEGORIE_BAZOWE = [
+  "swietlica",
+  "osp",
+  "sklep",
+  "kosciol",
+  "szkola",
+  "przedszkole",
+  "biblioteka",
+  "boisko",
+  "przystanek",
+  "stacja_kolejowa",
+  "cmentarz",
+  "skup_zboz",
+  "sklep_rolniczy",
+] as const;
 
 const LIMITY_KATEGORII: Record<string, number> = {
   szkola: 2,
@@ -29,10 +43,14 @@ const LIMITY_KATEGORII: Record<string, number> = {
   swietlica: 2,
   osp: 2,
   biblioteka: 2,
+  boisko: 3,
+  urzad: 2,
   cmentarz: 2,
   przystanek: 6,
   stacja_kolejowa: 3,
   sklep: 4,
+  skup_zboz: 3,
+  sklep_rolniczy: 3,
 };
 
 const LIMITY_DOMYSLNE = {

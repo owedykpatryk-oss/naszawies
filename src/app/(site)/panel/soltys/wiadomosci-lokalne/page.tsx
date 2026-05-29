@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
-import { pobierzVillageIdsRoliPaneluSoltysaDlaUzytkownikaCache } from "@/lib/panel/rola-panelu-soltysa";
+import { pobierzVillageIdsModeracjiTresciCache } from "@/lib/panel/rola-moderacji";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
 import {
   SoltysWiadomosciLokalneKlient,
@@ -21,7 +21,7 @@ export default async function SoltysWiadomosciLokalnePage() {
   if (!user) {
     redirect("/logowanie?next=/panel/soltys/wiadomosci-lokalne");
   }
-  const villageIds = await pobierzVillageIdsRoliPaneluSoltysaDlaUzytkownikaCache(user.id);
+  const villageIds = await pobierzVillageIdsModeracjiTresciCache(user.id);
   if (villageIds.length === 0) {
     return (
       <main>
@@ -31,7 +31,12 @@ export default async function SoltysWiadomosciLokalnePage() {
           </Link>
         </p>
         <h1 className="tytul-sekcji-panelu">Wiadomości lokalne</h1>
-        <p className="mt-2 text-sm text-stone-600">Brak przypisanej wsi w roli sołtysa lub współadmina.</p>
+        <p className="mt-2 text-sm text-stone-600">
+          Moderacja wiadomości należy do rady sołeckiej lub współadmina — nie do sołtysa.
+        </p>
+        <Link href="/panel/rada" className="mt-3 inline-block text-green-800 underline">
+          Panel rady sołeckiej →
+        </Link>
       </main>
     );
   }

@@ -97,22 +97,62 @@ function pobierzLubUtworzLimitery(): SlownikLimitow | null {
   return limitery;
 }
 
-/** IP z nagłówków Vercel / reverse proxy. */
+/**
+ * Gdy brak Upstash — w produkcji prosty limit w pamięci procesu (per instancja).
+ * W dev bez blokady, żeby nie utrudniać pracy lokalnej.
+ */
+const LIMITY_PAMIEC: Record<NazwaLimituApi, { limit: number; oknoMs: number }> = {
+  waitlist: { limit: 3, oknoMs: 60 * 60 * 1000 },
+  kontakt: { limit: 5, oknoMs: 60 * 60 * 1000 },
+  zglos_naruszenie: { limit: 10, oknoMs: 24 * 60 * 60 * 1000 },
+  szukaj_wies: { limit: 60, oknoMs: 60 * 1000 },
+  logowanie: { limit: 30, oknoMs: 10 * 60 * 1000 },
+  api_publiczne: { limit: 120, oknoMs: 60 * 1000 },
+  transport_pkp_szukaj: { limit: 20, oknoMs: 10 * 60 * 1000 },
+};
+
+type WpisPamiec = { count: number; resetAt: number };
+const pamiecLimitow = new Map<string, WpisPamiec>();
+
+function sprawdzLimitPamiec(
+  nazwa: NazwaLimituApi,
+  identyfikator: string,
+): { ok: true } | { ok: false; retryPoSekundach: number } {
+  const cfg = LIMITY_PAMIEC[nazwa];
+  const klucz = `${nazwa}:${identyfikator}`;
+  const teraz = Date.now();
+  let wpis = pamiecLimitow.get(klucz);
+  if (!wpis || teraz >= wpis.resetAt) {
+    wpis = { count: 0, resetAt: teraz + cfg.oknoMs };
+    pamiecLimitow.set(klucz, wpis);
+  }
+  wpis.count += 1;
+  if (wpis.count > cfg.limit) {
+    return {
+      ok: false,
+      retryPoSekundach: Math.max(1, Math.ceil((wpis.resetAt - teraz) / 1000)),
+    };
+  }
+  return { ok: true };
+}
+
 export function ipZRequestu(naglowki: Headers): string {
   const forwarded = naglowki.get("x-forwarded-for");
   if (forwarded) return forwarded.split(",")[0]?.trim() || "unknown";
   return naglowki.get("x-real-ip")?.trim() || "unknown";
 }
 
-/**
- * Gdy brak `UPSTASH_REDIS_*` — zwraca `{ ok: true }` (brak blokady w dev).
- */
 export async function sprawdzLimitApi(
   nazwa: NazwaLimituApi,
   identyfikator: string,
 ): Promise<{ ok: true } | { ok: false; retryPoSekundach: number }> {
   const limity = pobierzLubUtworzLimitery();
-  if (!limity) return { ok: true };
+  if (!limity) {
+    if (process.env.NODE_ENV === "production") {
+      return sprawdzLimitPamiec(nazwa, identyfikator);
+    }
+    return { ok: true };
+  }
 
   try {
     const wynik = await limity[nazwa].limit(identyfikator);
@@ -125,7 +165,9 @@ export async function sprawdzLimitApi(
     }
     return { ok: true };
   } catch {
-    // Błąd Upstash (np. zły endpoint) nie może wywalić middleware / API.
+    if (process.env.NODE_ENV === "production") {
+      return sprawdzLimitPamiec(nazwa, identyfikator);
+    }
     return { ok: true };
   }
 }

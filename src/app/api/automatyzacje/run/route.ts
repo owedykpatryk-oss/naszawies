@@ -5,6 +5,7 @@ import { synchronizujAdresyPrgAutomatycznie } from "@/lib/mapa/synchronizuj-adre
 import { synchronizujKontekstGeoportalAutomatycznie } from "@/lib/mapa/synchronizuj-kontekst-geoportal-automatycznie";
 import { synchronizujPoiZGeoportalAutomatycznie } from "@/lib/mapa/synchronizuj-poi-z-geoportal-automatycznie";
 import { synchronizujPoiOsmAutomatycznie } from "@/lib/mapa/synchronizuj-poi-osm-automatycznie";
+import { synchronizujObrysyCmentarzyNaMapie } from "@/lib/mapa/synchronizuj-obrysy-cmentarzy-na-mapie";
 import { synchronizujGranicePrgAutomatycznie } from "@/lib/mapa/synchronizuj-granice-prg-automatycznie";
 import { sprawdzJakoscDanychMapy } from "@/lib/mapa/sprawdz-jakosc-danych-mapy";
 import { synchronizujAutobusyAutomatycznie } from "@/lib/transport/synchronizuj-autobusy-automatycznie";
@@ -358,6 +359,18 @@ async function runAutomation(request: Request) {
       const msg = e instanceof Error ? e.message : String(e);
       console.error("[api/automatyzacje/run] marketplace expiring reminders", msg);
       rows.push({ action: "marketplace_listing_expiring_reminders_failed", affected_rows: 0 });
+    }
+
+    try {
+      const cem = await synchronizujObrysyCmentarzyNaMapie(supabase);
+      rows.push({
+        action: "sync_auto_cemetery_boundaries",
+        affected_rows: cem.updatedBoundaries + cem.addedPoi + cem.createdPlans,
+      });
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      console.error("[api/automatyzacje/run] cemetery boundaries", msg);
+      rows.push({ action: "sync_auto_cemetery_boundaries_failed", affected_rows: 0 });
     }
   }
 

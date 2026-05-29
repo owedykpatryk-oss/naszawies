@@ -157,6 +157,9 @@ export function ZakladkaEdycjaGrafiki({
           <div className="mt-3 space-y-3 pb-2 text-sm">
             <label className="block">
               <span className="text-stone-700">Logo / herb (max 2 MB)</span>
+              <p className="mt-0.5 text-[11px] text-stone-500">
+                Domyślnie logo naszawies.pl — możesz podmienić na okładkę wsi lub własny znak.
+              </p>
               <input type="file" accept="image/*" onChange={onLogo} className="mt-1 block w-full text-xs" />
               {villageId && trybSoltys ? (
                 <button

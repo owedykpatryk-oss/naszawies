@@ -10,7 +10,12 @@ const nextConfig = {
       "leaflet",
       "leaflet.markercluster",
       "@supabase/supabase-js",
+      "@supabase/ssr",
       "html2pdf.js",
+      "@aws-sdk/client-s3",
+      "fabric",
+      "qrcode",
+      "zod",
     ],
   },
   images: {
@@ -34,12 +39,57 @@ const nextConfig = {
   },
   async headers() {
     const prod = process.env.NODE_ENV === "production";
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL?.replace(/\/$/, "") ?? "";
+    const r2Base = process.env.NEXT_PUBLIC_R2_PUBLIC_BASE_URL?.replace(/\/$/, "") ?? "";
+
+    const connectSrc = [
+      "'self'",
+      supabaseUrl,
+      supabaseUrl ? supabaseUrl.replace("https://", "wss://") : "",
+      "https://challenges.cloudflare.com",
+      "https://plausible.io",
+      "https://*.tile.openstreetmap.org",
+      "https://nominatim.openstreetmap.org",
+      "https://api.mapbox.com",
+      "https://*.geoportal.gov.pl",
+    ]
+      .filter(Boolean)
+      .join(" ");
+
+    const imgSrc = [
+      "'self'",
+      "data:",
+      "blob:",
+      "https://*.supabase.co",
+      "https://tile.openstreetmap.org",
+      "https://*.tile.openstreetmap.org",
+      r2Base,
+      "https://cdn.naszawies.pl",
+    ]
+      .filter(Boolean)
+      .join(" ");
+
+    const cspProd = [
+      "default-src 'self'",
+      "base-uri 'self'",
+      "form-action 'self'",
+      "object-src 'none'",
+      "frame-ancestors 'self' https://vercel.com",
+      "script-src 'self' 'unsafe-inline' https://challenges.cloudflare.com https://plausible.io",
+      "style-src 'self' 'unsafe-inline'",
+      `img-src ${imgSrc}`,
+      `connect-src ${connectSrc}`,
+      "font-src 'self' data:",
+      "frame-src https://challenges.cloudflare.com",
+      "worker-src 'self' blob:",
+    ].join("; ");
+
     const security = [
       { key: "X-DNS-Prefetch-Control", value: "on" },
       { key: "X-Content-Type-Options", value: "nosniff" },
       {
         key: "Content-Security-Policy",
-        value: "frame-ancestors 'self' https://vercel.com",
+        value: prod ? cspProd : "frame-ancestors 'self' https://vercel.com",
       },
       { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
       {
@@ -48,6 +98,7 @@ const nextConfig = {
       },
       { key: "Cross-Origin-Opener-Policy", value: "same-origin-allow-popups" },
       { key: "Cross-Origin-Resource-Policy", value: "same-site" },
+      { key: "X-Frame-Options", value: "SAMEORIGIN" },
     ];
     if (prod) {
       security.push({

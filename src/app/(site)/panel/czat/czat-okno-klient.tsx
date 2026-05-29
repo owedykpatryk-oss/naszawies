@@ -7,7 +7,8 @@ import {
   skrotCzasWiadomosci,
 } from "@/lib/czat/formatuj-czas-wiadomosci";
 import { utworzKlientaSupabasePrzegladarka } from "@/lib/supabase/przegladarka";
-import { SZABLONY_CZAT_OGLOSZENIE } from "@/lib/czat/szablony-wiadomosci-ogloszenie";
+import { szablonyCzatuDlaOgloszenia } from "@/lib/czat/szablony-wiadomosci-ogloszenie";
+import { czyKategoriaNieruchomosci } from "@/lib/marketplace/nieruchomosci";
 import { oznaczPrzeczytane, pobierzStarszeWiadomosciCzat, wyslijWiadomoscCzat } from "./akcje";
 
 export type WiadomoscWiersz = {
@@ -28,6 +29,7 @@ export function CzatOknoKlient({
   odczytInnych,
   maStarsze = false,
   szablonyOgloszenia = false,
+  kategoriaOgloszenia = null,
 }: {
   conversationId: string;
   wiadomosci: WiadomoscWiersz[];
@@ -39,6 +41,7 @@ export function CzatOknoKlient({
   maStarsze?: boolean;
   /** Szybkie wiadomości przy czacie o ogłoszeniu na rynku */
   szablonyOgloszenia?: boolean;
+  kategoriaOgloszenia?: string | null;
 }) {
   const [wiadomosci, ustawWiadomosci] = useState(poczatkowe);
   const [tekst, ustawTekst] = useState("");
@@ -208,13 +211,12 @@ export function CzatOknoKlient({
     });
   }
 
-  function wyslij(e: FormEvent) {
-    e.preventDefault();
-    if (!tekst.trim()) return;
+  function wyslijTresc(tresc: string) {
+    const body = tresc.trim();
+    if (!body) return;
     ustawBlad("");
-    const tresc = tekst.trim();
     startT(async () => {
-      const w = await wyslijWiadomoscCzat(conversationId, tresc);
+      const w = await wyslijWiadomoscCzat(conversationId, body);
       if ("blad" in w) {
         ustawBlad(w.blad);
         return;
@@ -233,6 +235,17 @@ export function CzatOknoKlient({
       }
     });
   }
+
+  function wyslij(e: FormEvent) {
+    e.preventDefault();
+    if (!tekst.trim()) return;
+    wyslijTresc(tekst);
+  }
+
+  const szablony = useMemo(
+    () => (szablonyOgloszenia ? szablonyCzatuDlaOgloszenia(czyKategoriaNieruchomosci(kategoriaOgloszenia)) : []),
+    [szablonyOgloszenia, kategoriaOgloszenia],
+  );
 
   return (
     <div className="flex min-h-[min(55vh,520px)] flex-col overflow-hidden rounded-2xl border border-stone-200 bg-white shadow-sm lg:min-h-[min(72dvh,780px)]">
@@ -303,14 +316,14 @@ export function CzatOknoKlient({
             {blad}
           </p>
         ) : null}
-        {szablonyOgloszenia ? (
+        {szablony.length > 0 ? (
           <div className="mb-2 flex flex-wrap gap-1.5">
-            {SZABLONY_CZAT_OGLOSZENIE.map((szablon) => (
+            {szablony.map((szablon) => (
               <button
                 key={szablon}
                 type="button"
                 disabled={czek}
-                onClick={() => ustawTekst(szablon)}
+                onClick={() => wyslijTresc(szablon)}
                 className="rounded-full border border-orange-200/90 bg-white px-2.5 py-1 text-[11px] font-medium text-stone-700 transition hover:border-orange-400 hover:bg-orange-50 disabled:opacity-50"
               >
                 {szablon}

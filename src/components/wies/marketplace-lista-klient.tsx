@@ -7,6 +7,8 @@ import {
   GRUPY_KATEGORII_RYNKU,
   TYPY_OGLOSZEN,
   czyKategoriaProduktuLokalnego,
+  etykietaKategoriiOgloszenia,
+  etykietaTypuOgloszenia,
 } from "@/lib/marketplace/kategorie-ogloszen";
 import { czyKategoriaNieruchomosci } from "@/lib/marketplace/nieruchomosci";
 import { obliczJakoscZOfertyPublicznej } from "@/lib/marketplace/jakosc-ogloszenia";
@@ -86,6 +88,31 @@ function parsujLiczbe(input: string): number | null {
   return Number.isFinite(n) ? n : null;
 }
 
+function ChipFiltru({ etykieta, onUsun }: { etykieta: string; onUsun: () => void }) {
+  return (
+    <button
+      type="button"
+      onClick={onUsun}
+      className="inline-flex items-center gap-1 rounded-full bg-stone-100 px-2 py-0.5 text-xs text-stone-700 transition hover:bg-stone-200"
+      title="Usuń filtr"
+    >
+      {etykieta}
+      <span aria-hidden className="text-stone-400">
+        ×
+      </span>
+    </button>
+  );
+}
+
+function useDebounced<T>(wartosc: T, opoznienieMs: number): T {
+  const [debounced, ustawDebounced] = useState(wartosc);
+  useEffect(() => {
+    const t = window.setTimeout(() => ustawDebounced(wartosc), opoznienieMs);
+    return () => window.clearTimeout(t);
+  }, [wartosc, opoznienieMs]);
+  return debounced;
+}
+
 export function MarketplaceListaKlient({
   oferty,
   sciezkaWsi,
@@ -140,6 +167,7 @@ export function MarketplaceListaKlient({
   const [widok, setWidok] = useState<"siatka" | "lista">("siatka");
   const [filtryOtwarte, setFiltryOtwarte] = useState(false);
   const [kopiujFiltr, ustawKopiujFiltr] = useState<"idle" | "ok">("idle");
+  const frazaDoUrl = useDebounced(fraza, 300);
 
   useEffect(() => {
     if (uklad !== "pelny" || urlZainicjowany.current) return;
@@ -167,7 +195,7 @@ export function MarketplaceListaKlient({
   useEffect(() => {
     if (uklad !== "pelny" || !urlZainicjowany.current) return;
     const qs = urlZFiltramiRynku({
-      fraza,
+      fraza: frazaDoUrl,
       typ,
       kategoria,
       sortowanie,
@@ -187,7 +215,7 @@ export function MarketplaceListaKlient({
     uklad,
     pathname,
     router,
-    fraza,
+    frazaDoUrl,
     typ,
     kategoria,
     sortowanie,
@@ -327,8 +355,65 @@ export function MarketplaceListaKlient({
     kategoria !== "wszystkie"
       ? SZYBKIE_KATEGORIE.find((s) => s.value === kategoria)?.label ??
         GRUPY_KATEGORII_RYNKU.flatMap((g) => g.items).find((i) => i.value === kategoria)?.label ??
-        kategoria
+        etykietaKategoriiOgloszenia(kategoria)
       : null;
+
+  const kategoriaSubskrypcji =
+    kategoria !== "wszystkie"
+      ? kategoria
+      : tylkoNieruchomosci
+        ? "dzialka_budowlana"
+        : tylkoZMapaGeoportal
+          ? "dzialka_budowlana"
+          : null;
+
+  const chipyAktywnychFiltrow =
+    aktywneFiltry > 0 ? (
+      <div className="flex flex-wrap gap-1.5 border-t border-stone-100 px-3 py-2 sm:px-4">
+        {fraza.trim() ? (
+          <ChipFiltru etykieta={`„${fraza.trim()}”`} onUsun={() => setFraza("")} />
+        ) : null}
+        {typ !== "wszystkie" ? (
+          <ChipFiltru etykieta={etykietaTypuOgloszenia(typ)} onUsun={() => setTyp("wszystkie")} />
+        ) : null}
+        {etykietaAktywnejKategorii ? (
+          <ChipFiltru etykieta={etykietaAktywnejKategorii} onUsun={() => setKategoria("wszystkie")} />
+        ) : null}
+        {tylkoNieruchomosci ? (
+          <ChipFiltru etykieta="Nieruchomości" onUsun={() => setTylkoNieruchomosci(false)} />
+        ) : null}
+        {tylkoZMapaGeoportal ? (
+          <ChipFiltru etykieta="Geoportal" onUsun={() => setTylkoZMapaGeoportal(false)} />
+        ) : null}
+        {tylkoZOperatorem ? (
+          <ChipFiltru etykieta="Z operatorem" onUsun={() => setTylkoZOperatorem(false)} />
+        ) : null}
+        {tylkoProduktyLokalne ? (
+          <ChipFiltru etykieta="Z gospodarstwa" onUsun={() => setTylkoProduktyLokalne(false)} />
+        ) : null}
+        {tylkoZweryfikowane ? (
+          <ChipFiltru etykieta="Zweryfikowani" onUsun={() => setTylkoZweryfikowane(false)} />
+        ) : null}
+        {minM2.trim() || maxM2.trim() ? (
+          <ChipFiltru
+            etykieta={`${minM2.trim() ? `≥ ${minM2} m²` : ""}${minM2.trim() && maxM2.trim() ? " · " : ""}${maxM2.trim() ? `≤ ${maxM2} m²` : ""}`}
+            onUsun={() => {
+              setMinM2("");
+              setMaxM2("");
+            }}
+          />
+        ) : null}
+        {minCena.trim() || maxCena.trim() ? (
+          <ChipFiltru
+            etykieta={`${minCena.trim() ? `≥ ${minCena} PLN` : ""}${minCena.trim() && maxCena.trim() ? " · " : ""}${maxCena.trim() ? `≤ ${maxCena} PLN` : ""}`}
+            onUsun={() => {
+              setMinCena("");
+              setMaxCena("");
+            }}
+          />
+        ) : null}
+      </div>
+    ) : null;
 
   const chipyKategorii = (
     <div className="flex flex-wrap gap-2">
@@ -437,6 +522,16 @@ export function MarketplaceListaKlient({
             placeholder="Szukaj na liście…"
             className="min-w-[8rem] flex-1 rounded-xl border border-stone-300 bg-white px-3 py-1.5 text-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200"
           />
+          <select
+            value={sortowanie}
+            onChange={(e) => setSortowanie(e.target.value as "najnowsze" | "najstarsze" | "polecane")}
+            className="rounded-xl border border-stone-200 bg-white px-2 py-1.5 text-xs font-medium text-stone-800"
+            aria-label="Sortowanie ogłoszeń"
+          >
+            <option value="najnowsze">Najnowsze</option>
+            <option value="polecane">Polecane</option>
+            <option value="najstarsze">Najstarsze</option>
+          </select>
           <button
             type="button"
             onClick={() => setFiltryOtwarte((v) => !v)}
@@ -445,10 +540,11 @@ export function MarketplaceListaKlient({
           >
             Filtry{aktywneFiltry > 0 ? ` (${aktywneFiltry})` : ""}
           </button>
-          <div className="flex rounded-lg border border-stone-200 bg-white p-0.5">
+          <div className="flex rounded-lg border border-stone-200 bg-white p-0.5" role="group" aria-label="Widok listy">
             <button
               type="button"
               aria-pressed={widok === "siatka"}
+              aria-label="Widok siatki"
               onClick={() => setWidok("siatka")}
               className={`rounded-md px-2 py-1 text-xs font-semibold ${widok === "siatka" ? "bg-orange-100 text-orange-950" : "text-stone-600"}`}
             >
@@ -457,6 +553,7 @@ export function MarketplaceListaKlient({
             <button
               type="button"
               aria-pressed={widok === "lista"}
+              aria-label="Widok listy"
               onClick={() => setWidok("lista")}
               className={`rounded-md px-2 py-1 text-xs font-semibold ${widok === "lista" ? "bg-orange-100 text-orange-950" : "text-stone-600"}`}
             >
@@ -467,14 +564,14 @@ export function MarketplaceListaKlient({
             <span className="font-semibold text-stone-800">{przefiltrowane.length}</span> wyników
           </p>
         </div>
-        {villageId && kategoria !== "wszystkie" && nazwaWsi ? (
+        {villageId && kategoriaSubskrypcji && nazwaWsi ? (
           <RynekSubskrypcjaKategorii
             villageId={villageId}
             nazwaWsi={nazwaWsi}
-            kategoria={kategoria}
+            kategoria={kategoriaSubskrypcji}
             zalogowany={zalogowany}
             juzSubskrybuje={
-              subskrybowaneKategorie.includes(kategoria) || subskrybowaneKategorie.includes(null)
+              subskrybowaneKategorie.includes(kategoriaSubskrypcji) || subskrybowaneKategorie.includes(null)
             }
           />
         ) : null}
@@ -633,32 +730,7 @@ export function MarketplaceListaKlient({
           </div>
         ) : null}
 
-        {aktywneFiltry > 0 && !filtryOtwarte ? (
-          <div className="flex flex-wrap gap-1.5 border-t border-stone-100 px-3 py-2 sm:px-4">
-            {fraza.trim() ? (
-              <span className="rounded-full bg-stone-100 px-2 py-0.5 text-xs text-stone-700">„{fraza.trim()}”</span>
-            ) : null}
-            {etykietaAktywnejKategorii ? (
-              <span className="rounded-full bg-orange-100 px-2 py-0.5 text-xs text-orange-950">{etykietaAktywnejKategorii}</span>
-            ) : null}
-            {tylkoNieruchomosci ? (
-              <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs text-amber-950">Nieruchomości</span>
-            ) : null}
-            {tylkoZMapaGeoportal ? (
-              <span className="rounded-full bg-sky-100 px-2 py-0.5 text-xs text-sky-950">Geoportal</span>
-            ) : null}
-            {(minM2.trim() || maxM2.trim()) ? (
-              <span className="rounded-full bg-stone-100 px-2 py-0.5 text-xs text-stone-700">
-                {minM2.trim() ? `≥ ${minM2} m²` : ""}
-                {minM2.trim() && maxM2.trim() ? " · " : ""}
-                {maxM2.trim() ? `≤ ${maxM2} m²` : ""}
-              </span>
-            ) : null}
-            {tylkoZweryfikowane ? (
-              <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-xs text-emerald-900">Zweryfikowani</span>
-            ) : null}
-          </div>
-        ) : null}
+        {aktywneFiltry > 0 && !filtryOtwarte ? chipyAktywnychFiltrow : null}
       </div>
 
       {przefiltrowane.length === 0 ? (

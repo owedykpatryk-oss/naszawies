@@ -6,6 +6,7 @@ export type StatystykiMapy = {
   lacznie: number;
   bezObrysu: number;
   bezTransportu: number;
+  zMalymPoi: number;
   zPrzystankiem: number;
   zeStacja: number;
 };
@@ -59,6 +60,9 @@ export function MapaStatystykiBanner({ statystyki }: { statystyki: StatystykiMap
         ) : null}
         {statystyki.bezTransportu > 0 ? (
           <KafelekStatystyki emoji="🛣️" wartosc={statystyki.bezTransportu} etykieta="bez transportu" kolor="amber" />
+        ) : null}
+        {statystyki.zMalymPoi > 0 ? (
+          <KafelekStatystyki emoji="📌" wartosc={statystyki.zMalymPoi} etykieta="mało POI (OSM)" kolor="amber" />
         ) : null}
         <Link
           href="/panel/soltys/moja-wies"

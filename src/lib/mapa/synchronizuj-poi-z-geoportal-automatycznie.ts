@@ -60,6 +60,7 @@ function odlegloscMetry(lat1: number, lon1: number, lat2: number, lon2: number):
 
 export async function synchronizujPoiZGeoportalAutomatycznie(
   supabase: SupabaseClient,
+  opts?: { tylkoVillageIds?: string[] },
 ): Promise<GeoportalPoiSyncSummary> {
   const summary: GeoportalPoiSyncSummary = {
     scannedVillages: 0,
@@ -71,16 +72,20 @@ export async function synchronizujPoiZGeoportalAutomatycznie(
 
   if (!czyWlaczone()) return summary;
 
-  const maxVillages = parseIntEnv("GEOPORTAL_POI_SYNC_VILLAGES_PER_RUN", 4, 1, 30);
+  const maxVillages = opts?.tylkoVillageIds?.length
+    ? opts.tylkoVillageIds.length
+    : parseIntEnv("GEOPORTAL_POI_SYNC_VILLAGES_PER_RUN", 4, 1, 30);
   const maxGeoPerVillage = parseIntEnv("GEOPORTAL_POI_SYNC_FEATURES_PER_VILLAGE", 40, 5, 200);
   const promienDuplikatuM = parseIntEnv("GEOPORTAL_POI_SYNC_DEDUP_METERS", 450, 80, 2000);
 
-  const { data: wsie, error: errWsie } = await supabase
-    .from("villages")
-    .select("id, name")
-    .eq("is_active", true)
-    .order("updated_at", { ascending: true })
-    .limit(maxVillages);
+  let zapytanieWsi = supabase.from("villages").select("id, name").eq("is_active", true);
+  if (opts?.tylkoVillageIds?.length) {
+    zapytanieWsi = zapytanieWsi.in("id", opts.tylkoVillageIds);
+  } else {
+    zapytanieWsi = zapytanieWsi.order("updated_at", { ascending: true }).limit(maxVillages);
+  }
+
+  const { data: wsie, error: errWsie } = await zapytanieWsi;
   if (errWsie) throw new Error(`POI Geoportal: lista wsi: ${errWsie.message}`);
 
   const villages = (wsie ?? []) as VillageRow[];

@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { pobierzVillageIdsRoliPaneluSoltysa } from "@/lib/panel/rola-panelu-soltysa";
+import { pobierzVillageIdsModeracjiTresci } from "@/lib/panel/rola-moderacji";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
 
 const uuid = z.string().uuid();
@@ -25,8 +25,8 @@ export async function zamknijWatekDyskusjiSoltys(threadId: string): Promise<Wyni
     .eq("id", id.data)
     .maybeSingle();
   if (!row) return { blad: "Nie znaleziono wątku." };
-  const ids = await pobierzVillageIdsRoliPaneluSoltysa(supabase, user.id);
-  if (!ids.includes(row.village_id)) return { blad: "Brak uprawnień do tej wsi." };
+  const ids = await pobierzVillageIdsModeracjiTresci(supabase, user.id);
+  if (!ids.includes(row.village_id)) return { blad: "Moderacją zajmuje się rada sołecka, nie sołtys." };
 
   const { error } = await supabase
     .from("village_discussion_threads")
@@ -61,8 +61,8 @@ export async function ukryjWatekDyskusjiSoltys(threadId: string, notatka = ""): 
     .eq("id", id.data)
     .maybeSingle();
   if (!row) return { blad: "Nie znaleziono wątku." };
-  const ids = await pobierzVillageIdsRoliPaneluSoltysa(supabase, user.id);
-  if (!ids.includes(row.village_id)) return { blad: "Brak uprawnień do tej wsi." };
+  const ids = await pobierzVillageIdsModeracjiTresci(supabase, user.id);
+  if (!ids.includes(row.village_id)) return { blad: "Moderacją zajmuje się rada sołecka, nie sołtys." };
 
   const { error } = await supabase
     .from("village_discussion_threads")
@@ -98,8 +98,8 @@ export async function ukryjKomentarzDyskusjiSoltys(commentId: string, notatka = 
     .eq("id", id.data)
     .maybeSingle();
   if (!row) return { blad: "Nie znaleziono komentarza." };
-  const ids = await pobierzVillageIdsRoliPaneluSoltysa(supabase, user.id);
-  if (!ids.includes(row.village_id)) return { blad: "Brak uprawnień do tej wsi." };
+  const ids = await pobierzVillageIdsModeracjiTresci(supabase, user.id);
+  if (!ids.includes(row.village_id)) return { blad: "Moderacją zajmuje się rada sołecka, nie sołtys." };
 
   const { error } = await supabase
     .from("village_discussion_comments")
@@ -142,7 +142,7 @@ export async function rozpatrzRaportSpolecznosciSoltys(
     .eq("id", parsed.data.reportId)
     .maybeSingle();
   if (!raport) return { blad: "Nie znaleziono zgłoszenia." };
-  const ids = await pobierzVillageIdsRoliPaneluSoltysa(supabase, user.id);
+  const ids = await pobierzVillageIdsModeracjiTresci(supabase, user.id);
   if (!ids.includes(raport.village_id)) return { blad: "Brak uprawnień do tej wsi." };
 
   if (parsed.data.decyzja === "resolved") {

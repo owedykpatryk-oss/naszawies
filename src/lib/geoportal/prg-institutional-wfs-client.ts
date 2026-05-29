@@ -35,7 +35,7 @@ export type InstitutionalFetchResult =
 const DEFAULT_PRG_WFS_URL = "https://mapy.geoportal.gov.pl/wss/service/PZGIK/PRG/WFS/AdministrativeBoundaries";
 
 const DOMYSLNE_WARSTWY =
-  "K07_Komenda_powiatowa_strazy_pozarnej,K02_Komenda_powiatowa_policji,K05_Komisariat_policji,U06_Nadlesnictwo,U02_Urzad_skarbowy,U09_Regionalny_zarzad_gospodarki_wodnej_PGWWP";
+  "K07_Komenda_powiatowa_strazy_pozarnej,K11_Ochotnicza_straz_pozarna,K02_Komenda_powiatowa_policji,K04_Komenda_rejonowa_policji,K05_Komisariat_policji,U06_Nadlesnictwo,U07_Regionalna_dyrekcja_lasow_panstwowych,U02_Urzad_skarbowy,U09_Regionalny_zarzad_gospodarki_wodnej_PGWWP,S03_Sad_rejonowy,Z02_Szkola_podstawowa,Z03_Przedszkole";
 
 function env(name: string): string | null {
   const v = process.env[name]?.trim();

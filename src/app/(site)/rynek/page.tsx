@@ -81,7 +81,7 @@ export default async function RynekHubPage() {
             </p>
             <Link
               href="/logowanie?next=/panel/mieszkaniec/marketplace"
-              className="mt-4 inline-block rounded-lg bg-green-800 px-4 py-2.5 text-sm font-semibold text-white hover:bg-green-900"
+              className="btn-panel-primary mt-4"
             >
               Dodaj ogłoszenie →
             </Link>

@@ -2,7 +2,8 @@
 
 import Link from "next/link";
 import { FormEvent, useEffect, useMemo, useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
+import { ZakladkiTrybuSpolecznosci } from "@/components/panel/zakladki-trybu-spolecznosci";
 import {
   dodajKadencjeFunkcyjnaWsi,
   dodajKontaktUrzedowyWsi,
@@ -21,23 +22,28 @@ import {
   zapiszMarketplaceProfil,
 } from "../akcje";
 import { etykietaKategoriiDotacji, nazwaDniaTygodnia } from "@/lib/wies/teksty-dotacji";
+import { sciezkaProfiluWsi } from "@/lib/wies/sciezka-publiczna";
 import {
   domyslnyTypGrupyDlaTrybu,
   filtrujGrupyDlaTrybu,
   KOLEJNOSC_DZIALAN_TRYBU,
-  TRYBY_PRACY_OPCJE,
   type TrybOrganizacji,
 } from "./tryby-pracy";
 import {
   ProfilParafiiKlient,
 } from "@/components/panel/soltys/profil-parafii-klient";
 import { ProfilKgwKlient } from "@/components/panel/soltys/profil-kgw-klient";
+import { ProfilOspKlient } from "@/components/panel/soltys/profil-osp-klient";
 import { ProfilMysliwiKlient } from "@/components/panel/soltys/profil-mysliwi-klient";
 import type { OrganizacjaPelna } from "@/lib/wies/profil-organizacji";
 
 export type WiesDoModeracjiSpolecznosci = {
   id: string;
   name: string;
+  voivodeship?: string;
+  county?: string;
+  commune?: string;
+  slug?: string;
 };
 
 export type GrupaOrganizacjiWiersz = {
@@ -119,15 +125,31 @@ export function SoltysSpolecznoscKlient({
   domyslnyTryb?: TrybOrganizacji;
 }) {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const trybZUrl = useMemo((): TrybOrganizacji => {
+    const t = searchParams?.get("tryb");
+    if (t === "kgw" || t === "osp" || t === "parafia" || t === "mysliwi" || t === "ogolny") return t;
+    return domyslnyTryb;
+  }, [searchParams, domyslnyTryb]);
   const [villageId, setVillageId] = useState(wsie[0]?.id ?? "");
   const [czek, startT] = useTransition();
   const [komunikat, setKomunikat] = useState<string>("");
   const [blad, setBlad] = useState<string>("");
-  const [tryb, setTryb] = useState<TrybOrganizacji>(domyslnyTryb);
+  const [tryb, setTryb] = useState<TrybOrganizacji>(trybZUrl);
   const [sekcjaAktywna, setSekcjaAktywna] = useState<SekcjaPracy>("organizacje");
   const [groupTypeDraft, setGroupTypeDraft] = useState("kgw");
 
   const villageName = useMemo(() => wsie.find((w) => w.id === villageId)?.name ?? "Wybrana wieś", [wsie, villageId]);
+  const wybranaWies = useMemo(() => wsie.find((w) => w.id === villageId), [wsie, villageId]);
+  const sciezkaProfilu = useMemo(() => {
+    if (!wybranaWies?.voivodeship || !wybranaWies.county || !wybranaWies.commune || !wybranaWies.slug) return null;
+    return sciezkaProfiluWsi({
+      voivodeship: wybranaWies.voivodeship,
+      county: wybranaWies.county,
+      commune: wybranaWies.commune,
+      slug: wybranaWies.slug,
+    });
+  }, [wybranaWies]);
 
   const grupyDlaWybranejWsi = useMemo(
     () => filtrujGrupyDlaTrybu(grupyOrganizacji, villageId, tryb),
@@ -151,6 +173,10 @@ export function SoltysSpolecznoscKlient({
     () => kadencjeFunkcyjne.filter((k) => k.village_id === villageId),
     [kadencjeFunkcyjne, villageId],
   );
+
+  useEffect(() => {
+    setTryb(trybZUrl);
+  }, [trybZUrl]);
 
   useEffect(() => {
     setGroupTypeDraft(domyslnyTypGrupyDlaTrybu(tryb));
@@ -562,27 +588,12 @@ export function SoltysSpolecznoscKlient({
           ))}
         </select>
         <p className="mt-2 text-xs text-stone-500">Wszystkie formularze poniżej zapisują dane dla: {villageName}.</p>
-        <div className="mt-3 rounded-xl border border-indigo-200/80 bg-indigo-50/40 p-3">
+        <div className="mt-3 space-y-3 rounded-xl border border-indigo-200/80 bg-indigo-50/40 p-3">
           <p className="text-xs font-semibold uppercase tracking-wide text-indigo-900">Tryb pracy</p>
-          <p className="mt-1 text-xs text-stone-600">
-            Filtruje listy i podpowiada domyślny typ organizacji, żeby szybciej obsługiwać konkretne obszary.
+          <p className="text-xs text-stone-600">
+            Filtruje listy i podpowiada domyślny typ organizacji — wybierz obszar, który teraz obsługujesz.
           </p>
-          <div className="mt-2 flex flex-wrap gap-2">
-            {TRYBY_PRACY_OPCJE.map((t) => (
-              <button
-                key={t.id}
-                type="button"
-                onClick={() => setTryb(t.id)}
-                className={`rounded-lg border px-3 py-1.5 text-xs font-medium transition ${
-                  tryb === t.id
-                    ? "border-indigo-600 bg-indigo-100 text-indigo-950"
-                    : "border-stone-300 bg-white text-stone-700 hover:bg-stone-50"
-                }`}
-              >
-                {t.label}
-              </button>
-            ))}
-          </div>
+          <ZakladkiTrybuSpolecznosci aktywnyTryb={tryb} />
         </div>
         <div className="mt-3 rounded-xl border border-stone-200 bg-white p-3 text-xs text-stone-700">
           <p className="font-semibold text-green-950">{KOLEJNOSC_DZIALAN_TRYBU[tryb].tytul}</p>
@@ -802,18 +813,33 @@ export function SoltysSpolecznoscKlient({
           villageId={villageId}
           villageName={villageName}
           organizacje={organizacjePelne}
+          sciezkaProfilu={sciezkaProfilu}
         />
       ) : null}
 
       {sekcjaAktywna === "organizacje" && tryb === "kgw" ? (
-        <ProfilKgwKlient villageId={villageId} villageName={villageName} organizacje={organizacjePelne} />
+        <ProfilKgwKlient villageId={villageId} villageName={villageName} organizacje={organizacjePelne} sciezkaProfilu={sciezkaProfilu} />
+      ) : null}
+
+      {sekcjaAktywna === "organizacje" && tryb === "osp" ? (
+        <ProfilOspKlient
+          villageId={villageId}
+          villageName={villageName}
+          organizacje={organizacjePelne}
+          sciezkaProfilu={sciezkaProfilu}
+        />
       ) : null}
 
       {sekcjaAktywna === "organizacje" && tryb === "mysliwi" ? (
-        <ProfilMysliwiKlient villageId={villageId} villageName={villageName} organizacje={organizacjePelne} />
+        <ProfilMysliwiKlient
+          villageId={villageId}
+          villageName={villageName}
+          organizacje={organizacjePelne}
+          sciezkaProfilu={sciezkaProfilu}
+        />
       ) : null}
 
-      {sekcjaAktywna === "organizacje" && tryb !== "parafia" && tryb !== "kgw" && tryb !== "mysliwi" ? (
+      {sekcjaAktywna === "organizacje" && tryb !== "parafia" && tryb !== "kgw" && tryb !== "osp" && tryb !== "mysliwi" ? (
       <form
         id="sekcja-organizacje"
         onSubmit={onDodajOrganizacje}
@@ -904,6 +930,15 @@ export function SoltysSpolecznoscKlient({
                 <option value="spotkanie">Spotkanie parafialne</option>
                 <option value="wyjazd">Pielgrzymka / wyjazd</option>
                 <option value="wystep">Koncert / występ</option>
+                <option value="inne">Inne</option>
+              </>
+            ) : tryb === "osp" ? (
+              <>
+                <option value="proba">Ćwiczenia / próba</option>
+                <option value="spotkanie">Zebranie jednostki</option>
+                <option value="festyn">Festyn / uroczystość</option>
+                <option value="wystep">Parada / wystąpienie</option>
+                <option value="wyjazd">Wyjazd / zawody</option>
                 <option value="inne">Inne</option>
               </>
             ) : (
@@ -1149,6 +1184,10 @@ export function SoltysSpolecznoscKlient({
         className="scroll-mt-[10.5rem] rounded-2xl border border-stone-200 bg-white p-5 shadow-sm"
       >
         <h2 className="font-serif text-xl text-green-950">Darmowe ogłoszenie marketplace</h2>
+        <p className="mt-2 text-sm text-stone-600">
+          Ogłoszenie jest widoczne <strong>2 tygodnie</strong>, potem wygasa — właściciel może je ponownie aktywować w
+          panelu mieszkańca.
+        </p>
         <div className="mt-4 grid gap-3 md:grid-cols-2">
           <select name="listing_type" className="rounded border border-stone-300 px-3 py-2 text-sm">
             <option value="sprzedam">Sprzedam</option>
@@ -1163,7 +1202,7 @@ export function SoltysSpolecznoscKlient({
           <input name="price_amount" placeholder="Cena (opcjonalnie)" className="rounded border border-stone-300 px-3 py-2 text-sm" />
           <input name="phone" placeholder="Telefon kontaktowy" className="rounded border border-stone-300 px-3 py-2 text-sm" />
           <input name="location_text" placeholder="Lokalizacja (np. część wsi)" className="rounded border border-stone-300 px-3 py-2 text-sm" />
-          <input name="expires_in_days" type="number" min={1} max={180} defaultValue={30} className="rounded border border-stone-300 px-3 py-2 text-sm" />
+          <input type="hidden" name="expires_in_days" value={14} />
         </div>
         <button disabled={czek || !villageId} className="mt-4 rounded-lg bg-green-800 px-4 py-2 text-sm text-white hover:bg-green-900 disabled:opacity-60">
           Opublikuj darmowe ogłoszenie

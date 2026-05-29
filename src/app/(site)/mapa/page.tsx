@@ -5,11 +5,16 @@ import { MapaAutomatyzacjaKlient } from "@/components/mapa/mapa-automatyzacja-kl
 import type { StatystykiMapy } from "@/components/mapa/mapa-statystyki-banner";
 import {
   obliczStatystykiMapy,
+  polaczIdWsiDoUzupelnienia,
   wybierzWsiBezTransportuNaMapie,
+  wybierzWsiZMalymPoi,
 } from "@/lib/mapa/wybierz-wsi-do-uzupelnienia";
+import { mapujObrysyCmentarzyDlaMapy, linkiPlanuCmentarzaPoWsi } from "@/lib/mapa/mapuj-obrysy-cmentarzy-dla-mapy";
 import { MapaWsiStronaDynamic } from "@/components/mapa/mapa-wsi-strona-dynamic";
 import type {
   ZnacznikAdres,
+  ZnacznikCmentarzObrys,
+  ZnacznikGeoKontekst,
   ZnacznikPoi,
   ZnacznikPolowanie,
   ZnacznikRynek,
@@ -21,6 +26,7 @@ import { centroidObszaruPolowania } from "@/lib/lowiectwo/geojson-obszar";
 import { mapujOgloszeniaRynekDlaMapy } from "@/lib/mapa/rynek-na-mapie";
 import { mapujDzialkiRynekDlaMapy } from "@/lib/mapa/rynek-dzialki-na-mapie";
 import { mapujPoiDlaMapy, POLE_SELECT_POI_MAPY, type WierszPoiMapy } from "@/lib/mapa/mapuj-poi-dla-mapy";
+import { mapujGeoKontekstDlaMapy } from "@/lib/mapa/mapuj-geo-kontekst-dla-mapy";
 import { createPublicSupabaseClient } from "@/lib/supabase/public-client";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
 import { sciezkaProfiluWsi } from "@/lib/wies/sciezka-publiczna";
@@ -149,7 +155,9 @@ export default async function MapaPage() {
   let punktyPoi: ZnacznikPoi[] = [];
   let punktyRynek: ZnacznikRynek[] = [];
   let punktyRynekDzialki: ZnacznikRynekDzialka[] = [];
+  let obrysyCmentarzy: ZnacznikCmentarzObrys[] = [];
   const punktyAdresy: ZnacznikAdres[] = [];
+  let punktyGeoKontekst: ZnacznikGeoKontekst[] = [];
   if (supabase && znaczniki.length > 0) {
     const wiesPoId = new Map(znaczniki.map((z) => [z.id, { name: z.name, sciezka: z.sciezka } as const]));
     const idsWsi = znaczniki.map((z) => z.id);
@@ -160,6 +168,27 @@ export default async function MapaPage() {
     if (!errPoi && wierszePoi) {
       punktyPoi = mapujPoiDlaMapy(wierszePoi as WierszPoiMapy[], wiesPoId);
     }
+
+    const { data: planyCmentarza } = await supabase
+      .from("village_cemetery_plans")
+      .select("id, village_id, name, boundary_geojson, is_published")
+      .in("village_id", idsWsi)
+      .eq("is_published", true);
+    const linkiPlanu = linkiPlanuCmentarzaPoWsi(
+      (planyCmentarza ?? []) as Parameters<typeof linkiPlanuCmentarzaPoWsi>[0],
+      wiesPoId,
+    );
+    if (linkiPlanu.size > 0) {
+      punktyPoi = punktyPoi.map((p) => {
+        if (p.category.trim().toLowerCase() !== "cmentarz") return p;
+        const link = linkiPlanu.get(p.villageId);
+        return link ? { ...p, linkPlanuCmentarza: link } : p;
+      });
+    }
+    obrysyCmentarzy = mapujObrysyCmentarzyDlaMapy(
+      (planyCmentarza ?? []) as Parameters<typeof mapujObrysyCmentarzyDlaMapy>[0],
+      wiesPoId,
+    );
     const { data: wierszeRynek } = await supabase
       .from("marketplace_listings")
       .select("id, title, listing_type, latitude, longitude, village_id")
@@ -203,6 +232,18 @@ export default async function MapaPage() {
         lon,
       });
     }
+
+    const { data: wierszeGeoKontekst } = await supabase
+      .from("geo_context_features")
+      .select("id, village_id, dataset, layer_name, feature_category, feature_name, latitude, longitude")
+      .in("village_id", idsWsi)
+      .not("latitude", "is", null)
+      .not("longitude", "is", null)
+      .limit(2500);
+    punktyGeoKontekst = mapujGeoKontekstDlaMapy(
+      (wierszeGeoKontekst ?? []) as Parameters<typeof mapujGeoKontekstDlaMapy>[0],
+      wiesPoId,
+    );
   }
 
   const punktyZgloszenia: ZnacznikZgloszenie[] = [];
@@ -277,7 +318,10 @@ export default async function MapaPage() {
 
   const liczbaWsi = znaczniki.length;
   const statystykiMapy: StatystykiMapy = obliczStatystykiMapy(znaczniki, punktyPoi);
-  const villageIdsBezTransportu = wybierzWsiBezTransportuNaMapie(znaczniki, punktyPoi, 12);
+  const villageIdsDoUzupelnienia = polaczIdWsiDoUzupelnienia(
+    wybierzWsiBezTransportuNaMapie(znaczniki, punktyPoi, 8),
+    wybierzWsiZMalymPoi(znaczniki, punktyPoi, 8),
+  ).slice(0, 10);
 
   return (
     <main className="relative min-h-[100dvh] overflow-hidden bg-stone-50 text-stone-800">
@@ -328,7 +372,8 @@ export default async function MapaPage() {
           <p className="mt-5 max-w-2xl text-sm leading-relaxed text-stone-600">
             Wybierz wsi z <strong>katalogu</strong> (województwo → powiat → gmina) albo wyszukaj po nazwie.{" "}
             <strong>Kliknij pinezkę POI</strong> — świetlica pokaże kalendarz zajętości sal, przystanek lub stacja
-            najbliższe odjazdy, kościół / sklep / szkoła telefon i godziny otwarcia (gdy sołtys je uzupełni). Przy każdej wsi:
+            najbliższe odjazdy, kościół / sklep / szkoła telefon i godziny otwarcia (gdy sołtys je uzupełni). Obrysy
+            cmentarzy (z OSM) i link do planu grobów, gdy sołtys opublikuje plan. Przy każdej wsi:
             obrys z PRG, punkt GPS oraz miejsca w sołectwie. Włącz <strong>lokalizację</strong>, żeby sortować listę w promieniu km.
             Sołtys w panelu{" "}
             <Link href="/panel/soltys/moja-wies" className="font-medium text-green-900 underline decoration-green-800/35 underline-offset-2">
@@ -391,7 +436,7 @@ export default async function MapaPage() {
             >
               <MapaAutomatyzacjaKlient
                 znaczniki={znaczniki}
-                villageIdsBezTransportu={villageIdsBezTransportu}
+                villageIdsDoUzupelnienia={villageIdsDoUzupelnienia}
                 statystyki={statystykiMapy}
               />
               <MapaWsiStronaDynamic
@@ -402,6 +447,8 @@ export default async function MapaPage() {
                 punktyRynekDzialki={punktyRynekDzialki}
                 punktyZgloszenia={punktyZgloszenia}
                 punktyPolowania={punktyPolowania}
+                punktyCmentarze={obrysyCmentarzy}
+                punktyGeoKontekst={punktyGeoKontekst}
                 statystykiMapy={statystykiMapy}
               />
             </Suspense>

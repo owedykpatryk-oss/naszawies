@@ -1,4 +1,6 @@
 import Link from "next/link";
+import { RynekUdostepnijPrzycisk } from "@/components/wies/rynek-udostepnij-przycisk";
+import { etykietaRodzajuWydarzenia } from "@/lib/wies/teksty-organizacji";
 import type { ProfilParafiiJson } from "@/lib/wies/profil-organizacji";
 
 export type DaneParafiiPubliczne = {
@@ -10,6 +12,14 @@ export type DaneParafiiPubliczne = {
   contact_phone: string | null;
   contact_email: string | null;
   profil: ProfilParafiiJson | null;
+};
+
+export type WydarzenieParafialneSkrot = {
+  id: string;
+  event_kind: string;
+  title: string;
+  location_text: string | null;
+  starts_at: string;
 };
 
 function Blok({
@@ -27,22 +37,38 @@ function Blok({
         {ikona ? <span aria-hidden>{ikona}</span> : null}
         {tytul}
       </h4>
-      <div className="mt-2 text-sm leading-relaxed text-stone-700 whitespace-pre-wrap">{children}</div>
+      <div className="mt-2 whitespace-pre-wrap text-sm leading-relaxed text-stone-700">{children}</div>
     </div>
   );
+}
+
+function linkZTekstu(url: string | null | undefined): string | null {
+  const www = url?.trim();
+  if (!www) return null;
+  return /^https?:\/\//i.test(www) ? www : `https://${www.replace(/^\/\//, "")}`;
 }
 
 export function KartaParafiiPubliczna({
   parafia,
   sciezkaWydarzenia,
+  sciezkaProfilu,
+  linkKosciolNaMapie,
+  linkCmentarzNaMapie,
+  linkPlanCmentarza,
+  nadchodzaceWydarzenia = [],
 }: {
   parafia: DaneParafiiPubliczne;
   sciezkaWydarzenia?: string;
+  sciezkaProfilu?: string;
+  linkKosciolNaMapie?: string | null;
+  linkCmentarzNaMapie?: string | null;
+  linkPlanCmentarza?: string | null;
+  nadchodzaceWydarzenia?: WydarzenieParafialneSkrot[];
 }) {
   const p = parafia.profil;
-  const www = p?.strona_www?.trim();
-  const wwwHref =
-    www && /^https?:\/\//i.test(www) ? www : www ? `https://${www.replace(/^\/\//, "")}` : null;
+  const wwwHref = linkZTekstu(p?.strona_www);
+  const fbHref = linkZTekstu(p?.facebook);
+  const kotwicaUdostepnij = sciezkaProfilu ? `${sciezkaProfilu}#parafia` : "#parafia";
 
   return (
     <section
@@ -87,11 +113,57 @@ export function KartaParafiiPubliczna({
               Strona parafii
             </a>
           ) : null}
+          {fbHref ? (
+            <a
+              href={fbHref}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="rounded-lg border border-violet-300 bg-white px-3 py-2 text-sm font-medium text-violet-900 hover:bg-violet-50"
+            >
+              Facebook
+            </a>
+          ) : null}
+          {sciezkaProfilu ? (
+            <RynekUdostepnijPrzycisk
+              url={kotwicaUdostepnij}
+              tytul={parafia.name}
+              tekst={`Msze i kontakt parafii — ${parafia.name}`}
+            />
+          ) : null}
         </div>
       </div>
 
       {parafia.short_description ? (
         <p className="mt-4 text-sm leading-relaxed text-stone-700">{parafia.short_description}</p>
+      ) : null}
+
+      {(linkKosciolNaMapie || linkCmentarzNaMapie || linkPlanCmentarza) ? (
+        <div className="mt-4 flex flex-wrap gap-2">
+          {linkKosciolNaMapie ? (
+            <Link
+              href={linkKosciolNaMapie}
+              className="rounded-lg border border-violet-200 bg-violet-50/80 px-3 py-1.5 text-xs font-medium text-violet-900 hover:bg-violet-100"
+            >
+              ⛪ Kościół na mapie
+            </Link>
+          ) : null}
+          {linkPlanCmentarza ? (
+            <Link
+              href={linkPlanCmentarza}
+              className="rounded-lg border border-stone-300 bg-stone-50 px-3 py-1.5 text-xs font-medium text-stone-900 hover:bg-stone-100"
+            >
+              🗺 Plan cmentarza
+            </Link>
+          ) : null}
+          {linkCmentarzNaMapie ? (
+            <Link
+              href={linkCmentarzNaMapie}
+              className="rounded-lg border border-violet-200 bg-violet-50/80 px-3 py-1.5 text-xs font-medium text-violet-900 hover:bg-violet-100"
+            >
+              🪦 Cmentarz na mapie
+            </Link>
+          ) : null}
+        </div>
       ) : null}
 
       <div className="mt-5 grid gap-3 sm:grid-cols-2">
@@ -134,6 +206,12 @@ export function KartaParafiiPubliczna({
           </Blok>
         ) : null}
 
+        {p?.intencje_mszalne ? (
+          <Blok tytul="Intencje mszalne" ikona="🕯">
+            {p.intencje_mszalne}
+          </Blok>
+        ) : null}
+
         {p?.sakramenty ? (
           <Blok tytul="Chrzty, śluby, pogrzeby" ikona="📋">
             {p.sakramenty}
@@ -145,7 +223,36 @@ export function KartaParafiiPubliczna({
             {p.grupy_duszpasterskie}
           </Blok>
         ) : null}
+
+        {p?.info_cmentarz ? (
+          <Blok tytul="Cmentarz parafialny" ikona="🪦">
+            {p.info_cmentarz}
+          </Blok>
+        ) : null}
       </div>
+
+      {nadchodzaceWydarzenia.length > 0 ? (
+        <div className="mt-5">
+          <h3 className="text-xs font-semibold uppercase tracking-wide text-violet-800">Zbliżające się wydarzenia</h3>
+          <ul className="mt-2 space-y-2">
+            {nadchodzaceWydarzenia.slice(0, 4).map((ev) => (
+              <li key={ev.id}>
+                <Link
+                  href={sciezkaWydarzenia ? `${sciezkaWydarzenia}/${ev.id}` : "#"}
+                  className="block rounded-lg border border-violet-100 bg-white/80 px-3 py-2 text-sm transition hover:border-violet-300 hover:bg-violet-50/50"
+                >
+                  <p className="font-medium text-stone-900">{ev.title}</p>
+                  <p className="mt-0.5 text-xs text-stone-600">
+                    {etykietaRodzajuWydarzenia(ev.event_kind)} ·{" "}
+                    {new Date(ev.starts_at).toLocaleString("pl-PL", { dateStyle: "medium", timeStyle: "short" })}
+                    {ev.location_text ? ` · ${ev.location_text}` : ""}
+                  </p>
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
 
       {p?.uwagi ? (
         <p className="mt-4 rounded-lg border border-amber-200/80 bg-amber-50/60 px-3 py-2 text-xs text-amber-950">
@@ -163,7 +270,10 @@ export function KartaParafiiPubliczna({
 
       {sciezkaWydarzenia ? (
         <p className="mt-4 text-sm">
-          <Link href={sciezkaWydarzenia} className="font-medium text-violet-800 underline hover:text-violet-950">
+          <Link
+            href={`${sciezkaWydarzenia}?liturgia=1`}
+            className="font-medium text-violet-800 underline hover:text-violet-950"
+          >
             Kalendarz wydarzeń parafialnych →
           </Link>
         </p>

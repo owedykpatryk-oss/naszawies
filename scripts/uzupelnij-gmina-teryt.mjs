@@ -121,27 +121,53 @@ async function main() {
   }
 
   await mkdir(TMP, { recursive: true });
-  const batch = 800;
+  const batch = 2000;
   let i = 0;
   let plikIdx = 0;
-  let linie = [];
+  let pary = [];
 
   for (const [simc, kod] of mapa) {
-    linie.push(
-      `UPDATE public.villages SET gmina_teryt_kod = '${kod.replace(/'/g, "''")}', updated_at = NOW() WHERE teryt_id = '${simc.replace(/'/g, "''")}' AND (gmina_teryt_kod IS DISTINCT FROM '${kod.replace(/'/g, "''")}');`,
-    );
+    pary.push([simc, kod]);
     i += 1;
-    if (linie.length >= batch) {
+    if (pary.length >= batch) {
       const plik = join(TMP, `batch-${plikIdx++}.sql`);
-      await writeFile(plik, linie.join("\n") + "\n", "utf8");
+      const values = pary
+        .map(([s, k]) => `('${s.replace(/'/g, "''")}','${k.replace(/'/g, "''")}')`)
+        .join(",\n    ");
+      await writeFile(
+        plik,
+        `UPDATE public.villages AS v
+SET gmina_teryt_kod = d.kod, updated_at = NOW()
+FROM (VALUES
+    ${values}
+) AS d(teryt_id, kod)
+WHERE v.teryt_id = d.teryt_id
+  AND v.gmina_teryt_kod IS DISTINCT FROM d.kod;
+`,
+        "utf8",
+      );
       wykonajSqlPlik(plik);
-      console.log(`Zapisano batch ${plikIdx} (${i} rekordów)...`);
-      linie = [];
+      console.log(`Zapisano batch ${plikIdx} (${i} par SIMC)...`);
+      pary = [];
     }
   }
-  if (linie.length > 0) {
+  if (pary.length > 0) {
     const plik = join(TMP, `batch-${plikIdx++}.sql`);
-    await writeFile(plik, linie.join("\n") + "\n", "utf8");
+    const values = pary
+      .map(([s, k]) => `('${s.replace(/'/g, "''")}','${k.replace(/'/g, "''")}')`)
+      .join(",\n    ");
+    await writeFile(
+      plik,
+      `UPDATE public.villages AS v
+SET gmina_teryt_kod = d.kod, updated_at = NOW()
+FROM (VALUES
+    ${values}
+) AS d(teryt_id, kod)
+WHERE v.teryt_id = d.teryt_id
+  AND v.gmina_teryt_kod IS DISTINCT FROM d.kod;
+`,
+      "utf8",
+    );
     wykonajSqlPlik(plik);
   }
 

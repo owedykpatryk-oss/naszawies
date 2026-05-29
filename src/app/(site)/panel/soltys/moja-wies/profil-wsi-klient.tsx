@@ -6,6 +6,7 @@ import { dodajBrakujacePoiZOpenStreetMap, dodajPunktCzerpaniaWodyOsp } from "../
 import { zapiszProfilPublicznyWsi, zapiszBannerRynkuWsi } from "../akcje";
 import { sciezkaProfiluWsi } from "@/lib/wies/sciezka-publiczna";
 import { LadneMiejsceFormularz } from "@/components/panel/ladne-miejsce-formularz";
+import { CmentarzNaMapieFormularz } from "@/components/panel/cmentarz-na-mapie-formularz";
 import {
   EdytorKontaktuPoiSoltys,
   type PoiDoEdycjiKontaktu,
@@ -290,7 +291,8 @@ export function ProfilWsiSoltysKlient({
                 oraz osobne punkty z tabeli <code className="rounded bg-stone-100 px-1">pois</code>. Przykładowe
                 „sztuczne” punkty z instalacji demo można zastąpić: możesz{" "}
                 <strong>dopisać brakujące obiekty z OpenStreetMap</strong> w promieniu ok. 2,8 km od tego punktu (szkoła,
-                przedszkole, kult, świetlica, OSP, biblioteka, sklep, cmentarz). Zawsze sprawdź lokalnie — OSM bywa
+                przedszkole, boisko, urząd, kult, świetlica, OSP, biblioteka, sklep, cmentarz). Cron co kilka godzin
+                też uzupełnia braki — zawsze sprawdź lokalnie, OSM bywa
                 niepełny.
               </p>
               {!maGps ? (
@@ -321,6 +323,26 @@ export function ProfilWsiSoltysKlient({
               {maGps ? (
                 <LadneMiejsceFormularz villageId={w.id} domyslnaLat={w.latitude} domyslnaLng={w.longitude} />
               ) : null}
+
+              <CmentarzNaMapieFormularz
+                villageId={w.id}
+                nazwaWsi={w.name}
+                domyslnaLat={w.latitude}
+                domyslnaLng={w.longitude}
+                maGps={maGps}
+                istniejaceCmentarze={(poisByVillage[w.id] ?? [])
+                  .filter((p) => p.category === "cmentarz")
+                  .map((p) => ({ name: p.name }))}
+              />
+
+              <p className="mt-4 text-sm">
+                <Link
+                  href="/panel/soltys/cmentarz"
+                  className="font-medium text-green-900 underline hover:text-green-950"
+                >
+                  Plan cmentarza (kwatery, rzędy, groby, QR przy bramie) →
+                </Link>
+              </p>
 
               <div className="mt-6 rounded-xl border border-emerald-200/80 bg-emerald-50/30 p-4">
                 <h4 className="font-medium text-emerald-950">Telefon i godziny otwarcia (POI)</h4>

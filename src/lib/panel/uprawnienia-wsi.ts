@@ -27,11 +27,11 @@ const ROLE_BY_UPRAWNIENIE: Record<UprawnienieWsi, readonly RolaWsi[]> = {
     "rada_solecka",
   ],
   panel_soltysa: ["soltys", "wspoladmin"],
-  moderacja_tresci: ["soltys", "wspoladmin", "rada_solecka"],
+  moderacja_tresci: ["wspoladmin", "rada_solecka"],
   decyzje_rezerwacji: ["soltys", "wspoladmin"],
   zarzadzanie_spolecznoscia: ["soltys", "wspoladmin", "rada_solecka"],
-  zarzadzanie_kgw: ["soltys", "wspoladmin", "kgw_przewodniczaca"],
-  zarzadzanie_osp: ["soltys", "wspoladmin", "osp_naczelnik"],
+  zarzadzanie_kgw: ["wspoladmin", "kgw_przewodniczaca"],
+  zarzadzanie_osp: ["wspoladmin", "osp_naczelnik"],
 };
 
 export function roleDlaUprawnienia(uprawnienie: UprawnienieWsi): readonly RolaWsi[] {

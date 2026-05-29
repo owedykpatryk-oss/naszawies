@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import { useMemo, useState, useTransition } from "react";
@@ -259,6 +260,16 @@ export function SoltysModeracjaRynekKlient({ wiersze }: { wiersze: Wiersz[] }) {
                 </div>
               </div>
               <div className="flex shrink-0 flex-wrap gap-2">
+                {w.typ === "marketplace" && w.sciezkaWsi ? (
+                  <Link
+                    href={`${w.sciezkaWsi}/rynek/${w.id}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="rounded-lg border border-orange-200 bg-orange-50 px-3 py-1 text-xs font-medium text-orange-950 hover:bg-orange-100"
+                  >
+                    Podgląd publiczny
+                  </Link>
+                ) : null}
                 <button
                   type="button"
                   disabled={!!czek}

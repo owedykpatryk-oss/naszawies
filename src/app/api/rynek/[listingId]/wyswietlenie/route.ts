@@ -1,6 +1,8 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
+import { odczytajAdresIpZNaglowkow } from "@/lib/api/odczytaj-adres-ip";
 import { createPublicSupabaseClient } from "@/lib/supabase/public-client";
+import { sprawdzLimitApi } from "@/lib/rate-limit/sprawdz-limit-upstash";
 
 const idSchema = z.string().uuid();
 
@@ -8,10 +10,16 @@ const idSchema = z.string().uuid();
  * Inkrementuje licznik wyświetleń ogłoszenia (tylko status approved w RPC).
  * Wywoływane z klienta raz na sesję przeglądarki.
  */
-export async function POST(_req: Request, { params }: { params: { listingId: string } }) {
+export async function POST(req: Request, { params }: { params: { listingId: string } }) {
   const parsed = idSchema.safeParse(params.listingId);
   if (!parsed.success) {
     return NextResponse.json({ ok: false }, { status: 400 });
+  }
+
+  const ip = odczytajAdresIpZNaglowkow(req.headers);
+  const limit = await sprawdzLimitApi("api_publiczne", `rynek-view:${ip}`);
+  if (!limit.ok) {
+    return NextResponse.json({ ok: false }, { status: 429 });
   }
 
   const supabase = createPublicSupabaseClient();

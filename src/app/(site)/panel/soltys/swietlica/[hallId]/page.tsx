@@ -76,12 +76,33 @@ export default async function SoltysSwietlicaHallPage({ params }: Props) {
   const [{ data: rezerwacje }, { data: rezerwacjeStats }] = await Promise.all([
     supabase
       .from("hall_bookings")
-      .select("id, start_at, end_at, event_title, event_type")
+      .select("id, start_at, end_at, event_title, event_type, booked_by, contact_phone")
       .eq("hall_id", hallId)
       .eq("status", "approved")
       .order("start_at", { ascending: true }),
     supabase.from("hall_bookings").select("status, expected_guests, layout_data").eq("hall_id", hallId),
   ]);
+
+  const userIds = Array.from(
+    new Set((rezerwacje ?? []).map((r) => r.booked_by).filter(Boolean) as string[]),
+  );
+  const mapaUzytkownikow: Record<string, string> = {};
+  if (userIds.length > 0) {
+    const { data: users } = await supabase.from("users").select("id, display_name").in("id", userIds);
+    for (const u of users ?? []) {
+      mapaUzytkownikow[u.id] = u.display_name;
+    }
+  }
+
+  const wpisyKalendarza = (rezerwacje ?? []).map((r) => ({
+    id: r.id,
+    start_at: r.start_at,
+    end_at: r.end_at,
+    event_title: r.event_title ?? null,
+    event_type: r.event_type ?? "zajete",
+    wynajmujacy: r.booked_by ? mapaUzytkownikow[r.booked_by] ?? r.booked_by.slice(0, 8) : null,
+    telefon: r.contact_phone ?? null,
+  }));
 
   const pozycje = (inv ?? []) as PozycjaWyposazenia[];
   const plan = parsujPlanZJsonb(sala.layout_data);
@@ -123,7 +144,7 @@ export default async function SoltysSwietlicaHallPage({ params }: Props) {
     { id: "rzut", label: "Zapisz rzut parteru z wejściami/oknami", href: "#rzut-parteru-sali", gotowe: rzutParteru != null },
     { id: "plan", label: "Ustaw plan stołów", href: "#plan-sali-edytor", gotowe: plan.elementy.length > 0 },
     { id: "regulamin", label: "Opublikuj regulamin i ceny", href: "#regulamin-sali", gotowe: Boolean(sala.rules_text?.trim() || sala.rules_file_url) },
-    { id: "kalendarz", label: "Uzupełnij kalendarz zajętości", href: "#kalendarz-zajetosci-sali", gotowe: (rezerwacje ?? []).length > 0 },
+    { id: "kalendarz", label: "Uzupełnij kalendarz zajętości", href: "#kalendarz-zajetosci-sali", gotowe: wpisyKalendarza.length > 0 },
     { id: "asortyment", label: "Dodaj asortyment sali", href: "#asortyment-sali", gotowe: pozycje.length > 0 },
   ];
 
@@ -148,16 +169,7 @@ export default async function SoltysSwietlicaHallPage({ params }: Props) {
         popularnyPreset={popularnyPreset}
       />
 
-      <KalendarzZajetosciSoltysKlient
-        hallId={hallId}
-        wpisy={(rezerwacje ?? []).map((r) => ({
-          id: r.id,
-          start_at: r.start_at,
-          end_at: r.end_at,
-          event_title: r.event_title ?? null,
-          event_type: r.event_type ?? "zajete",
-        }))}
-      />
+      <KalendarzZajetosciSoltysKlient hallId={hallId} wpisy={wpisyKalendarza} />
 
       <div className="mt-6" id="profil-budynku">
         <KartaBudynkuSwietlicy

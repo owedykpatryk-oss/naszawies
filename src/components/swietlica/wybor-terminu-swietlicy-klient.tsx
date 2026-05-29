@@ -1,6 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
+import { KalendarzMiesiacaSwietlicyKlient } from "@/components/swietlica/kalendarz-miesiaca-swietlicy-klient";
 
 type ZajetyTermin = { start_at: string; end_at: string; status: string };
 
@@ -86,25 +87,26 @@ export function WyborTerminuSwietlicyKlient({
         </button>
       </div>
 
-      {pokazKalendarz && nadchodzace.length > 0 ? (
-        <div>
-          <p className="text-xs text-stone-600">Zajęte przedziały (unikaj nakładania):</p>
-          <ul className="mt-2 max-h-36 space-y-1 overflow-y-auto text-xs">
-            {nadchodzace.map((z, i) => (
-              <li
-                key={`${z.start_at}-${i}`}
-                className={`rounded px-2 py-1 ${
-                  z.status === "approved" ? "bg-red-50 text-red-900" : "bg-amber-50 text-amber-950"
-                }`}
-              >
-                {formatZakres(z.start_at, z.end_at)}
-                {z.status === "pending" ? " · wstępna" : " · potwierdzona"}
-              </li>
-            ))}
-          </ul>
+      {pokazKalendarz ? (
+        <div className="space-y-3">
+          <KalendarzMiesiacaSwietlicyKlient
+            terminy={zajeteTerminy.map((z) => ({ start_at: z.start_at, end_at: z.end_at }))}
+          />
+          {nadchodzace.length > 0 ? (
+            <div>
+              <p className="text-xs text-stone-600">Zajęte przedziały (bez danych wynajmującego):</p>
+              <ul className="mt-2 max-h-36 space-y-1 overflow-y-auto text-xs">
+                {nadchodzace.map((z, i) => (
+                  <li key={`${z.start_at}-${i}`} className="rounded bg-red-50 px-2 py-1 text-red-900">
+                    Zarezerwowane · {formatZakres(z.start_at, z.end_at)}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : (
+            <p className="text-xs text-stone-500">Brak nadchodzących blokad — sala wygląda na wolną w kalendarzu.</p>
+          )}
         </div>
-      ) : pokazKalendarz ? (
-        <p className="text-xs text-stone-500">Brak nadchodzących blokad — sala wygląda na wolną w kalendarzu.</p>
       ) : null}
 
       <div className="flex flex-wrap gap-2">
@@ -157,8 +159,8 @@ export function WyborTerminuSwietlicyKlient({
 
       {kolizja ? (
         <p className="rounded-lg bg-red-50 px-3 py-2 text-xs text-red-900" role="alert">
-          Wybrany termin nakłada się z {kolizja.status === "pending" ? "wstępną" : "potwierdzoną"} rezerwacją (
-          {formatZakres(kolizja.start_at, kolizja.end_at)}). Wybierz inne godziny.
+          Wybrany termin nakłada się z rezerwacją ({formatZakres(kolizja.start_at, kolizja.end_at)}). Wybierz inne
+          godziny.
         </p>
       ) : start && end && end > start ? (
         <p className="text-xs text-green-800">Termin nie koliduje z widocznymi blokadami w kalendarzu.</p>

@@ -17,6 +17,7 @@ import {
 } from "@/lib/marketplace/schema-pola-rozszerzone";
 import { sciezkaProfiluWsi } from "@/lib/wies/sciezka-publiczna";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
+import { dataWygasnieciaOgloszeniaRynek } from "@/lib/marketplace/waznosc-ogloszenia";
 
 const uuid = z.string().uuid();
 
@@ -32,7 +33,6 @@ const schema = z.object({
   phone: z.string().trim().max(30).optional().nullable(),
   locationText: z.string().trim().max(200).optional().nullable(),
   imageUrls: z.array(z.string().url().max(2048)).max(5),
-  dniWaznosci: z.number().int().min(7).max(90).optional(),
 })
   .merge(schemaPolaRozszerzoneOgloszenia)
   .merge(schemaPolaDzialkiOgloszenia);
@@ -98,9 +98,7 @@ export async function dodajOgloszenieMarketplaceMieszkanca(
   } = await supabase.auth.getUser();
   if (!user) return { blad: "Zaloguj się." };
 
-  const dni = p.data.dniWaznosci ?? 30;
-  const expires = new Date();
-  expires.setDate(expires.getDate() + dni);
+  const expires = dataWygasnieciaOgloszeniaRynek();
 
   const gps = await wspolrzedneDlaOgloszenia(supabase, p.data.villageId, p.data.locationText, p.data, p.data);
   const polaRozszerzone = {
@@ -276,13 +274,9 @@ export async function archiwizujOgloszenieMarketplaceMieszkanca(listingId: strin
   return { ok: true };
 }
 
-export async function przedluzWaznoscOgloszeniaMarketplace(
-  listingId: string,
-  dni: number = 30,
-): Promise<WynikMarketplace> {
+export async function aktywujPonownieOgloszenieMarketplace(listingId: string): Promise<WynikMarketplace> {
   const id = uuid.safeParse(listingId);
-  const dniOk = z.number().int().min(7).max(90).safeParse(dni);
-  if (!id.success || !dniOk.success) return { blad: "Niepoprawne dane." };
+  if (!id.success) return { blad: "Niepoprawny identyfikator." };
 
   const supabase = utworzKlientaSupabaseSerwer();
   const {
@@ -297,19 +291,28 @@ export async function przedluzWaznoscOgloszeniaMarketplace(
     .maybeSingle();
 
   if (!row || row.owner_user_id !== user.id) return { blad: "Nie znaleziono ogłoszenia." };
-  if (row.status !== "approved") return { blad: "Przedłużyć można tylko opublikowane ogłoszenie." };
+  if (row.status !== "archived") {
+    return { blad: "Ponownie aktywować można tylko wygasłe lub zarchiwizowane ogłoszenie." };
+  }
 
-  const expires = new Date();
-  expires.setDate(expires.getDate() + dniOk.data);
+  const teraz = new Date();
+  const expires = dataWygasnieciaOgloszeniaRynek(teraz);
 
   const { error } = await supabase
     .from("marketplace_listings")
-    .update({ expires_at: expires.toISOString() })
+    .update({
+      status: "approved",
+      expires_at: expires.toISOString(),
+      published_at: teraz.toISOString(),
+      archived_at: null,
+      moderation_note: null,
+    })
     .eq("id", id.data);
 
-  if (error) return { blad: "Nie udało się przedłużyć ważności." };
+  if (error) return { blad: "Nie udało się aktywować ogłoszenia." };
 
   revalidatePath("/panel/mieszkaniec/marketplace");
+  revalidatePath("/panel/soltys");
   await revalidateRynekDlaWsi(supabase, row.village_id, id.data);
   return { ok: true };
 }
@@ -324,8 +327,7 @@ export async function dodajPakietOgloszenKgw(body: z.infer<typeof schemaPakietKg
   } = await supabase.auth.getUser();
   if (!user) return { blad: "Zaloguj się." };
 
-  const expires = new Date();
-  expires.setDate(expires.getDate() + 30);
+  const expires = dataWygasnieciaOgloszeniaRynek();
 
   const wstaw = p.data.pozycje.map((poz) => ({
     village_id: p.data.villageId,

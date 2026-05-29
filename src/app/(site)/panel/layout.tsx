@@ -1,4 +1,5 @@
 import { PanelNaglowekZLogo } from "@/components/panel/panel-naglowek-z-logo";
+import { czyAdminPlatformy } from "@/lib/admin/czy-admin-platformy";
 import { pobierzLiczbeNieprzeczytanychCzatu } from "@/lib/czat/pobierz-nieprzeczytane";
 import { pobierzVillageIdsRoliPaneluSoltysaDlaUzytkownikaCache } from "@/lib/panel/rola-panelu-soltysa";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
@@ -13,10 +14,16 @@ export default async function PanelLayout({ children }: { children: React.ReactN
   } = await supabase.auth.getUser();
   let pokazLinkSoltysa = false;
   let liczbaWiadomosciNieprzeczytanych = 0;
+  let pokazAdmin = false;
   if (user) {
-    const wsi = await pobierzVillageIdsRoliPaneluSoltysaDlaUzytkownikaCache(user.id);
+    const [wsi, liczbaWiadomosci, admin] = await Promise.all([
+      pobierzVillageIdsRoliPaneluSoltysaDlaUzytkownikaCache(user.id),
+      pobierzLiczbeNieprzeczytanychCzatu(supabase, user.id),
+      czyAdminPlatformy(supabase),
+    ]);
     pokazLinkSoltysa = wsi.length > 0;
-    liczbaWiadomosciNieprzeczytanych = await pobierzLiczbeNieprzeczytanychCzatu(supabase, user.id);
+    liczbaWiadomosciNieprzeczytanych = liczbaWiadomosci;
+    pokazAdmin = admin;
   }
 
   return (
@@ -26,6 +33,7 @@ export default async function PanelLayout({ children }: { children: React.ReactN
           <PanelNaglowekZLogo
             pokazLinkSoltysa={pokazLinkSoltysa}
             liczbaWiadomosciNieprzeczytanych={liczbaWiadomosciNieprzeczytanych}
+            pokazAdmin={pokazAdmin}
           />
         </div>
         <div className="min-w-0">{children}</div>

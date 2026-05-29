@@ -44,6 +44,11 @@ export function lacznaLiczbaOczekujacych(l: LicznikiOczekujacychSoltysa): number
   return sumaLicznika(l);
 }
 
+/** Tylko zadania sołtysa (bez moderacji treści — to rola rady / współadmina). */
+export function lacznaLiczbaZadanSoltysa(l: LicznikiOczekujacychSoltysa): number {
+  return l.wnioski + l.rezerwacje + l.zgloszenia;
+}
+
 /** Liczniki kolejek moderacji / decyzji dla wsi sołtysa (do KPI i badge w menu). */
 export async function pobierzLicznikiOczekujacychSoltysa(
   supabase: SupabaseClient,

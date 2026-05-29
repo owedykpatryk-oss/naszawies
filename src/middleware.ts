@@ -49,7 +49,22 @@ export async function middleware(request: NextRequest) {
 
   const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  const wymagaKontaBezSesji =
+    sciezkaWymagaLogowania(sciezka) || sciezkaApiWymagaLogowania(sciezka);
+
   if (!url || !anonKey) {
+    if (wymagaKontaBezSesji) {
+      if (sciezka.startsWith("/api/")) {
+        return odpowiedzZBazowymiNaglowkami(
+          NextResponse.json({ blad: "Serwis chwilowo niedostępny." }, { status: 503 }),
+        );
+      }
+      const przekierowanie = request.nextUrl.clone();
+      przekierowanie.pathname = "/logowanie";
+      przekierowanie.search = "";
+      przekierowanie.searchParams.set("next", sciezka + request.nextUrl.search);
+      return odpowiedzZBazowymiNaglowkami(NextResponse.redirect(przekierowanie));
+    }
     return odpowiedzZBazowymiNaglowkami(NextResponse.next({ request }));
   }
 

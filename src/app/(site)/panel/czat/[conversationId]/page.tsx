@@ -112,7 +112,7 @@ export default async function CzatKonwersacjaPage({ params }: Props) {
     const { data: ogl } = await supabase
       .from("marketplace_listings")
       .select(
-        "id, title, listing_type, status, image_urls, owner_user_id, seller_verified, villages(voivodeship, county, commune, slug)",
+        "id, title, listing_type, status, image_urls, owner_user_id, seller_verified, price_amount, price_unit, currency, equipment_category, category, villages(voivodeship, county, commune, slug)",
       )
       .eq("id", conv.listing_id)
       .maybeSingle();
@@ -130,6 +130,11 @@ export default async function CzatKonwersacjaPage({ params }: Props) {
         status: ogl.status,
         image_url: ogl.image_urls?.[0] ?? null,
         href,
+        price_amount: ogl.price_amount,
+        price_unit: ogl.price_unit,
+        currency: ogl.currency,
+        equipment_category: ogl.equipment_category,
+        category: ogl.category,
       };
 
       if (ogl.owner_user_id && conv.village_id) {
@@ -248,6 +253,9 @@ export default async function CzatKonwersacjaPage({ params }: Props) {
           odczytInnych={odczytInnych}
           maStarsze={(liczbaWiadomosci ?? 0) > wiadomosci.length}
           szablonyOgloszenia={conv.kind !== "group" && Boolean(conv.listing_id)}
+          kategoriaOgloszenia={
+            kontekstOgloszenia?.equipment_category ?? kontekstOgloszenia?.category ?? null
+          }
         />
       </div>
     </main>
