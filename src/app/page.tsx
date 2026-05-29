@@ -12,7 +12,7 @@ export const revalidate = 120;
 export const metadata: Metadata = {
   alternates: { canonical: "/" },
   description:
-    "Bezpłatna platforma dla sołtysów i mieszkańców: katalog i mapa wsi, świetlica, dokumenty, blog, wiadomości lokalne, rynek — bez opłat dla wsi.",
+    "Bezpłatna platforma dla sołtysów i mieszkańców: publiczny profil wsi, świetlica, dokumenty, blog, wiadomości lokalne, rynek — katalog i mapa po zalogowaniu.",
 };
 
 export default async function Home() {

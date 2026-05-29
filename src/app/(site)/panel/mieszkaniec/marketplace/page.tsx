@@ -4,7 +4,7 @@ import { redirect } from "next/navigation";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
 import { pojedynczaWies } from "@/lib/supabase/wies-z-zapytania";
 import type { PoiOpcja } from "./marketplace-formularz-rozszerzenia";
-import { MarketplaceFormularzMieszkanca } from "./marketplace-formularz";
+import { MarketplaceFormularzMieszkanca, type MetaWsiFormularz } from "./marketplace-formularz";
 import { MarketplaceMojeLista, type MojeOgloszenieWiersz } from "./marketplace-moje-lista";
 import { MarketplaceSubskrypcjeKlient, type SubskrypcjaWiersz } from "./marketplace-subskrypcje-klient";
 import { MarketplaceSzablonKgwKlient } from "./marketplace-szablon-kgw-klient";
@@ -43,7 +43,7 @@ export default async function MarketplaceMieszkaniecPage() {
           .limit(20)
       : { data: [] };
 
-  const [{ data: subRaw }, { data: poisRaw }] = await Promise.all([
+  const [{ data: subRaw }, { data: poisRaw }, { data: wiesGeoRaw }] = await Promise.all([
     villageIds.length > 0
       ? supabase
           .from("marketplace_category_subscriptions")
@@ -52,6 +52,12 @@ export default async function MarketplaceMieszkaniecPage() {
       : Promise.resolve({ data: [] }),
     villageIds.length > 0
       ? supabase.from("pois").select("id, name, category, village_id").in("village_id", villageIds).limit(80)
+      : Promise.resolve({ data: [] }),
+    villageIds.length > 0
+      ? supabase
+          .from("villages")
+          .select("id, latitude, longitude, boundary_geojson")
+          .in("id", villageIds)
       : Promise.resolve({ data: [] }),
   ]);
 
@@ -69,6 +75,17 @@ export default async function MarketplaceMieszkaniecPage() {
     village_id: p.village_id,
   }));
 
+  const metaWsi: Record<string, MetaWsiFormularz> = Object.fromEntries(
+    (wiesGeoRaw ?? []).map((v) => [
+      v.id,
+      {
+        latitude: v.latitude != null ? Number(v.latitude) : null,
+        longitude: v.longitude != null ? Number(v.longitude) : null,
+        boundaryGeojson: v.boundary_geojson,
+      },
+    ]),
+  );
+
   return (
     <main>
       <p className="text-sm text-stone-500">
@@ -76,23 +93,30 @@ export default async function MarketplaceMieszkaniecPage() {
           ← Panel mieszkańca
         </Link>
       </p>
-      <h1 className="mt-2 font-serif text-3xl text-green-950">Rynek lokalny</h1>
-      <p className="mt-2 text-sm text-stone-600">
-        Darmowe ogłoszenia — miód, sery, mięso, warzywa, maszyny rolnicze, konie, wynajem z operatorem. Po zatwierdzeniu
-        przez sołtysa na profilu wsi.
-        Zainteresowani mogą napisać przez{" "}
-        <Link href="/panel/czat" className="text-green-800 underline">
-          Wiadomości
-        </Link>
-        .{" "}
-        <Link href="/panel/mieszkaniec/profil-rynek" className="text-green-800 underline">
-          Profil usługodawcy
-        </Link>
-      </p>
+      <header className="rynek-hero-wow relative mt-4 !p-4 sm:!p-6">
+        <div className="relative z-[1]">
+          <p className="inline-flex items-center gap-1.5 rounded-full bg-orange-200/60 px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-wider text-orange-950">
+            <span aria-hidden>🏷️</span>
+            Rynek lokalny
+          </p>
+          <h1 className="mt-2 font-serif text-2xl text-green-950 sm:text-3xl">Dodaj ogłoszenie</h1>
+          <p className="mt-2 max-w-2xl text-sm leading-relaxed text-stone-700">
+            Darmowe ogłoszenia — produkty z gospodarstwa, maszyny, konie oraz{" "}
+            <strong>działki i domy z mapą z Geoportalu</strong> (do 5 zdjęć). Zainteresowani piszą przez{" "}
+            <Link href="/panel/czat" className="font-medium text-green-800 underline">
+              Wiadomości
+            </Link>
+            .{" "}
+            <Link href="/panel/mieszkaniec/profil-rynek" className="font-medium text-green-800 underline">
+              Profil usługodawcy
+            </Link>
+          </p>
+        </div>
+      </header>
       <MarketplaceSubskrypcjeKlient wsie={wsie} subskrypcje={subskrypcje} />
       <MarketplaceSzablonKgwKlient wsie={wsie} />
       <MarketplaceMojeLista ogloszenia={(moje ?? []) as MojeOgloszenieWiersz[]} />
-      <MarketplaceFormularzMieszkanca wsie={wsie} pois={pois} />
+      <MarketplaceFormularzMieszkanca wsie={wsie} metaWsi={metaWsi} pois={pois} />
     </main>
   );
 }

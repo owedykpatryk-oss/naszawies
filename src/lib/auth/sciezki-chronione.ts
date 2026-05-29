@@ -1,5 +1,5 @@
 /**
- * Ścieżki dostępne wyłącznie po zalogowaniu (middleware + spójne z nagłówkiem).
+ * Ścieżki dostępne wyłącznie po zalogowaniu (middleware + spójne z nagłówkiem i OPIS §10).
  */
 
 const PREFIXY_STRON = [
@@ -41,4 +41,9 @@ export function sciezkaApiWymagaLogowania(pathname: string): boolean {
 export function urlLogowaniaZPowrotem(sciezka: string, search = ""): string {
   const next = `${sciezka}${search}`;
   return `/logowanie?next=${encodeURIComponent(next)}`;
+}
+
+/** Link bezpośredni dla zalogowanych; gość → logowanie z powrotem na docelową ścieżkę. */
+export function linkChroniony(sciezka: string, zalogowany: boolean, search = ""): string {
+  return zalogowany ? `${sciezka}${search}` : urlLogowaniaZPowrotem(sciezka, search);
 }

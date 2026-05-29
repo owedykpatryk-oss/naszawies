@@ -9,7 +9,7 @@ import {
 
 type StanLadowania = "laduje" | "ok" | "blad";
 
-function TransportTresc({ villageId }: { villageId: string }) {
+function TransportTresc({ villageId, zalogowany }: { villageId: string; zalogowany: boolean }) {
   const [stan, setStan] = useState<StanLadowania>("laduje");
   const [dane, setDane] = useState<TransportDaneWsi | null>(null);
 
@@ -70,14 +70,15 @@ function TransportTresc({ villageId }: { villageId: string }) {
         maKolej={false}
         maAutobus={false}
         bladLadowania={stan === "blad"}
+        zalogowany={zalogowany}
       />
     );
   }
 
-  return <WiesTransportWidget {...dane} />;
+  return <WiesTransportWidget {...dane} zalogowany={zalogowany} />;
 }
 
-export function WiesTransportLazy({ villageId }: { villageId: string }) {
+export function WiesTransportLazy({ villageId, zalogowany = false }: { villageId: string; zalogowany?: boolean }) {
   return (
     <LazyWidoczny
       placeholder={
@@ -88,7 +89,7 @@ export function WiesTransportLazy({ villageId }: { villageId: string }) {
         />
       }
     >
-      <TransportTresc villageId={villageId} />
+      <TransportTresc villageId={villageId} zalogowany={zalogowany} />
     </LazyWidoczny>
   );
 }

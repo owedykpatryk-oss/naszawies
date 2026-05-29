@@ -126,20 +126,35 @@ export default async function SoltysPage() {
     title: string;
     typ: "marketplace" | "pomoc";
     wies: string;
+    sciezkaWsi?: string | null;
+    owner_user_id?: string | null;
+    created_at?: string | null;
     listing_type?: string | null;
     equipment_category?: string | null;
+    category?: string | null;
     description?: string | null;
     image_urls?: string[] | null;
+    price_amount?: number | null;
+    price_unit?: string | null;
+    currency?: string | null;
+    parcel_number?: string | null;
+    cadastral_district?: string | null;
+    parcel_area_m2?: number | null;
+    parcel_geojson?: unknown;
+    latitude?: number | null;
+    longitude?: number | null;
   };
   let doModeracjiRynek: WierszModeracjiRynek[] = [];
   if (villageIds.length > 0) {
     const [{ data: mkRaw }, { data: psRaw }] = await Promise.all([
       supabase
         .from("marketplace_listings")
-        .select("id, title, village_id, listing_type, equipment_category, description, image_urls")
+        .select(
+          "id, title, village_id, owner_user_id, created_at, listing_type, equipment_category, category, description, image_urls, price_amount, price_unit, currency, parcel_number, cadastral_district, parcel_area_m2, parcel_geojson, latitude, longitude",
+        )
         .in("village_id", villageIds)
         .eq("status", "pending")
-        .limit(15),
+        .limit(30),
       supabase
         .from("neighbor_help_offers")
         .select("id, title, village_id")
@@ -152,19 +167,44 @@ export default async function SoltysPage() {
         id: string;
         title: string;
         village_id: string;
+        owner_user_id: string;
+        created_at: string;
         listing_type: string;
         equipment_category: string | null;
+        category: string | null;
         description: string;
         image_urls: string[] | null;
+        price_amount: number | null;
+        price_unit: string | null;
+        currency: string | null;
+        parcel_number: string | null;
+        cadastral_district: string | null;
+        parcel_area_m2: number | null;
+        parcel_geojson: unknown;
+        latitude: number | null;
+        longitude: number | null;
       }[]).map((r) => ({
         id: r.id,
         title: r.title,
         typ: "marketplace" as const,
         wies: nazwyWsi[r.village_id] ?? "—",
+        sciezkaWsi: hrefWsi[r.village_id] ?? null,
+        owner_user_id: r.owner_user_id,
+        created_at: r.created_at,
         listing_type: r.listing_type,
         equipment_category: r.equipment_category,
+        category: r.category,
         description: r.description,
         image_urls: r.image_urls,
+        price_amount: r.price_amount,
+        price_unit: r.price_unit,
+        currency: r.currency,
+        parcel_number: r.parcel_number,
+        cadastral_district: r.cadastral_district,
+        parcel_area_m2: r.parcel_area_m2,
+        parcel_geojson: r.parcel_geojson,
+        latitude: r.latitude,
+        longitude: r.longitude,
       })),
       ...((psRaw ?? []) as { id: string; title: string; village_id: string }[]).map((r) => ({
         id: r.id,

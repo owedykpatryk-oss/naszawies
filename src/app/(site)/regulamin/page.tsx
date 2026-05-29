@@ -47,6 +47,11 @@ export default function RegulaminPage() {
             publikacji treści ustalane są przez operatora serwisu i komunikowane w treściach serwisu oraz — w
             potrzebie wyjaśnienia — na wniosek, drogą elektroniczną.
           </p>
+          <p className="mt-3 leading-relaxed text-stone-700">
+            <strong>Gość</strong> (bez konta) może przeglądać publiczne profile wsi pod adresem bezpośrednim oraz strony
+            informacyjne serwisu. <strong>Katalog wsi, mapa katalogu, hub transportu</strong> i panel użytkownika wymagają
+            rejestracji i logowania.
+          </p>
         </section>
 
         <section>

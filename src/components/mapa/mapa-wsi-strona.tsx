@@ -27,6 +27,7 @@ import {
   type ZnacznikPoi,
   type ZnacznikPolowanie,
   type ZnacznikRynek,
+  type ZnacznikRynekDzialka,
   type ZnacznikWsi,
   type ZnacznikZgloszenie,
 } from "./mapa-wsi-leaflet";
@@ -87,6 +88,7 @@ export function MapaWsiStrona({
   punktyPoi = [],
   punktyAdresy = [],
   punktyRynek = [],
+  punktyRynekDzialki = [],
   punktyZgloszenia = [],
   punktyPolowania = [],
   statystykiMapy,
@@ -95,6 +97,7 @@ export function MapaWsiStrona({
   punktyPoi?: ZnacznikPoi[];
   punktyAdresy?: ZnacznikAdres[];
   punktyRynek?: ZnacznikRynek[];
+  punktyRynekDzialki?: ZnacznikRynekDzialka[];
   punktyZgloszenia?: ZnacznikZgloszenie[];
   punktyPolowania?: ZnacznikPolowanie[];
   statystykiMapy?: StatystykiMapy;
@@ -345,6 +348,7 @@ export function MapaWsiStrona({
   const punktyPolowaniaWidoczne = pokazPolowania ? punktyPolowania : [];
   const punktyZgloszeniaWidoczne = pokazZgloszenia ? punktyZgloszenia : [];
   const punktyRynekWidoczne = pokazRynekMapa ? punktyRynek : [];
+  const punktyRynekDzialkiWidoczne = pokazRynekMapa ? punktyRynekDzialki : [];
 
   const wyczyscSzukaj = useCallback(() => {
     setSzukaj("");
@@ -480,62 +484,68 @@ export function MapaWsiStrona({
             </>
           )}
 
-          <div className="mt-3 flex flex-wrap gap-x-3 gap-y-1 text-xs text-stone-600">
-            <label className="inline-flex cursor-pointer items-center gap-1.5">
-              <input
-                type="checkbox"
-                checked={pokazPolowania}
-                onChange={(e) => ustawPokazPolowania(e.target.checked)}
-                className="rounded border-stone-300 text-red-800 focus:ring-red-700"
-              />
+          <div className="mt-3 flex flex-wrap gap-1.5" role="group" aria-label="Warstwy mapy">
+            <button
+              type="button"
+              role="switch"
+              aria-checked={pokazPolowania}
+              onClick={() => ustawPokazPolowania((v) => !v)}
+              className={`mapa-pill-warstwa ${pokazPolowania ? "border-red-300/80 bg-gradient-to-br from-red-50 to-rose-50 text-red-950 shadow-sm" : "mapa-pill-warstwa--off"}`}
+            >
+              <span aria-hidden>🎯</span>
               Polowania
-            </label>
-            <label className="inline-flex cursor-pointer items-center gap-1.5">
-              <input
-                type="checkbox"
-                checked={pokazZgloszenia}
-                onChange={(e) => ustawPokazZgloszenia(e.target.checked)}
-                className="rounded border-stone-300 text-amber-800 focus:ring-amber-700"
-              />
+            </button>
+            <button
+              type="button"
+              role="switch"
+              aria-checked={pokazZgloszenia}
+              onClick={() => ustawPokazZgloszenia((v) => !v)}
+              className={`mapa-pill-warstwa ${pokazZgloszenia ? "border-amber-300/80 bg-gradient-to-br from-amber-50 to-yellow-50 text-amber-950 shadow-sm" : "mapa-pill-warstwa--off"}`}
+            >
+              <span aria-hidden>📢</span>
               Zgłoszenia
-            </label>
-            <label className="inline-flex cursor-pointer items-center gap-1.5">
-              <input
-                type="checkbox"
-                checked={pokazRynekMapa}
-                onChange={(e) => ustawPokazRynekMapa(e.target.checked)}
-                className="rounded border-stone-300 text-orange-800 focus:ring-orange-700"
-              />
+            </button>
+            <button
+              type="button"
+              role="switch"
+              aria-checked={pokazRynekMapa}
+              onClick={() => ustawPokazRynekMapa((v) => !v)}
+              className={`mapa-pill-warstwa ${pokazRynekMapa ? "border-orange-300/80 bg-gradient-to-br from-orange-50 to-amber-50 text-orange-950 shadow-sm" : "mapa-pill-warstwa--off"}`}
+            >
+              <span aria-hidden>🏷️</span>
               Rynek
-            </label>
-            <label className="inline-flex cursor-pointer items-center gap-1.5">
-              <input
-                type="checkbox"
-                checked={tylkoObrysPrg}
-                onChange={(e) => ustawTylkoObrysPrg(e.target.checked)}
-                className="rounded border-stone-300 text-green-800 focus:ring-green-700"
-              />
+            </button>
+            <button
+              type="button"
+              role="switch"
+              aria-checked={tylkoObrysPrg}
+              onClick={() => ustawTylkoObrysPrg((v) => !v)}
+              className={`mapa-pill-warstwa ${tylkoObrysPrg ? "mapa-pill-warstwa--on" : "mapa-pill-warstwa--off"}`}
+            >
+              <span aria-hidden>🗺️</span>
               Tylko z obrysem PRG
-            </label>
-            <label className="inline-flex cursor-pointer items-center gap-1.5">
-              <input
-                type="checkbox"
-                checked={tylkoOferty}
-                onChange={(e) => ustawTylkoOferty(e.target.checked)}
-                className="rounded border-stone-300 text-green-800 focus:ring-green-700"
-              />
+            </button>
+            <button
+              type="button"
+              role="switch"
+              aria-checked={tylkoOferty}
+              onClick={() => ustawTylkoOferty((v) => !v)}
+              className={`mapa-pill-warstwa ${tylkoOferty ? "mapa-pill-warstwa--on" : "mapa-pill-warstwa--off"}`}
+            >
+              <span aria-hidden>🛒</span>
               Tylko z ofertami targu
-            </label>
+            </button>
             {filtrAdmin.gminaSlug ? (
-              <label className="inline-flex cursor-pointer items-center gap-1.5">
-                <input
-                  type="checkbox"
-                  checked={pokazObrysGminy}
-                  onChange={(e) => ustawPokazObrysGminy(e.target.checked)}
-                  className="rounded border-stone-300 text-amber-800 focus:ring-amber-600"
-                />
-                Obrysy wszystkich wsi w gminie
-              </label>
+              <button
+                type="button"
+                role="switch"
+                aria-checked={pokazObrysGminy}
+                onClick={() => ustawPokazObrysGminy((v) => !v)}
+                className={`mapa-pill-warstwa ${pokazObrysGminy ? "border-amber-300/80 bg-gradient-to-br from-amber-50 to-stone-50 text-amber-950 shadow-sm" : "mapa-pill-warstwa--off"}`}
+              >
+                <span aria-hidden>🏛️</span>
+                Obrysy wsi w gminie
+              </button>
             ) : null}
           </div>
 
@@ -759,6 +769,7 @@ export function MapaWsiStrona({
             punktyPoi={punktyPoiFiltrowane}
             punktyAdresy={punktyAdresyFiltrowane}
             punktyRynek={punktyRynekWidoczne}
+            punktyRynekDzialki={punktyRynekDzialkiWidoczne}
             punktyZgloszenia={punktyZgloszeniaWidoczne}
             punktyPolowania={punktyPolowaniaWidoczne}
             obrysyGminy={pokazObrysGminy ? obrysyGminy : []}

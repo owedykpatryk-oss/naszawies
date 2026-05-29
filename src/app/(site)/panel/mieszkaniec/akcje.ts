@@ -12,9 +12,7 @@ import { usunObiektR2 } from "@/lib/cloudflare/r2-s3-klient";
 import { powiadomSoltysowONowymWnioskuRoli } from "@/lib/powiadomienia/powiadom-soltysow-o-wniosku-roli";
 import {
   powiadomSoltysowOAnulowaniuRezerwacji,
-  powiadomSoltysowONowymWnioskuRezerwacji,
 } from "@/lib/powiadomienia/powiadom-soltysow-o-wniosku-rezerwacji";
-import { walidujDostepnoscAsortymentuWTerminie } from "@/lib/swietlica/dostepnosc-asortymentu-w-terminie";
 import { etykietaRoliWsi } from "@/lib/panel/role-definicje";
 import { pobierzVillageIdsRoliPaneluSoltysa } from "@/lib/panel/rola-panelu-soltysa";
 import { roleDlaUprawnienia } from "@/lib/panel/uprawnienia-wsi";
@@ -22,8 +20,6 @@ import { createAdminSupabaseClient } from "@/lib/supabase/admin-client";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
 import { SZABLONY_LISTY_ZAKUPOW } from "@/lib/zakupy/szablony-listy-zakupow";
 import { sciezkaProfiluWsi } from "@/lib/wies/sciezka-publiczna";
-import { parsujPlanZJsonb, schemaPlanSali, type PlanSaliJson } from "@/lib/swietlica/plan-sali";
-import { zbudujPlanRezerwacji } from "@/lib/swietlica/rezerwacja-plan-sali";
 
 const uuid = z.string().uuid();
 
@@ -212,7 +208,7 @@ export async function aktualizujPreferencjeObserwacjiWsi(formData: FormData): Pr
 
 const typyWydarzen = ["urodziny", "wesele", "zebranie", "zajecia", "inne"] as const;
 
-const schemaRezerwacjaSwietlicy = z.object({
+export const schemaRezerwacjaSwietlicy = z.object({
   hallId: z.string().uuid(),
   startAt: z.string().min(1),
   endAt: z.string().min(1),
@@ -237,124 +233,12 @@ const schemaRezerwacjaSwietlicy = z.object({
 });
 
 export async function zlozRezerwacjeSwietlicy(
-  dane: z.infer<typeof schemaRezerwacjaSwietlicy>
+  _dane: z.infer<typeof schemaRezerwacjaSwietlicy>,
 ): Promise<WynikProsty> {
-  const parsed = schemaRezerwacjaSwietlicy.safeParse(dane);
-  if (!parsed.success) {
-    return { blad: "Uzupełnij formularz i zaakceptuj regulamin sali." };
-  }
-
-  const start = new Date(parsed.data.startAt);
-  const end = new Date(parsed.data.endAt);
-  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime())) {
-    return { blad: "Niepoprawny zakres dat." };
-  }
-  if (end <= start) {
-    return { blad: "Godzina zakończenia musi być późniejsza niż rozpoczęcia." };
-  }
-  const maxMs = 1000 * 60 * 60 * 24 * 7;
-  if (end.getTime() - start.getTime() > maxMs) {
-    return { blad: "Jedna rezerwacja może trwać maksymalnie 7 dni." };
-  }
-
-  const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) {
-    return { blad: "Zaloguj się." };
-  }
-
-  const p = parsed.data;
-  const startIso = start.toISOString();
-  const endIso = end.toISOString();
-  const requestedInventory = Array.isArray(p.requestedInventory) ? p.requestedInventory : [];
-
-  const { data: sala } = await supabase.from("halls").select("layout_data").eq("id", p.hallId).maybeSingle();
-  const planSali = parsujPlanZJsonb(sala?.layout_data);
-
-  let planWlasny: PlanSaliJson | null = null;
-  if (p.seatingPreset === "wlasny" && p.customLayoutData) {
-    const sp = schemaPlanSali.safeParse(p.customLayoutData);
-    if (sp.success) planWlasny = parsujPlanZJsonb(sp.data);
-  }
-
-  const hallLayoutData = zbudujPlanRezerwacji(planSali, p.seatingPreset, p.expectedGuests, planWlasny);
-
-  if (requestedInventory.length > 0) {
-    const walidacjaAsort = await walidujDostepnoscAsortymentuWTerminie(
-      supabase,
-      p.hallId,
-      startIso,
-      endIso,
-      requestedInventory,
-    );
-    if (!walidacjaAsort.ok) {
-      return { blad: walidacjaAsort.blad };
-    }
-  }
-
-  const { data: maKolizje, error: kE } = await supabase.rpc("hall_ma_kolizje_terminu", {
-    p_hall_id: p.hallId,
-    p_start: startIso,
-    p_end: endIso,
-  });
-
-  if (kE) {
-    console.error("[zlozRezerwacjeSwietlicy] kolid", kE.message);
-    return { blad: "Nie udało się sprawdzić wolnych terminów — spróbuj ponownie." };
-  }
-  if (maKolizje === true) {
-    return {
-      blad: "W tym przedziale sala jest już wstępnie lub ostatecznie zarezerwowana — wybierz inne godziny lub dzień.",
-    };
-  }
-
-  const { data: wiersz, error } = await supabase
-    .from("hall_bookings")
-    .insert({
-      hall_id: p.hallId,
-      booked_by: user.id,
-      start_at: startIso,
-      end_at: endIso,
-      event_type: p.eventType,
-      event_title: p.eventTitle?.length ? p.eventTitle : null,
-      expected_guests: p.expectedGuests,
-      has_alcohol: p.hasAlcohol,
-      contact_phone: p.contactPhone?.length ? p.contactPhone : null,
-      layout_data: hallLayoutData,
-      requested_inventory: requestedInventory,
-      rules_accepted_at: new Date().toISOString(),
-      status: "pending",
-    })
-    .select("id, halls!inner(village_id)")
-    .single();
-
-  if (error || !wiersz) {
-    console.error("[zlozRezerwacjeSwietlicy]", error?.message);
-    return { blad: "Nie udało się złożyć rezerwacji (sprawdź dostęp do sali lub dane)." };
-  }
-
-  const halls = wiersz.halls as { village_id: string } | { village_id: string }[] | null;
-  const wiesId = Array.isArray(halls) ? halls[0]?.village_id : halls?.village_id;
-  const adminPowiadomienia = createAdminSupabaseClient();
-  if (adminPowiadomienia && wiesId) {
-    void powiadomSoltysowONowymWnioskuRezerwacji(adminPowiadomienia, {
-      villageId: wiesId,
-      hallId: p.hallId,
-      bookingId: wiersz.id,
-      applicantUserId: user.id,
-      startAt: startIso,
-      endAt: endIso,
-      eventType: p.eventType,
-      eventTitle: p.eventTitle?.length ? p.eventTitle : null,
-    });
-  }
-
-  revalidatePath(`/panel/mieszkaniec/swietlica/${p.hallId}`);
-  revalidatePath("/panel/soltys/rezerwacje");
-  revalidatePath("/panel/powiadomienia");
-  return { ok: true, komunikat: "Wniosek o rezerwację wysłany — sołtys zatwierdzi w panelu." };
+  void _dane;
+  return {
+    blad: "Rezerwacja online jest wyłączona — skontaktuj się ze sołtysem (telefon na profilu wsi). Kalendarz uzupełnia wyłącznie sołtys.",
+  };
 }
 
 /** Mieszkaniec może anulować własny wniosek oczekujący na sołtysa. */

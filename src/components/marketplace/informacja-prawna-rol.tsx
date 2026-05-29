@@ -11,7 +11,8 @@ export function InformacjaPrawnaRol() {
         </p>
         <p>
           Sprzedawca odpowiada za prawdziwość opisu, jakość produktu i ewentualne alergeny. Platforma NaszaWieś pełni
-          rolę tablicy ogłoszeń po moderacji sołtysa — nie jest stroną umowy kupna-sprzedaży.
+          rolę tablicy ogłoszeń po moderacji sołtysa — nie jest stroną umowy kupna-sprzedaży i{" "}
+          <strong>nie obsługuje płatności online</strong> (gotówka, przelew czy umowa — wyłącznie między stronami).
         </p>
         <p className="text-[10px] text-amber-800">
           W razie wątpliwości skonsultuj się z ARiMR, sanepidem lub prawnikiem. Ten tekst ma charakter wyłącznie

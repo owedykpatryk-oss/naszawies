@@ -14,6 +14,7 @@
     "import-teryt-powiat": "node scripts/import-teryt-powiat.mjs",
     "r2:buckets": "node scripts/r2-buckets.mjs",
     "r2:s3-ping": "node scripts/r2-s3-ping.mjs",
+    "r2:deploy-worker": "cd cloudflare/r2-cdn-worker && npx wrangler deploy",
     "wgraj:szablony-maili": "node scripts/wgraj-szablony-maili-supabase.mjs",
     "wlacz:oauth-supabase": "node scripts/wlacz-oauth-supabase.mjs",
     "sprawdz:env": "node scripts/sprawdz-env.mjs",

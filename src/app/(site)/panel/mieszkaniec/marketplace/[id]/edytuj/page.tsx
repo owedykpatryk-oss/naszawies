@@ -4,7 +4,9 @@ import { notFound, redirect } from "next/navigation";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
 import { pojedynczaWies } from "@/lib/supabase/wies-z-zapytania";
 import type { PoiOpcja } from "../../marketplace-formularz-rozszerzenia";
-import { MarketplaceFormularzMieszkanca } from "../../marketplace-formularz";
+import { MarketplaceFormularzMieszkanca, type MetaWsiFormularz } from "../../marketplace-formularz";
+import type { WartosciDzialkiRynek } from "@/components/marketplace/marketplace-formularz-dzialka";
+import type { GeoJsonGeometriiDzialki } from "@/lib/geoportal/wkt-do-geojson";
 
 export const metadata: Metadata = { title: "Edytuj ogłoszenie — rynek lokalny" };
 
@@ -20,7 +22,7 @@ export default async function EdytujOgloszenieMarketplacePage({ params }: Props)
   const { data: ogl } = await supabase
     .from("marketplace_listings")
     .select(
-      "id, village_id, owner_user_id, listing_type, title, description, equipment_category, price_amount, price_unit, with_operator, phone, location_text, image_urls, status, latitude, longitude, pickup_in_village, delivery_radius_km, seasonal_note, product_produced_at, product_best_before, is_organic, allergens_text, sales_poi_id",
+      "id, village_id, owner_user_id, listing_type, title, description, equipment_category, price_amount, price_unit, with_operator, phone, location_text, image_urls, status, latitude, longitude, pickup_in_village, delivery_radius_km, seasonal_note, product_produced_at, product_best_before, is_organic, allergens_text, sales_poi_id, parcel_geojson, parcel_number, cadastral_district, parcel_area_m2, geoportal_parcel_id",
     )
     .eq("id", params.id)
     .maybeSingle();
@@ -41,11 +43,13 @@ export default async function EdytujOgloszenieMarketplacePage({ params }: Props)
     })
     .filter((x): x is { id: string; name: string } => x != null);
 
-  const { data: poisRaw } = await supabase
-    .from("pois")
-    .select("id, name, category, village_id")
-    .eq("village_id", ogl.village_id)
-    .limit(40);
+  const villageIds = wsie.map((w) => w.id);
+  const [{ data: poisRaw }, { data: wiesGeoRaw }] = await Promise.all([
+    supabase.from("pois").select("id, name, category, village_id").eq("village_id", ogl.village_id).limit(40),
+    villageIds.length > 0
+      ? supabase.from("villages").select("id, latitude, longitude, boundary_geojson").in("id", villageIds)
+      : Promise.resolve({ data: [] }),
+  ]);
 
   const pois: PoiOpcja[] = (poisRaw ?? []).map((p) => ({
     id: p.id,
@@ -53,6 +57,25 @@ export default async function EdytujOgloszenieMarketplacePage({ params }: Props)
     category: p.category,
     village_id: p.village_id,
   }));
+
+  const metaWsi: Record<string, MetaWsiFormularz> = Object.fromEntries(
+    (wiesGeoRaw ?? []).map((v) => [
+      v.id,
+      {
+        latitude: v.latitude != null ? Number(v.latitude) : null,
+        longitude: v.longitude != null ? Number(v.longitude) : null,
+        boundaryGeojson: v.boundary_geojson,
+      },
+    ]),
+  );
+
+  const dzialka: WartosciDzialkiRynek = {
+    parcelGeojson: (ogl.parcel_geojson as GeoJsonGeometriiDzialki | null) ?? null,
+    parcelNumber: ogl.parcel_number ?? "",
+    cadastralDistrict: ogl.cadastral_district ?? "",
+    parcelAreaM2: ogl.parcel_area_m2 != null ? Number(ogl.parcel_area_m2) : null,
+    geoportalParcelId: ogl.geoportal_parcel_id ?? "",
+  };
 
   return (
     <main>
@@ -65,6 +88,7 @@ export default async function EdytujOgloszenieMarketplacePage({ params }: Props)
       <p className="mt-2 text-sm text-stone-600">{ogl.title}</p>
       <MarketplaceFormularzMieszkanca
         wsie={wsie}
+        metaWsi={metaWsi}
         pois={pois}
         edycja={{
           id: ogl.id,
@@ -91,6 +115,7 @@ export default async function EdytujOgloszenieMarketplacePage({ params }: Props)
             allergensText: ogl.allergens_text ?? "",
             salesPoiId: ogl.sales_poi_id,
           },
+          dzialka,
         }}
       />
     </main>

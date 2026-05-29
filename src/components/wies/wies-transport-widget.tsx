@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useState } from "react";
+import { linkChroniony } from "@/lib/auth/sciezki-chronione";
 import { KARTA_LISTY_WIES, OslonaSekcjiWies } from "@/components/wies/oslona-sekcji-wies";
 import { TytulSekcjiWies } from "@/components/wies/tytul-sekcji-wies";
 import type { KontekstWsiTransport, LinkTransportuZewnetrzny } from "@/lib/transport/linki-zewnetrzne";
@@ -93,9 +94,11 @@ export function WiesTransportWidget({
   bladLadowania = false,
   delayAlertMin = 15,
   walkingMarginMin = 8,
+  zalogowany = false,
 }: TransportDaneWsi & {
   delayAlertMin?: number;
   walkingMarginMin?: number;
+  zalogowany?: boolean;
 }) {
   const domyslnaZakladka: Zakladka = maKolej ? "kolej" : "autobus";
   const [zakladka, ustawZakladke] = useState<Zakladka>(domyslnaZakladka);
@@ -104,7 +107,10 @@ export function WiesTransportWidget({
   if (!pokazSekcje) return null;
 
   const frazaStacji = encodeURIComponent(odjazdy[0]?.station_name ?? stacjePkp[0]?.station_name ?? stacjeKolejowe[0]?.name ?? "");
-  const linkRozklad = frazaStacji ? `/transport/rozklad?stacja=${frazaStacji}` : "/transport";
+  const linkRozklad = frazaStacji
+    ? linkChroniony("/transport/rozklad", zalogowany, `?stacja=${frazaStacji}`)
+    : linkChroniony("/transport", zalogowany);
+  const linkMapy = linkChroniony("/mapa", zalogowany);
 
   const teraz = Date.now();
   const najblizszy = odjazdy.find((o) => Date.parse(o.realtime_at ?? o.planned_at) > teraz);
@@ -408,7 +414,7 @@ export function WiesTransportWidget({
                       Szukaj kursu (e-podróżnik) ↗
                     </a>
                     {" · "}
-                    <Link href="/mapa" className="text-green-800 underline">
+                    <Link href={linkMapy} className="text-green-800 underline">
                       Mapa wsi
                     </Link>
                   </p>

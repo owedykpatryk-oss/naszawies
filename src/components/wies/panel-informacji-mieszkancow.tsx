@@ -15,9 +15,11 @@ type Props = {
   maRynek: boolean;
   maDotacje: boolean;
   maTransport: boolean;
+  maMape?: boolean;
 };
 
 const SKROTY = [
+  { href: "#sekcja-mapa", label: "Mapa miejscowości", warunek: (p: Props) => Boolean(p.maMape) },
   { href: "#sekcja-linki-przydatne", label: "Linki i kontakty", warunek: (p: Props) => p.linkiPrzydatne.length > 0 },
   { href: "#sekcja-przewodnik-samorzadowy", label: "Gmina i urząd", warunek: (p: Props) => p.maPrzewodnik },
   { href: "#kontakty-urzedowe-wsi", label: "Kontakty we wsi", warunek: (p: Props) => p.maKontakty },
@@ -39,6 +41,7 @@ export function PanelInformacjiMieszkancow({
   maRynek,
   maDotacje,
   maTransport,
+  maMape = false,
 }: Props) {
   const props = {
     wies,
@@ -50,6 +53,7 @@ export function PanelInformacjiMieszkancow({
     maRynek,
     maDotacje,
     maTransport,
+    maMape,
   };
   const widoczneSkroty = SKROTY.filter((s) => s.warunek(props));
 

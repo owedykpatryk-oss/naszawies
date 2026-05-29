@@ -98,7 +98,7 @@ export function SugestieAutomatyzacjiMapy({ villageId, nazwaWsi, sugestie }: Pro
           href="/mapa"
           className="rounded-lg border border-stone-300 px-3 py-1.5 text-xs font-medium text-stone-700 hover:bg-stone-50"
         >
-          Mapa publiczna
+          Mapa katalogu
         </Link>
       </div>
       {komunikat && <p className="mt-2 text-xs text-green-800">{komunikat}</p>}

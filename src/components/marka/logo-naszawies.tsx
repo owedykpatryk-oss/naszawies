@@ -14,14 +14,12 @@ type Props = {
 };
 
 function TekstLogo({ kompakt, wariant }: { kompakt?: boolean; wariant: Wariant }) {
-  const rozmiar = kompakt
-    ? "text-base sm:text-lg"
-    : "text-lg sm:text-xl md:text-[1.35rem]";
+  const rozmiar = kompakt ? "text-sm sm:text-base md:text-lg" : "text-lg sm:text-xl md:text-[1.35rem]";
   const jasny = wariant === "jasny";
 
   return (
     <span
-      className={`font-serif font-semibold tracking-tight ${rozmiar} leading-none whitespace-nowrap`}
+      className={`min-w-0 font-serif font-semibold tracking-tight ${rozmiar} leading-none`}
       aria-hidden
     >
       <span className={jasny ? "text-[#2d5a2d]" : "text-white"}>nasza</span>
@@ -32,10 +30,10 @@ function TekstLogo({ kompakt, wariant }: { kompakt?: boolean; wariant: Wariant }
 }
 
 /**
- * Logo marki: znak + „naszawies.pl” — zawsze widoczne (tekst nie chowa się na mobile).
+ * Logo marki: znak + „naszawies.pl” — czytelne na mobile, bez nachodzenia na nawigację.
  */
 export function LogoNaszawies({ kompakt, wariant = "jasny", className = "", bezLinku = false }: Props) {
-  const rozmiarKola = kompakt ? 36 : 44;
+  const rozmiarKola = kompakt ? 34 : 44;
   const zawartosc = (
     <>
       <ZnakNaszawiesOkrag rozmiarKola={rozmiarKola} />
@@ -44,7 +42,7 @@ export function LogoNaszawies({ kompakt, wariant = "jasny", className = "", bezL
   );
 
   const klasy =
-    "group inline-flex max-w-full items-center gap-2 sm:gap-2.5 no-underline outline-none ring-green-800 ring-offset-2 ring-offset-[#f5f1e8] focus-visible:ring-2";
+    "group inline-flex max-w-full min-w-0 items-center gap-2 sm:gap-2.5 no-underline outline-none ring-green-800 ring-offset-2 ring-offset-[#f5f1e8] focus-visible:ring-2";
 
   if (bezLinku) {
     return <span className={`${klasy} ${className}`}>{zawartosc}</span>;
@@ -60,17 +58,15 @@ export function LogoNaszawies({ kompakt, wariant = "jasny", className = "", bezL
 /** Logo wyśrodkowane na stronach logowania / rejestracji (pełny znak z napisem). */
 export function LogoNaszawiesWycentrowane({ className = "" }: { className?: string }) {
   return (
-    <div className={`flex justify-center pb-6 ${className}`}>
+    <div className={`flex flex-col items-center gap-3 pb-6 ${className}`}>
       <Link href="/" className="block no-underline outline-none" aria-label="naszawies.pl — strona główna">
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src="/marka/logo-naszawies.png"
-          alt="naszawies.pl"
-          width={220}
-          height={220}
-          className="mx-auto h-auto w-[min(220px,72vw)] max-w-full object-contain"
-        />
+        <ZnakNaszawiesOkrag rozmiarKola={88} className="shadow-lg shadow-green-950/20" />
       </Link>
+      <p className="font-serif text-2xl font-semibold tracking-tight sm:text-3xl" aria-hidden>
+        <span className="text-[#2d5a2d]">nasza</span>
+        <span className="text-[#5a9c3e]">wies</span>
+        <span className="font-medium text-[#d4a017]">.pl</span>
+      </p>
     </div>
   );
 }

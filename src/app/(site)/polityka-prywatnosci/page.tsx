@@ -109,7 +109,7 @@ export default function PolitykaPrywatnosciPage() {
         <section>
           <h2 className="font-serif text-xl text-green-900">7. Źródło danych TERYT</h2>
           <p className="mt-2 leading-relaxed text-stone-700">
-            Wyszukiwarka i katalog wsi (po imporcie) korzystają z publicznych danych GUS:{" "}
+            Wyszukiwarka i katalog wsi (interfejs po zalogowaniu; dane z importu TERYT) korzystają z publicznych danych GUS:{" "}
             <em>Krajowy Rejestr Urzędowy Podziału Terytorialnego Kraju (TERYT)</em>.
           </p>
         </section>

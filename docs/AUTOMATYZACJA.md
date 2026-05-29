@@ -38,7 +38,7 @@ Przepływ autobusów:
 
 PKP: potrzebna pinezka `stacja_kolejowa` (OSM lub ręcznie) + opcjonalnie mapowanie w `/panel/soltys/transport`.
 
-## Mapa publiczna (`/mapa`)
+## Mapa katalogu (`/mapa`, po zalogowaniu)
 
 - **Automatyzacja w tle** (wymaga `SUPABASE_SERVICE_ROLE_KEY`): gdy wiele wsi bez obrysu lub bez transportu — sync granic PRG, OSM POI, PKP (w tym hub powiatowy bez pinezki), autobusy GTFS.
 - **Filtry warstw**: transport, polowania, zgłoszenia, rynek — zapis w URL (`?warstwa=transport`).
@@ -54,7 +54,7 @@ Na **Profil wsi** (`/panel/soltys/moja-wies`) blok **„Sugestie mapy”**:
 - **Odśwież PKP i autobusy**,
 - link do panelu transportu.
 
-Mapa publiczna: przy wejściu, jeśli wiele wsi bez granicy, tło sync PRG (`mapa-sync-granice-klient`).
+Mapa katalogu: przy wejściu, jeśli wiele wsi bez granicy, tło sync PRG (`mapa-sync-granice-klient`).
 
 ## Źródła otwarte (dane.gov.pl + Geoportal)
 

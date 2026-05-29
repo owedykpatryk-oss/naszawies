@@ -21,7 +21,7 @@ export default function AboutPage() {
       </p>
       <p className="leading-relaxed">
         Chcemy, żeby każda wieś miała jedno miejsce w sieci: przejrzyste ogłoszenia, kontakt z sołtysem, mapa
-        miejscowości i narzędzia do codziennej organizacji — bez skomplikowanych portali i bez opłat za sam fakt
+        miejscowości (po zalogowaniu) i narzędzia do codziennej organizacji — bez skomplikowanych portali i bez opłat za sam fakt
         bycia w sieci.
       </p>
     </main>

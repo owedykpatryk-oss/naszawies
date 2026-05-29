@@ -136,6 +136,18 @@
   color: #5a9c3e;
 }
 
+.mapa-wsi-popup-kontakt {
+  font-size: 0.82rem;
+  color: #292524;
+  margin: 0.35rem 0;
+}
+
+.mapa-wsi-popup-szczegoly {
+  margin-top: 0.5rem;
+  padding-top: 0.45rem;
+  border-top: 1px solid #e7e5e4;
+}
+
 .mapa-wsi-popup-foot {
   margin: 0.65rem 0 0;
   line-height: 1.5;

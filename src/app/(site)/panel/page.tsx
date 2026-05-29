@@ -36,7 +36,7 @@ export default async function PanelPage() {
   return (
     <main>
       <PanelPrzewodnikStartu stan={stanStartu} />
-      <header className="relative mb-10 overflow-hidden rounded-2xl border border-stone-200/80 bg-gradient-to-br from-white via-white to-emerald-50/40 p-6 shadow-sm ring-1 ring-stone-900/[0.04] sm:p-7">
+      <header className="wow-wejscie relative mb-10 overflow-hidden rounded-2xl border border-stone-200/80 bg-gradient-to-br from-white via-white to-emerald-50/40 p-6 shadow-sm ring-1 ring-stone-900/[0.04] sm:p-7">
         <div
           className="pointer-events-none absolute -right-12 -top-12 h-40 w-40 rounded-full bg-emerald-400/15 blur-3xl"
           aria-hidden
@@ -107,7 +107,7 @@ export default async function PanelPage() {
               →
             </span>
           </Link>
-          <p className="mt-2 text-sm text-stone-600">Wnioski o role (mieszkaniec, OSP, KGW), ogłoszenia, świetlica.</p>
+          <p className="mt-2 text-sm text-stone-600">Wnioski o role (mieszkaniec, OSP, KGW), ogłoszenia, świetlica — w tym <Link href="/panel/mieszkaniec/marketplace" className="text-green-800 underline">rynek lokalny</Link>.</p>
         </li>
         <li className="group panel-karta">
           <Link href="/panel/soltys" className="link-panel">
@@ -120,6 +120,18 @@ export default async function PanelPage() {
             </span>
           </Link>
           <p className="mt-2 text-sm text-stone-600">Wnioski o role, moderacja, wyposażenie sal.</p>
+        </li>
+        <li className="group panel-karta ring-2 ring-orange-300/25">
+          <Link href="/panel/mieszkaniec/marketplace" className="link-panel">
+            Rynek lokalny
+            <span
+              className="ml-0.5 inline-block text-orange-700/80 transition group-hover:translate-x-0.5"
+              aria-hidden
+            >
+              →
+            </span>
+          </Link>
+          <p className="mt-2 text-sm text-stone-600">Dodaj ogłoszenie — produkty, maszyny, działki z mapą Geoportalu.</p>
         </li>
         <li className="group panel-karta">
           <Link href="/panel/powiadomienia" className="link-panel">

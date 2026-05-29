@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { linkChroniony } from "@/lib/auth/sciezki-chronione";
 import type { OstrzezenieLowieckie } from "@/lib/lowiectwo/pobierz-ostrzezenia-publiczne";
 import { OslonaSekcjiWies } from "@/components/wies/oslona-sekcji-wies";
 
@@ -11,10 +12,12 @@ export function OstrzezeniaLowieckieWsi({
   ostrzezenia,
   nazwaWsi,
   maProfilKola = false,
+  zalogowany = false,
 }: {
   ostrzezenia: OstrzezenieLowieckie[];
   nazwaWsi: string;
   maProfilKola?: boolean;
+  zalogowany?: boolean;
 }) {
   if (ostrzezenia.length === 0) return null;
 
@@ -52,7 +55,7 @@ export function OstrzezeniaLowieckieWsi({
               {o.maObszarMapy ? (
                 <p className="mt-2">
                   <Link
-                    href={`/mapa?polowanie=${encodeURIComponent(o.id)}`}
+                    href={linkChroniony("/mapa", zalogowany, `?polowanie=${encodeURIComponent(o.id)}`)}
                     className="text-sm font-medium text-amber-900 underline hover:text-amber-950"
                   >
                     Zobacz obszar na mapie →

@@ -1,17 +1,12 @@
 import type { MetadataRoute } from "next";
 
-const baza = (process.env.NEXT_PUBLIC_SITE_URL ?? "https://naszawies.pl")
-  .replace(/[\r\n]+/g, "")
-  .trim()
-  .replace(/\/$/, "");
-
 export default function manifest(): MetadataRoute.Manifest {
   return {
     id: "/",
     name: "naszawies.pl — cyfrowy dom polskiej wsi",
     short_name: "naszawies",
     description:
-      "Katalog wsi, mapa, panel mieszkańca i sołtysa: świetlica, dokumenty, społeczność. Zainstaluj jak aplikację na telefonie.",
+      "Publiczny profil wsi, panel mieszkańca i sołtysa: świetlica, dokumenty, społeczność. Katalog i mapa po zalogowaniu.",
     start_url: "/",
     scope: "/",
     display: "standalone",
@@ -38,13 +33,19 @@ export default function manifest(): MetadataRoute.Manifest {
     ],
     icons: [
       {
-        src: `${baza}/marka/znak-okrag-192.png`,
+        src: "/icon",
+        sizes: "32x32",
+        type: "image/png",
+        purpose: "any",
+      },
+      {
+        src: "/api/pwa/icon/192",
         sizes: "192x192",
         type: "image/png",
         purpose: "any",
       },
       {
-        src: `${baza}/marka/znak-okrag-512.png`,
+        src: "/api/pwa/icon/512",
         sizes: "512x512",
         type: "image/png",
         purpose: "maskable",

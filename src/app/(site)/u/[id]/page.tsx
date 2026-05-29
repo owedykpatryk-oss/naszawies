@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { z } from "zod";
+import { PasekOdznakSprzedawcy } from "@/components/wies/rynek-ui";
+import { zaufanieZLiczby } from "@/lib/marketplace/zaufanie-sprzedawcy";
 import { createPublicSupabaseClient } from "@/lib/supabase/public-client";
 
 type Props = { params: { id: string } };
@@ -47,6 +49,15 @@ export default async function PublicznyProfilUzytkownika({ params }: Props) {
     notFound();
   }
 
+  const { count: liczbaOgloszen } = await supabase
+    .from("marketplace_listings")
+    .select("id", { count: "exact", head: true })
+    .eq("owner_user_id", id.data)
+    .eq("status", "approved");
+
+  const zaufanie = zaufanieZLiczby(liczbaOgloszen ?? 0);
+  const maZatwierdzoneOgloszenia = (liczbaOgloszen ?? 0) > 0;
+
   return (
     <main className="mx-auto min-w-0 max-w-lg py-16 text-stone-800">
       <p className="mb-6 text-sm text-stone-500">
@@ -65,6 +76,22 @@ export default async function PublicznyProfilUzytkownika({ params }: Props) {
         </div>
         <div className="min-w-0 flex-1 text-center sm:text-left">
           <h1 className="font-serif text-2xl text-green-950">{u.display_name}</h1>
+          {maZatwierdzoneOgloszenia || zaufanie.aktywnySprzedawca ? (
+            <p className="mt-2">
+              <PasekOdznakSprzedawcy
+                sellerVerified={maZatwierdzoneOgloszenia}
+                znanyWWsi={false}
+                aktywnySprzedawca={zaufanie.aktywnySprzedawca}
+                liczbaOgloszen={zaufanie.liczbaOgloszenSprzedawcy}
+              />
+            </p>
+          ) : null}
+          {(liczbaOgloszen ?? 0) > 0 ? (
+            <p className="mt-2 text-sm text-stone-600">
+              {liczbaOgloszen === 1 ? "1 zatwierdzone ogłoszenie" : `${liczbaOgloszen} zatwierdzonych ogłoszeń`} na
+              rynku lokalnym
+            </p>
+          ) : null}
           {u.bio ? <p className="mt-3 whitespace-pre-wrap text-sm leading-relaxed text-stone-700">{u.bio}</p> : null}
           {u.phone_visible_public && u.phone ? (
             <p className="mt-4 text-sm text-stone-600">

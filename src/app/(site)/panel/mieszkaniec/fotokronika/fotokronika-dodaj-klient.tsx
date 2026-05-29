@@ -4,6 +4,8 @@ import { useRouter } from "next/navigation";
 import { FormEvent, useMemo, useState, useTransition } from "react";
 import { zapiszZdjecieFotokroniki, type WynikFoto } from "../akcje-fotokronika";
 import { utworzKlientaSupabasePrzegladarka } from "@/lib/supabase/przegladarka";
+import { czyKlientUzywaMagazynuR2 } from "@/lib/storage/czy-magazyn-r2";
+import { wgrajObrazDoMagazynuR2 } from "@/lib/storage/wgraj-obraz-r2";
 
 const MAX_BAJTOW = 5 * 1024 * 1024;
 const MIME = ["image/jpeg", "image/png", "image/webp"] as const;
@@ -58,25 +60,42 @@ export function FotokronikaDodajKlient({ wies, albumy, konkursy = [], uzytkownik
     }
 
     startT(async () => {
-      const supabase = utworzKlientaSupabasePrzegladarka();
-      const ext = plik.type === "image/png" ? "png" : plik.type === "image/webp" ? "webp" : "jpg";
-      const sciezka = `${vId}/${uzytkownik.id}/${Date.now()}-${Math.random().toString(36).slice(2, 9)}.${ext}`;
-      const { error: uE } = await supabase.storage.from("village_photos").upload(sciezka, plik, {
-        contentType: plik.type,
-        cacheControl: "3600",
-        upsert: false,
-      });
-      if (uE) {
-        ustawBlad(
-          uE.message.includes("Bucket not found")
-            ? "Zapisywanie zdjęć jest chwilowo niedostępne. Spróbuj później lub skontaktuj się z obsługą serwisu."
-            : uE.message
-        );
-        return;
+      let publicUrl: string;
+
+      if (czyKlientUzywaMagazynuR2()) {
+        const uploadFd = new FormData();
+        uploadFd.set("typ", "village_photos");
+        uploadFd.set("villageId", vId);
+        uploadFd.set("podkatalog", "fotokronika");
+        uploadFd.set("file", plik);
+        const w = await wgrajObrazDoMagazynuR2(uploadFd);
+        if ("blad" in w) {
+          ustawBlad(w.blad);
+          return;
+        }
+        publicUrl = w.publicUrl;
+      } else {
+        const supabase = utworzKlientaSupabasePrzegladarka();
+        const ext = plik.type === "image/png" ? "png" : plik.type === "image/webp" ? "webp" : "jpg";
+        const sciezka = `${vId}/${uzytkownik.id}/${Date.now()}-${Math.random().toString(36).slice(2, 9)}.${ext}`;
+        const { error: uE } = await supabase.storage.from("village_photos").upload(sciezka, plik, {
+          contentType: plik.type,
+          cacheControl: "3600",
+          upsert: false,
+        });
+        if (uE) {
+          ustawBlad(
+            uE.message.includes("Bucket not found")
+              ? "Zapisywanie zdjęć jest chwilowo niedostępne. Spróbuj później lub skontaktuj się z obsługą serwisu."
+              : uE.message
+          );
+          return;
+        }
+        const {
+          data: { publicUrl: urlSupa },
+        } = supabase.storage.from("village_photos").getPublicUrl(sciezka);
+        publicUrl = urlSupa;
       }
-      const {
-        data: { publicUrl },
-      } = supabase.storage.from("village_photos").getPublicUrl(sciezka);
 
       let takenIso: string | null = null;
       if (taken) {

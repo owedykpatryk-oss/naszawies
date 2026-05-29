@@ -16,6 +16,21 @@ const nextConfig = {
   images: {
     formats: ["image/avif", "image/webp"],
     minimumCacheTTL: 60 * 60 * 24 * 7,
+    remotePatterns: (() => {
+      const wzorce = [
+        { protocol: "https", hostname: "**.supabase.co", pathname: "/storage/v1/object/public/**" },
+      ];
+      const r2 = process.env.NEXT_PUBLIC_R2_PUBLIC_BASE_URL?.trim();
+      if (r2) {
+        try {
+          const u = new URL(r2);
+          wzorce.push({ protocol: "https", hostname: u.hostname, pathname: "/**" });
+        } catch {
+          /* ignore */
+        }
+      }
+      return wzorce;
+    })(),
   },
   async headers() {
     const prod = process.env.NODE_ENV === "production";

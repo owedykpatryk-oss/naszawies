@@ -3,11 +3,13 @@ import { TrybSeniorProvider } from "@/components/ui/tryb-senior-provider";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
 
 const LINKI_PUBLICZNE = [
+  { href: "/rynek", label: "Rynek lokalny" },
   { href: "/pomoc", label: "Pomoc" },
   { href: "/kontakt", label: "Kontakt" },
 ] as const;
 
 const LINKI_PO_ZALOGOWANIU = [
+  { href: "/rynek", label: "Rynek lokalny" },
   { href: "/panel", label: "Panel" },
   { href: "/grafika", label: "Kreator plakatów" },
   { href: "/szukaj", label: "Szukaj wsi" },

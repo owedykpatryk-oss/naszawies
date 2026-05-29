@@ -1,22 +1,30 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { useState, useTransition } from "react";
+import { useState } from "react";
 import {
   etykietaJednostkiCeny,
   etykietaKategoriiSprzetu,
   etykietaTypuOgloszenia,
 } from "@/lib/marketplace/kategorie-ogloszen";
-import { rozpocznijCzatZOgloszenia } from "@/app/(site)/panel/czat/akcje";
 import { ZapiszTrescPrzycisk } from "@/components/panel/moje/zapisz-tresc-przycisk";
+import { RynekKontaktSprzedawcy } from "@/components/wies/rynek-kontakt-sprzedawcy";
+import { RynekObserwujCene } from "@/components/wies/rynek-obserwuj-cene";
+import { RynekRejestrujWyswietlenie } from "@/components/wies/rynek-licznik-wyswietlen";
 import { RynekUdostepnijPrzycisk } from "@/components/wies/rynek-udostepnij-przycisk";
+import { zbudujTekstUdostepnieniaOgloszenia } from "@/lib/marketplace/tekst-udostepnienia";
+import { ObrazR2 } from "@/components/media/obraz-r2";
 import {
   BlokInfoRynku,
   FormatujCeneOgloszenia,
   MiniaturaOgloszenia,
   OdznakaZweryfikowany,
+  PasekOdznakSprzedawcy,
 } from "@/components/wies/rynek-ui";
+import type { ZaufanieSprzedawcy } from "@/lib/marketplace/zaufanie-sprzedawcy";
+import { MapaDzialkiOgledzin } from "@/components/marketplace/mapa-dzialki-ogledzin";
+import { czyKategoriaNieruchomosci, formatujPowierzchnieDzialki } from "@/lib/marketplace/nieruchomosci";
+import type { GeoJsonGeometriiDzialki } from "@/lib/geoportal/wkt-do-geojson";
 
 export type OgloszenieRynekPubliczne = {
   id: string;
@@ -27,6 +35,7 @@ export type OgloszenieRynekPubliczne = {
   category: string | null;
   price_amount: number | null;
   price_unit: string | null;
+  currency?: string | null;
   with_operator: boolean;
   phone: string | null;
   location_text: string | null;
@@ -46,6 +55,12 @@ export type OgloszenieRynekPubliczne = {
   allergens_text?: string | null;
   sales_poi_name?: string | null;
   profile_id?: string | null;
+  parcel_geojson?: GeoJsonGeometriiDzialki | null;
+  parcel_number?: string | null;
+  cadastral_district?: string | null;
+  parcel_area_m2?: number | null;
+  geoportal_parcel_id?: string | null;
+  view_count?: number;
 };
 
 export type ProfilSprzedawcySkrot = {
@@ -67,30 +82,44 @@ export type OgloszenieRynekSkrot = {
 export function RynekOgloszenieSzczegoly({
   ogloszenie,
   sciezkaWsi,
+  nazwaWsi,
   villageId,
   zalogowany,
   toJa,
   zapisaneId = null,
+  obserwujCene = false,
+  zaufanieSprzedawcy = null,
   profilSprzedawcy = null,
   podobne = [],
 }: {
   ogloszenie: OgloszenieRynekPubliczne;
   sciezkaWsi: string;
+  nazwaWsi?: string;
   villageId: string;
   zalogowany: boolean;
   toJa: boolean;
   zapisaneId?: string | null;
+  obserwujCene?: boolean;
+  zaufanieSprzedawcy?: ZaufanieSprzedawcy | null;
   profilSprzedawcy?: ProfilSprzedawcySkrot | null;
   podobne?: OgloszenieRynekSkrot[];
 }) {
-  const router = useRouter();
-  const [blad, ustawBlad] = useState("");
-  const [czek, startT] = useTransition();
   const [zdjecieAktywne, ustawZdjecieAktywne] = useState(0);
   const zdjecia = ogloszenie.image_urls ?? [];
   const kat = ogloszenie.equipment_category ?? ogloszenie.category;
   const bazaUrl = process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") ?? "https://naszawies.pl";
   const urlOgloszenia = `${bazaUrl}${sciezkaWsi}/rynek/${ogloszenie.id}`;
+
+  const maMapeDzialki = Boolean(ogloszenie.parcel_geojson);
+  const jestNieruchomoscia = czyKategoriaNieruchomosci(kat);
+  const tekstUdostepnienia = zbudujTekstUdostepnieniaOgloszenia({
+    tytul: ogloszenie.title,
+    cena: ogloszenie.price_amount,
+    waluta: ogloszenie.currency,
+    jednostka: ogloszenie.price_unit,
+    powierzchniaM2: ogloszenie.parcel_area_m2,
+    nazwaWsi,
+  });
 
   const maSzczegolyProduktu =
     ogloszenie.pickup_in_village ||
@@ -103,26 +132,36 @@ export function RynekOgloszenieSzczegoly({
     ogloszenie.sales_poi_name;
 
   return (
-    <article className="overflow-hidden rounded-2xl border border-orange-200/80 bg-white shadow-sm">
+    <article className="wow-wejscie overflow-hidden rounded-2xl border border-orange-200/70 bg-white shadow-lg shadow-orange-950/5 ring-1 ring-stone-950/[0.03]">
       <div className="lg:grid lg:grid-cols-[1fr_minmax(240px,280px)] lg:gap-0">
         <div className="border-b border-stone-100 p-5 sm:p-6 lg:border-b-0 lg:border-r">
-          <p className="text-xs font-bold uppercase tracking-wider text-orange-900">
-            {etykietaTypuOgloszenia(ogloszenie.listing_type)}
-            {kat ? ` · ${etykietaKategoriiSprzetu(kat)}` : ""}
-            {ogloszenie.with_operator ? " · z operatorem" : ""}
+          <p className="inline-flex flex-wrap items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-orange-900">
+            <span className="rounded-full bg-orange-100/80 px-2 py-0.5">{etykietaTypuOgloszenia(ogloszenie.listing_type)}</span>
+            {kat ? (
+              <span className="rounded-full bg-stone-100 px-2 py-0.5 normal-case tracking-normal text-stone-700">
+                {etykietaKategoriiSprzetu(kat)}
+              </span>
+            ) : null}
+            {ogloszenie.with_operator ? (
+              <span className="rounded-full bg-sky-100 px-2 py-0.5 normal-case tracking-normal text-sky-900">z operatorem</span>
+            ) : null}
           </p>
-          <h1 className="mt-2 font-serif text-2xl text-green-950 sm:text-3xl">{ogloszenie.title}</h1>
+          <h1 className="mt-3 font-serif text-2xl text-green-950 sm:text-3xl">{ogloszenie.title}</h1>
 
           {zdjecia.length > 0 ? (
-            <div className="mt-4">
-              <a href={zdjecia[zdjecieAktywne]} target="_blank" rel="noopener noreferrer" className="block overflow-hidden rounded-2xl">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
+            <div className="mt-5">
+              <div className="relative overflow-hidden rounded-2xl ring-1 ring-stone-200/80">
+                <ObrazR2
                   src={zdjecia[zdjecieAktywne]}
+                  preset="pelny"
                   alt=""
                   className="aspect-[4/3] w-full object-cover sm:max-h-80"
                 />
-              </a>
+                <div className="pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black/40 to-transparent" />
+                <p className="absolute bottom-3 left-3 rounded-xl bg-white/95 px-3 py-1.5 text-lg font-bold text-green-900 shadow-lg backdrop-blur-sm">
+                  <FormatujCeneOgloszenia kwota={ogloszenie.price_amount} jednostka={ogloszenie.price_unit} />
+                </p>
+              </div>
               {zdjecia.length > 1 ? (
                 <div className="mt-2 flex gap-2 overflow-x-auto pb-1">
                   {zdjecia.map((url, i) => (
@@ -130,24 +169,52 @@ export function RynekOgloszenieSzczegoly({
                       key={url}
                       type="button"
                       onClick={() => ustawZdjecieAktywne(i)}
-                      className={`shrink-0 overflow-hidden rounded-lg ring-2 ring-offset-1 ${
-                        i === zdjecieAktywne ? "ring-orange-500" : "ring-transparent"
+                      className={`shrink-0 overflow-hidden rounded-xl ring-2 ring-offset-2 transition ${
+                        i === zdjecieAktywne ? "ring-orange-500" : "ring-transparent opacity-70 hover:opacity-100"
                       }`}
                     >
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={url} alt="" className="h-14 w-14 object-cover" />
+                      <ObrazR2 src={url} preset="miniatura" alt="" className="h-14 w-14 object-cover" />
                     </button>
                   ))}
                 </div>
               ) : null}
             </div>
           ) : (
-            <div className="mt-4">
+            <div className="mt-5">
               <MiniaturaOgloszenia rozmiar="duzy" />
             </div>
           )}
 
           <div className="mt-5 whitespace-pre-wrap text-sm leading-relaxed text-stone-800">{ogloszenie.description}</div>
+
+          {jestNieruchomoscia ? (
+            <div className="mt-6">
+              {maMapeDzialki ? (
+                <MapaDzialkiOgledzin
+                  geometria={ogloszenie.parcel_geojson ?? null}
+                  srodekLat={ogloszenie.latitude}
+                  srodekLng={ogloszenie.longitude}
+                  numerDzialki={ogloszenie.parcel_number}
+                  obreb={ogloszenie.cadastral_district}
+                  powierzchniaM2={ogloszenie.parcel_area_m2}
+                />
+              ) : null}
+              {(ogloszenie.parcel_number || ogloszenie.cadastral_district || ogloszenie.parcel_area_m2) && !maMapeDzialki ? (
+                <BlokInfoRynku tytul="Dane działki" ikona="📐">
+                  <ul className="space-y-1 text-sm">
+                    {ogloszenie.parcel_number ? <li>Numer: {ogloszenie.parcel_number}</li> : null}
+                    {ogloszenie.cadastral_district ? <li>Obręb: {ogloszenie.cadastral_district}</li> : null}
+                    {ogloszenie.parcel_area_m2 ? (
+                      <li>Powierzchnia: {formatujPowierzchnieDzialki(ogloszenie.parcel_area_m2)}</li>
+                    ) : null}
+                  </ul>
+                </BlokInfoRynku>
+              ) : null}
+              <p className="mt-2 text-[11px] text-stone-500">
+                Informacja z Geoportalu ma charakter pomocniczy — przed zakupem sprawdź w urzędzie / u notariusza.
+              </p>
+            </div>
+          ) : null}
 
           {maSzczegolyProduktu ? (
             <div className="mt-5">
@@ -172,7 +239,7 @@ export function RynekOgloszenieSzczegoly({
             </div>
           ) : null}
 
-          {ogloszenie.latitude != null && ogloszenie.longitude != null ? (
+          {ogloszenie.latitude != null && ogloszenie.longitude != null && !maMapeDzialki ? (
             <p className="mt-4 text-sm">
               <a
                 href={`https://www.openstreetmap.org/?mlat=${ogloszenie.latitude}&mlon=${ogloszenie.longitude}#map=15/${ogloszenie.latitude}/${ogloszenie.longitude}`}
@@ -193,19 +260,27 @@ export function RynekOgloszenieSzczegoly({
           ) : null}
         </div>
 
-        <aside className="bg-gradient-to-b from-orange-50/50 to-stone-50/30 p-5 sm:p-6">
-          <div className="rounded-2xl border border-orange-200/70 bg-white p-4 shadow-sm">
-            <p className="text-xs uppercase tracking-wide text-stone-500">Cena</p>
-            <p className="mt-1 text-2xl font-semibold text-green-900">
+        <aside className="bg-gradient-to-b from-orange-50/60 via-amber-50/30 to-stone-50/40 p-5 sm:p-6">
+          <div className="rounded-2xl border border-orange-200/60 bg-white/95 p-4 shadow-md backdrop-blur-sm">
+            <p className="text-[10px] font-bold uppercase tracking-wider text-stone-500">Cena</p>
+            <p className="mt-1 text-3xl font-bold text-green-900">
               <FormatujCeneOgloszenia kwota={ogloszenie.price_amount} jednostka={ogloszenie.price_unit} />
             </p>
             <p className="mt-2 text-xs text-stone-600">
               {ogloszenie.location_text ? `${ogloszenie.location_text} · ` : ""}
               Opublikowano {new Date(ogloszenie.published_at ?? ogloszenie.created_at).toLocaleDateString("pl-PL")}
             </p>
-            {ogloszenie.seller_verified ? (
+            <p className="mt-1 text-xs">
+              <RynekRejestrujWyswietlenie listingId={ogloszenie.id} poczatkowaLiczba={ogloszenie.view_count ?? 0} />
+            </p>
+            {ogloszenie.seller_verified || zaufanieSprzedawcy?.znanyWWsi || zaufanieSprzedawcy?.aktywnySprzedawca ? (
               <p className="mt-3">
-                <OdznakaZweryfikowany duza />
+                <PasekOdznakSprzedawcy
+                  sellerVerified={ogloszenie.seller_verified}
+                  znanyWWsi={zaufanieSprzedawcy?.znanyWWsi}
+                  aktywnySprzedawca={zaufanieSprzedawcy?.aktywnySprzedawca}
+                  liczbaOgloszen={zaufanieSprzedawcy?.liczbaOgloszenSprzedawcy}
+                />
               </p>
             ) : null}
           </div>
@@ -227,44 +302,18 @@ export function RynekOgloszenieSzczegoly({
             </div>
           ) : null}
 
-          {ogloszenie.phone ? (
-            <a
-              href={`tel:${ogloszenie.phone.replace(/\s/g, "")}`}
-              className="mt-4 flex w-full items-center justify-center rounded-xl bg-green-800 px-4 py-3 text-sm font-semibold text-white hover:bg-green-900"
-            >
-              Zadzwoń: {ogloszenie.phone}
-            </a>
-          ) : null}
+          <RynekKontaktSprzedawcy
+            ogloszenieId={ogloszenie.id}
+            telefon={ogloszenie.phone}
+            tytul={ogloszenie.title}
+            urlOgloszenia={urlOgloszenia}
+            sciezkaWsi={sciezkaWsi}
+            nazwaWsi={nazwaWsi}
+            zalogowany={zalogowany}
+            toJa={toJa}
+          />
 
           <div className="mt-4 space-y-2">
-            {!toJa && zalogowany ? (
-              <button
-                type="button"
-                disabled={czek}
-                className="w-full rounded-xl border border-green-800 bg-white px-4 py-2.5 text-sm font-semibold text-green-900 hover:bg-green-50 disabled:opacity-50"
-                onClick={() => {
-                  ustawBlad("");
-                  startT(async () => {
-                    const w = await rozpocznijCzatZOgloszenia(ogloszenie.id);
-                    if ("blad" in w) {
-                      ustawBlad(w.blad);
-                      return;
-                    }
-                    if (w.conversationId) router.push(`/panel/czat/${w.conversationId}`);
-                  });
-                }}
-              >
-                {czek ? "Otwieranie…" : "Napisz wiadomość"}
-              </button>
-            ) : null}
-            {!zalogowany ? (
-              <Link
-                href={`/logowanie?next=${encodeURIComponent(`${sciezkaWsi}/rynek/${ogloszenie.id}`)}`}
-                className="block w-full rounded-xl border border-green-800 px-4 py-2.5 text-center text-sm font-semibold text-green-900 hover:bg-green-50"
-              >
-                Zaloguj się, aby napisać
-              </Link>
-            ) : null}
             <Link
               href={`${sciezkaWsi}/rynek`}
               className="block w-full rounded-xl border border-stone-300 px-4 py-2.5 text-center text-sm text-stone-800 hover:bg-stone-50"
@@ -272,25 +321,29 @@ export function RynekOgloszenieSzczegoly({
               ← Wszystkie ogłoszenia
             </Link>
             <div className="flex flex-wrap gap-2">
-              <RynekUdostepnijPrzycisk url={`${sciezkaWsi}/rynek/${ogloszenie.id}`} tytul={ogloszenie.title} />
+              <RynekUdostepnijPrzycisk
+                url={`${sciezkaWsi}/rynek/${ogloszenie.id}`}
+                tytul={ogloszenie.title}
+                tekst={tekstUdostepnienia}
+              />
               {zalogowany ? (
-                <ZapiszTrescPrzycisk
-                  villageId={villageId}
-                  contentType="listing"
-                  contentId={ogloszenie.id}
-                  title={ogloszenie.title}
-                  href={`${sciezkaWsi}/rynek/${ogloszenie.id}`}
-                  zapisaneId={zapisaneId}
-                />
+                <>
+                  <ZapiszTrescPrzycisk
+                    villageId={villageId}
+                    contentType="listing"
+                    contentId={ogloszenie.id}
+                    title={ogloszenie.title}
+                    href={`${sciezkaWsi}/rynek/${ogloszenie.id}`}
+                    zapisaneId={zapisaneId}
+                  />
+                  {zapisaneId ? (
+                    <RynekObserwujCene zapisaneId={zapisaneId} poczatkowoWlaczone={obserwujCene} />
+                  ) : null}
+                </>
               ) : null}
             </div>
           </div>
 
-          {blad ? (
-            <p className="mt-3 text-sm text-red-800" role="alert">
-              {blad}
-            </p>
-          ) : null}
           {toJa ? (
             <p className="mt-3 text-xs text-stone-500">To Twoje ogłoszenie — odpowiedzi zobaczysz w Wiadomościach.</p>
           ) : null}

@@ -3,7 +3,7 @@ NASZAWIES.PL — SZCZEGÓŁOWY OPIS APLIKACJI DO ANALIZY AI (roadmapa, luki, ryz
 ================================================================================
 Źródło: kod repozytorium `naszawies/` (Next.js App Router, TypeScript) oraz migracje
         SQL w `naszawies/supabase/migrations/`.
-Ostatnia aktualizacja treści: 2026-05-03.
+Ostatnia aktualizacja treści: 2026-05-29.
 
 UWAGI WDROŻENIOWE
 - Na każdym środowisku (staging/produkcja) muszą być zastosowane **wszystkie** migracje oczekiwane przez kod;
@@ -42,7 +42,7 @@ UWAGI WDROŻENIOWE
 - **Zod** — walidacja wejść (API, Server Actions).
 - **Resend** — e-mail z formularzy (kontakt, waitlist, zgłoszenia — gdy skonfigurowane zmienne).
 - **web-push** (Node) — wysyłka powiadomień push po VAPID, gdy ustawione `VAPID_PRIVATE_KEY` i subskrypcje w bazie.
-- **Leaflet** — mapa publiczna wsi i mapa katalogu (klient).
+- **Leaflet** — mapa katalogu wsi (po zalogowaniu) oraz mapy w profilach / panelu (klient).
 - **html2pdf.js** — eksport PDF w generatorze dokumentów sołtysa.
 - **slugify**, **fast-xml-parser** — m.in. RSS.
 - Migracje: pojedyncze pliki `.sql` w `supabase/migrations/` (kolejność leksykograficzna nazw plików).
@@ -179,10 +179,11 @@ ustawiony; upload source map domyślnie wyłączony (`sourcemaps.disable`).
 
 - `GET /api/health` — monitoring: odczyt `villages` (anon), ping **`/auth/v1/health`**, pole `wersja` z
   `NEXT_PUBLIC_APP_VERSION` lub `NEXT_PUBLIC_WERSJA_APLIKACJI`.
-- `GET /api/wies/mapa-znaczniki` — JSON dla mapy katalogu (proxy/logika nad RPC).
-- `GET /api/wies/wg-teryt?id=` — dane wsi po TERYT (API pomocnicze).
-- `GET /api/wies/statystyki` — statystyki pod landing (katalog).
-- `GET /api/wies/szukaj` — wyszukiwanie wsi (katalog, parametr `q`).
+- `GET /api/wies/mapa-znaczniki` — JSON dla mapy katalogu (proxy/logika nad RPC); **wymaga sesji** (middleware + `wymagajLogowaniaApi`).
+- `GET /api/wies/wg-teryt?id=` — dane wsi po TERYT (API pomocnicze, publiczne).
+- `GET /api/wies/statystyki` — statystyki pod landing (publiczne, bez listy wsi).
+- `GET /api/wies/szukaj` — wyszukiwanie wsi (katalog, parametr `q`); **wymaga sesji**.
+- `GET /api/wies/katalog` — kaskada woj/powiat/gmina/wsi; **wymaga sesji** (wyjątek: server actions rejestracji).
 - `POST /api/waitlist` — zapis na listę (walidacja Zod); opcjonalny mail przez Resend.
 - `POST /api/kontakt` — formularz kontaktu.
 - `POST /api/zglos-naruszenie` — DSA / zgłoszenia naruszeń (e-mail do moderacji jeśli skonfigurowane).
@@ -236,9 +237,25 @@ serwera (klient admin w handlerach).
 - Strona główna i landing: m.in. `revalidate`, JSON-LD (komponenty w kodzie).
 
 --------------------------------------------------------------------------------
-10. MIDDLEWARE
+10. MIDDLEWARE I ŚCIEŻKI CHRONIONE
 --------------------------------------------------------------------------------
-- `src/middleware.ts` — `favicon.ico` → rewrite na `/icon`; **Supabase SSR** — odświeżanie cookies sesji (OAuth/PKCE).
+- `src/middleware.ts` — `favicon.ico` → rewrite na `/icon`; **Supabase SSR** — odświeżanie cookies sesji (OAuth/PKCE);
+  przekierowanie gościa na `/logowanie?next=…` lub **401** dla API.
+- `src/lib/auth/sciezki-chronione.ts` — lista prefiksów stron i API wymagających konta.
+
+**Strony (gość → redirect na logowanie):**
+- `/panel/**`, `/mapa/**`, `/szukaj`, `/wybierz-wies`, `/grafika`, `/transport/**`.
+- Huby administracyjne `/wies/{woj}`, `/wies/{woj}/{powiat}`, `/wies/{woj}/{powiat}/{gmina}` (1–3 segmenty po `wies`).
+
+**API (gość → 401):**
+- `/api/wies/katalog`, `/api/wies/szukaj`, `/api/wies/mapa-znaczniki`.
+
+**Wyjątek:** wybór wsi przy rejestracji — server action `pobierzKatalogDlaRejestracji` (publiczny klient Supabase),
+bez HTTP `/api/wies/katalog`.
+
+**Bez env Supabase** middleware nie egzekwuje auth (dev) — na produkcji zmienne muszą być ustawione.
+
+**Obrona w głąb:** strony `/mapa`, `/szukaj`, `/wybierz-wies`, `/transport` wywołują `wymagajLogowaniaStrona()` (redirect po stronie serwera).
 
 --------------------------------------------------------------------------------
 11. ŚCIEŻKI PUBLICZNE (FRONTEND) — SKRÓT + PODSTRONY WSI
@@ -246,15 +263,18 @@ serwera (klient admin w handlerach).
 11.1 Marketing, prawo, konto
 - `/`, `/o-nas`, `/kontakt`, `/regulamin`, `/polityka-prywatnosci`.
 - `/logowanie`, `/rejestracja`, `/reset-hasla`, `/potwierdz-email`, `/auth/ustaw-haslo`.
-- `/zglos-naruszenie`.
+- `/zglos-naruszenie`, `/pomoc`, `/zglos-problem-strony`.
 
-11.2 Katalog
+11.2 Katalog i mapa (po zalogowaniu — patrz §10)
 - `/szukaj` — wyszukiwarka (param `?q=`); komponent kliencki + synchronizacja URL.
-- `/mapa` — mapa Leaflet + znaczniki.
-- `/wybierz-wies` — onboarding wyboru wsi.
+- `/mapa` — mapa Leaflet + znaczniki katalogu.
+- `/wybierz-wies` — onboarding wyboru wsi (ten sam komponent co `/szukaj`).
+- `/transport`, `/transport/rozklad` — hub transportu (PKP, autobusy).
+- `/grafika` — wejście do kreatora plakatów (zalogowany → panel grafiki).
 
 11.3 Profil wsi (catch-all `wies/[[...segmenty]]`)
-- URL: `/wies/{woj}/{powiat}/{gmina}/{slug}` + opcjonalne segmenty podstron.
+- URL: `/wies/{woj}/{powiat}/{gmina}/{slug}` + opcjonalne segmenty podstron — **publiczny** (≥4 segmenty po `wies`).
+- Huby województwo / powiat / gmina (1–3 segmenty) — tylko po zalogowaniu (§10).
 - Główna karta wsi: posty zatwierdzone, kalendarz zajętości sal (publicznie bezpieczny), blog, historia, marketplace,
   wiadomości lokalne, organizacje, wydarzenia społeczności, lista zakupów (interakcja dla uprawnionych), harmonogram,
   dotacje, **przewodnik samorządowy** (z bazy), świetlica, czasem strona projektu świetlicy (TERYT w kodzie dla demo).

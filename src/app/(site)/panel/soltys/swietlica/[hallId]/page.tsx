@@ -16,6 +16,7 @@ import { parsujPlanZJsonb, parsujPresetyPlanu } from "@/lib/swietlica/plan-sali"
 import { parsujRzutParteruZJsonb } from "@/lib/swietlica/rzut-parteru-sali";
 import { wyznaczObszarStolow, znacznikiNaPlanieStolow } from "@/lib/swietlica/mapowanie-rzutu-plan";
 import { pojedynczaWies } from "@/lib/supabase/wies-z-zapytania";
+import { KalendarzZajetosciSoltysKlient } from "@/components/swietlica/kalendarz-zajetosci-soltys-klient";
 import { AsortymentSwietlicyKlient, type PozycjaWyposazenia } from "./asortyment-klient";
 
 type Props = { params: { hallId: string } };
@@ -72,10 +73,15 @@ export default async function SoltysSwietlicaHallPage({ params }: Props) {
     console.error("[soltys swietlica hall] inventory", invErr.message);
   }
 
-  const { data: rezerwacje } = await supabase
-    .from("hall_bookings")
-    .select("status, expected_guests, layout_data")
-    .eq("hall_id", hallId);
+  const [{ data: rezerwacje }, { data: rezerwacjeStats }] = await Promise.all([
+    supabase
+      .from("hall_bookings")
+      .select("id, start_at, end_at, event_title, event_type")
+      .eq("hall_id", hallId)
+      .eq("status", "approved")
+      .order("start_at", { ascending: true }),
+    supabase.from("hall_bookings").select("status, expected_guests, layout_data").eq("hall_id", hallId),
+  ]);
 
   const pozycje = (inv ?? []) as PozycjaWyposazenia[];
   const plan = parsujPlanZJsonb(sala.layout_data);
@@ -95,7 +101,7 @@ export default async function SoltysSwietlicaHallPage({ params }: Props) {
       ? { bryla_szer_m: rzutParteru.bryla_szer_m, bryla_gleb_m: rzutParteru.bryla_gleb_m }
       : null;
 
-  const rezerw = rezerwacje ?? [];
+  const rezerw = rezerwacjeStats ?? [];
   const oczek = rezerw.filter((r) => r.status === "pending").length;
   const zatw = rezerw.filter((r) => r.status === "approved").length;
   const odrz = rezerw.filter((r) => r.status === "rejected").length;
@@ -117,6 +123,7 @@ export default async function SoltysSwietlicaHallPage({ params }: Props) {
     { id: "rzut", label: "Zapisz rzut parteru z wejściami/oknami", href: "#rzut-parteru-sali", gotowe: rzutParteru != null },
     { id: "plan", label: "Ustaw plan stołów", href: "#plan-sali-edytor", gotowe: plan.elementy.length > 0 },
     { id: "regulamin", label: "Opublikuj regulamin i ceny", href: "#regulamin-sali", gotowe: Boolean(sala.rules_text?.trim() || sala.rules_file_url) },
+    { id: "kalendarz", label: "Uzupełnij kalendarz zajętości", href: "#kalendarz-zajetosci-sali", gotowe: (rezerwacje ?? []).length > 0 },
     { id: "asortyment", label: "Dodaj asortyment sali", href: "#asortyment-sali", gotowe: pozycje.length > 0 },
   ];
 
@@ -139,6 +146,17 @@ export default async function SoltysSwietlicaHallPage({ params }: Props) {
         rezerwacjeOdrzucone={odrz}
         sredniaGosci={sredniaGosci}
         popularnyPreset={popularnyPreset}
+      />
+
+      <KalendarzZajetosciSoltysKlient
+        hallId={hallId}
+        wpisy={(rezerwacje ?? []).map((r) => ({
+          id: r.id,
+          start_at: r.start_at,
+          end_at: r.end_at,
+          event_title: r.event_title ?? null,
+          event_type: r.event_type ?? "zajete",
+        }))}
       />
 
       <div className="mt-6" id="profil-budynku">

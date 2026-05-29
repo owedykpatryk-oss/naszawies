@@ -1789,6 +1789,63 @@ export async function zapiszProfilPublicznyWsi(
   return { ok: true };
 }
 
+const schemaBannerRynkuWsi = z.object({
+  villageId: z.string().uuid(),
+  rynek_banner_text: z.string().max(500).optional().nullable(),
+  rynek_banner_until: z.string().max(20).optional().nullable(),
+});
+
+export async function zapiszBannerRynkuWsi(dane: z.infer<typeof schemaBannerRynkuWsi>): Promise<WynikProsty> {
+  const p = schemaBannerRynkuWsi.safeParse(dane);
+  if (!p.success) return { blad: "Nieprawidłowe dane bannera." };
+
+  const supabase = utworzKlientaSupabaseSerwer();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { blad: "Zaloguj się." };
+
+  const vids = await pobierzVillageIdsRoliPaneluSoltysa(supabase, user.id);
+  if (!vids.includes(p.data.villageId)) return { blad: "Nie możesz edytować danych tej wsi." };
+
+  const tekst =
+    p.data.rynek_banner_text != null && p.data.rynek_banner_text.trim().length > 0
+      ? p.data.rynek_banner_text.trim()
+      : null;
+  let doDnia: string | null = null;
+  const rawDo = p.data.rynek_banner_until?.trim();
+  if (rawDo) {
+    const parsed = z.string().date().safeParse(rawDo);
+    if (!parsed.success) return { blad: "Data końca bannera musi być w formacie RRRR-MM-DD." };
+    doDnia = parsed.data;
+  }
+
+  const { error } = await supabase
+    .from("villages")
+    .update({
+      rynek_banner_text: tekst,
+      rynek_banner_until: doDnia,
+    })
+    .eq("id", p.data.villageId);
+
+  if (error) {
+    console.error("[zapiszBannerRynkuWsi]", error.message);
+    return { blad: "Nie udało się zapisać bannera rynku." };
+  }
+
+  const { data: wiersz } = await supabase
+    .from("villages")
+    .select("voivodeship, county, commune, slug")
+    .eq("id", p.data.villageId)
+    .maybeSingle();
+  if (wiersz) {
+    revalidatePath(sciezkaProfiluWsi(wiersz));
+    revalidatePath(`${sciezkaProfiluWsi(wiersz)}/rynek`);
+  }
+  revalidatePath("/panel/soltys/moja-wies");
+  return { ok: true };
+}
+
 const schemaVillageScoped = z.object({
   villageId: z.string().uuid(),
 });
@@ -3253,13 +3310,13 @@ export async function zatwierdzMarketplaceOferteMieszkanca(listingId: string): P
 
   const { data: wies } = await supabase
     .from("villages")
-    .select("voivodeship, county, commune, slug")
+    .select("name, voivodeship, county, commune, slug")
     .eq("id", row.village_id)
     .maybeSingle();
 
   const { data: pelny } = await supabase
     .from("marketplace_listings")
-    .select("equipment_category")
+    .select("equipment_category, price_amount, price_unit, currency, owner_user_id, image_urls")
     .eq("id", row.id)
     .maybeSingle();
 
@@ -3286,6 +3343,22 @@ export async function zatwierdzMarketplaceOferteMieszkanca(listingId: string): P
       title: row.title,
       equipmentCategory: pelny?.equipment_category ?? null,
       ownerUserId: row.owner_user_id,
+      nazwaWsi: wies?.name ?? null,
+      imageUrl: pelny?.image_urls?.[0] ?? null,
+      wies,
+    });
+
+    const { powiadomObserwujacychZmianeCenyOgloszenia } = await import(
+      "@/lib/powiadomienia/powiadom-o-zmianie-ceny-rynku"
+    );
+    await powiadomObserwujacychZmianeCenyOgloszenia({
+      listingId: row.id,
+      villageId: row.village_id,
+      title: row.title,
+      newPrice: pelny?.price_amount != null ? Number(pelny.price_amount) : null,
+      priceUnit: pelny?.price_unit ?? null,
+      currency: pelny?.currency ?? null,
+      ownerUserId: pelny?.owner_user_id ?? row.owner_user_id,
       wies,
     });
   }

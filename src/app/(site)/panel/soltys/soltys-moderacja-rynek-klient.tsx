@@ -1,5 +1,6 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { useRouter } from "next/navigation";
 import { useMemo, useState, useTransition } from "react";
 import { PasekMasowychAkcji } from "@/components/panel/pasek-masowych-akcji";
@@ -10,18 +11,84 @@ import {
   zatwierdzMarketplaceOferteMieszkanca,
   zatwierdzOfertePomocySasiedzkiej,
 } from "./akcje";
-import { etykietaKategoriiSprzetu, etykietaTypuOgloszenia } from "@/lib/marketplace/kategorie-ogloszen";
+import {
+  etykietaJednostkiCeny,
+  etykietaKategoriiOgloszenia,
+  etykietaKategoriiSprzetu,
+  etykietaTypuOgloszenia,
+} from "@/lib/marketplace/kategorie-ogloszen";
+import { czyOgloszenieZPakietuKgw } from "@/lib/marketplace/czy-pakiet-kgw";
+import { czyKategoriaNieruchomosci, formatujPowierzchnieDzialki } from "@/lib/marketplace/nieruchomosci";
+import type { GeoJsonGeometriiDzialki } from "@/lib/geoportal/wkt-do-geojson";
+
+const MapaDzialkiOgledzin = dynamic(
+  () => import("@/components/marketplace/mapa-dzialki-ogledzin").then((m) => m.MapaDzialkiOgledzin),
+  { ssr: false, loading: () => <p className="text-xs text-stone-500">Ładowanie mapy działki…</p> },
+);
 
 type Wiersz = {
   id: string;
   title: string;
   typ: "marketplace" | "pomoc";
   wies: string;
+  sciezkaWsi?: string | null;
+  owner_user_id?: string | null;
+  created_at?: string | null;
   listing_type?: string | null;
   equipment_category?: string | null;
+  category?: string | null;
   description?: string | null;
   image_urls?: string[] | null;
+  price_amount?: number | null;
+  price_unit?: string | null;
+  currency?: string | null;
+  parcel_number?: string | null;
+  cadastral_district?: string | null;
+  parcel_area_m2?: number | null;
+  parcel_geojson?: unknown;
+  latitude?: number | null;
+  longitude?: number | null;
 };
+
+function PodgladDzialkiModeracja({ w }: { w: Wiersz }) {
+  const kat = w.equipment_category ?? w.category;
+  if (!czyKategoriaNieruchomosci(kat)) return null;
+
+  const pow = formatujPowierzchnieDzialki(w.parcel_area_m2);
+  const maMape = Boolean(w.parcel_geojson);
+  const cena =
+    w.price_amount != null
+      ? `${w.price_amount} ${w.currency ?? "PLN"}${w.price_unit ? ` ${etykietaJednostkiCeny(w.price_unit)}` : ""}`
+      : null;
+
+  return (
+    <div className="mt-3 rounded-lg border border-amber-200/80 bg-amber-50/40 p-3">
+      <p className="text-xs font-semibold uppercase tracking-wide text-amber-950">Nieruchomość / działka</p>
+      <ul className="mt-1.5 space-y-0.5 text-xs text-stone-700">
+        {kat ? <li>Kategoria: {etykietaKategoriiOgloszenia(kat)}</li> : null}
+        {w.parcel_number ? <li>Numer działki: {w.parcel_number}</li> : null}
+        {w.cadastral_district ? <li>Obręb: {w.cadastral_district}</li> : null}
+        {pow ? <li>Powierzchnia: {pow}</li> : null}
+        {cena ? <li>Cena: {cena}</li> : null}
+      </ul>
+      {maMape ? (
+        <div className="mt-2 overflow-hidden rounded-lg border border-stone-200">
+          <MapaDzialkiOgledzin
+            geometria={w.parcel_geojson as GeoJsonGeometriiDzialki}
+            srodekLat={w.latitude}
+            srodekLng={w.longitude}
+            numerDzialki={w.parcel_number ?? undefined}
+            obreb={w.cadastral_district ?? undefined}
+            powierzchniaM2={w.parcel_area_m2 ?? undefined}
+            wysokosc="kompakt"
+          />
+        </div>
+      ) : (
+        <p className="mt-2 text-xs text-stone-500">Brak granicy działki z Geoportalu — sprawdź lokalizację w opisie.</p>
+      )}
+    </div>
+  );
+}
 
 export function SoltysModeracjaRynekKlient({ wiersze }: { wiersze: Wiersz[] }) {
   const router = useRouter();
@@ -42,6 +109,18 @@ export function SoltysModeracjaRynekKlient({ wiersze }: { wiersze: Wiersz[] }) {
       return true;
     });
   }, [wiersze, filtrTyp, filtrWies]);
+
+  const pakietyKgw = useMemo(() => {
+    const grupy = new Map<string, Wiersz[]>();
+    for (const w of widoczne) {
+      if (w.typ !== "marketplace" || !czyOgloszenieZPakietuKgw(w.description)) continue;
+      if (!w.owner_user_id) continue;
+      const arr = grupy.get(w.owner_user_id) ?? [];
+      arr.push(w);
+      grupy.set(w.owner_user_id, arr);
+    }
+    return Array.from(grupy.values()).filter((items) => items.length >= 2);
+  }, [widoczne]);
 
   if (wiersze.length === 0) return null;
 
@@ -90,6 +169,44 @@ export function SoltysModeracjaRynekKlient({ wiersze }: { wiersze: Wiersz[] }) {
           {blad}
         </p>
       ) : null}
+
+      {pakietyKgw.length > 0 ? (
+        <div className="mt-3 space-y-2">
+          {pakietyKgw.map((pozycje) => {
+            const ids = pozycje.map((p) => p.id);
+            const wiesPakietu = pozycje[0]?.wies ?? "wsi";
+            return (
+              <div
+                key={ids.join("-")}
+                className="flex flex-wrap items-center justify-between gap-2 rounded-lg border border-violet-200 bg-violet-50/60 px-3 py-2"
+              >
+                <p className="text-xs text-violet-950">
+                  <span className="font-bold">Pakiet KGW</span> · {pozycje.length} ogłoszeń · {wiesPakietu}
+                </p>
+                <button
+                  type="button"
+                  disabled={!!czek}
+                  className="rounded-lg bg-violet-800 px-3 py-1 text-xs font-medium text-white hover:bg-violet-900 disabled:opacity-50"
+                  onClick={() => {
+                    ustawBlad("");
+                    startT(async () => {
+                      const wynik = await zatwierdzRynekMasowoSoltys(ids);
+                      if ("blad" in wynik) {
+                        ustawBlad(wynik.blad);
+                        return;
+                      }
+                      router.refresh();
+                    });
+                  }}
+                >
+                  Zatwierdź pakiet KGW ({pozycje.length})
+                </button>
+              </div>
+            );
+          })}
+        </div>
+      ) : null}
+
       <ul className="mt-3 space-y-3">
         {widoczne.map((w) => (
           <li key={`${w.typ}-${w.id}`} className="rounded-lg bg-white px-3 py-3 text-sm shadow-sm">
@@ -117,20 +234,28 @@ export function SoltysModeracjaRynekKlient({ wiersze }: { wiersze: Wiersz[] }) {
                   {w.typ === "marketplace" && w.listing_type ? (
                     <p className="mt-1 text-xs text-stone-600">
                       {etykietaTypuOgloszenia(w.listing_type)}
-                      {w.equipment_category ? ` · ${etykietaKategoriiSprzetu(w.equipment_category)}` : ""}
+                      {w.equipment_category
+                        ? ` · ${etykietaKategoriiSprzetu(w.equipment_category)}`
+                        : w.category
+                          ? ` · ${etykietaKategoriiOgloszenia(w.category)}`
+                          : ""}
                     </p>
                   ) : null}
                   {w.description ? (
                     <p className="mt-2 line-clamp-3 text-xs text-stone-700">{w.description}</p>
                   ) : null}
                   {(w.image_urls ?? []).length > 0 ? (
-                    <div className="mt-2 flex gap-1">
-                      {(w.image_urls ?? []).slice(0, 3).map((url) => (
+                    <div className="mt-2 flex flex-wrap gap-1">
+                      {(w.image_urls ?? []).slice(0, 5).map((url) => (
                         // eslint-disable-next-line @next/next/no-img-element
                         <img key={url} src={url} alt="" className="h-12 w-12 rounded object-cover" />
                       ))}
+                      {(w.image_urls ?? []).length > 5 ? (
+                        <span className="self-center text-[10px] text-stone-500">+{(w.image_urls ?? []).length - 5}</span>
+                      ) : null}
                     </div>
                   ) : null}
+                  {w.typ === "marketplace" ? <PodgladDzialkiModeracja w={w} /> : null}
                 </div>
               </div>
               <div className="flex shrink-0 flex-wrap gap-2">

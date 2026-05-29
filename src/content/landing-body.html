@@ -3,7 +3,7 @@
   <div class="container nav-inner">
     <a href="/" class="logo">
       <div class="logo-mark">
-        <img src="/marka/znak-okrag-64.png" width="40" height="40" alt="" loading="eager" decoding="async" />
+        <img src="/marka/znak-okrag.svg" width="40" height="40" alt="Znak naszawies.pl" loading="eager" decoding="async" />
       </div>
       <div class="logo-text"><span class="p1">nasza</span><span class="p2">wies</span><span class="p3">.pl</span></div>
     </a>
@@ -16,8 +16,8 @@
       <a href="#faq">Pytania</a>
       <a href="/o-nas" class="nav-discover">O nas</a>
       <a href="/kontakt" class="nav-discover">Kontakt</a>
-      <a href="/szukaj" class="nav-discover">Katalog wsi</a>
-      <a href="/mapa" class="nav-discover">Mapa</a>
+      <a href="/logowanie?next=/szukaj" class="nav-discover">Katalog wsi</a>
+      <a href="/logowanie?next=/mapa" class="nav-discover">Mapa</a>
       <a href="/logowanie" class="nav-auth">Logowanie</a>
       <a href="/rejestracja" class="nav-auth">Rejestracja</a>
       <a href="#zapisz" class="nav-cta">Dołącz</a>
@@ -35,11 +35,11 @@
         <div class="hero-dwie-sciezki" role="navigation" aria-label="Wybór: panel użytkownika lub wyszukiwarka wsi">
           <p class="hero-dwie-sciezki__intro">Zacznij od tego, czego potrzebujesz dziś:</p>
           <div class="hero-dwie-sciezki__grid">
-            <a class="hero-sciezka" href="/szukaj">
+            <a class="hero-sciezka" href="/logowanie?next=/szukaj">
               <span class="hero-sciezka__badge">Katalog</span>
               <strong class="hero-sciezka__tytul">Znajdę swoją wieś</strong>
-              <span class="hero-sciezka__opis">Wyszukaj miejscowość, zobacz publiczną stronę wsi albo mapę.</span>
-              <span class="hero-sciezka__cta">Szukaj wsi →</span>
+              <span class="hero-sciezka__opis">Po zalogowaniu: wyszukiwarka i mapa. Publiczna strona wsi działa też z bezpośredniego linku.</span>
+              <span class="hero-sciezka__cta">Zaloguj i szukaj →</span>
             </a>
             <a class="hero-sciezka hero-sciezka--panel" href="/rejestracja">
               <span class="hero-sciezka__badge hero-sciezka__badge--panel">Konto</span>
@@ -48,12 +48,12 @@
               <span class="hero-sciezka__cta">Załóż konto →</span>
             </a>
           </div>
-          <p class="hero-dwie-sciezki__mapa"><a href="/mapa">Mapa wsi</a> — te same miejscowości w widoku mapy.</p>
+          <p class="hero-dwie-sciezki__mapa"><a href="/logowanie?next=/mapa">Mapa wsi</a> — po zalogowaniu, te same miejscowości w widoku mapy.</p>
         </div>
         <div class="hero-ctas">
           <a href="/rejestracja" class="btn btn-primary">Załóż konto</a>
           <a href="/logowanie" class="btn btn-secondary">Logowanie</a>
-          <a href="/szukaj" class="btn btn-secondary">Szukaj wsi</a>
+          <a href="/logowanie?next=/szukaj" class="btn btn-secondary">Szukaj wsi</a>
         </div>
         <p class="hero-note">Chcesz priorytetu przy wdrożeniu? <a href="#zapisz">Zapisz wieś na listę</a> — opcjonalnie, dla chętnych na wsparcie przy starcie.</p>
         <div class="hero-meta">
@@ -154,9 +154,9 @@
       <article class="audience-card">
         <span class="audience-card__badge">Gość / nowy mieszkaniec</span>
         <h3>Najpierw poznam okolicę</h3>
-        <p>Publiczny profil wsi, mapa i aktualności bez zakładania konta.</p>
+        <p>Publiczny profil wsi i aktualności — jeśli masz link. Katalog i mapa całej Polski po zalogowaniu.</p>
         <div class="audience-card__actions">
-          <a href="/szukaj" class="audience-card__link">Przeglądaj katalog i mapę →</a>
+          <a href="/logowanie?next=/szukaj" class="audience-card__link">Zaloguj się i przeglądaj katalog →</a>
         </div>
       </article>
     </div>
@@ -302,7 +302,7 @@
       <div class="feature-card gold">
         <div class="feature-icon"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg></div>
         <h3>Interaktywna mapa wsi</h3>
-        <p>Kościół, sklep, przystanek, lekarz, apteka, świetlica. Nowi mieszkańcy i goście wiedzą gdzie co jest.</p>
+        <p>Kościół, sklep, przystanek, lekarz, apteka, świetlica. Mapa katalogu i miejscowości — po zalogowaniu.</p>
       </div>
       <div class="feature-card">
         <div class="feature-icon"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="3" width="18" height="18" rx="2"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg></div>
@@ -488,7 +488,7 @@
       <div class="footer-brand">
         <a href="/" class="logo">
           <div class="logo-mark">
-            <img src="/marka/znak-okrag-64.png" width="40" height="40" alt="" loading="lazy" decoding="async" />
+            <img src="/marka/znak-okrag.svg" width="40" height="40" alt="Znak naszawies.pl" loading="lazy" decoding="async" />
           </div>
           <div class="logo-text"><span class="p1">nasza</span><span class="p2">wies</span><span class="p3">.pl</span></div>
         </a>
@@ -497,8 +497,8 @@
       <div class="footer-col">
         <h4>Platforma</h4>
         <ul>
-          <li><a href="/szukaj">Szukaj wsi</a></li>
-          <li><a href="/mapa">Mapa wsi</a></li>
+          <li><a href="/logowanie?next=/szukaj">Szukaj wsi</a></li>
+          <li><a href="/logowanie?next=/mapa">Mapa wsi</a></li>
           <li><a href="/logowanie">Logowanie</a></li>
           <li><a href="/rejestracja">Rejestracja</a></li>
           <li><a href="/panel">Panel</a></li>

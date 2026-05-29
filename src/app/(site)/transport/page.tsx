@@ -1,15 +1,19 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { RozkladSzukajFormularz } from "@/components/transport/rozklad-szukaj-formularz";
+import { wymagajLogowaniaStrona } from "@/lib/auth/wymagaj-logowania-strona";
 import { epodroznikSkonfigurowany } from "@/lib/transport/epodroznik-api";
 import { gtfsCsvSkonfigurowany } from "@/lib/transport/gtfs-csv";
 
 export const metadata: Metadata = {
   title: "Transport — kolej i autobusy",
-  description: "Rozkłady PKP, PKS i busy — linki do wyszukiwarek oraz rozkład stacji kolejowej.",
+  description: "Rozkłady PKP, PKS i busy — hub transportu dostępny po zalogowaniu.",
+  robots: { index: false, follow: false },
 };
 
-export default function TransportHubPage() {
+export default async function TransportHubPage() {
+  await wymagajLogowaniaStrona("/transport");
+
   const pkpWlaczone =
     String(process.env.TRANSPORT_SYNC_ENABLED ?? "0") === "1" && !!process.env.PKP_PLK_API_KEY?.trim();
   const autobusWlaczone = String(process.env.TRANSPORT_BUS_SYNC_ENABLED ?? "0") === "1";

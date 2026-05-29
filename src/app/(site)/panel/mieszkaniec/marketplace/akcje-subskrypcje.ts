@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
+import { sciezkaProfiluWsi } from "@/lib/wies/sciezka-publiczna";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
 
 const uuid = z.string().uuid();
@@ -39,6 +40,8 @@ export async function dodajSubskrypcjeKategoriiRynku(
   }
 
   revalidatePath("/panel/mieszkaniec/marketplace");
+  const { data: wies } = await supabase.from("villages").select("voivodeship, county, commune, slug").eq("id", vid.data).maybeSingle();
+  if (wies) revalidatePath(`${sciezkaProfiluWsi(wies)}/rynek`);
   return { ok: true, id: data?.id };
 }
 

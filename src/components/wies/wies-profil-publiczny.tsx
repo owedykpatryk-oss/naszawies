@@ -30,7 +30,9 @@ import { PrzelacznikTrybuSeniora } from "@/components/ui/tryb-senior-provider";
 import { WiesKontaktSzybkiPasek } from "@/components/wies/wies-kontakt-szybki-pasek";
 import { LazyWidoczny } from "@/components/ui/lazy-widoczny";
 import type { PlakatPubliczny } from "@/components/grafika/galeria-plakatow-wsi";
+import { MapaWsiProfilEmbedded } from "@/components/wies/mapa-wsi-profil-embedded";
 import { PanelInformacjiMieszkancow } from "@/components/wies/panel-informacji-mieszkancow";
+import type { ZnacznikPoi, ZnacznikWsi } from "@/components/mapa/mapa-wsi-leaflet";
 import type { LinkPrzydatnyPubliczny } from "@/lib/wies/linki-przydatne";
 import { MojeObserwujWiesPasek } from "@/components/panel/moje/moje-obserwuj-wies-pasek";
 import { ZapiszTrescPrzycisk } from "@/components/panel/moje/zapisz-tresc-przycisk";
@@ -91,6 +93,8 @@ export function WiesProfilPubliczny({
   ostrzezeniaLowieckie = [],
   zalogowany = false,
   zapisaneTresci = {},
+  mapaZnacznik = null,
+  mapaPoi = [],
 }: {
   wies: WiesPubliczna;
   posty: WpisPostu[];
@@ -209,6 +213,8 @@ export function WiesProfilPubliczny({
   zalogowany?: boolean;
   /** Klucz `post:id` lub `event:id` → ID wiersza w user_saved_content. */
   zapisaneTresci?: Record<string, string>;
+  mapaZnacznik?: ZnacznikWsi | null;
+  mapaPoi?: ZnacznikPoi[];
 }) {
   const sciezka = sciezkaProfiluWsi(wies);
   const parafie = organizacje.filter((o) => o.group_type === "parafia");
@@ -352,6 +358,26 @@ export function WiesProfilPubliczny({
             commune: wies.commune,
           }}
         />
+        <nav
+          className="mt-4 flex flex-wrap gap-2 border-b border-stone-200/90 pb-3"
+          aria-label="Sekcje profilu wsi"
+        >
+          {[
+            { href: "#informacje-mieszkancow", label: "Informacje" },
+            { href: "#sekcja-mapa", label: "Mapa" },
+            { href: "#sekcja-aktualnosci-laczone", label: "Aktualności" },
+            { href: "#sekcja-transport", label: "Transport" },
+            { href: "#swietlice-wsi", label: "Świetlica" },
+          ].map((tab) => (
+            <a
+              key={tab.href}
+              href={tab.href}
+              className="rounded-full border border-stone-200 bg-white px-3 py-1 text-xs font-medium text-green-900 shadow-sm transition hover:border-green-300 hover:bg-emerald-50"
+            >
+              {tab.label}
+            </a>
+          ))}
+        </nav>
         <div className="mt-4 flex flex-wrap items-center gap-3">
           <PrzelacznikTrybuSeniora />
         </div>
@@ -362,6 +388,7 @@ export function WiesProfilPubliczny({
         ostrzezenia={ostrzezeniaLowieckie}
         nazwaWsi={wies.name}
         maProfilKola={kolaLowieckie.length > 0}
+        zalogowany={zalogowany}
       />
       <WiesKontaktSzybkiPasek kontakty={kontaktyUrzedowe} />
 
@@ -382,6 +409,15 @@ export function WiesProfilPubliczny({
         maRynek={maRynek}
         maDotacje={dotacjeSkrot.length > 0}
         maTransport={wies.is_active}
+        maMape={wies.is_active}
+      />
+
+      <MapaWsiProfilEmbedded
+        nazwaWsi={wies.name}
+        villageId={wies.id}
+        zalogowany={zalogowany}
+        znacznik={mapaZnacznik}
+        pois={mapaPoi}
       />
 
       <SekcjaPrzewodnikSamorzadowy wies={wies} przewodnik={przewodnikSamorzadowy} />
@@ -417,7 +453,7 @@ export function WiesProfilPubliczny({
         />
       ) : null}
 
-      <WiesTransportLazy villageId={wies.id} />
+      <WiesTransportLazy villageId={wies.id} zalogowany={zalogowany} />
 
       <OslonaSekcjiWies id="kontakty-urzedowe-wsi" pusta={kontaktyUrzedowe.length === 0}>
         <TytulSekcjiWies
@@ -809,25 +845,26 @@ export function WiesProfilPubliczny({
 
       {maRynek ? (
         <OslonaSekcjiWies id="sekcja-rynek-lokalny">
-          <TytulSekcjiWies
-            etykieta="Rynek"
-            tytul="Darmowy rynek lokalny"
-            opis="Produkty z gospodarstw, maszyny i usługi mieszkańców — bezpłatnie, z wiadomościami między zalogowanymi użytkownikami."
-          />
-
-          <div className="mt-4 flex flex-wrap gap-2">
-            <Link
-              href={`${sciezka}/rynek`}
-              className="rounded-xl bg-green-800 px-4 py-2 text-sm font-semibold text-white hover:bg-green-900"
-            >
-              Przeglądaj wszystkie ogłoszenia
-            </Link>
-            <Link
-              href="/panel/mieszkaniec/marketplace"
-              className="rounded-xl border border-green-800 px-4 py-2 text-sm font-semibold text-green-900 hover:bg-green-50"
-            >
-              Dodaj ogłoszenie
-            </Link>
+          <div className="rynek-hero-wow mb-6 !p-4 sm:!p-5">
+            <TytulSekcjiWies
+              etykieta="Rynek"
+              tytul="Darmowy rynek lokalny"
+              opis="Produkty z gospodarstw, maszyny i usługi mieszkańców — bezpłatnie, z wiadomościami między zalogowanymi użytkownikami."
+            />
+            <div className="relative z-[1] mt-4 flex flex-wrap gap-2">
+              <Link
+                href={`${sciezka}/rynek`}
+                className="rounded-xl bg-gradient-to-br from-green-800 to-green-900 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:from-green-900 hover:to-green-950"
+              >
+                Przeglądaj wszystkie ogłoszenia
+              </Link>
+              <Link
+                href="/panel/mieszkaniec/marketplace"
+                className="rounded-xl border border-green-800/40 bg-white/90 px-4 py-2 text-sm font-semibold text-green-900 shadow-sm transition hover:bg-green-50"
+              >
+                + Dodaj ogłoszenie
+              </Link>
+            </div>
           </div>
 
           {profileUslug.length > 0 ? (
@@ -851,6 +888,7 @@ export function WiesProfilPubliczny({
               <MarketplaceListaKlient
                 oferty={rynek}
                 sciezkaWsi={sciezka}
+                villageId={wies.id}
                 kotwicaZasadSwietlicy={`${sciezka}#swietlica-regulamin`}
                 limitWyswietlania={6}
                 tryb="skrot"

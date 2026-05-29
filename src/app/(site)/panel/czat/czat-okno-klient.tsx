@@ -7,6 +7,7 @@ import {
   skrotCzasWiadomosci,
 } from "@/lib/czat/formatuj-czas-wiadomosci";
 import { utworzKlientaSupabasePrzegladarka } from "@/lib/supabase/przegladarka";
+import { SZABLONY_CZAT_OGLOSZENIE } from "@/lib/czat/szablony-wiadomosci-ogloszenie";
 import { oznaczPrzeczytane, pobierzStarszeWiadomosciCzat, wyslijWiadomoscCzat } from "./akcje";
 
 export type WiadomoscWiersz = {
@@ -26,6 +27,7 @@ export function CzatOknoKlient({
   kind,
   odczytInnych,
   maStarsze = false,
+  szablonyOgloszenia = false,
 }: {
   conversationId: string;
   wiadomosci: WiadomoscWiersz[];
@@ -35,6 +37,8 @@ export function CzatOknoKlient({
   /** last_read_at pozostałych członków (do potwierdzenia odczytu w rozmowie 1:1) */
   odczytInnych: { user_id: string; last_read_at: string | null }[];
   maStarsze?: boolean;
+  /** Szybkie wiadomości przy czacie o ogłoszeniu na rynku */
+  szablonyOgloszenia?: boolean;
 }) {
   const [wiadomosci, ustawWiadomosci] = useState(poczatkowe);
   const [tekst, ustawTekst] = useState("");
@@ -298,6 +302,21 @@ export function CzatOknoKlient({
           <p className="mb-2 text-xs text-red-800" role="alert">
             {blad}
           </p>
+        ) : null}
+        {szablonyOgloszenia ? (
+          <div className="mb-2 flex flex-wrap gap-1.5">
+            {SZABLONY_CZAT_OGLOSZENIE.map((szablon) => (
+              <button
+                key={szablon}
+                type="button"
+                disabled={czek}
+                onClick={() => ustawTekst(szablon)}
+                className="rounded-full border border-orange-200/90 bg-white px-2.5 py-1 text-[11px] font-medium text-stone-700 transition hover:border-orange-400 hover:bg-orange-50 disabled:opacity-50"
+              >
+                {szablon}
+              </button>
+            ))}
+          </div>
         ) : null}
         <div className="flex gap-2">
           <textarea

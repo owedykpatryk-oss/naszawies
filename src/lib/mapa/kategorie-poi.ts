@@ -1,6 +1,6 @@
 /**
  * Kategorie punktów POI na mapie (kolumna `pois.category` w bazie).
- * Sołtys dodaje wpisy; mapa publiczna pokazuje wszystkie z `pois` dla aktywnych wsi.
+ * Sołtys dodaje wpisy; mapa katalogu (po zalogowaniu) pokazuje wszystkie z `pois` dla aktywnych wsi.
  */
 export const ETYKIETA_KATEGORII_POI: Record<string, string> = {
   kosciol: "Kościół",

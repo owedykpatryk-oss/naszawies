@@ -37,6 +37,10 @@ const zalecaneProdukcja = [
   { klucz: "UPSTASH_REDIS_REST_TOKEN", opis: "Token Upstash Redis REST" },
   { klucz: "NEXT_PUBLIC_TURNSTILE_SITE_KEY", opis: "Cloudflare Turnstile (kontakt, waitlist)" },
   { klucz: "TURNSTILE_SECRET_KEY", opis: "Walidacja Turnstile po stronie serwera" },
+  { klucz: "NEXT_PUBLIC_R2_PUBLIC_BASE_URL", opis: "Cloudflare R2 CDN — publiczny URL (cdn.naszawies.pl)" },
+  { klucz: "CLOUDFLARE_R2_ENDPOINT", opis: "R2 S3 endpoint — upload serwerowy" },
+  { klucz: "CLOUDFLARE_R2_ACCESS_KEY_ID", opis: "R2 access key" },
+  { klucz: "CLOUDFLARE_R2_SECRET_ACCESS_KEY", opis: "R2 secret key" },
   { klucz: "RESEND_API_KEY", opis: "Formularz kontaktowy" },
   { klucz: "RESEND_ZE_STRONY", opis: "Nadawca e-maili Resend" },
   { klucz: "NEXT_PUBLIC_VAPID_PUBLIC_KEY", opis: "Web Push w panelu" },
@@ -93,6 +97,23 @@ console.log(`Pliki: .env.local (${local.size} kluczy)${vercel ? `, ${vercelPlik}
 
 raportuj("LOKAL — wymagane do pełnego dev", local, wymaganeProdukcja);
 raportuj("LOKAL — zalecane", local, zalecaneProdukcja);
+
+const r2Pelny =
+  local.has("NEXT_PUBLIC_R2_PUBLIC_BASE_URL") &&
+  local.has("CLOUDFLARE_R2_ENDPOINT") &&
+  local.has("CLOUDFLARE_R2_ACCESS_KEY_ID") &&
+  local.has("CLOUDFLARE_R2_SECRET_ACCESS_KEY");
+console.log("\n=== Cloudflare R2 (magazyn zdjęć) ===");
+console.log(
+  r2Pelny
+    ? "  ✓ Upload + CDN skonfigurowane (nowe pliki → R2)"
+    : "  ✗ Uzupełnij R2 — docs/CLOUDFLARE.md (fallback: Supabase Storage)",
+);
+if (local.has("NEXT_PUBLIC_R2_CDN_IMAGES")) {
+  console.log("  ✓ NEXT_PUBLIC_R2_CDN_IMAGES — miniaturki przez CDN");
+} else {
+  console.log("  ○ NEXT_PUBLIC_R2_CDN_IMAGES — opcjonalnie (Image Resizing)");
+}
 
 console.log("\n=== LOKAL — OAuth (tylko skrypt → Supabase, nie Vercel) ===");
 for (const k of tylkoLokalOauth) {

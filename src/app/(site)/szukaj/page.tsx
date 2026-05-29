@@ -1,17 +1,21 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { wymagajLogowaniaStrona } from "@/lib/auth/wymagaj-logowania-strona";
 import { SzukajKatalog } from "./szukaj-katalog";
 
 export const metadata: Metadata = {
   title: "Szukaj wsi",
-  description: "Wyszukaj miejscowość po nazwie lub lokalizacji w serwisie naszawies.pl.",
+  description: "Wyszukiwarka katalogu wsi — dostępna po zalogowaniu w naszawies.pl.",
+  robots: { index: false, follow: false },
 };
 
 type Props = { searchParams?: { q?: string | string[] } };
 
-export default function SzukajPage({ searchParams }: Props) {
+export default async function SzukajPage({ searchParams }: Props) {
   const qParam = searchParams?.q;
   const qPoczatkowe = Array.isArray(qParam) ? qParam[0] : qParam;
+  const search = qPoczatkowe ? `?q=${encodeURIComponent(qPoczatkowe)}` : "";
+  await wymagajLogowaniaStrona("/szukaj", search);
 
   return (
     <main className="mx-auto min-w-0 w-full max-w-7xl px-4 py-16 text-stone-800 sm:px-6">

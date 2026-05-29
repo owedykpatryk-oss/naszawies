@@ -19,7 +19,8 @@ Geoportal (adresy KIN, PRNG, instytucje PRG, POI z kontekstu):
 - `GEOPORTAL_POI_SYNC_ENABLED=1`
 - `NEXT_PUBLIC_GEOPORTAL_WMS_URL` + `NEXT_PUBLIC_GEOPORTAL_WMS_LAYERS=Raster`
 
-Opcjonalnie (nie blokuje crona): `UPSTASH_REDIS_*`, Turnstile, Resend — sprawdź: `npm run sprawdz:env`.
+Opcjonalnie (nie blokuje crona): `UPSTASH_REDIS_*`, Turnstile, Resend, **Cloudflare R2** — sprawdź: `npm run sprawdz:env`.  
+Pełna konfiguracja R2/CDN/Turnstile: **[CLOUDFLARE.md](./CLOUDFLARE.md)**.
 
 ```bash
 npm run env:pull-vercel

@@ -17,7 +17,7 @@ export function SwietliceWsiPubliczneSekcja({ nazwaWsi, sale }: Props) {
       <TytulSekcjiWies
         etykieta="Świetlica"
         tytul={`Świetlice w ${nazwaWsi}`}
-        opis="Sale wiejskie w sołectwie — rezerwacja po zalogowaniu jako mieszkaniec. Poniżej adres, metraż i parking."
+        opis="Sale wiejskie w sołectwie — kalendarz zajętości uzupełnia sołtys. Poniżej adres, metraż i wolne/zajęte terminy."
       />
       <ul className="mt-5 space-y-4">
         {sale.map((s) => (
@@ -33,9 +33,9 @@ export function SwietliceWsiPubliczneSekcja({ nazwaWsi, sale }: Props) {
             <div className="mt-4 flex flex-wrap gap-2">
               <Link
                 href={`/logowanie?next=${encodeURIComponent(`/panel/mieszkaniec/swietlica/${s.id}`)}`}
-                className="inline-flex min-h-[44px] items-center rounded-lg bg-green-800 px-4 py-2 text-sm font-medium text-white hover:bg-green-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-green-800"
+                className="inline-flex min-h-[44px] items-center rounded-lg border border-green-800/40 bg-white px-4 py-2 text-sm font-medium text-green-900 hover:bg-emerald-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-green-800"
               >
-                Zaloguj się — rezerwacja sali
+                Kalendarz sali (podgląd)
               </Link>
               <Link
                 href={`/logowanie?next=${encodeURIComponent(`/panel/mieszkaniec/swietlica/${s.id}/dokument`)}`}

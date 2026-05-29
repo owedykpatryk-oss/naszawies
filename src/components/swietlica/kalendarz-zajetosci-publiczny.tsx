@@ -10,14 +10,8 @@ export type WierszKalendarzaPublicznego = {
 };
 
 function etykietujStatus(s: string): { krotka: string; opis: string } {
-  if (s === "pending") {
-    return {
-      krotka: "Wstępna rezerwacja",
-      opis: "Wniosek oczekuje na sołtysa (termin wstępnie zablokowany; bez danych wynajmującego w widoku publicznym).",
-    };
-  }
   if (s === "approved") {
-    return { krotka: "Zajęte (potwierdzone)", opis: "Sala w tym przedziale ma potwierdzoną rezerwację." };
+    return { krotka: "Zajęte", opis: "Sala w tym przedziale jest zajęta (wpis sołtysa)." };
   }
   return { krotka: s, opis: "" };
 }
@@ -68,7 +62,7 @@ export function KalendarzZajetosciDlaHaliSekcja({
   tytul = "Zajęte terminy (kalendarz)",
   wiersze,
   naglowekDod,
-  pustyKomunikat = "W tym miejscu nie ma wstępnie zablokowanych ani zatwierdzonych rezerwacji w wyświetlanym widoku. Imię i dane wynajmującego widać tylko w panelu sołtysa.",
+  pustyKomunikat = "W tym miejscu nie ma zajętych terminów w kalendarzu (sołtys uzupełnia wpisy w panelu świetlicy).",
 }: PropsHala) {
   return (
     <section className="mt-10 rounded-2xl border border-stone-200 bg-stone-50/80 p-5 sm:p-6" aria-label="Kalendarz zajętości sali">

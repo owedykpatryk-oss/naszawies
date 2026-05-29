@@ -52,6 +52,18 @@ export const GRUPY_KATEGORII_RYNKU: GrupaKategoriiRynku[] = [
     items: [{ value: "konie", label: "Konie / zwierzęta gospodarskie" }],
   },
   {
+    id: "nieruchomosci",
+    label: "Działki i nieruchomości",
+    items: [
+      { value: "dzialka_budowlana", label: "Działka budowlana" },
+      { value: "dzialka_rolna", label: "Działka rolna / siedliskowa" },
+      { value: "dzialka_rekreacyjna", label: "Działka rekreacyjna / leśna" },
+      { value: "dom_mieszkalny", label: "Dom / budynek mieszkalny" },
+      { value: "budynek_gospodarczy", label: "Budynek gospodarczy / stodoła" },
+      { value: "grunt_dzierzawa", label: "Dzierżawa / wynajem gruntu" },
+    ],
+  },
+  {
     id: "uslugi",
     label: "Usługi i inne",
     items: [
@@ -74,6 +86,8 @@ export const WARTOSCI_PRODUKTY_LOKALNE: Set<string> = new Set(
   GRUPY_KATEGORII_RYNKU.find((g) => g.id === "produkty_lokalne")!.items.map((i) => i.value),
 );
 
+export { czyKategoriaNieruchomosci } from "@/lib/marketplace/nieruchomosci";
+
 export const JEDNOSTKI_CENY = [
   { value: "", label: "Do ustalenia" },
   { value: "kg", label: "za kg" },
@@ -83,6 +97,10 @@ export const JEDNOSTKI_CENY = [
   { value: "godzina", label: "za godzinę" },
   { value: "dzien", label: "za dzień" },
   { value: "usluga", label: "za usługę" },
+  { value: "m2", label: "za m²" },
+  { value: "ar", label: "za ar" },
+  { value: "ha", label: "za hektar" },
+  { value: "calosc", label: "za całość (cena łączna)" },
   { value: "ustalenie", label: "cena do uzgodnienia" },
 ] as const;
 
@@ -122,6 +140,10 @@ export function podpowiedzTytulu(typ: string, kat: string, zOperatorem: boolean)
   if (typ === "sprzedam" && kat === "kombajn") return "Sprzedam kombajn — …";
   if (typ === "kupie" && kat === "konie") return "Kupię konia / klacz — …";
   if (typ === "sprzedam" && kat === "konie") return "Sprzedam konia — …";
+  if (typ === "sprzedam" && kat === "dzialka_budowlana") return "Sprzedam działkę budowlaną — …";
+  if (typ === "sprzedam" && kat === "dzialka_rolna") return "Sprzedam działkę rolną — …";
+  if (typ === "sprzedam" && kat === "dom_mieszkalny") return "Sprzedam dom — …";
+  if (typ === "kupie" && kat === "dzialka_budowlana") return "Kupię działkę budowlaną — …";
   if (typ === "wynajme" && zOperatorem) return "Wynajmę … z operatorem (za godzinę)";
   if (typ === "wynajme") return "Wynajmę …";
   if (typ === "wypozycze") return "Wypożyczę …";
@@ -141,5 +163,7 @@ export function domyslnaJednostkaCeny(kat: string): string {
     return "sztuka";
   }
   if (kat === "ciagnik" || kat === "kombajn" || kat === "usluga_z_operatorem") return "godzina";
+  if (kat.startsWith("dzialka_") || kat === "dom_mieszkalny" || kat === "budynek_gospodarczy") return "calosc";
+  if (kat === "grunt_dzierzawa") return "ha";
   return "";
 }

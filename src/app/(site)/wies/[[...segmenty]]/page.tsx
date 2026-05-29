@@ -22,6 +22,7 @@ import {
 } from "@/lib/wies/hub-administracyjny";
 import { pobierzLinkiPrzydatneDlaWsiGminy } from "@/lib/wies/pobierz-linki-przydatne";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
+import { linkChroniony } from "@/lib/auth/sciezki-chronione";
 import { sciezkaProfiluWsi } from "@/lib/wies/sciezka-publiczna";
 import { znajdzWiesPoSciezce } from "@/lib/wies/znajdz-wies-po-sciezce";
 import { etykietaKategoriiDotacji } from "@/lib/wies/teksty-dotacji";
@@ -29,6 +30,12 @@ import { normalizujKategorieLinku, type LinkPrzydatnyPubliczny } from "@/lib/wie
 import { pobierzKonkursFotoDlaProfiluWsi } from "@/lib/konkurs-foto/pobierz-konkurs-publiczny";
 import { pobierzFotokronikePublicznaWsi } from "@/lib/fotokronika/pobierz-fotokronike-publiczna";
 import { pobierzAktywneOstrzezeniaLowieckie } from "@/lib/lowiectwo/pobierz-ostrzezenia-publiczne";
+import { pobierzDaneMapyWsi } from "@/lib/mapa/pobierz-dane-mapy-wsi";
+import { mapujOgloszeniaRynekDlaMapy } from "@/lib/mapa/rynek-na-mapie";
+import { mapujDzialkiRynekDlaMapy } from "@/lib/mapa/rynek-dzialki-na-mapie";
+import { aktywnyBannerRynku } from "@/lib/marketplace/banner-rynku";
+import { wzbogacOfertyOZaufanie, zaufanieZLiczby } from "@/lib/marketplace/zaufanie-sprzedawcy";
+import type { ZnacznikPoi, ZnacznikRynek, ZnacznikRynekDzialka, ZnacznikWsi } from "@/components/mapa/mapa-wsi-leaflet";
 
 type Props = {
   params: { segmenty?: string[] };
@@ -66,7 +73,15 @@ type RynekOferta = {
   seller_verified?: boolean | null;
   published_at: string | null;
   created_at: string;
+  parcel_area_m2?: number | null;
+  parcel_number?: string | null;
+  geoportal_parcel_id?: string | null;
+  view_count?: number;
+  owner_user_id?: string | null;
 };
+
+const POLE_SELECT_RYNEK_LISTA =
+  "id, title, listing_type, category, equipment_category, location_text, price_amount, price_unit, currency, with_operator, image_urls, published_at, created_at, seller_verified, parcel_area_m2, parcel_number, geoportal_parcel_id, view_count, owner_user_id";
 
 type WiadomoscLokalna = {
   id: string;
@@ -142,7 +157,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     if (wiesMeta) {
       return {
         title: `Rynek lokalny — ${wiesMeta.name}`,
-        description: `Ogłoszenia mieszkańców i gospodarstw we wsi ${wiesMeta.name}: miód, sery, maszyny, usługi i praca.`,
+        description: `Ogłoszenia mieszkańców i gospodarstw we wsi ${wiesMeta.name}: miód, sery, maszyny, działki, usługi i praca.`,
       };
     }
   }
@@ -154,17 +169,24 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       if (wiesMeta) {
         const { data: ogl } = await supabase
           .from("marketplace_listings")
-          .select("title, description, image_urls")
+          .select("title, description, image_urls, price_amount, price_unit, currency, parcel_area_m2, equipment_category, category")
           .eq("id", id.data)
           .eq("village_id", wiesMeta.id)
           .eq("status", "approved")
           .maybeSingle();
         if (ogl?.title) {
-          const opis = ogl.description?.replace(/\s+/g, " ").trim().slice(0, 160);
+          const opisRaw = ogl.description?.replace(/\s+/g, " ").trim() ?? "";
+          const { formatujPowierzchnieDzialki } = await import("@/lib/marketplace/nieruchomosci");
+          const pow = formatujPowierzchnieDzialki(ogl.parcel_area_m2 as number | null);
+          const cena =
+            ogl.price_amount != null
+              ? `${ogl.price_amount} ${ogl.currency ?? "PLN"}${ogl.price_unit ? ` / ${ogl.price_unit}` : ""}`
+              : null;
+          const opisMeta = [opisRaw.slice(0, 120), cena, pow].filter(Boolean).join(" · ").slice(0, 160);
           const zdjecie = ogl.image_urls?.[0];
           return {
             title: `${ogl.title} — rynek · ${wiesMeta.name}`,
-            description: opis || `Ogłoszenie na lokalnym rynku we wsi ${wiesMeta.name}.`,
+            description: opisMeta || `Ogłoszenie na lokalnym rynku we wsi ${wiesMeta.name}.`,
             openGraph: zdjecie ? { images: [{ url: zdjecie }] } : undefined,
           };
         }
@@ -343,9 +365,7 @@ export default async function WiesCatchAllPage({ params, searchParams }: Props) 
         .limit(6),
       supabase
         .from("marketplace_listings")
-        .select(
-          "id, title, listing_type, category, equipment_category, location_text, price_amount, price_unit, currency, with_operator, image_urls, published_at, created_at, seller_verified",
-        )
+        .select(POLE_SELECT_RYNEK_LISTA)
         .eq("village_id", wies.id)
         .eq("status", "approved")
         .order("published_at", { ascending: false, nullsFirst: false })
@@ -444,6 +464,13 @@ export default async function WiesCatchAllPage({ params, searchParams }: Props) 
     ]);
 
     const userSesji = authRes.data.user;
+    let mapaZnacznik: ZnacznikWsi | null = null;
+    let mapaPoi: ZnacznikPoi[] = [];
+    if (userSesji) {
+      const daneMapy = await pobierzDaneMapyWsi(supabase, wies);
+      mapaZnacznik = daneMapy.znacznik;
+      mapaPoi = daneMapy.pois;
+    }
     let mozeEdytowacListeZakupow = false;
     let mozeZobaczycListeZakupow = false;
     const zapisaneTresci: Record<string, string> = {};
@@ -471,7 +498,7 @@ export default async function WiesCatchAllPage({ params, searchParams }: Props) 
 
     const blog = (blogRaw ?? []) as BlogWpis[];
     const historia = (historiaRaw ?? []) as HistoriaWpis[];
-    const rynek = (rynekRaw ?? []) as RynekOferta[];
+    const rynek = wzbogacOfertyOZaufanie((rynekRaw ?? []) as RynekOferta[]);
     const wiadomosci = (wiadomosciRaw ?? []) as WiadomoscLokalna[];
     const profileUslug = (profileRaw ?? []) as {
       id: string;
@@ -602,7 +629,7 @@ export default async function WiesCatchAllPage({ params, searchParams }: Props) 
             ← Strona główna
           </Link>
           {" · "}
-          <Link href="/mapa" className="text-green-800 underline">
+          <Link href={linkChroniony("/mapa", !!userSesji)} className="text-green-800 underline">
             Mapa wsi
           </Link>
         </p>
@@ -647,6 +674,8 @@ export default async function WiesCatchAllPage({ params, searchParams }: Props) 
           kontaktyUrzedowe={kontaktyUrzedowe}
           kadencjeFunkcyjne={kadencjeFunkcyjne}
           zalogowany={!!userSesji}
+          mapaZnacznik={mapaZnacznik}
+          mapaPoi={mapaPoi}
           zapisaneTresci={zapisaneTresci}
         />
       </main>
@@ -655,12 +684,19 @@ export default async function WiesCatchAllPage({ params, searchParams }: Props) 
 
   if (reszta.length === 1 && reszta[0] === "rynek") {
     const sciezka = sciezkaProfiluWsi(wies);
-    const [{ data: rynekPelny }, { data: profileRynek }] = await Promise.all([
+    const supabaseSerwer = utworzKlientaSupabaseSerwer();
+    const { data: authRes } = await supabaseSerwer.auth.getUser();
+
+    const [
+      { data: rynekPelny },
+      { data: profileRynek },
+      { data: metaWies },
+      { data: wierszeGeo },
+      { data: wierszeDzialki },
+    ] = await Promise.all([
       supabase
         .from("marketplace_listings")
-        .select(
-          "id, title, listing_type, category, equipment_category, location_text, price_amount, price_unit, currency, with_operator, image_urls, published_at, created_at, seller_verified",
-        )
+        .select(POLE_SELECT_RYNEK_LISTA)
         .eq("village_id", wies.id)
         .eq("status", "approved")
         .order("published_at", { ascending: false, nullsFirst: false })
@@ -672,23 +708,88 @@ export default async function WiesCatchAllPage({ params, searchParams }: Props) 
         .eq("is_active", true)
         .order("is_verified", { ascending: false })
         .order("business_name"),
+      supabase
+        .from("villages")
+        .select("rynek_banner_text, rynek_banner_until, latitude, longitude, population, boundary_geojson")
+        .eq("id", wies.id)
+        .maybeSingle(),
+      supabase
+        .from("marketplace_listings")
+        .select("id, title, listing_type, latitude, longitude, village_id")
+        .eq("village_id", wies.id)
+        .eq("status", "approved")
+        .not("latitude", "is", null)
+        .not("longitude", "is", null)
+        .limit(200),
+      supabase
+        .from("marketplace_listings")
+        .select("id, title, listing_type, equipment_category, category, parcel_geojson, parcel_area_m2, village_id")
+        .eq("village_id", wies.id)
+        .eq("status", "approved")
+        .not("parcel_geojson", "is", null)
+        .limit(80),
     ]);
 
-    const { MarketplaceListaKlient } = await import("@/components/wies/marketplace-lista-klient");
-    const { OkruszkiRynku, NaglowekStronyRynku } = await import("@/components/wies/rynek-ui");
-    const { KartaProfiluRynku } = await import("@/components/wies/karta-profilu-rynku");
+    let subskrybowaneKategorie: (string | null)[] = [];
+    if (authRes.user) {
+      const { data: subs } = await supabaseSerwer
+        .from("marketplace_category_subscriptions")
+        .select("equipment_category")
+        .eq("user_id", authRes.user.id)
+        .eq("village_id", wies.id);
+      subskrybowaneKategorie = (subs ?? []).map((s) => s.equipment_category ?? null);
+    }
 
-    const ogloszenia = (rynekPelny ?? []) as RynekOferta[];
+    const wiesPoId = new Map([[wies.id, { name: wies.name, sciezka }]]);
+    const punktyRynek: ZnacznikRynek[] = mapujOgloszeniaRynekDlaMapy(
+      (wierszeGeo ?? []) as Parameters<typeof mapujOgloszeniaRynekDlaMapy>[0],
+      wiesPoId,
+    );
+    const punktyRynekDzialki: ZnacznikRynekDzialka[] = mapujDzialkiRynekDlaMapy(
+      (wierszeDzialki ?? []) as Parameters<typeof mapujDzialkiRynekDlaMapy>[0],
+      wiesPoId,
+    );
+
+    const { znacznik: znacznikMapy } = await pobierzDaneMapyWsi(supabase, {
+      id: wies.id,
+      name: wies.name,
+      slug: wies.slug,
+      voivodeship: wies.voivodeship,
+      county: wies.county,
+      commune: wies.commune,
+      latitude: metaWies?.latitude ?? wies.latitude,
+      longitude: metaWies?.longitude ?? wies.longitude,
+      population: wies.population,
+      boundary_geojson: metaWies?.boundary_geojson,
+    });
+
+    const ogloszenia = wzbogacOfertyOZaufanie((rynekPelny ?? []) as RynekOferta[]);
     const profile = profileRynek ?? [];
+    const bannerTekst = aktywnyBannerRynku(metaWies?.rynek_banner_text, metaWies?.rynek_banner_until);
+
+    const { MarketplaceListaKlient } = await import("@/components/wies/marketplace-lista-klient");
+    const { OkruszkiRynku, NaglowekStronyRynku, RynekBannerSezonowy } = await import("@/components/wies/rynek-ui");
+    const { KartaProfiluRynku } = await import("@/components/wies/karta-profilu-rynku");
+    const { RynekMapaEmbedded } = await import("@/components/wies/rynek-mapa-embedded");
 
     return (
       <main className="mx-auto min-w-0 w-full max-w-7xl px-4 py-8 sm:px-6 sm:py-12 text-stone-800">
         <OkruszkiRynku sciezkaWsi={sciezka} nazwaWsi={wies.name} />
+        {bannerTekst ? <RynekBannerSezonowy tekst={bannerTekst} /> : null}
         <NaglowekStronyRynku
           tytul={`Rynek lokalny — ${wies.name}`}
-          opis="Miód, sery, mięso, warzywa z gospodarstw, maszyny rolnicze, konie i usługi mieszkańców. Ogłoszenia są darmowe — wygasłe archiwizują się automatycznie."
+          opis="Miód, sery, mięso, warzywa z gospodarstw, maszyny rolnicze, działki z mapą Geoportalu, konie i usługi mieszkańców. Ogłoszenia są darmowe — wygasłe archiwizują się automatycznie."
           liczbaOgloszen={ogloszenia.length}
           liczbaProfili={profile.length}
+        />
+
+        <RynekMapaEmbedded
+          nazwaWsi={wies.name}
+          sciezkaWsi={sciezka}
+          villageId={wies.id}
+          znacznikWsi={znacznikMapy}
+          punktyRynek={punktyRynek}
+          punktyRynekDzialki={punktyRynekDzialki}
         />
 
         {profile.length > 0 ? (
@@ -709,6 +810,10 @@ export default async function WiesCatchAllPage({ params, searchParams }: Props) 
           <MarketplaceListaKlient
             oferty={ogloszenia}
             sciezkaWsi={sciezka}
+            villageId={wies.id}
+            nazwaWsi={wies.name}
+            zalogowany={!!authRes.user}
+            subskrybowaneKategorie={subskrybowaneKategorie}
             kotwicaZasadSwietlicy={`${sciezka}#swietlica-regulamin`}
             pokazLinkWszystkie={false}
             tryb="pelny"
@@ -736,9 +841,7 @@ export default async function WiesCatchAllPage({ params, searchParams }: Props) 
 
     const { data: ogloszeniaProfilu } = await supabase
       .from("marketplace_listings")
-      .select(
-        "id, title, listing_type, category, equipment_category, location_text, price_amount, price_unit, currency, with_operator, image_urls, published_at, created_at, seller_verified",
-      )
+      .select(POLE_SELECT_RYNEK_LISTA)
       .eq("village_id", wies.id)
       .eq("profile_id", profil.id)
       .eq("status", "approved")
@@ -753,7 +856,7 @@ export default async function WiesCatchAllPage({ params, searchParams }: Props) 
         <OkruszkiRynku sciezkaWsi={sciezka} nazwaWsi={wies.name} biezacy={profil.business_name} />
         <RynekProfilUslugPubliczny
           profil={profil}
-          ogloszenia={(ogloszeniaProfilu ?? []) as RynekOferta[]}
+          ogloszenia={wzbogacOfertyOZaufanie((ogloszeniaProfilu ?? []) as RynekOferta[])}
           sciezkaWsi={sciezka}
         />
       </main>
@@ -770,7 +873,7 @@ export default async function WiesCatchAllPage({ params, searchParams }: Props) 
     const { data: ogl } = await supabase
       .from("marketplace_listings")
       .select(
-        "id, village_id, title, description, listing_type, category, equipment_category, price_amount, price_unit, with_operator, phone, location_text, image_urls, published_at, created_at, owner_user_id, status, seller_verified, latitude, longitude, pickup_in_village, delivery_radius_km, seasonal_note, product_produced_at, product_best_before, is_organic, allergens_text, sales_poi_id, profile_id, pois(name), marketplace_profiles(id, business_name, is_verified)",
+        "id, village_id, title, description, listing_type, category, equipment_category, price_amount, price_unit, with_operator, phone, location_text, image_urls, published_at, created_at, owner_user_id, status, seller_verified, latitude, longitude, pickup_in_village, delivery_radius_km, seasonal_note, product_produced_at, product_best_before, is_organic, allergens_text, sales_poi_id, profile_id, parcel_geojson, parcel_number, cadastral_district, parcel_area_m2, geoportal_parcel_id, view_count, currency, pois(name), marketplace_profiles(id, business_name, is_verified)",
       )
       .eq("id", idOgl.data)
       .eq("village_id", wies.id)
@@ -781,15 +884,28 @@ export default async function WiesCatchAllPage({ params, searchParams }: Props) 
 
     const sciezka = sciezkaProfiluWsi(wies);
     let zapisaneId: string | null = null;
+    let obserwujCene = false;
+    let zaufanieSprzedawcy: import("@/lib/marketplace/zaufanie-sprzedawcy").ZaufanieSprzedawcy | null = null;
     if (authRes.user) {
       const { data: zapis } = await supabaseSerwer
         .from("user_saved_content")
-        .select("id")
+        .select("id, watch_price")
         .eq("user_id", authRes.user.id)
         .eq("content_type", "listing")
         .eq("content_id", ogl.id)
         .maybeSingle();
       zapisaneId = zapis?.id ?? null;
+      obserwujCene = Boolean(zapis?.watch_price);
+    }
+
+    if (ogl.owner_user_id) {
+      const { count } = await supabase
+        .from("marketplace_listings")
+        .select("id", { count: "exact", head: true })
+        .eq("village_id", wies.id)
+        .eq("owner_user_id", ogl.owner_user_id)
+        .eq("status", "approved");
+      zaufanieSprzedawcy = zaufanieZLiczby(count ?? 0);
     }
 
     const katOgl = ogl.equipment_category ?? ogl.category;
@@ -828,10 +944,13 @@ export default async function WiesCatchAllPage({ params, searchParams }: Props) 
             })(),
           }}
           sciezkaWsi={sciezka}
+          nazwaWsi={wies.name}
           villageId={wies.id}
           zalogowany={!!authRes.user}
           toJa={authRes.user?.id === ogl.owner_user_id}
           zapisaneId={zapisaneId}
+          obserwujCene={obserwujCene}
+          zaufanieSprzedawcy={zaufanieSprzedawcy}
           profilSprzedawcy={profilPowiazany}
           podobne={(podobneRaw ?? []) as {
             id: string;

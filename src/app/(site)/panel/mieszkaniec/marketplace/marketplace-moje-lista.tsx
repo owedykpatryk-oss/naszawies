@@ -32,7 +32,19 @@ export function MarketplaceMojeLista({ ogloszenia }: { ogloszenia: MojeOgloszeni
   const [blad, ustawBlad] = useState("");
   const [czek, startT] = useTransition();
 
-  if (ogloszenia.length === 0) return null;
+  if (ogloszenia.length === 0) {
+    return (
+      <section className="mt-8 rounded-2xl border border-dashed border-orange-200/70 bg-orange-50/30 px-4 py-8 text-center">
+        <p className="text-2xl" aria-hidden>
+          🏷️
+        </p>
+        <h2 className="mt-2 font-serif text-xl text-green-950">Twoje ogłoszenia</h2>
+        <p className="mt-2 text-sm text-stone-600">
+          Nie masz jeszcze ogłoszeń. Wypełnij formularz poniżej — sołtys zatwierdzi publikację na profilu wsi.
+        </p>
+      </section>
+    );
+  }
 
   return (
     <section className="mt-8">

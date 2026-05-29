@@ -3,6 +3,13 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { geokodujLokalizacjeTekst } from "@/lib/marketplace/geokoduj-lokalizacje";
+import { czyKategoriaNieruchomosci, limitZdjecRynek } from "@/lib/marketplace/nieruchomosci";
+import { centroidGeometriiDzialki } from "@/lib/geoportal/wkt-do-geojson";
+import {
+  mapujPolaDzialkiDoWiersza,
+  schemaPolaDzialkiOgloszenia,
+  type PolaDzialkiOgloszenia,
+} from "@/lib/marketplace/schema-pola-dzialki";
 import {
   mapujPolaRozszerzoneDoWiersza,
   schemaPolaRozszerzoneOgloszenia,
@@ -24,9 +31,11 @@ const schema = z.object({
   withOperator: z.boolean(),
   phone: z.string().trim().max(30).optional().nullable(),
   locationText: z.string().trim().max(200).optional().nullable(),
-  imageUrls: z.array(z.string().url().max(2048)).max(3),
+  imageUrls: z.array(z.string().url().max(2048)).max(5),
   dniWaznosci: z.number().int().min(7).max(90).optional(),
-}).merge(schemaPolaRozszerzoneOgloszenia);
+})
+  .merge(schemaPolaRozszerzoneOgloszenia)
+  .merge(schemaPolaDzialkiOgloszenia);
 
 const schemaPozycjaKgw = z.object({
   listingType: z.enum(["sprzedam", "kupie", "oddam", "usluga", "praca", "wynajme", "wypozycze"]),
@@ -37,19 +46,26 @@ const schemaPozycjaKgw = z.object({
 
 const schemaPakietKgw = z.object({
   villageId: z.string().uuid(),
-  pozycje: z.array(schemaPozycjaKgw).min(1).max(6),
+  pozycje: z.array(schemaPozycjaKgw).min(1).max(20),
 });
 
-export type WynikMarketplace = { blad: string } | { ok: true; id?: string };
+export type WynikMarketplace = { blad: string } | { ok: true; id?: string; dodano?: number };
 
 async function wspolrzedneDlaOgloszenia(
   supabase: ReturnType<typeof utworzKlientaSupabaseSerwer>,
   villageId: string,
   locationText: string | null | undefined,
   pola: PolaRozszerzoneOgloszenia,
+  dzialka?: PolaDzialkiOgloszenia,
 ): Promise<{ latitude: number | null; longitude: number | null }> {
   if (pola.latitude != null && pola.longitude != null) {
     return { latitude: pola.latitude, longitude: pola.longitude };
+  }
+  if (dzialka?.parcelGeojson) {
+    const c = centroidGeometriiDzialki(
+      dzialka.parcelGeojson as Parameters<typeof centroidGeometriiDzialki>[0],
+    );
+    if (c) return { latitude: c.lat, longitude: c.lng };
   }
   const tekst = locationText?.trim();
   if (!tekst || tekst.length < 3) {
@@ -65,7 +81,16 @@ export async function dodajOgloszenieMarketplaceMieszkanca(
   body: z.infer<typeof schema>,
 ): Promise<WynikMarketplace> {
   const p = schema.safeParse(body);
-  if (!p.success) return { blad: "Sprawdź dane ogłoszenia (tytuł, opis, max 3 zdjęcia)." };
+  if (!p.success) return { blad: "Sprawdź dane ogłoszenia (tytuł, opis, zdjęcia)." };
+
+  const kat = p.data.equipmentCategory ?? "";
+  const maxZdj = limitZdjecRynek(kat);
+  if (p.data.imageUrls.length > maxZdj) {
+    return { blad: `Maksymalnie ${maxZdj} zdjęć dla tej kategorii.` };
+  }
+  if (czyKategoriaNieruchomosci(kat) && !p.data.parcelGeojson && p.data.latitude == null) {
+    return { blad: "Dla działki zaznacz granicę na mapie albo podaj współrzędne GPS." };
+  }
 
   const supabase = utworzKlientaSupabaseSerwer();
   const {
@@ -77,9 +102,10 @@ export async function dodajOgloszenieMarketplaceMieszkanca(
   const expires = new Date();
   expires.setDate(expires.getDate() + dni);
 
-  const gps = await wspolrzedneDlaOgloszenia(supabase, p.data.villageId, p.data.locationText, p.data);
+  const gps = await wspolrzedneDlaOgloszenia(supabase, p.data.villageId, p.data.locationText, p.data, p.data);
   const polaRozszerzone = {
     ...mapujPolaRozszerzoneDoWiersza(p.data),
+    ...mapujPolaDzialkiDoWiersza(p.data),
     latitude: gps.latitude,
     longitude: gps.longitude,
   };
@@ -146,6 +172,12 @@ export async function edytujOgloszenieMarketplaceMieszkanca(
   const p = schemaEdycja.safeParse(body);
   if (!p.success) return { blad: "Sprawdź dane ogłoszenia." };
 
+  const kat = p.data.equipmentCategory ?? "";
+  const maxZdj = limitZdjecRynek(kat);
+  if (p.data.imageUrls.length > maxZdj) {
+    return { blad: `Maksymalnie ${maxZdj} zdjęć dla tej kategorii.` };
+  }
+
   const supabase = utworzKlientaSupabaseSerwer();
   const {
     data: { user },
@@ -165,9 +197,10 @@ export async function edytujOgloszenieMarketplaceMieszkanca(
 
   const nowyStatus = row.status === "approved" ? "pending" : row.status;
 
-  const gps = await wspolrzedneDlaOgloszenia(supabase, row.village_id, p.data.locationText, p.data);
+  const gps = await wspolrzedneDlaOgloszenia(supabase, row.village_id, p.data.locationText, p.data, p.data);
   const polaRozszerzone = {
     ...mapujPolaRozszerzoneDoWiersza(p.data),
+    ...mapujPolaDzialkiDoWiersza(p.data),
     latitude: gps.latitude,
     longitude: gps.longitude,
   };
@@ -283,7 +316,7 @@ export async function przedluzWaznoscOgloszeniaMarketplace(
 
 export async function dodajPakietOgloszenKgw(body: z.infer<typeof schemaPakietKgw>): Promise<WynikMarketplace> {
   const p = schemaPakietKgw.safeParse(body);
-  if (!p.success) return { blad: "Sprawdź szablon (1–6 pozycji)." };
+  if (!p.success) return { blad: "Sprawdź szablon (1–20 pozycji)." };
 
   const supabase = utworzKlientaSupabaseSerwer();
   const {
@@ -317,5 +350,7 @@ export async function dodajPakietOgloszenKgw(body: z.infer<typeof schemaPakietKg
 
   revalidatePath("/panel/mieszkaniec/marketplace");
   revalidatePath("/panel/soltys");
-  return { ok: true };
+  revalidatePath("/rynek");
+  await revalidateRynekDlaWsi(supabase, p.data.villageId);
+  return { ok: true, dodano: wstaw.length };
 }

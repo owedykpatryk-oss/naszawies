@@ -144,6 +144,19 @@ export async function zapiszTresc(input: {
       content_id: cId.data,
       title_cache: title,
       href_cache: href,
+      ...(typ.data === "listing"
+        ? await (async () => {
+            const { data: ogl } = await supabase
+              .from("marketplace_listings")
+              .select("price_amount")
+              .eq("id", cId.data)
+              .maybeSingle();
+            return {
+              price_snapshot: ogl?.price_amount ?? null,
+              watch_price: true,
+            };
+          })()
+        : {}),
     })
     .select("id")
     .single();
@@ -157,7 +170,11 @@ export async function zapiszTresc(input: {
   }
 
   odswiezMoje();
-  return { ok: true, komunikat: "Dodano do ulubionych.", id: data?.id };
+  const komunikat =
+    typ.data === "listing"
+      ? "Dodano do ulubionych — włączono obserwację ceny."
+      : "Dodano do ulubionych.";
+  return { ok: true, komunikat, id: data?.id };
 }
 
 export async function usunZapisanaTresc(savedId: string): Promise<WynikProsty> {
@@ -183,4 +200,63 @@ export async function usunZapisanaTresc(savedId: string): Promise<WynikProsty> {
 
   odswiezMoje();
   return { ok: true, komunikat: "Usunięto z ulubionych." };
+}
+
+export async function ustawObserwacjeCenyOgloszenia(
+  savedId: string,
+  watchPrice: boolean,
+): Promise<WynikProsty> {
+  const id = uuid.safeParse(savedId);
+  if (!id.success) {
+    return { blad: "Niepoprawny identyfikator." };
+  }
+
+  const supabase = utworzKlientaSupabaseSerwer();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) {
+    return { blad: "Zaloguj się." };
+  }
+
+  const { data: row } = await supabase
+    .from("user_saved_content")
+    .select("id, content_type, content_id, price_snapshot")
+    .eq("id", id.data)
+    .eq("user_id", user.id)
+    .maybeSingle();
+
+  if (!row || row.content_type !== "listing") {
+    return { blad: "Obserwacja ceny dotyczy tylko ogłoszeń na rynku." };
+  }
+
+  let priceSnapshot = row.price_snapshot;
+  if (watchPrice && priceSnapshot == null) {
+    const { data: ogl } = await supabase
+      .from("marketplace_listings")
+      .select("price_amount")
+      .eq("id", row.content_id)
+      .maybeSingle();
+    priceSnapshot = ogl?.price_amount ?? null;
+  }
+
+  const { error } = await supabase
+    .from("user_saved_content")
+    .update({
+      watch_price: watchPrice,
+      ...(watchPrice ? { price_snapshot: priceSnapshot } : {}),
+    })
+    .eq("id", id.data)
+    .eq("user_id", user.id);
+
+  if (error) {
+    console.error("[ustawObserwacjeCenyOgloszenia]", error.message);
+    return { blad: "Nie udało się zapisać ustawienia." };
+  }
+
+  odswiezMoje();
+  return {
+    ok: true,
+    komunikat: watchPrice ? "Włączono obserwację ceny." : "Wyłączono obserwację ceny.",
+  };
 }

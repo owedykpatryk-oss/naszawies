@@ -8,7 +8,6 @@ import { PlanSaliRysunek } from "@/components/swietlica/plan-sali-rysunek";
 import { RzutParteruSaliSvg } from "@/components/swietlica/rzut-parteru-sali-svg";
 import { parsujPlanZJsonb } from "@/lib/swietlica/plan-sali";
 import { parsujRzutParteruZJsonb } from "@/lib/swietlica/rzut-parteru-sali";
-import { znacznikiNaPlanieStolow } from "@/lib/swietlica/mapowanie-rzutu-plan";
 import { pojedynczaWies } from "@/lib/supabase/wies-z-zapytania";
 import { DokumentacjaZniszczenRezerwacji } from "@/components/swietlica/dokumentacja-zniszczen-rezerwacji";
 import {
@@ -17,7 +16,6 @@ import {
 } from "@/components/swietlica/kalendarz-zajetosci-publiczny";
 import { AnulujRezerwacjeSwietlicyKlient } from "@/components/swietlica/anuluj-rezerwacje-swietlicy-klient";
 import { LinkZaproszenieRezerwacji } from "@/components/swietlica/link-zaproszenie-rezerwacji";
-import { RezerwacjaSwietlicyFormularz } from "./rezerwacja-swietlicy-formularz";
 import {
   ETYKIETY_AKCJI_INWENTARZA,
   normalizujAkcjeInwentarza,
@@ -106,7 +104,6 @@ export default async function MieszkaniecSwietlicaHallPage({ params }: Props) {
   const rezerwacje = (mojeRezerwacje ?? []) as WpisRezerwacji[];
   const plan = parsujPlanZJsonb(sala.layout_data);
   const rzutParteru = parsujRzutParteruZJsonb(sala.floor_plan_data);
-  const znacznikiRzutu = znacznikiNaPlanieStolow(rzutParteru);
   const zajeteTerminy = await pobierzKalendarzZajetosciDlaHali(supabase, hallId);
 
   function dostepne(p: PozycjaWyposazenia) {
@@ -170,12 +167,11 @@ export default async function MieszkaniecSwietlicaHallPage({ params }: Props) {
         wiersze={zajeteTerminy}
         naglowekDod={
           <p>
-            Dla wszystkich bez roli sołtysa: tylko to, czy przedział jest zajęty (w tym czeka na sołtysa), bez
-            wynajmującego. Imię i dane widać tylko w panelu sołtysa; w sekcji „Moje rezerwacje” widać wyłącznie
-            własne zgłoszenia.
+            Terminy zajęte wpisuje sołtys. Widzisz tylko przedziały czasu — bez danych osobowych. Rezerwacja odbywa się
+            przez kontakt ze sołtysem, nie online.
           </p>
         }
-        pustyKomunikat="Brak wstępnych ani zatwierdzonych rezerwacji w kalendarzu (w tym widoku). Gdy będą, zobaczysz tylko przedział czasowy, bez cudzego imienia."
+        pustyKomunikat="Brak zajętych terminów w kalendarzu — sala jest wolna (wg wpisów sołtysa)."
       />
 
       {rzutParteru ? (
@@ -215,30 +211,17 @@ export default async function MieszkaniecSwietlicaHallPage({ params }: Props) {
         </section>
       ) : null}
 
-      <section className="mt-10 rounded-2xl border border-green-900/10 bg-[#f5f1e8]/40 p-5 sm:p-6">
-        <h2 className="font-serif text-xl text-green-950">Wniosek o rezerwację</h2>
-        <p className="mt-1 text-sm text-stone-600">
-          Po wysłaniu sołtys dostanie prośbę w panelu „Rezerwacje sal”. Dopóki status to „oczekujący”, termin nie jest
-          potwierdzony.
+      <section className="mt-10 rounded-2xl border border-stone-200 bg-stone-50/80 p-5 sm:p-6">
+        <h2 className="font-serif text-xl text-green-950">Rezerwacja sali</h2>
+        <p className="mt-2 text-sm text-stone-700">
+          Wnioski online od mieszkańców są wyłączone. <strong>Kalendarz zajętości uzupełnia wyłącznie sołtys</strong> w
+          panelu świetlicy. Aby zarezerwować salę, skontaktuj się ze sołtysem (telefon na profilu wsi).
         </p>
-        <RezerwacjaSwietlicyFormularz
-          hallId={hallId}
-          maxGosci={sala.max_capacity}
-          inventory={pozycje.map((p) => ({
-            id: p.id,
-            name: p.name,
-            quantity_available: p.quantity_available,
-            quantity: p.quantity,
-          }))}
-          zajeteTerminy={zajeteTerminy}
-          kaucjaPln={sala.deposit != null ? Number(sala.deposit) : null}
-          cenaMieszkaniec={sala.price_resident != null ? Number(sala.price_resident) : null}
-          cenaObcy={sala.price_external != null ? Number(sala.price_external) : null}
-          regulaminText={sala.rules_text as string | null}
-          regulaminPlikUrl={(sala.rules_file_url as string | null)?.trim() || null}
-          planSali={plan}
-          znacznikiRzutu={znacznikiRzutu}
-        />
+        <p className="mt-3 text-sm">
+          <Link href="/panel/soltys/swietlica" className="font-medium text-green-800 underline">
+            Panel sołtysa — zarządzanie salami
+          </Link>
+        </p>
       </section>
 
       <section className="mt-10">

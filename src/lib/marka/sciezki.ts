@@ -1,8 +1,8 @@
 /** Ścieżki publiczne do plików marki (katalog `public/marka/`). */
 export const MARKA_SCIEZKI = {
-  logoPelne: "/marka/logo-naszawies.png",
-  znakOkrag: "/marka/znak-okrag.png",
-  znakOkrag64: "/marka/znak-okrag-64.png",
-  znakOkrag192: "/marka/znak-okrag-192.png",
-  znakEmail: "/email/znak-naszawies.png",
+  logoPelne: "/marka/znak-okrag.svg",
+  znakOkrag: "/marka/znak-okrag.svg",
+  znakOkrag64: "/marka/znak-okrag.svg",
+  znakOkrag192: "/api/pwa/icon/192",
+  znakEmail: "/email/znak-naszawies.svg",
 } as const;

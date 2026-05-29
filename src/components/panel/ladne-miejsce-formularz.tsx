@@ -4,6 +4,8 @@ import { FormEvent, useState, useTransition } from "react";
 import { utworzKlientaSupabasePrzegladarka } from "@/lib/supabase/przegladarka";
 import { dodajLadneMiejsceNaMapie } from "@/app/(site)/panel/soltys/akcje-poi-miejsca";
 import { WyborPunktuMapyKlient } from "@/components/zgloszenia/wybor-punktu-mapy-klient";
+import { czyKlientUzywaMagazynuR2 } from "@/lib/storage/czy-magazyn-r2";
+import { wgrajObrazDoMagazynuR2 } from "@/lib/storage/wgraj-obraz-r2";
 
 type Props = {
   villageId: string;
@@ -38,20 +40,39 @@ export function LadneMiejsceFormularz({ villageId, domyslnaLat, domyslnaLng }: P
     }
 
     startT(async () => {
-      const supabase = utworzKlientaSupabasePrzegladarka();
-      const ext = plik.name.split(".").pop()?.toLowerCase() || "jpg";
-      const sciezka = `${villageId}/poi/${crypto.randomUUID()}.${ext}`;
-      const { error: uE } = await supabase.storage.from("village_photos").upload(sciezka, plik, {
-        upsert: false,
-        contentType: plik.type || "image/jpeg",
-      });
-      if (uE) {
-        ustawBlad("Nie udało się wgrać zdjęcia.");
-        return;
+      let publicUrl: string;
+      let sciezka: string;
+
+      if (czyKlientUzywaMagazynuR2()) {
+        const uploadFd = new FormData();
+        uploadFd.set("typ", "village_photos");
+        uploadFd.set("villageId", villageId);
+        uploadFd.set("podkatalog", "poi");
+        uploadFd.set("file", plik);
+        const w = await wgrajObrazDoMagazynuR2(uploadFd);
+        if ("blad" in w) {
+          ustawBlad(w.blad);
+          return;
+        }
+        publicUrl = w.publicUrl;
+        sciezka = publicUrl.split("/").slice(-3).join("/");
+      } else {
+        const supabase = utworzKlientaSupabasePrzegladarka();
+        const ext = plik.name.split(".").pop()?.toLowerCase() || "jpg";
+        sciezka = `${villageId}/poi/${crypto.randomUUID()}.${ext}`;
+        const { error: uE } = await supabase.storage.from("village_photos").upload(sciezka, plik, {
+          upsert: false,
+          contentType: plik.type || "image/jpeg",
+        });
+        if (uE) {
+          ustawBlad("Nie udało się wgrać zdjęcia.");
+          return;
+        }
+        const {
+          data: { publicUrl: urlSupa },
+        } = supabase.storage.from("village_photos").getPublicUrl(sciezka);
+        publicUrl = urlSupa;
       }
-      const {
-        data: { publicUrl },
-      } = supabase.storage.from("village_photos").getPublicUrl(sciezka);
 
       const w = await dodajLadneMiejsceNaMapie({
         villageId,
@@ -77,6 +98,9 @@ export function LadneMiejsceFormularz({ villageId, domyslnaLat, domyslnaLng }: P
   return (
     <form onSubmit={onSubmit} className="mt-3 space-y-3 rounded-xl border border-amber-200/80 bg-amber-50/40 p-4">
       <p className="text-sm font-medium text-amber-950">Dodaj ładne miejsce (1 zdjęcie + pinezka)</p>
+      {czyKlientUzywaMagazynuR2() ? (
+        <p className="text-xs text-stone-600">Zdjęcie trafi do Cloudflare R2 (CDN).</p>
+      ) : null}
       {ok ? <p className="text-sm text-green-900">Dodano — widać na mapie w kategorii „Ładne miejsce”.</p> : null}
       {blad ? <p className="text-sm text-red-800">{blad}</p> : null}
       <label className="block text-sm">

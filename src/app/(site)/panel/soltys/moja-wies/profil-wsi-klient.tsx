@@ -3,9 +3,14 @@
 import Link from "next/link";
 import { FormEvent, useState, useTransition } from "react";
 import { dodajBrakujacePoiZOpenStreetMap, dodajPunktCzerpaniaWodyOsp } from "../akcje-mapa-poi";
-import { zapiszProfilPublicznyWsi } from "../akcje";
+import { zapiszProfilPublicznyWsi, zapiszBannerRynkuWsi } from "../akcje";
 import { sciezkaProfiluWsi } from "@/lib/wies/sciezka-publiczna";
 import { LadneMiejsceFormularz } from "@/components/panel/ladne-miejsce-formularz";
+import {
+  EdytorKontaktuPoiSoltys,
+  type PoiDoEdycjiKontaktu,
+  type SalaOpcja,
+} from "@/components/panel/edytor-kontaktu-poi-soltys";
 import { QrProfilWsiPanel } from "@/components/panel/qr-profil-wsi-panel";
 import { SugestieAutomatyzacjiMapy } from "@/components/panel/sugestie-automatyzacji-mapy";
 import type { SugestiaAutomatyzacjiMapy } from "@/lib/mapa/pobierz-sugestie-automatyzacji-wsi";
@@ -22,14 +27,20 @@ export type WiesDoEdycji = {
   cover_image_url: string | null;
   latitude: number | null;
   longitude: number | null;
+  rynek_banner_text?: string | null;
+  rynek_banner_until?: string | null;
 };
 
 export function ProfilWsiSoltysKlient({
   wies,
   sugestieMapy = {},
+  poisByVillage = {},
+  saleByVillage = {},
 }: {
   wies: WiesDoEdycji[];
   sugestieMapy?: Record<string, SugestiaAutomatyzacjiMapy[]>;
+  poisByVillage?: Record<string, PoiDoEdycjiKontaktu[]>;
+  saleByVillage?: Record<string, SalaOpcja[]>;
 }) {
   const [czek, startT] = useTransition();
   const [czekOsm, startOsm] = useTransition();
@@ -40,6 +51,9 @@ export function ProfilWsiSoltysKlient({
   const [czekWoda, startWoda] = useTransition();
   const [bladWoda, ustawBladWoda] = useState<Record<string, string>>({});
   const [okWoda, ustawOkWoda] = useState<Record<string, string>>({});
+  const [czekBanner, startBanner] = useTransition();
+  const [bladBanner, ustawBladBanner] = useState<Record<string, string>>({});
+  const [okBanner, ustawOkBanner] = useState<Record<string, boolean>>({});
 
   function wyslij(e: FormEvent<HTMLFormElement>, w: WiesDoEdycji) {
     e.preventDefault();
@@ -109,6 +123,24 @@ export function ProfilWsiSoltysKlient({
       }
       ustawOkWoda((o) => ({ ...o, [w.id]: "Dodano punkt czerpania wody OSP do mapy." }));
       e.currentTarget.reset();
+    });
+  }
+
+  function wyslijBanner(e: FormEvent<HTMLFormElement>, w: WiesDoEdycji) {
+    e.preventDefault();
+    const fd = new FormData(e.currentTarget);
+    ustawBladBanner((b) => ({ ...b, [w.id]: "" }));
+    startBanner(async () => {
+      const wynik = await zapiszBannerRynkuWsi({
+        villageId: w.id,
+        rynek_banner_text: String(fd.get("rynek_banner_text") ?? "") || null,
+        rynek_banner_until: String(fd.get("rynek_banner_until") ?? "") || null,
+      });
+      if ("blad" in wynik) {
+        ustawBladBanner((b) => ({ ...b, [w.id]: wynik.blad }));
+        return;
+      }
+      ustawOkBanner((o) => ({ ...o, [w.id]: true }));
     });
   }
 
@@ -201,6 +233,56 @@ export function ProfilWsiSoltysKlient({
               </button>
             </form>
 
+            <form onSubmit={(e) => wyslijBanner(e, w)} className="mt-6 space-y-3 rounded-xl border border-amber-200/80 bg-amber-50/40 p-4 text-sm">
+              <h3 className="font-serif text-base text-green-950">Banner na rynku lokalnym</h3>
+              <p className="text-xs text-stone-600">
+                Komunikat sezonowy widoczny na stronie <Link href={`${sciezka}/rynek`} className="text-green-800 underline">/rynek</Link> — np. kiermasz KGW, zbiory, festyn.
+              </p>
+              <div>
+                <label className="font-medium" htmlFor={`rynek-banner-${w.id}`}>
+                  Tekst bannera
+                </label>
+                <input
+                  id={`rynek-banner-${w.id}`}
+                  name="rynek_banner_text"
+                  type="text"
+                  defaultValue={w.rynek_banner_text ?? ""}
+                  maxLength={500}
+                  placeholder="np. Trwają zbiory · kiermasz KGW 15 czerwca na placu"
+                  className="mt-1 w-full rounded border border-stone-300 px-2 py-1.5"
+                />
+              </div>
+              <div>
+                <label className="font-medium" htmlFor={`rynek-banner-do-${w.id}`}>
+                  Pokaż do (opcjonalnie)
+                </label>
+                <input
+                  id={`rynek-banner-do-${w.id}`}
+                  name="rynek_banner_until"
+                  type="date"
+                  defaultValue={w.rynek_banner_until ?? ""}
+                  className="mt-1 rounded border border-stone-300 px-2 py-1.5"
+                />
+              </div>
+              {okBanner[w.id] ? (
+                <p className="text-sm text-green-800" role="status">
+                  Zapisano banner rynku.
+                </p>
+              ) : null}
+              {bladBanner[w.id] ? (
+                <p className="text-sm text-red-800" role="alert">
+                  {bladBanner[w.id]}
+                </p>
+              ) : null}
+              <button
+                type="submit"
+                disabled={czekBanner}
+                className="rounded-lg bg-amber-800 px-4 py-2 text-sm font-medium text-white hover:bg-amber-900 disabled:opacity-60"
+              >
+                {czekBanner ? "Zapisuję…" : "Zapisz banner rynku"}
+              </button>
+            </form>
+
             <div className="mt-8 border-t border-stone-200 pt-6">
               <h3 className="font-serif text-base text-green-950">Miejsca na mapie (szkoła, kościół, sklep…)</h3>
               <p className="mt-2 text-xs leading-relaxed text-stone-600">
@@ -239,6 +321,15 @@ export function ProfilWsiSoltysKlient({
               {maGps ? (
                 <LadneMiejsceFormularz villageId={w.id} domyslnaLat={w.latitude} domyslnaLng={w.longitude} />
               ) : null}
+
+              <div className="mt-6 rounded-xl border border-emerald-200/80 bg-emerald-50/30 p-4">
+                <h4 className="font-medium text-emerald-950">Telefon i godziny otwarcia (POI)</h4>
+                <EdytorKontaktuPoiSoltys
+                  villageId={w.id}
+                  pois={poisByVillage[w.id] ?? []}
+                  sale={saleByVillage[w.id] ?? []}
+                />
+              </div>
 
               <div className="mt-6 rounded-xl border border-blue-200/80 bg-blue-50/40 p-4">
                 <h4 className="font-medium text-blue-950">OSP v1: punkt czerpania wody</h4>

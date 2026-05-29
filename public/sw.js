@@ -4,7 +4,7 @@
  */
 const CACHE_SHELL = "naszawies-shell-v2";
 const CACHE_ALERTY = "naszawies-alerty-v1";
-const SHELL_URLS = ["/", "/manifest.webmanifest", "/marka/znak-okrag-192.png"];
+const SHELL_URLS = ["/", "/manifest.webmanifest", "/icon", "/apple-icon"];
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
@@ -59,7 +59,7 @@ self.addEventListener("push", (event) => {
   const title = payload.title || "naszawies.pl";
   const body = payload.body || "";
   const linkUrl = typeof payload.link_url === "string" ? payload.link_url : "/panel/powiadomienia";
-  const icon = new URL("/marka/znak-okrag-192.png", self.location.origin).href;
+  const icon = new URL("/icon", self.location.origin).href;
 
   event.waitUntil(
     self.registration.showNotification(title, {

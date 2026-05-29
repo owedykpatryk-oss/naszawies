@@ -34,8 +34,8 @@ export const PRZEWODNIKI: Record<RolaPrzewodnika, SekcjaPrzewodnika[]> = {
         },
         {
           tytul: "Znajdź swoją wieś",
-          opis: "Użyj wyszukiwarki lub mapy wsi, aby wejść na profil miejscowości.",
-          link: { href: "/szukaj", label: "Szukaj wsi" },
+          opis: "Po zalogowaniu: wyszukiwarka katalogu i mapa wsi. Publiczny profil miejscowości działa też z bezpośredniego linku.",
+          link: { href: "/logowanie?next=/szukaj", label: "Zaloguj i szukaj wsi" },
         },
         {
           tytul: "Transport (PKP, PKS)",

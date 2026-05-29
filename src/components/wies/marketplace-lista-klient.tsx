@@ -1,12 +1,18 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   GRUPY_KATEGORII_RYNKU,
   TYPY_OGLOSZEN,
   czyKategoriaProduktuLokalnego,
 } from "@/lib/marketplace/kategorie-ogloszen";
+import { czyKategoriaNieruchomosci } from "@/lib/marketplace/nieruchomosci";
+import { obliczJakoscZOfertyPublicznej } from "@/lib/marketplace/jakosc-ogloszenia";
+import type { ZaufanieSprzedawcy } from "@/lib/marketplace/zaufanie-sprzedawcy";
+import { filtryRynkuZUrl, urlZFiltramiRynku } from "@/lib/marketplace/filtry-url";
+import { RynekSubskrypcjaKategorii } from "@/components/wies/rynek-subskrypcja-kategorii";
 import {
   KartaOgloszeniaRynek,
   PasekAkcjiRynku,
@@ -27,16 +33,22 @@ export type RynekOfertaPubliczna = {
   image_urls?: string[] | null;
   published_at: string | null;
   created_at: string;
-};
+  parcel_area_m2?: number | null;
+  parcel_number?: string | null;
+  geoportal_parcel_id?: string | null;
+  view_count?: number;
+  owner_user_id?: string | null;
+} & ZaufanieSprzedawcy;
 
 const opcjeTypu = [{ value: "wszystkie", label: "Wszystkie typy" }, ...TYPY_OGLOSZEN.map((t) => ({ value: t.value, label: t.label }))];
 
 const SZYBKIE_KATEGORIE = [
-  { value: "miod", label: "Miód" },
-  { value: "sery_nabial", label: "Sery" },
-  { value: "warzywa_owoce", label: "Warzywa" },
-  { value: "ciagnik", label: "Ciągnik" },
-  { value: "usluga_z_operatorem", label: "Z operatorem" },
+  { value: "miod", label: "Miód", emoji: "🍯" },
+  { value: "sery_nabial", label: "Sery", emoji: "🧀" },
+  { value: "warzywa_owoce", label: "Warzywa", emoji: "🥕" },
+  { value: "ciagnik", label: "Ciągnik", emoji: "🚜" },
+  { value: "usluga_z_operatorem", label: "Z operatorem", emoji: "👷" },
+  { value: "dzialka_budowlana", label: "Działki", emoji: "📐" },
 ] as const;
 
 function liczbaAktywnychFiltrow(st: {
@@ -46,6 +58,12 @@ function liczbaAktywnychFiltrow(st: {
   tylkoZOperatorem: boolean;
   tylkoProduktyLokalne: boolean;
   tylkoZweryfikowane: boolean;
+  tylkoNieruchomosci: boolean;
+  tylkoZMapaGeoportal: boolean;
+  minM2: string;
+  maxM2: string;
+  minCena: string;
+  maxCena: string;
 }) {
   let n = 0;
   if (st.fraza.trim()) n++;
@@ -54,27 +72,51 @@ function liczbaAktywnychFiltrow(st: {
   if (st.tylkoZOperatorem) n++;
   if (st.tylkoProduktyLokalne) n++;
   if (st.tylkoZweryfikowane) n++;
+  if (st.tylkoNieruchomosci) n++;
+  if (st.tylkoZMapaGeoportal) n++;
+  if (st.minM2.trim()) n++;
+  if (st.maxM2.trim()) n++;
+  if (st.minCena.trim()) n++;
+  if (st.maxCena.trim()) n++;
   return n;
+}
+
+function parsujLiczbe(input: string): number | null {
+  const n = Number.parseFloat(input.replace(",", ".").trim());
+  return Number.isFinite(n) ? n : null;
 }
 
 export function MarketplaceListaKlient({
   oferty,
   sciezkaWsi,
+  villageId,
   kotwicaZasadSwietlicy,
   pokazLinkWszystkie = true,
   limitWyswietlania,
   tryb,
+  zalogowany = false,
+  nazwaWsi,
+  subskrybowaneKategorie = [],
 }: {
   oferty: RynekOfertaPubliczna[];
   sciezkaWsi: string;
+  villageId?: string;
   kotwicaZasadSwietlicy?: string;
   /** Gdy false — jesteś już na stronie pełnej listy. */
   pokazLinkWszystkie?: boolean;
   limitWyswietlania?: number;
   /** skrot — na profilu wsi; pelny — strona /rynek z siatką kart */
   tryb?: "skrot" | "pelny";
+  zalogowany?: boolean;
+  nazwaWsi?: string;
+  /** equipment_category z subskrypcji użytkownika (null = wszystkie) */
+  subskrybowaneKategorie?: (string | null)[];
 }) {
   const uklad = tryb ?? (pokazLinkWszystkie ? "skrot" : "pelny");
+  const pathname = usePathname();
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const urlZainicjowany = useRef(false);
 
   const [fraza, setFraza] = useState("");
   const [typ, setTyp] = useState("wszystkie");
@@ -83,7 +125,119 @@ export function MarketplaceListaKlient({
   const [tylkoProduktyLokalne, setTylkoProduktyLokalne] = useState(false);
   const [sortowanie, setSortowanie] = useState<"najnowsze" | "najstarsze" | "polecane">("najnowsze");
   const [tylkoZweryfikowane, setTylkoZweryfikowane] = useState(false);
+  const [tylkoNieruchomosci, setTylkoNieruchomosci] = useState(false);
+  const [tylkoZMapaGeoportal, setTylkoZMapaGeoportal] = useState(false);
+  const [minM2, setMinM2] = useState("");
+  const [maxM2, setMaxM2] = useState("");
+  const [minCena, setMinCena] = useState("");
+  const [maxCena, setMaxCena] = useState("");
+  const [widok, setWidok] = useState<"siatka" | "lista">("siatka");
   const [filtryOtwarte, setFiltryOtwarte] = useState(uklad === "pelny");
+  const [kopiujFiltr, ustawKopiujFiltr] = useState<"idle" | "ok">("idle");
+
+  useEffect(() => {
+    if (uklad !== "pelny" || urlZainicjowany.current) return;
+    urlZainicjowany.current = true;
+    const f = filtryRynkuZUrl(searchParams);
+    setFraza(f.fraza);
+    setTyp(f.typ);
+    setKategoria(f.kategoria);
+    setSortowanie(f.sortowanie);
+    setTylkoZOperatorem(f.tylkoZOperatorem);
+    setTylkoProduktyLokalne(f.tylkoProduktyLokalne);
+    setTylkoZweryfikowane(f.tylkoZweryfikowane);
+    setTylkoNieruchomosci(f.tylkoNieruchomosci);
+    setTylkoZMapaGeoportal(f.tylkoZMapaGeoportal);
+    setMinM2(f.minM2);
+    setMaxM2(f.maxM2);
+    setMinCena(f.minCena);
+    setMaxCena(f.maxCena);
+    setWidok(f.widok);
+    if ([f.fraza, f.typ, f.kategoria, f.minM2, f.maxM2, f.minCena, f.maxCena].some(Boolean) || f.tylkoZOperatorem || f.tylkoProduktyLokalne || f.tylkoZweryfikowane || f.tylkoNieruchomosci || f.tylkoZMapaGeoportal) {
+      setFiltryOtwarte(true);
+    }
+  }, [uklad, searchParams]);
+
+  useEffect(() => {
+    if (uklad !== "pelny" || !urlZainicjowany.current) return;
+    const qs = urlZFiltramiRynku({
+      fraza,
+      typ,
+      kategoria,
+      sortowanie,
+      tylkoZOperatorem,
+      tylkoProduktyLokalne,
+      tylkoZweryfikowane,
+      tylkoNieruchomosci,
+      tylkoZMapaGeoportal,
+      minM2,
+      maxM2,
+      minCena,
+      maxCena,
+      widok,
+    });
+    router.replace(`${pathname}${qs}`, { scroll: false });
+  }, [
+    uklad,
+    pathname,
+    router,
+    fraza,
+    typ,
+    kategoria,
+    sortowanie,
+    tylkoZOperatorem,
+    tylkoProduktyLokalne,
+    tylkoZweryfikowane,
+    tylkoNieruchomosci,
+    tylkoZMapaGeoportal,
+    minM2,
+    maxM2,
+    minCena,
+    maxCena,
+    widok,
+  ]);
+
+  const kopiujLinkFiltrów = useCallback(async () => {
+    try {
+      const qs = urlZFiltramiRynku({
+        fraza,
+        typ,
+        kategoria,
+        sortowanie,
+        tylkoZOperatorem,
+        tylkoProduktyLokalne,
+        tylkoZweryfikowane,
+        tylkoNieruchomosci,
+        tylkoZMapaGeoportal,
+        minM2,
+        maxM2,
+        minCena,
+        maxCena,
+        widok,
+      });
+      await navigator.clipboard.writeText(`${window.location.origin}${pathname}${qs}`);
+      ustawKopiujFiltr("ok");
+      window.setTimeout(() => ustawKopiujFiltr("idle"), 2000);
+    } catch {
+      /* ignore */
+    }
+  }, [
+    fraza,
+    typ,
+    kategoria,
+    sortowanie,
+    tylkoZOperatorem,
+    tylkoProduktyLokalne,
+    tylkoZweryfikowane,
+    tylkoNieruchomosci,
+    tylkoZMapaGeoportal,
+    minM2,
+    maxM2,
+    minCena,
+    maxCena,
+    widok,
+    pathname,
+  ]);
 
   const aktywneFiltry = liczbaAktywnychFiltrow({
     fraza,
@@ -92,6 +246,12 @@ export function MarketplaceListaKlient({
     tylkoZOperatorem,
     tylkoProduktyLokalne,
     tylkoZweryfikowane,
+    tylkoNieruchomosci,
+    minM2,
+    maxM2,
+    minCena,
+    maxCena,
+    tylkoZMapaGeoportal,
   });
 
   const wyczyscFiltry = () => {
@@ -101,11 +261,21 @@ export function MarketplaceListaKlient({
     setTylkoZOperatorem(false);
     setTylkoProduktyLokalne(false);
     setTylkoZweryfikowane(false);
+    setTylkoNieruchomosci(false);
+    setTylkoZMapaGeoportal(false);
+    setMinM2("");
+    setMaxM2("");
+    setMinCena("");
+    setMaxCena("");
     setSortowanie("najnowsze");
   };
 
   const przefiltrowane = useMemo(() => {
     const q = fraza.trim().toLowerCase();
+    const minPow = parsujLiczbe(minM2);
+    const maxPow = parsujLiczbe(maxM2);
+    const minKwota = parsujLiczbe(minCena);
+    const maxKwota = parsujLiczbe(maxCena);
     let rows = oferty.filter((o) => {
       const kat = o.equipment_category ?? o.category ?? "";
       if (typ !== "wszystkie" && o.listing_type !== typ) return false;
@@ -113,8 +283,14 @@ export function MarketplaceListaKlient({
       if (tylkoZOperatorem && !o.with_operator) return false;
       if (tylkoZweryfikowane && !o.seller_verified) return false;
       if (tylkoProduktyLokalne && !czyKategoriaProduktuLokalnego(kat)) return false;
+      if (tylkoNieruchomosci && !czyKategoriaNieruchomosci(kat)) return false;
+      if (tylkoZMapaGeoportal && !o.geoportal_parcel_id) return false;
+      if (minPow != null && (o.parcel_area_m2 == null || o.parcel_area_m2 < minPow)) return false;
+      if (maxPow != null && (o.parcel_area_m2 == null || o.parcel_area_m2 > maxPow)) return false;
+      if (minKwota != null && (o.price_amount == null || o.price_amount < minKwota)) return false;
+      if (maxKwota != null && (o.price_amount == null || o.price_amount > maxKwota)) return false;
       if (!q) return true;
-      const haystack = [o.title, kat, o.location_text, o.listing_type].filter(Boolean).join(" ").toLowerCase();
+      const haystack = [o.title, kat, o.location_text, o.listing_type, o.parcel_number].filter(Boolean).join(" ").toLowerCase();
       return haystack.includes(q);
     });
     rows = [...rows].sort((a, b) => {
@@ -122,6 +298,9 @@ export function MarketplaceListaKlient({
         const va = a.seller_verified ? 1 : 0;
         const vb = b.seller_verified ? 1 : 0;
         if (vb !== va) return vb - va;
+        const ja = obliczJakoscZOfertyPublicznej(a);
+        const jb = obliczJakoscZOfertyPublicznej(b);
+        if (jb !== ja) return jb - ja;
       }
       const ta = Date.parse(a.published_at ?? a.created_at) || 0;
       const tb = Date.parse(b.published_at ?? b.created_at) || 0;
@@ -129,7 +308,14 @@ export function MarketplaceListaKlient({
     });
     if (limitWyswietlania != null) rows = rows.slice(0, limitWyswietlania);
     return rows;
-  }, [fraza, oferty, typ, kategoria, tylkoZOperatorem, tylkoProduktyLokalne, tylkoZweryfikowane, sortowanie, limitWyswietlania]);
+  }, [fraza, oferty, typ, kategoria, tylkoZOperatorem, tylkoProduktyLokalne, tylkoZweryfikowane, tylkoNieruchomosci, tylkoZMapaGeoportal, minM2, maxM2, minCena, maxCena, sortowanie, limitWyswietlania]);
+
+  const liczbaZMapaGeoportal = useMemo(
+    () => oferty.filter((o) => Boolean(o.geoportal_parcel_id)).length,
+    [oferty],
+  );
+
+  const hrefMapyRynek = uklad === "pelny" ? "#rynek-mapa" : undefined;
 
   const etykietaAktywnejKategorii =
     kategoria !== "wszystkie"
@@ -141,19 +327,77 @@ export function MarketplaceListaKlient({
   return (
     <div className={uklad === "skrot" ? "mt-4" : "mt-6 space-y-4"}>
       {uklad === "skrot" ? (
-        <p className="rounded-xl border border-orange-100/80 bg-orange-50/40 px-3 py-2.5 text-xs leading-relaxed text-stone-700">
-          Zalogowani mieszkańcy mogą napisać wiadomość przy ogłoszeniu. Ogłoszenia wygasają automatycznie — przedłuż je w
-          panelu.
+        <p className="rounded-xl border border-orange-200/60 bg-gradient-to-r from-orange-50/80 to-amber-50/40 px-3 py-2.5 text-xs leading-relaxed text-stone-700">
+          Zalogowani mieszkańcy: czat w serwisie, telefon i WhatsApp przy ogłoszeniu. Ogłoszenia wygasają automatycznie —
+          przedłuż je w panelu.
         </p>
-      ) : null}
+      ) : (
+        <div className="animate-rynek-fade-up space-y-3">
+          <div className="flex flex-wrap gap-2">
+          {SZYBKIE_KATEGORIE.map((s) => {
+            const aktywna =
+              s.value === "dzialka_budowlana" ? tylkoNieruchomosci : kategoria === s.value;
+            return (
+              <button
+                key={s.value}
+                type="button"
+                onClick={() => {
+                  if (s.value === "dzialka_budowlana") {
+                    setTylkoNieruchomosci((v) => !v);
+                    return;
+                  }
+                  setKategoria(kategoria === s.value ? "wszystkie" : s.value);
+                }}
+                className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold transition-all duration-200 ${
+                  aktywna
+                    ? "border-orange-400 bg-gradient-to-br from-orange-100 to-amber-50 text-orange-950 shadow-sm"
+                    : "border-stone-200/90 bg-white text-stone-700 hover:border-orange-200 hover:bg-orange-50/50"
+                }`}
+              >
+                <span aria-hidden>{s.emoji}</span>
+                {s.label}
+              </button>
+            );
+          })}
+          {uklad === "pelny" && liczbaZMapaGeoportal > 0 ? (
+            <button
+              type="button"
+              onClick={() => setTylkoZMapaGeoportal((v) => !v)}
+              className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold transition-all duration-200 ${
+                tylkoZMapaGeoportal
+                  ? "border-amber-500 bg-gradient-to-br from-amber-100 to-yellow-50 text-amber-950 shadow-sm"
+                  : "border-stone-200/90 bg-white text-stone-700 hover:border-amber-300 hover:bg-amber-50/50"
+              }`}
+            >
+              <span aria-hidden>📐</span>
+              Geoportal
+              <span className="rounded-full bg-amber-200/80 px-1.5 py-0.5 text-[10px] font-bold text-amber-950">
+                {liczbaZMapaGeoportal}
+              </span>
+            </button>
+          ) : null}
+          </div>
+          {uklad === "pelny" && villageId && kategoria !== "wszystkie" && nazwaWsi ? (
+            <RynekSubskrypcjaKategorii
+              villageId={villageId}
+              nazwaWsi={nazwaWsi}
+              kategoria={kategoria}
+              zalogowany={zalogowany}
+              juzSubskrybuje={
+                subskrybowaneKategorie.includes(kategoria) || subskrybowaneKategorie.includes(null)
+              }
+            />
+          ) : null}
+        </div>
+      )}
 
-      <div className="rounded-2xl border border-stone-200 bg-white shadow-sm">
-        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-stone-100 px-3 py-2.5 sm:px-4">
+      <div className="overflow-hidden rounded-2xl border border-stone-200/90 bg-white shadow-sm ring-1 ring-stone-950/[0.03]">
+        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-stone-100 bg-gradient-to-r from-stone-50/80 to-white px-3 py-2.5 sm:px-4">
           <div className="flex flex-wrap items-center gap-2">
             <button
               type="button"
               onClick={() => setFiltryOtwarte((v) => !v)}
-              className="rounded-lg border border-stone-300 px-3 py-1.5 text-sm font-medium text-stone-800 hover:bg-stone-50"
+              className="rounded-xl border border-stone-200 bg-white px-3 py-1.5 text-sm font-semibold text-stone-800 shadow-sm transition hover:border-orange-300 hover:bg-orange-50/40"
               aria-expanded={filtryOtwarte}
             >
               {filtryOtwarte ? "Ukryj filtry" : "Filtry i sortowanie"}
@@ -168,6 +412,35 @@ export function MarketplaceListaKlient({
                 Wyczyść filtry
               </button>
             ) : null}
+            {uklad === "pelny" ? (
+              <>
+                <button
+                  type="button"
+                  onClick={kopiujLinkFiltrów}
+                  className="text-xs font-medium text-green-800 underline hover:text-green-950"
+                >
+                  {kopiujFiltr === "ok" ? "Skopiowano link!" : "Kopiuj link z filtrami"}
+                </button>
+                <div className="flex rounded-lg border border-stone-200 bg-white p-0.5">
+                  <button
+                    type="button"
+                    aria-pressed={widok === "siatka"}
+                    onClick={() => setWidok("siatka")}
+                    className={`rounded-md px-2 py-1 text-xs font-semibold ${widok === "siatka" ? "bg-orange-100 text-orange-950" : "text-stone-600"}`}
+                  >
+                    ⊞ Siatka
+                  </button>
+                  <button
+                    type="button"
+                    aria-pressed={widok === "lista"}
+                    onClick={() => setWidok("lista")}
+                    className={`rounded-md px-2 py-1 text-xs font-semibold ${widok === "lista" ? "bg-orange-100 text-orange-950" : "text-stone-600"}`}
+                  >
+                    ☰ Lista
+                  </button>
+                </div>
+              </>
+            ) : null}
           </div>
           <p className="text-xs text-stone-500">
             <span className="font-medium text-stone-800">{przefiltrowane.length}</span>{" "}
@@ -181,7 +454,7 @@ export function MarketplaceListaKlient({
             <input
               value={fraza}
               onChange={(e) => setFraza(e.target.value)}
-              placeholder="Szukaj: miód, sery, ciągnik, kombajn…"
+              placeholder="Szukaj: miód, działka, ciągnik, dom…"
               className="w-full rounded-xl border border-stone-300 bg-stone-50 px-3 py-2.5 text-sm focus:border-orange-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-orange-200"
             />
 
@@ -219,9 +492,44 @@ export function MarketplaceListaKlient({
                 className="rounded-xl border border-stone-300 bg-white px-3 py-2 text-sm"
               >
                 <option value="najnowsze">Najnowsze</option>
-                <option value="polecane">Polecane (zweryfikowane)</option>
+                <option value="polecane">Polecane (jakość + zweryfikowane)</option>
                 <option value="najstarsze">Najstarsze</option>
               </select>
+            </div>
+
+            <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+              <input
+                type="number"
+                min={0}
+                value={minM2}
+                onChange={(e) => setMinM2(e.target.value)}
+                placeholder="Min. m²"
+                className="rounded-xl border border-stone-300 bg-white px-3 py-2 text-sm"
+              />
+              <input
+                type="number"
+                min={0}
+                value={maxM2}
+                onChange={(e) => setMaxM2(e.target.value)}
+                placeholder="Max. m²"
+                className="rounded-xl border border-stone-300 bg-white px-3 py-2 text-sm"
+              />
+              <input
+                type="number"
+                min={0}
+                value={minCena}
+                onChange={(e) => setMinCena(e.target.value)}
+                placeholder="Min. cena (PLN)"
+                className="rounded-xl border border-stone-300 bg-white px-3 py-2 text-sm"
+              />
+              <input
+                type="number"
+                min={0}
+                value={maxCena}
+                onChange={(e) => setMaxCena(e.target.value)}
+                placeholder="Max. cena (PLN)"
+                className="rounded-xl border border-stone-300 bg-white px-3 py-2 text-sm"
+              />
             </div>
 
             <div className="flex flex-wrap gap-x-4 gap-y-2 text-sm text-stone-800">
@@ -252,6 +560,24 @@ export function MarketplaceListaKlient({
                 />
                 Tylko z operatorem
               </label>
+              <label className="flex cursor-pointer items-center gap-2">
+                <input
+                  type="checkbox"
+                  checked={tylkoNieruchomosci}
+                  onChange={(e) => setTylkoNieruchomosci(e.target.checked)}
+                  className="accent-green-800"
+                />
+                Działki i nieruchomości
+              </label>
+              <label className="flex cursor-pointer items-center gap-2">
+                <input
+                  type="checkbox"
+                  checked={tylkoZMapaGeoportal}
+                  onChange={(e) => setTylkoZMapaGeoportal(e.target.checked)}
+                  className="accent-amber-700"
+                />
+                Tylko z mapą działki (Geoportal)
+              </label>
             </div>
 
             <div className="flex flex-wrap gap-1.5">
@@ -259,13 +585,24 @@ export function MarketplaceListaKlient({
                 <button
                   key={s.value}
                   type="button"
-                  onClick={() => setKategoria(kategoria === s.value ? "wszystkie" : s.value)}
-                  className={`rounded-full border px-2.5 py-1 text-xs font-medium transition ${
-                    kategoria === s.value
-                      ? "border-orange-500 bg-orange-100 text-orange-950"
-                      : "border-stone-300 bg-stone-50 text-stone-700 hover:bg-white"
+                  onClick={() => {
+                    if (s.value === "dzialka_budowlana") {
+                      setTylkoNieruchomosci((v) => !v);
+                      return;
+                    }
+                    setKategoria(kategoria === s.value ? "wszystkie" : s.value);
+                  }}
+                  className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-semibold transition ${
+                    s.value === "dzialka_budowlana"
+                      ? tylkoNieruchomosci
+                        ? "border-orange-400 bg-orange-100 text-orange-950 shadow-sm"
+                        : "border-stone-200 bg-stone-50 text-stone-700 hover:bg-white"
+                      : kategoria === s.value
+                        ? "border-orange-400 bg-orange-100 text-orange-950 shadow-sm"
+                        : "border-stone-200 bg-stone-50 text-stone-700 hover:bg-white"
                   }`}
                 >
+                  <span aria-hidden>{s.emoji}</span>
                   {s.label}
                 </button>
               ))}
@@ -281,6 +618,19 @@ export function MarketplaceListaKlient({
             {etykietaAktywnejKategorii ? (
               <span className="rounded-full bg-orange-100 px-2 py-0.5 text-xs text-orange-950">{etykietaAktywnejKategorii}</span>
             ) : null}
+            {tylkoNieruchomosci ? (
+              <span className="rounded-full bg-amber-100 px-2 py-0.5 text-xs text-amber-950">Nieruchomości</span>
+            ) : null}
+            {tylkoZMapaGeoportal ? (
+              <span className="rounded-full bg-sky-100 px-2 py-0.5 text-xs text-sky-950">Geoportal</span>
+            ) : null}
+            {(minM2.trim() || maxM2.trim()) ? (
+              <span className="rounded-full bg-stone-100 px-2 py-0.5 text-xs text-stone-700">
+                {minM2.trim() ? `≥ ${minM2} m²` : ""}
+                {minM2.trim() && maxM2.trim() ? " · " : ""}
+                {maxM2.trim() ? `≤ ${maxM2} m²` : ""}
+              </span>
+            ) : null}
             {tylkoZweryfikowane ? (
               <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-xs text-emerald-900">Zweryfikowani</span>
             ) : null}
@@ -290,34 +640,97 @@ export function MarketplaceListaKlient({
 
       <PasekAkcjiRynku
         sciezkaWsi={sciezkaWsi}
+        villageId={villageId}
         kotwicaZasadSwietlicy={kotwicaZasadSwietlicy}
         pokazLinkWszystkie={pokazLinkWszystkie}
         liczbaOgloszen={oferty.length}
       />
 
       {przefiltrowane.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-stone-300 bg-stone-50/80 px-4 py-10 text-center">
-          <p className="text-sm font-medium text-stone-800">Brak ogłoszeń dla wybranych filtrów</p>
-          <p className="mt-1 text-xs text-stone-500">Spróbuj zmienić kryteria albo wyczyść filtry.</p>
-          {aktywneFiltry > 0 ? (
-            <button type="button" onClick={wyczyscFiltry} className="mt-3 text-sm font-medium text-green-800 underline">
-              Wyczyść filtry
-            </button>
-          ) : null}
-        </div>
+        oferty.length === 0 ? (
+          <div className="rounded-2xl border border-dashed border-orange-200/80 bg-gradient-to-br from-orange-50/50 via-white to-emerald-50/30 px-4 py-12 text-center">
+            <p className="text-3xl" aria-hidden>
+              🏷️
+            </p>
+            <p className="mt-2 text-sm font-semibold text-stone-800">Jeszcze nie ma ogłoszeń w tej wsi</p>
+            <p className="mt-1 text-xs text-stone-500">
+              Bądź pierwszy — dodaj produkt z gospodarstwa, maszynę, usługę albo działkę z mapą Geoportalu.
+            </p>
+            <div className="mt-4 flex flex-wrap justify-center gap-2">
+              <Link
+                href="/panel/mieszkaniec/marketplace"
+                className="rounded-xl bg-green-800 px-4 py-2 text-sm font-semibold text-white hover:bg-green-900"
+              >
+                Dodaj ogłoszenie
+              </Link>
+              <Link
+                href="/logowanie?next=/panel/mieszkaniec/marketplace"
+                className="rounded-xl border border-green-800 px-4 py-2 text-sm font-semibold text-green-900 hover:bg-green-50"
+              >
+                Zaloguj się
+              </Link>
+            </div>
+          </div>
+        ) : (
+          <div className="rounded-2xl border border-dashed border-orange-200/80 bg-gradient-to-br from-orange-50/50 via-white to-stone-50 px-4 py-12 text-center">
+            <p className="text-3xl" aria-hidden>
+              🔍
+            </p>
+            <p className="mt-2 text-sm font-semibold text-stone-800">Brak ogłoszeń dla wybranych filtrów</p>
+            <p className="mt-1 text-xs text-stone-500">Spróbuj zmienić kryteria albo wyczyść filtry.</p>
+            {aktywneFiltry > 0 ? (
+              <button
+                type="button"
+                onClick={wyczyscFiltry}
+                className="mt-4 rounded-xl bg-green-800 px-4 py-2 text-sm font-semibold text-white hover:bg-green-900"
+              >
+                Wyczyść filtry
+              </button>
+            ) : null}
+          </div>
+        )
       ) : uklad === "pelny" ? (
+        widok === "siatka" ? (
         <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-          {przefiltrowane.map((o) => (
-            <li key={o.id} className="min-h-0">
-              <KartaOgloszeniaRynek oferta={o} href={`${sciezkaWsi}/rynek/${o.id}`} uklad="siatka" />
+          {przefiltrowane.map((o, i) => (
+            <li
+              key={o.id}
+              className="min-h-0 animate-rynek-fade-up"
+              style={{ animationDelay: `${Math.min(i * 45, 360)}ms` }}
+            >
+              <KartaOgloszeniaRynek
+                oferta={o}
+                href={`${sciezkaWsi}/rynek/${o.id}`}
+                uklad="siatka"
+                hrefMapy={hrefMapyRynek}
+              />
             </li>
           ))}
         </ul>
+        ) : (
+        <ul className="space-y-3">
+          {przefiltrowane.map((o) => (
+            <li key={o.id}>
+              <KartaOgloszeniaRynek
+                oferta={o}
+                href={`${sciezkaWsi}/rynek/${o.id}`}
+                uklad="lista"
+                hrefMapy={hrefMapyRynek}
+              />
+            </li>
+          ))}
+        </ul>
+        )
       ) : (
         <ul className="space-y-3">
           {przefiltrowane.map((o) => (
             <li key={o.id}>
-              <KartaOgloszeniaRynek oferta={o} href={`${sciezkaWsi}/rynek/${o.id}`} uklad="lista" />
+              <KartaOgloszeniaRynek
+                oferta={o}
+                href={`${sciezkaWsi}/rynek/${o.id}`}
+                uklad="lista"
+                hrefMapy={hrefMapyRynek}
+              />
             </li>
           ))}
         </ul>

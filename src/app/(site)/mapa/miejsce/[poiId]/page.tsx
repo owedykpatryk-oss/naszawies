@@ -3,6 +3,7 @@ import { notFound } from "next/navigation";
 import { createPublicSupabaseClient } from "@/lib/supabase/public-client";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
 import { sciezkaProfiluWsi } from "@/lib/wies/sciezka-publiczna";
+import { formatujGodzinyOtwarcia } from "@/lib/mapa/formatuj-godziny-otwarcia";
 import { MiejscePoiKlient, type KomentarzPoiWiersz } from "./miejsce-poi-klient";
 
 type Props = { params: { poiId: string } };
@@ -18,7 +19,7 @@ export default async function MiejscePoiPage({ params }: Props) {
   const { data: poi } = await supabase
     .from("pois")
     .select(
-      "id, village_id, category, name, description, latitude, longitude, photo_url, photo_caption, villages(name, slug, voivodeship, county, commune)",
+      "id, village_id, category, name, description, latitude, longitude, phone, opening_hours, photo_url, photo_caption, villages(name, slug, voivodeship, county, commune)",
     )
     .eq("id", params.poiId)
     .maybeSingle();
@@ -73,6 +74,8 @@ export default async function MiejscePoiPage({ params }: Props) {
         opis={poi.description}
         photoUrl={(poi as { photo_url?: string | null }).photo_url ?? null}
         photoCaption={(poi as { photo_caption?: string | null }).photo_caption ?? null}
+        telefon={(poi as { phone?: string | null }).phone?.trim() || null}
+        godziny={formatujGodzinyOtwarcia((poi as { opening_hours?: unknown }).opening_hours)}
         villageName={(v as { name?: string } | null)?.name ?? "Wieś"}
         villageSciezka={villageSciezka}
         lat={lat}

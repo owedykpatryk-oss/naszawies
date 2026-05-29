@@ -26,6 +26,9 @@ const BUCKETY = [
   { name: "avatars", locationHint: "weur" },
   { name: "hall-inventory", locationHint: "weur" },
   { name: "hall-booking-damage", locationHint: "weur" },
+  { name: "hall-rules", locationHint: "weur" },
+  { name: "marketplace", locationHint: "weur" },
+  { name: "village-photos", locationHint: "weur" },
 ];
 
 const BASE = `https://api.cloudflare.com/client/v4/accounts/${ACCOUNT_ID}/r2/buckets`;
@@ -103,7 +106,11 @@ Klucze S3 (ACCESS_KEY / SECRET) dodajesz osobno w R2 → Manage R2 API Tokens �
   }
 
   if (!ok) process.exit(1);
-  console.log("\nGotowe. Skonfiguruj publiczny dostęp / custom domain w panelu R2 jeśli potrzebujesz URL-i jak z Supabase Storage.");
+  console.log("\nGotowe. Następne kroki:");
+  console.log("  1. npm run r2:deploy-worker  — Worker CDN (cdn.naszawies.pl)");
+  console.log("  2. Ustaw NEXT_PUBLIC_R2_PUBLIC_BASE_URL=https://cdn.naszawies.pl w Vercel");
+  console.log("  3. Włącz Image Resizing na strefie Cloudflare + NEXT_PUBLIC_R2_CDN_IMAGES=1");
+  console.log("  Szczegóły: docs/CLOUDFLARE.md");
 }
 
 main();

@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 
-export function RynekUdostepnijPrzycisk({ url, tytul }: { url: string; tytul: string }) {
+export function RynekUdostepnijPrzycisk({ url, tytul, tekst }: { url: string; tytul: string; tekst?: string }) {
   const [komunikat, ustawKomunikat] = useState("");
   const [czek, startT] = useTransition();
 
@@ -18,14 +18,14 @@ export function RynekUdostepnijPrzycisk({ url, tytul }: { url: string; tytul: st
             const pelny = typeof window !== "undefined" ? `${window.location.origin}${url}` : url;
             if (typeof navigator !== "undefined" && navigator.share) {
               try {
-                await navigator.share({ title: tytul, url: pelny });
+                await navigator.share({ title: tytul, text: tekst, url: pelny });
                 return;
               } catch {
                 /* fallback copy */
               }
             }
             try {
-              await navigator.clipboard.writeText(pelny);
+              await navigator.clipboard.writeText(tekst ? `${tekst}\n${pelny}` : pelny);
               ustawKomunikat("Link skopiowany");
             } catch {
               ustawKomunikat("Nie udało się skopiować");

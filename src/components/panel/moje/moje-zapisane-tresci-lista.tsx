@@ -37,6 +37,7 @@ export function MojeZapisaneTresciLista({ tresci }: { tresci: ZapisanaTresc[] })
             </Link>
             <p className="mt-1 text-xs text-stone-500">
               Zapisano {new Date(t.created_at).toLocaleDateString("pl-PL")}
+              {t.content_type === "listing" && t.watch_price ? " · 🔔 obserwujesz cenę" : null}
             </p>
           </div>
           <button

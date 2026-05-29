@@ -1,0 +1,33 @@
+name = "naszawies-r2-cdn"
+main = "src/index.ts"
+compatibility_date = "2024-11-01"
+
+# Po deploy: przypnij custom domain w Cloudflare Dashboard → Workers → naszawies-r2-cdn → Custom Domains
+# np. cdn.naszawies.pl (ta sama strefa co Image Resizing)
+
+[[r2_buckets]]
+binding = "R2_avatars"
+bucket_name = "avatars"
+
+[[r2_buckets]]
+binding = "R2_hall_inventory"
+bucket_name = "hall-inventory"
+
+[[r2_buckets]]
+binding = "R2_hall_booking_damage"
+bucket_name = "hall-booking-damage"
+
+[[r2_buckets]]
+binding = "R2_hall_rules"
+bucket_name = "hall-rules"
+
+[[r2_buckets]]
+binding = "R2_marketplace"
+bucket_name = "marketplace"
+
+[[r2_buckets]]
+binding = "R2_village_photos"
+bucket_name = "village-photos"
+
+[vars]
+# Informacyjnie — publiczny URL ustaw w Vercel jako NEXT_PUBLIC_R2_PUBLIC_BASE_URL=https://cdn.naszawies.pl

@@ -3,7 +3,9 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { etykietaPresetu } from "@/lib/czat/grupy-preset";
 import { sciezkaProfiluWsi } from "@/lib/wies/sciezka-publiczna";
+import { zaufanieZLiczby } from "@/lib/marketplace/zaufanie-sprzedawcy";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
+import { PasekOdznakSprzedawcy } from "@/components/wies/rynek-ui";
 import { oznaczPrzeczytane } from "../akcje";
 import { CzatKontekstOgloszenia, type KontekstOgloszeniaCzat } from "../czat-kontekst-ogloszenia";
 import { CzatOknoKlient, type WiadomoscWiersz } from "../czat-okno-klient";
@@ -97,10 +99,21 @@ export default async function CzatKonwersacjaPage({ params }: Props) {
     (conv.kind === "group" ? etykietaPresetu(conv.group_preset) : conv.listing_id ? "Wiadomość przy ogłoszeniu" : "Rozmowa");
 
   let kontekstOgloszenia: KontekstOgloszeniaCzat | null = null;
+  let odznakiSprzedawcy: {
+    sellerVerified: boolean;
+    znanyWWsi: boolean;
+    aktywnySprzedawca: boolean;
+    liczbaOgloszen?: number;
+    nazwaSprzedawcy?: string;
+    profilHref?: string;
+  } | null = null;
+
   if (conv.listing_id) {
     const { data: ogl } = await supabase
       .from("marketplace_listings")
-      .select("id, title, listing_type, status, image_urls, villages(voivodeship, county, commune, slug)")
+      .select(
+        "id, title, listing_type, status, image_urls, owner_user_id, seller_verified, villages(voivodeship, county, commune, slug)",
+      )
       .eq("id", conv.listing_id)
       .maybeSingle();
 
@@ -118,6 +131,33 @@ export default async function CzatKonwersacjaPage({ params }: Props) {
         image_url: ogl.image_urls?.[0] ?? null,
         href,
       };
+
+      if (ogl.owner_user_id && conv.village_id) {
+        const [{ count: liczbaWWsi }, { count: liczbaGlobal }, { data: sprzedawca }] = await Promise.all([
+          supabase
+            .from("marketplace_listings")
+            .select("id", { count: "exact", head: true })
+            .eq("village_id", conv.village_id)
+            .eq("owner_user_id", ogl.owner_user_id)
+            .eq("status", "approved"),
+          supabase
+            .from("marketplace_listings")
+            .select("id", { count: "exact", head: true })
+            .eq("owner_user_id", ogl.owner_user_id)
+            .eq("status", "approved"),
+          supabase.from("users").select("display_name").eq("id", ogl.owner_user_id).maybeSingle(),
+        ]);
+        const zaufanieWsi = zaufanieZLiczby(liczbaWWsi ?? 0);
+        const zaufanieGlobal = zaufanieZLiczby(liczbaGlobal ?? 0);
+        odznakiSprzedawcy = {
+          sellerVerified: Boolean(ogl.seller_verified),
+          znanyWWsi: Boolean(zaufanieWsi.znanyWWsi),
+          aktywnySprzedawca: Boolean(zaufanieGlobal.aktywnySprzedawca),
+          liczbaOgloszen: zaufanieWsi.liczbaOgloszenSprzedawcy,
+          nazwaSprzedawcy: sprzedawca?.display_name ?? undefined,
+          profilHref: `/u/${ogl.owner_user_id}`,
+        };
+      }
     }
   }
 
@@ -166,6 +206,26 @@ export default async function CzatKonwersacjaPage({ params }: Props) {
           {conv.kind === "group" ? "Grupa" : "Rozmowa przy ogłoszeniu"}
         </p>
         <h1 className="mt-1 font-serif text-2xl text-green-950">{tytul}</h1>
+        {odznakiSprzedawcy && odznakiSprzedawcy.nazwaSprzedawcy ? (
+          <p className="mt-2 flex flex-wrap items-center gap-2 text-sm text-stone-700">
+            <span>
+              Sprzedawca:{" "}
+              {odznakiSprzedawcy.profilHref ? (
+                <Link href={odznakiSprzedawcy.profilHref} className="font-medium text-green-800 underline">
+                  {odznakiSprzedawcy.nazwaSprzedawcy}
+                </Link>
+              ) : (
+                <span className="font-medium">{odznakiSprzedawcy.nazwaSprzedawcy}</span>
+              )}
+            </span>
+            <PasekOdznakSprzedawcy
+              sellerVerified={odznakiSprzedawcy.sellerVerified}
+              znanyWWsi={odznakiSprzedawcy.znanyWWsi}
+              aktywnySprzedawca={odznakiSprzedawcy.aktywnySprzedawca}
+              liczbaOgloszen={odznakiSprzedawcy.liczbaOgloszen}
+            />
+          </p>
+        ) : null}
         <p className="mt-1 text-sm text-stone-600">
           {(v as { name: string } | null)?.name ?? ""}
           {conv.kind === "group" ? ` · ${liczbaCzlonkow} ${liczbaCzlonkow === 1 ? "uczestnik" : "uczestników"}` : ""}
@@ -187,6 +247,7 @@ export default async function CzatKonwersacjaPage({ params }: Props) {
           kind={conv.kind === "group" ? "group" : "direct"}
           odczytInnych={odczytInnych}
           maStarsze={(liczbaWiadomosci ?? 0) > wiadomosci.length}
+          szablonyOgloszenia={conv.kind !== "group" && Boolean(conv.listing_id)}
         />
       </div>
     </main>

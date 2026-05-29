@@ -76,6 +76,8 @@ export type ZapisanaTresc = {
   village_id: string;
   nazwaWsi: string;
   created_at: string;
+  watch_price?: boolean;
+  price_snapshot?: number | null;
 };
 
 export type MojePowiazania = {
@@ -179,7 +181,7 @@ export async function pobierzMojePowiazania(): Promise<MojePowiazania | null> {
 
   const { data: savedRaw } = await supabase
     .from("user_saved_content")
-    .select("id, content_type, content_id, title_cache, href_cache, village_id, created_at, villages(name)")
+    .select("id, content_type, content_id, title_cache, href_cache, village_id, created_at, watch_price, price_snapshot, villages(name)")
     .eq("user_id", user.id)
     .order("created_at", { ascending: false })
     .limit(80);
@@ -305,6 +307,9 @@ export async function pobierzMojePowiazania(): Promise<MojePowiazania | null> {
       village_id: r.village_id,
       nazwaWsi: v?.name ?? "—",
       created_at: r.created_at,
+      watch_price: r.content_type === "listing" ? Boolean(r.watch_price) : undefined,
+      price_snapshot:
+        r.content_type === "listing" && r.price_snapshot != null ? Number(r.price_snapshot) : undefined,
     };
   });
 

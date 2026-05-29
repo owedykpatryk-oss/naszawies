@@ -3,8 +3,8 @@ import type { StatystykiKataloguWsi } from "@/lib/landing/statystyki-katalogu-ws
 export function StronaGlownaJsonLd({ stats }: { stats: StatystykiKataloguWsi | null }) {
   const opis =
     stats != null
-      ? `Bezpłatna platforma dla sołtysów i mieszkańców. W katalogu ${stats.wsieLacznie} miejscowości, z czego ${stats.wsieZAktywnymProfilem} z aktywnym profilem publicznym.`
-      : "Bezpłatna platforma dla sołtysów i mieszkańców. Katalog wsi, mapa, rezerwacja świetlicy, dokumenty.";
+      ? `Bezpłatna platforma dla sołtysów i mieszkańców. W katalogu ${stats.wsieLacznie} miejscowości, z czego ${stats.wsieZAktywnymProfilem} z aktywnym profilem publicznym. Katalog i mapa po zalogowaniu.`
+      : "Bezpłatna platforma dla sołtysów i mieszkańców. Publiczny profil wsi, rezerwacja świetlicy, dokumenty — katalog i mapa po zalogowaniu.";
 
   const payload = {
     "@context": "https://schema.org",
@@ -17,20 +17,18 @@ export function StronaGlownaJsonLd({ stats }: { stats: StatystykiKataloguWsi | n
         description: opis,
         inLanguage: "pl-PL",
         publisher: { "@id": "https://naszawies.pl/#organization" },
-        potentialAction: {
-          "@type": "SearchAction",
-          target: {
-            "@type": "EntryPoint",
-            urlTemplate: "https://naszawies.pl/szukaj?q={search_term_string}",
-          },
-          "query-input": "required name=search_term_string",
-        },
       },
       {
         "@type": "Organization",
         "@id": "https://naszawies.pl/#organization",
         name: "naszawies.pl",
         url: "https://naszawies.pl",
+        logo: {
+          "@type": "ImageObject",
+          url: "https://naszawies.pl/icon",
+          width: 32,
+          height: 32,
+        },
         description: opis,
       },
     ],

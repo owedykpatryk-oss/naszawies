@@ -18,6 +18,7 @@ import {
   kolorObramowaniaPoi,
   KATEGORIA_LADNE_MIEJSCE,
 } from "@/lib/mapa/kategorie-poi";
+import { formatujGodzinyOtwarcia } from "@/lib/mapa/formatuj-godziny-otwarcia";
 import "./mapa-wsi-leaflet.css";
 import "./mapa-wow.css";
 
@@ -58,6 +59,9 @@ export type ZnacznikPoi = {
   ospNote?: string | null;
   photoUrl?: string | null;
   photoCaption?: string | null;
+  phone?: string | null;
+  openingHours?: unknown;
+  linkedEntityId?: string | null;
 };
 
 /** Zgłoszenie mieszkańców z GPS (dla członków wsi na mapie). */
@@ -106,6 +110,17 @@ export type ZnacznikRynek = {
   villageName: string;
   sciezkaWsi: string;
   href: string;
+};
+
+/** Działka / nieruchomość z granicą z Geoportalu (polygon na mapie). */
+export type ZnacznikRynekDzialka = {
+  id: string;
+  title: string;
+  href: string;
+  villageName: string;
+  areaLabel?: string;
+  categoryLabel?: string;
+  parcelGeojson: unknown;
 };
 
 export type MapaWsiLeafletRef = {
@@ -294,8 +309,10 @@ function bboxDlaPunktowMapy(
   pois: ZnacznikPoi[],
   rynek: ZnacznikRynek[] = [],
   polowania: ZnacznikPolowanie[] = [],
+  rynekDzialki: ZnacznikRynekDzialka[] = [],
 ): [[number, number], [number, number]] | null {
-  if (znaczniki.length === 0 && pois.length === 0 && rynek.length === 0 && polowania.length === 0) return null;
+  if (znaczniki.length === 0 && pois.length === 0 && rynek.length === 0 && polowania.length === 0 && rynekDzialki.length === 0)
+    return null;
   let minLat = 90;
   let maxLat = -90;
   let minLon = 180;
@@ -320,6 +337,10 @@ function bboxDlaPunktowMapy(
   for (const pol of polowania) {
     visit(pol.lat, pol.lon);
     const gj = granicaJakoGeoJson(pol.areaGeojson);
+    if (gj) rozszerzBboxZOGeojson(gj, visit);
+  }
+  for (const d of rynekDzialki) {
+    const gj = granicaJakoGeoJson(d.parcelGeojson);
     if (gj) rozszerzBboxZOGeojson(gj, visit);
   }
   const pad = 0.12;
@@ -351,6 +372,7 @@ type InstancjaLeaflet = {
   adresyGroup: import("leaflet").LayerGroup;
   markersById: Map<string, import("leaflet").Marker>;
   polowaniaById: Map<string, import("leaflet").Layer>;
+  rynekDzialkiById: Map<string, import("leaflet").Layer>;
   poiMarkersById: Map<string, import("leaflet").Marker>;
   resizeHandler: () => void;
   wheelHandlers: { enter: () => void; leave: () => void };
@@ -444,7 +466,143 @@ function htmlPopupRynek(z: ZnacznikRynek): string {
   `;
 }
 
+function htmlPopupRynekDzialka(z: ZnacznikRynekDzialka): string {
+  const meta = [z.categoryLabel ? escapeHtml(z.categoryLabel) : "", z.areaLabel ? escapeHtml(z.areaLabel) : ""]
+    .filter(Boolean)
+    .join(" · ");
+  return `
+    <div class="mapa-wsi-popup">
+      <p class="mapa-wsi-popup-meta">Działka · ${escapeHtml(z.villageName)}${meta ? ` · ${meta}` : ""}</p>
+      <h3>${escapeHtml(z.title)}</h3>
+      <p><a href="${escapeHtml(z.href)}">Zobacz ogłoszenie</a></p>
+    </div>
+  `;
+}
+
 const KAT_TRANSPORT = new Set(["przystanek", "stacja_kolejowa"]);
+const KAT_SWIETLICA = "swietlica";
+const KAT_KONTAKT = new Set([
+  "swietlica",
+  "kosciol",
+  "szkola",
+  "przedszkole",
+  "sklep",
+  "biblioteka",
+  "urzad",
+  "soltys",
+  "biuro_solec",
+  "cmentarz",
+]);
+
+function htmlKontaktPoi(z: ZnacznikPoi): string {
+  const tel = z.phone?.trim();
+  const godz = formatujGodzinyOtwarcia(z.openingHours);
+  const linie: string[] = [];
+  if (tel) {
+    linie.push(`<p class="mapa-wsi-popup-kontakt"><strong>Tel.</strong> <a href="tel:${escapeHtml(tel.replace(/\s/g, ""))}">${escapeHtml(tel)}</a></p>`);
+  }
+  if (godz) {
+    linie.push(`<p class="mapa-wsi-popup-kontakt"><strong>Godziny:</strong> ${escapeHtml(godz)}</p>`);
+  }
+  return linie.join("");
+}
+
+function podlaczInterakcjeDoPopupPoi(pin: import("leaflet").Marker, p: ZnacznikPoi): void {
+  podlaczOdjazdyDoPopupPoi(pin, p);
+
+  const kat = p.category.trim().toLowerCase();
+  const potrzebaSzczegoly = kat === KAT_SWIETLICA || KAT_KONTAKT.has(kat) || Boolean(p.linkedEntityId);
+  if (!potrzebaSzczegoly) return;
+
+  pin.on("popupopen", async () => {
+    const root = pin.getPopup()?.getElement()?.querySelector(`[data-poi-szczegoly="${p.id}"]`);
+    if (!root || root.getAttribute("data-loaded") === "1") return;
+
+    try {
+      const res = await fetch(`/api/mapa/poi/${encodeURIComponent(p.id)}/szczegoly`, { credentials: "include" });
+      if (!res.ok) {
+        root.innerHTML = `<span class="text-xs text-stone-500">Brak dodatkowych danych.</span>`;
+        root.setAttribute("data-loaded", "1");
+        return;
+      }
+      const json = (await res.json()) as {
+        telefon?: string | null;
+        godziny?: string | null;
+        podmiot?: {
+          nazwa?: string;
+          telefon?: string | null;
+          email?: string | null;
+          strona?: string | null;
+          adres?: string | null;
+          godziny?: string | null;
+        };
+        swietlica?: {
+          sale?: { nazwa: string; adres: string | null; pojemnosc: number | null }[];
+          kalendarz?: { sala: string; zakres: string; status: string }[];
+          linkRezerwacja?: string;
+          komunikat?: string;
+          tylkoPodglad?: boolean;
+        };
+      };
+
+      const html: string[] = [];
+
+      if (json.podmiot) {
+        const pm = json.podmiot;
+        if (pm.adres) html.push(`<p class="text-xs"><strong>Adres:</strong> ${escapeHtml(pm.adres)}</p>`);
+        if (pm.telefon && !p.phone?.trim()) {
+          html.push(
+            `<p class="text-xs"><strong>Tel.</strong> <a href="tel:${escapeHtml(pm.telefon.replace(/\s/g, ""))}">${escapeHtml(pm.telefon)}</a></p>`,
+          );
+        }
+        if (pm.godziny && !formatujGodzinyOtwarcia(p.openingHours)) {
+          html.push(`<p class="text-xs"><strong>Godziny:</strong> ${escapeHtml(pm.godziny)}</p>`);
+        }
+        if (pm.email) {
+          html.push(`<p class="text-xs"><strong>E-mail:</strong> <a href="mailto:${escapeHtml(pm.email)}">${escapeHtml(pm.email)}</a></p>`);
+        }
+        if (pm.strona) {
+          html.push(
+            `<p class="text-xs"><a href="${escapeHtml(pm.strona)}" target="_blank" rel="noopener noreferrer">Strona ↗</a></p>`,
+          );
+        }
+      }
+
+      if (json.swietlica) {
+        const sw = json.swietlica;
+        if (sw.sale?.length) {
+          html.push(
+            `<p class="text-xs font-medium text-stone-700">Sale: ${sw.sale.map((s) => escapeHtml(s.nazwa)).join(", ")}</p>`,
+          );
+        }
+        if (sw.kalendarz?.length) {
+          const items = sw.kalendarz
+            .map(
+              (w) =>
+                `<li><strong>${escapeHtml(w.sala)}</strong> · ${escapeHtml(w.zakres)} <em>(${escapeHtml(w.status)})</em></li>`,
+            )
+            .join("");
+          html.push(`<p class="text-xs font-medium text-stone-700">Zajętość sal (najbliższe terminy)</p>${htmlListaOdjazdow(items)}`);
+        } else if (kat === KAT_SWIETLICA) {
+          html.push(`<p class="text-xs text-stone-500">Brak zajętych terminów — kalendarz uzupełnia sołtys.</p>`);
+        }
+        if (sw.komunikat) {
+          html.push(`<p class="text-xs text-amber-800">${escapeHtml(String(sw.komunikat))}</p>`);
+        }
+      }
+
+      if (html.length === 0) {
+        root.innerHTML = `<span class="text-xs text-stone-500">Brak dodatkowych danych — sołtys może uzupełnić telefon i godziny w panelu.</span>`;
+      } else {
+        root.innerHTML = html.join("");
+      }
+      root.setAttribute("data-loaded", "1");
+    } catch {
+      root.innerHTML = `<span class="text-xs text-stone-500">Nie udało się pobrać szczegółów.</span>`;
+      root.setAttribute("data-loaded", "1");
+    }
+  });
+}
 
 function htmlListaOdjazdow(html: string): string {
   return `<ul class="mapa-wsi-popup-odjazdy-list">${html}</ul>`;
@@ -499,13 +657,19 @@ function htmlPopupPoi(z: ZnacznikPoi): string {
   const kat = etykietaKategoriiPoi(z.category);
   const opis = z.description?.trim();
   const osm = `https://www.openstreetmap.org/?mlat=${encodeURIComponent(String(z.lat))}&mlon=${encodeURIComponent(String(z.lon))}&zoom=17`;
-  const czyStacja = z.category.trim().toLowerCase() === "stacja_kolejowa";
-  const czyPrzystanek = z.category.trim().toLowerCase() === "przystanek";
+  const katNorm = z.category.trim().toLowerCase();
   const slotOdjazdy =
-    czyStacja || czyPrzystanek
+    KAT_TRANSPORT.has(katNorm)
       ? `<div class="mapa-wsi-popup-odjazdy" data-poi-odjazdy="${escapeHtml(z.id)}"><span class="text-xs text-stone-500">Ładowanie odjazdów…</span></div>`
       : "";
-  const czyOspWoda = z.category.trim().toLowerCase() === "osp_punkt_czerpania_wody";
+  const slotSzczegoly =
+    katNorm === KAT_SWIETLICA || KAT_KONTAKT.has(katNorm) || z.linkedEntityId
+      ? `<div class="mapa-wsi-popup-szczegoly" data-poi-szczegoly="${escapeHtml(z.id)}"><span class="text-xs text-stone-500">Ładowanie szczegółów…</span></div>`
+      : "";
+  const kontaktHtml = htmlKontaktPoi(z);
+  const czyOspWoda = katNorm === "osp_punkt_czerpania_wody";
+  const czyStacja = katNorm === "stacja_kolejowa";
+  const czyPrzystanek = katNorm === "przystanek";
   const stacjaLink = `/transport/rozklad?stacja=${encodeURIComponent(z.name)}`;
   const epodroznikLink = `https://www.e-podroznik.pl/public/search?from=${encodeURIComponent(`${z.name}, ${z.villageName}`)}`;
   const typZrodlaMap: Record<string, string> = {
@@ -527,8 +691,10 @@ function htmlPopupPoi(z: ZnacznikPoi): string {
       <h3>${escapeHtml(z.name)}</h3>
       ${miniatura}
       ${opis ? `<p>${escapeHtml(opis)}</p>` : ""}
+      ${kontaktHtml}
       ${z.photoCaption ? `<p class="text-xs">${escapeHtml(z.photoCaption)}</p>` : ""}
       ${slotOdjazdy}
+      ${slotSzczegoly}
       ${
         czyOspWoda
           ? `<p>${
@@ -567,6 +733,7 @@ export const MapaWsiLeaflet = forwardRef<
     znaczniki: ZnacznikWsi[];
     punktyPoi?: ZnacznikPoi[];
     punktyRynek?: ZnacznikRynek[];
+    punktyRynekDzialki?: ZnacznikRynekDzialka[];
     punktyZgloszenia?: ZnacznikZgloszenie[];
     punktyPolowania?: ZnacznikPolowanie[];
     punktyAdresy?: ZnacznikAdres[];
@@ -577,12 +744,14 @@ export const MapaWsiLeaflet = forwardRef<
     pokazGranice?: boolean;
     pokazPoi?: boolean;
     pokazRynek?: boolean;
+    wysokoscMapy?: "pelna" | "kompakt";
   }
 >(function MapaWsiLeaflet(
   {
     znaczniki,
     punktyPoi = [],
     punktyRynek = [],
+    punktyRynekDzialki = [],
     punktyZgloszenia = [],
     punktyPolowania = [],
     punktyAdresy = [],
@@ -592,6 +761,7 @@ export const MapaWsiLeaflet = forwardRef<
     pokazGranice = true,
     pokazPoi = true,
     pokazRynek = true,
+    wysokoscMapy = "pelna",
   },
   ref,
 ) {
@@ -613,6 +783,8 @@ export const MapaWsiLeaflet = forwardRef<
     punktyPoiRef.current = punktyPoi;
     const punktyRynekRef = useRef(punktyRynek);
     punktyRynekRef.current = punktyRynek;
+    const punktyRynekDzialkiRef = useRef(punktyRynekDzialki);
+    punktyRynekDzialkiRef.current = punktyRynekDzialki;
     const punktyZgloszeniaRef = useRef(punktyZgloszenia);
     punktyZgloszeniaRef.current = punktyZgloszenia;
     const punktyPolowaniaRef = useRef(punktyPolowania);
@@ -637,8 +809,9 @@ export const MapaWsiLeaflet = forwardRef<
           pokazPoiStan ? punktyPoi : [],
           pokazRynekStan ? punktyRynek : [],
           punktyPolowania,
+          pokazRynekStan ? punktyRynekDzialki : [],
         ),
-      [znaczniki, punktyPoi, punktyRynek, punktyPolowania, pokazPoiStan, pokazRynekStan],
+      [znaczniki, punktyPoi, punktyRynek, punktyRynekDzialki, punktyPolowania, pokazPoiStan, pokazRynekStan],
     );
 
     useImperativeHandle(ref, () => ({
@@ -798,6 +971,7 @@ export const MapaWsiLeaflet = forwardRef<
           adresyGroup,
           markersById: new Map(),
           polowaniaById: new Map(),
+          rynekDzialkiById: new Map(),
           poiMarkersById: new Map(),
           resizeHandler,
           wheelHandlers: { enter, leave },
@@ -808,13 +982,15 @@ export const MapaWsiLeaflet = forwardRef<
         const z0 = znacznikiRef.current;
         const p0 = pokazPoiRef.current ? punktyPoiRef.current : [];
         const r0 = pokazRynekRef.current ? punktyRynekRef.current : [];
-        const bb0 = bboxDlaPunktowMapy(z0, p0, r0, punktyPolowaniaRef.current);
+        const rd0 = pokazRynekRef.current ? punktyRynekDzialkiRef.current : [];
+        const bb0 = bboxDlaPunktowMapy(z0, p0, r0, punktyPolowaniaRef.current, rd0);
         syncWarstwy(
           L,
           instancja.current,
           z0,
           p0,
           r0,
+          rd0,
           punktyZgloszeniaRef.current,
           punktyPolowaniaRef.current,
           obrysyGminyRef.current,
@@ -853,6 +1029,7 @@ export const MapaWsiLeaflet = forwardRef<
         znaczniki,
         pokazPoiStan ? punktyPoi : [],
         pokazRynekStan ? punktyRynek : [],
+        pokazRynekStan ? punktyRynekDzialki : [],
         punktyZgloszenia,
         punktyPolowania,
         obrysyGminy,
@@ -864,6 +1041,7 @@ export const MapaWsiLeaflet = forwardRef<
       znaczniki,
       punktyPoi,
       punktyRynek,
+      punktyRynekDzialki,
       punktyZgloszenia,
       punktyPolowania,
       obrysyGminy,
@@ -931,7 +1109,11 @@ export const MapaWsiLeaflet = forwardRef<
       <div
         ref={refShell}
         className={`mapa-wsi-map-shell relative w-full min-h-[320px] bg-stone-100 ${
-          pelnyEkran ? "h-[100dvh] max-h-[100dvh]" : "h-[min(72dvh,560px)] md:h-[min(78dvh,640px)]"
+          pelnyEkran
+            ? "h-[100dvh] max-h-[100dvh]"
+            : wysokoscMapy === "kompakt"
+              ? "h-[min(420px,55dvh)]"
+              : "h-[min(72dvh,560px)] md:h-[min(78dvh,640px)]"
         }`}
       >
         <div
@@ -1054,6 +1236,12 @@ export const MapaWsiLeaflet = forwardRef<
               <span className="font-medium text-[#2563eb]">Niebieski punkt</span> — Twoja lokalizacja (gdy włączysz GPS)
             </li>
             <li>
+              <span className="font-medium text-orange-700">Pomarańczowa pinezka 🏷️</span> — ogłoszenie z rynku lokalnego
+            </li>
+            <li>
+              <span className="font-medium text-amber-800">Obrys działki</span> — nieruchomość z Geoportalu (rynek)
+            </li>
+            <li>
               <span className="font-medium text-stone-800">Kółko z liczbą</span> — kilka punktów w obszarze
             </li>
             <li>
@@ -1134,6 +1322,7 @@ function syncWarstwy(
   znaczniki: ZnacznikWsi[],
   punktyPoi: ZnacznikPoi[],
   punktyRynek: ZnacznikRynek[],
+  punktyRynekDzialki: ZnacznikRynekDzialka[],
   punktyZgloszenia: ZnacznikZgloszenie[],
   punktyPolowania: ZnacznikPolowanie[],
   obrysyGminy: ZnacznikWsi[],
@@ -1142,13 +1331,14 @@ function syncWarstwy(
   opts?: { pokazGranice?: boolean },
 ) {
   const pokazGranice = opts?.pokazGranice !== false;
-  const { map, cluster, boundaryGroup, markersById, polowaniaById, poiMarkersById } = inst;
+  const { map, cluster, boundaryGroup, markersById, polowaniaById, rynekDzialkiById, poiMarkersById } = inst;
   ustawPaneWarstwicyGranicy(map);
 
   (cluster as import("leaflet").LayerGroup).clearLayers();
   boundaryGroup.clearLayers();
   markersById.clear();
   polowaniaById.clear();
+  rynekDzialkiById.clear();
   poiMarkersById.clear();
 
   for (const z of obrysyGminy) {
@@ -1230,17 +1420,42 @@ function syncWarstwy(
 
   for (const p of punktyPoi) {
     const pin = L.marker([p.lat, p.lon], { icon: zbudujIkonePoi(L, p), zIndexOffset: 450, title: p.name });
-    pin.bindPopup(htmlPopupPoi(p));
-    podlaczOdjazdyDoPopupPoi(pin, p);
+      pin.bindPopup(htmlPopupPoi(p));
+      podlaczInterakcjeDoPopupPoi(pin, p);
     (cluster as import("leaflet").LayerGroup).addLayer(pin);
     poiMarkersById.set(p.id, pin);
   }
 
   const ikonaRynek = zbudujIkoneRynek(L);
+  const idsZDzialka = new Set(punktyRynekDzialki.map((d) => d.id));
   for (const r of punktyRynek) {
+    if (idsZDzialka.has(r.id)) continue;
     const pin = L.marker([r.lat, r.lon], { icon: ikonaRynek, zIndexOffset: 500, title: r.title });
     pin.bindPopup(htmlPopupRynek(r));
     (cluster as import("leaflet").LayerGroup).addLayer(pin);
+  }
+
+  for (const d of punktyRynekDzialki) {
+    const gj = granicaJakoGeoJson(d.parcelGeojson);
+    if (!gj) continue;
+    try {
+      const warstwa = L.geoJSON(gj, {
+        pane: PANE_GRANICE,
+        interactive: true,
+        style: {
+          color: "#c2410c",
+          weight: 3,
+          fillColor: "#fb923c",
+          fillOpacity: 0.35,
+          opacity: 0.95,
+        },
+      } as import("leaflet").GeoJSONOptions);
+      warstwa.bindPopup(htmlPopupRynekDzialka(d));
+      boundaryGroup.addLayer(warstwa);
+      rynekDzialkiById.set(d.id, warstwa);
+    } catch {
+      /* ignore */
+    }
   }
 
   for (const zg of punktyZgloszenia) {

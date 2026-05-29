@@ -31,12 +31,14 @@ function payloadJson(params: {
   body: string;
   linkUrl: string;
   tag?: string;
+  imageUrl?: string;
 }): string {
   return JSON.stringify({
     title: params.title,
     body: params.body,
     link_url: params.linkUrl,
     ...(params.tag ? { tag: params.tag } : {}),
+    ...(params.imageUrl ? { image: params.imageUrl } : {}),
   });
 }
 
@@ -56,6 +58,7 @@ export async function wyslijWebPushDlaUzytkownika(
     body: string;
     linkUrl?: string | null;
     tag?: string;
+    imageUrl?: string;
   },
 ): Promise<void> {
   if (!czyVapidSkonfigurowany()) return;
@@ -118,7 +121,7 @@ export async function wyslijWebPushDoWieluOdbiorcow(
 async function wyslijDoListySubskrypcji(
   admin: SupabaseClient,
   subs: WpisSubskrypcji[],
-  params: { title: string; body: string; linkUrl?: string | null; tag?: string },
+  params: { title: string; body: string; linkUrl?: string | null; tag?: string; imageUrl?: string },
 ): Promise<void> {
   const linkDomyslny = params.linkUrl?.trim() || "/panel/powiadomienia";
   const json = payloadJson({
@@ -126,6 +129,7 @@ async function wyslijDoListySubskrypcji(
     body: params.body,
     linkUrl: linkDomyslny,
     tag: params.tag,
+    imageUrl: params.imageUrl,
   });
   for (const s of subs) {
     await wyslijJeden(admin, s, json);

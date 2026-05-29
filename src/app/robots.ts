@@ -6,7 +6,17 @@ export default function robots(): MetadataRoute.Robots {
       {
         userAgent: "*",
         allow: "/",
-        disallow: ["/panel/", "/auth/"],
+        disallow: [
+          "/panel/",
+          "/auth/",
+          "/mapa",
+          "/mapa/",
+          "/szukaj",
+          "/wybierz-wies",
+          "/transport",
+          "/transport/",
+          "/grafika",
+        ],
       },
     ],
     sitemap: "https://naszawies.pl/sitemap.xml",

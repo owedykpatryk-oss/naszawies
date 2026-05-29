@@ -49,6 +49,10 @@ const config: Config = {
             transform: "translateY(0) scale(1)",
           },
         },
+        rynekFadeUp: {
+          "0%": { opacity: "0", transform: "translateY(16px)" },
+          "100%": { opacity: "1", transform: "translateY(0)" },
+        },
         /** Interaktywny rzut świetlicy Studzienki */
         studzRzutEnter: {
           "0%": { opacity: "0", transform: "translateY(18px) scale(0.985)" },
@@ -71,6 +75,7 @@ const config: Config = {
         "mapa-float": "mapaFloat 5s ease-in-out infinite",
         "mapa-glow": "mapaGlow 5s ease-in-out infinite",
         "mapa-card-lift": "mapaCardLift 0.9s cubic-bezier(0.22, 1, 0.36, 1) both",
+        "rynek-fade-up": "rynekFadeUp 0.55s cubic-bezier(0.22, 1, 0.36, 1) both",
         "studz-rzut-enter": "studzRzutEnter 0.9s cubic-bezier(0.22, 1, 0.36, 1) both",
         "studz-rzut-glow": "studzRzutGlow 4.5s ease-in-out infinite",
         "studz-rzut-shimmer": "studzRzutShimmer 3.5s ease-in-out infinite",

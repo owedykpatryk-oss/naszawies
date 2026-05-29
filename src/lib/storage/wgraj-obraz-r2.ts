@@ -6,6 +6,8 @@ import {
   R2_BUCKET_BOOKING_DAMAGE,
   R2_BUCKET_HALL_INVENTORY,
   R2_BUCKET_HALL_RULES,
+  R2_BUCKET_MARKETPLACE,
+  R2_BUCKET_VILLAGE_PHOTOS,
 } from "@/lib/cloudflare/r2-bucket-znaczniki";
 import { czyPelnaKonfiguracjaR2S3 } from "@/lib/cloudflare/r2-env";
 import { wgrajBuforDoR2 } from "@/lib/cloudflare/r2-s3-klient";
@@ -14,6 +16,7 @@ import { usunObiektR2JesliUrlNasz } from "@/lib/storage/usun-plik-r2-po-url";
 import {
   czyUzytkownikJestSoltysemDlaSali,
   pobierzVillageIdsRoliPaneluSoltysa,
+  pobierzVillageIdsRoliPaneluSoltysaDlaUzytkownikaCache,
 } from "@/lib/panel/rola-panelu-soltysa";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
 
@@ -155,6 +158,34 @@ export async function wgrajObrazDoMagazynuR2(formData: FormData): Promise<WynikW
     return { ok: true, publicUrl };
   }
 
+  if (typ === "marketplace") {
+    if (buf.length > 4 * 1024 * 1024) {
+      return { blad: "Maksymalnie 4 MB na zdjęcie ogłoszenia." };
+    }
+    const villageId = String(formData.get("villageId") ?? "");
+    if (!uuid.safeParse(villageId).success) {
+      return { blad: "Niepoprawna wieś." };
+    }
+    const { data: rola } = await supabase
+      .from("user_village_roles")
+      .select("id")
+      .eq("user_id", user.id)
+      .eq("village_id", villageId)
+      .eq("status", "active")
+      .limit(1)
+      .maybeSingle();
+    if (!rola) {
+      return { blad: "Brak aktywnej roli we wsi — dołącz do wsi, aby dodać ogłoszenie." };
+    }
+    const ext = plik.type === "image/png" ? "png" : plik.type === "image/webp" ? "webp" : "jpg";
+    const klucz = `${villageId}/${user.id}/${Date.now()}.${ext}`;
+    const w = await wgrajBuforDoR2(R2_BUCKET_MARKETPLACE, klucz, buf, plik.type);
+    if (!w.ok) return { blad: w.blad };
+    const publicUrl = zbudujPublicznyUrlObiektuR2(R2_BUCKET_MARKETPLACE, klucz);
+    if (!publicUrl) return { blad: "Nie udało się zbudować publicznego adresu pliku." };
+    return { ok: true, publicUrl };
+  }
+
   if (typ === "rules") {
     if (buf.length > 10 * 1024 * 1024) {
       return { blad: "Maksymalnie 10 MB." };
@@ -182,6 +213,42 @@ export async function wgrajObrazDoMagazynuR2(formData: FormData): Promise<WynikW
     const w = await wgrajBuforDoR2(R2_BUCKET_HALL_RULES, klucz, buf, plik.type);
     if (!w.ok) return { blad: w.blad };
     const publicUrl = zbudujPublicznyUrlObiektuR2(R2_BUCKET_HALL_RULES, klucz);
+    if (!publicUrl) return { blad: "Nie udało się zbudować publicznego adresu pliku." };
+    return { ok: true, publicUrl };
+  }
+
+  if (typ === "village_photos") {
+    if (buf.length > 5 * 1024 * 1024) {
+      return { blad: "Maksymalnie 5 MB na zdjęcie." };
+    }
+    const villageId = String(formData.get("villageId") ?? "");
+    if (!uuid.safeParse(villageId).success) {
+      return { blad: "Niepoprawna wieś." };
+    }
+    const podkatalog = String(formData.get("podkatalog") ?? "poi").replace(/[^a-z0-9_-]/gi, "") || "poi";
+    const vidsSoltys = await pobierzVillageIdsRoliPaneluSoltysaDlaUzytkownikaCache(user.id);
+    if (podkatalog === "poi" || podkatalog === "ladne") {
+      if (!vidsSoltys.includes(villageId)) {
+        return { blad: "Tylko sołtys może wgrywać zdjęcia miejsc na mapie." };
+      }
+    } else {
+      const { data: rola } = await supabase
+        .from("user_village_roles")
+        .select("id")
+        .eq("user_id", user.id)
+        .eq("village_id", villageId)
+        .eq("status", "active")
+        .limit(1)
+        .maybeSingle();
+      if (!rola) {
+        return { blad: "Brak aktywnej roli we wsi." };
+      }
+    }
+    const ext = plik.type === "image/png" ? "png" : plik.type === "image/webp" ? "webp" : "jpg";
+    const klucz = `${villageId}/${podkatalog}/${crypto.randomUUID()}.${ext}`;
+    const w = await wgrajBuforDoR2(R2_BUCKET_VILLAGE_PHOTOS, klucz, buf, plik.type);
+    if (!w.ok) return { blad: w.blad };
+    const publicUrl = zbudujPublicznyUrlObiektuR2(R2_BUCKET_VILLAGE_PHOTOS, klucz);
     if (!publicUrl) return { blad: "Nie udało się zbudować publicznego adresu pliku." };
     return { ok: true, publicUrl };
   }

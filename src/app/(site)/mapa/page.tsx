@@ -13,19 +13,24 @@ import type {
   ZnacznikPoi,
   ZnacznikPolowanie,
   ZnacznikRynek,
+  ZnacznikRynekDzialka,
   ZnacznikWsi,
   ZnacznikZgloszenie,
 } from "@/components/mapa/mapa-wsi-leaflet";
 import { centroidObszaruPolowania } from "@/lib/lowiectwo/geojson-obszar";
 import { mapujOgloszeniaRynekDlaMapy } from "@/lib/mapa/rynek-na-mapie";
+import { mapujDzialkiRynekDlaMapy } from "@/lib/mapa/rynek-dzialki-na-mapie";
+import { mapujPoiDlaMapy, POLE_SELECT_POI_MAPY, type WierszPoiMapy } from "@/lib/mapa/mapuj-poi-dla-mapy";
 import { createPublicSupabaseClient } from "@/lib/supabase/public-client";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
 import { sciezkaProfiluWsi } from "@/lib/wies/sciezka-publiczna";
+import { wymagajLogowaniaStrona } from "@/lib/auth/wymagaj-logowania-strona";
 
 export const metadata: Metadata = {
   title: "Mapa wsi",
   description:
-    "Mapa wsi: granice sołectwa, punkt wsi oraz miejsca w miejscowości (m.in. OSP i punkt czerpania wody, kościół, szkoła, świetlica, stacja kolejowa) — gdy sołectwo doda dane w serwisie.",
+    "Mapa katalogu wsi po zalogowaniu: granice sołectwa, punkty POI i transport — gdy sołectwo doda dane w serwisie.",
+  robots: { index: false, follow: false },
 };
 
 type WierszRpc = {
@@ -61,81 +66,9 @@ function etykietaLiczbyWsi(n: number): string {
   return `${n} wiosek na mapie`;
 }
 
-type WierszPoi = {
-  id: string;
-  village_id: string;
-  category: string;
-  name: string;
-  description: string | null;
-  latitude: string | number | null;
-  longitude: string | number | null;
-  source: string | null;
-  confidence: number | string | null;
-  verified_at: string | null;
-  is_local_override: boolean | null;
-  osp_water_source_type: string | null;
-  osp_water_capacity_lpm: number | null;
-  osp_winter_access: boolean | null;
-  osp_heavy_truck_access: boolean | null;
-  osp_note: string | null;
-  photo_url: string | null;
-  photo_caption: string | null;
-};
-
-const KATEGORIE_WYMAGAJACE_WERYFIKACJI = new Set(["szkola", "kosciol"]);
-
-function czyPoiPubliczny(r: WierszPoi): boolean {
-  const kat = r.category.trim().toLowerCase();
-  if (!KATEGORIE_WYMAGAJACE_WERYFIKACJI.has(kat)) return true;
-  if (r.is_local_override === true) return true;
-  if (
-    r.source === "manual" ||
-    r.source === "local_corrected" ||
-    r.source === "osm_manual" ||
-    r.source === "osm_auto"
-  )
-    return true;
-  if (r.verified_at) return true;
-  const confidence = r.confidence != null ? Number(r.confidence) : 0;
-  return Number.isFinite(confidence) && confidence >= 0.8;
-}
-
-function mapujPoiDlaMapy(
-  wiersze: WierszPoi[] | null,
-  wiesPoId: Map<string, { name: string; sciezka: string }>,
-): ZnacznikPoi[] {
-  if (!wiersze?.length) return [];
-  const out: ZnacznikPoi[] = [];
-  for (const r of wiersze) {
-    if (!czyPoiPubliczny(r)) continue;
-    const w = wiesPoId.get(r.village_id);
-    if (!w) continue;
-    const lat = doLiczby(r.latitude);
-    const lon = doLiczby(r.longitude);
-    if (Number.isNaN(lat) || Number.isNaN(lon)) continue;
-    out.push({
-      id: r.id,
-      villageId: r.village_id,
-      villageName: w.name,
-      sciezkaWsi: w.sciezka,
-      category: r.category,
-      name: r.name,
-      description: r.description,
-      lat,
-      lon,
-      ospWaterSourceType: r.osp_water_source_type,
-      ospWaterCapacityLpm: r.osp_water_capacity_lpm,
-      ospWinterAccess: r.osp_winter_access,
-      ospHeavyTruckAccess: r.osp_heavy_truck_access,
-      ospNote: r.osp_note,
-      photoUrl: r.photo_url,
-      photoCaption: r.photo_caption,
-    });
-  }
-  return out;
-}
-
 export default async function MapaPage() {
+  await wymagajLogowaniaStrona("/mapa");
+
   const supabase = createPublicSupabaseClient();
   let znaczniki: ZnacznikWsi[] = [];
   let bladZapytania: string | null = null;
@@ -215,18 +148,17 @@ export default async function MapaPage() {
 
   let punktyPoi: ZnacznikPoi[] = [];
   let punktyRynek: ZnacznikRynek[] = [];
+  let punktyRynekDzialki: ZnacznikRynekDzialka[] = [];
   const punktyAdresy: ZnacznikAdres[] = [];
   if (supabase && znaczniki.length > 0) {
     const wiesPoId = new Map(znaczniki.map((z) => [z.id, { name: z.name, sciezka: z.sciezka } as const]));
     const idsWsi = znaczniki.map((z) => z.id);
     const { data: wierszePoi, error: errPoi } = await supabase
       .from("pois")
-      .select(
-        "id, village_id, category, name, description, latitude, longitude, source, confidence, verified_at, is_local_override, osp_water_source_type, osp_water_capacity_lpm, osp_winter_access, osp_heavy_truck_access, osp_note, photo_url, photo_caption",
-      )
+      .select(POLE_SELECT_POI_MAPY)
       .in("village_id", idsWsi);
     if (!errPoi && wierszePoi) {
-      punktyPoi = mapujPoiDlaMapy(wierszePoi as WierszPoi[], wiesPoId);
+      punktyPoi = mapujPoiDlaMapy(wierszePoi as WierszPoiMapy[], wiesPoId);
     }
     const { data: wierszeRynek } = await supabase
       .from("marketplace_listings")
@@ -237,6 +169,18 @@ export default async function MapaPage() {
       .not("longitude", "is", null)
       .limit(400);
     punktyRynek = mapujOgloszeniaRynekDlaMapy((wierszeRynek ?? []) as Parameters<typeof mapujOgloszeniaRynekDlaMapy>[0], wiesPoId);
+
+    const { data: wierszeDzialki } = await supabase
+      .from("marketplace_listings")
+      .select("id, title, listing_type, equipment_category, category, parcel_geojson, parcel_area_m2, village_id")
+      .in("village_id", idsWsi)
+      .eq("status", "approved")
+      .not("parcel_geojson", "is", null)
+      .limit(120);
+    punktyRynekDzialki = mapujDzialkiRynekDlaMapy(
+      (wierszeDzialki ?? []) as Parameters<typeof mapujDzialkiRynekDlaMapy>[0],
+      wiesPoId,
+    );
 
     const { data: wierszeAdresy } = await supabase
       .from("address_points")
@@ -382,11 +326,11 @@ export default async function MapaPage() {
             aria-hidden="true"
           />
           <p className="mt-5 max-w-2xl text-sm leading-relaxed text-stone-600">
-            Wybierz wsi z <strong>katalogu</strong> (województwo → powiat → gmina) albo wyszukaj po nazwie. Przy każdej wsi:
-            obrys z PRG (gdy jest w bazie), punkt GPS oraz <strong>miejsca w sołectwie</strong> — kościół, szkoła, świetlica, OSP,
-            punkt czerpania wody, stacja kolejowa. Włącz <strong>lokalizację</strong>, żeby sortować listę i zobaczyć wsie w promieniu km.
-            Aktywne <strong>polowania</strong> są zaznaczone czerwonym obszarem — na liście po lewej kliknij wpis, by przybliżyć mapę.
-            Sołtys może w panelu{" "}
+            Wybierz wsi z <strong>katalogu</strong> (województwo → powiat → gmina) albo wyszukaj po nazwie.{" "}
+            <strong>Kliknij pinezkę POI</strong> — świetlica pokaże kalendarz zajętości sal, przystanek lub stacja
+            najbliższe odjazdy, kościół / sklep / szkoła telefon i godziny otwarcia (gdy sołtys je uzupełni). Przy każdej wsi:
+            obrys z PRG, punkt GPS oraz miejsca w sołectwie. Włącz <strong>lokalizację</strong>, żeby sortować listę w promieniu km.
+            Sołtys w panelu{" "}
             <Link href="/panel/soltys/moja-wies" className="font-medium text-green-900 underline decoration-green-800/35 underline-offset-2">
               Profil wsi
             </Link>{" "}
@@ -455,6 +399,7 @@ export default async function MapaPage() {
                 punktyPoi={punktyPoi}
                 punktyAdresy={punktyAdresy}
                 punktyRynek={punktyRynek}
+                punktyRynekDzialki={punktyRynekDzialki}
                 punktyZgloszenia={punktyZgloszenia}
                 punktyPolowania={punktyPolowania}
                 statystykiMapy={statystykiMapy}

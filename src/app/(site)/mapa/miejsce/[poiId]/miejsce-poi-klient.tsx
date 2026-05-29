@@ -20,6 +20,8 @@ type Props = {
   opis: string | null;
   photoUrl: string | null;
   photoCaption: string | null;
+  telefon: string | null;
+  godziny: string | null;
   villageName: string;
   villageSciezka: string;
   lat: number;
@@ -35,6 +37,8 @@ export function MiejscePoiKlient({
   opis,
   photoUrl,
   photoCaption,
+  telefon,
+  godziny,
   villageName,
   villageSciezka,
   lat,
@@ -97,6 +101,19 @@ export function MiejscePoiKlient({
         <div className="p-5 sm:p-6">
           <p className="text-xs font-semibold uppercase tracking-wide text-amber-800">{etykietaKategoriiPoi(kategoria)}</p>
           {opis ? <p className="mt-2 text-sm leading-relaxed text-stone-700">{opis}</p> : null}
+          {telefon ? (
+            <p className="mt-2 text-sm">
+              <strong>Tel.</strong>{" "}
+              <a href={`tel:${telefon.replace(/\s/g, "")}`} className="text-green-800 underline">
+                {telefon}
+              </a>
+            </p>
+          ) : null}
+          {godziny ? (
+            <p className="mt-2 text-sm">
+              <strong>Godziny:</strong> {godziny}
+            </p>
+          ) : null}
           {photoCaption ? <p className="mt-2 text-sm italic text-stone-600">{photoCaption}</p> : null}
           <p className="mt-4">
             <Link
