@@ -1,3 +1,4 @@
+import { unstable_cache } from "next/cache";
 import { createPublicSupabaseClient } from "@/lib/supabase/public-client";
 
 export type StatystykiKataloguWsi = {
@@ -5,7 +6,7 @@ export type StatystykiKataloguWsi = {
   wsieZAktywnymProfilem: number;
 };
 
-export async function pobierzStatystykiKataloguWsi(): Promise<StatystykiKataloguWsi | null> {
+async function pobierzStatystykiKataloguWsiRaw(): Promise<StatystykiKataloguWsi | null> {
   const supabase = createPublicSupabaseClient();
   if (!supabase) return null;
 
@@ -27,3 +28,9 @@ export async function pobierzStatystykiKataloguWsi(): Promise<StatystykiKatalogu
     wsieZAktywnymProfilem: aktywne.count ?? 0,
   };
 }
+
+export const pobierzStatystykiKataloguWsi = unstable_cache(
+  pobierzStatystykiKataloguWsiRaw,
+  ["statystyki-katalogu-wsi-v1"],
+  { revalidate: 300 },
+);

@@ -3,22 +3,27 @@
   <div class="container nav-inner">
     <a href="/" class="logo">
       <div class="logo-mark">
-        <img src="/marka/logo-naszawies.png" width="40" height="40" alt="naszawies.pl" loading="eager" decoding="async" />
+        <img src="/marka/emblem-naszawies.png" width="40" height="40" alt="naszawies.pl" loading="eager" decoding="async" />
       </div>
       <div class="logo-text"><span class="p1">naszawies</span><span class="p2">.pl</span></div>
     </a>
-    <div class="nav-links">
-      <a href="#start">Szybki start</a>
+    <button type="button" class="nav-toggle" aria-expanded="false" aria-controls="nav-menu" aria-label="Otwórz menu">
+      <span class="nav-toggle__bar" aria-hidden="true"></span>
+      <span class="nav-toggle__bar" aria-hidden="true"></span>
+      <span class="nav-toggle__bar" aria-hidden="true"></span>
+    </button>
+    <div class="nav-links" id="nav-menu">
       <a href="#dla-kogo">Dla kogo</a>
       <a href="#jak">Jak to działa</a>
       <a href="#swietlica">Świetlica</a>
       <a href="#funkcje">Funkcje</a>
+      <a href="#nowosci" class="nav-discover">Nowości</a>
       <a href="/rynek" class="nav-discover">Rynek lokalny</a>
       <a href="#faq">Pytania</a>
       <a href="/o-nas" class="nav-discover">O nas</a>
       <a href="/kontakt" class="nav-discover">Kontakt</a>
       <a href="/logowanie?next=/szukaj" class="nav-discover">Katalog wsi</a>
-      <a href="/logowanie?next=/mapa" class="nav-discover">Mapa</a>
+      <span class="nav-discover nav-discover--muted" title="Dostępna po zalogowaniu">Mapa</span>
       <a href="/logowanie" class="nav-auth">Logowanie</a>
       <a href="/rejestracja" class="nav-auth">Rejestracja</a>
       <a href="#zapisz" class="nav-cta">Dołącz</a>
@@ -42,11 +47,11 @@
               <span class="hero-sciezka__opis">Po zalogowaniu: wyszukiwarka i mapa. Publiczna strona wsi działa też z bezpośredniego linku.</span>
               <span class="hero-sciezka__cta">Zaloguj i szukaj →</span>
             </a>
-            <a class="hero-sciezka hero-sciezka--panel" href="/rejestracja">
+            <a class="hero-sciezka hero-sciezka--panel" href="/logowanie?next=/panel">
               <span class="hero-sciezka__badge hero-sciezka__badge--panel">Konto</span>
               <strong class="hero-sciezka__tytul">Wejdę do panelu</strong>
-              <span class="hero-sciezka__opis">Rejestracja lub logowanie — świetlica, dokumenty, role sołtys / mieszkaniec.</span>
-              <span class="hero-sciezka__cta">Załóż konto →</span>
+              <span class="hero-sciezka__opis">Logowanie lub rejestracja — świetlica, dokumenty, role sołtys / mieszkaniec.</span>
+              <span class="hero-sciezka__cta">Zaloguj się →</span>
             </a>
             <a class="hero-sciezka" href="/rynek">
               <span class="hero-sciezka__badge">Rynek</span>
@@ -55,12 +60,7 @@
               <span class="hero-sciezka__cta">Przeglądaj rynki →</span>
             </a>
           </div>
-          <p class="hero-dwie-sciezki__mapa"><a href="/logowanie?next=/mapa">Mapa wsi</a> — po zalogowaniu, te same miejscowości w widoku mapy.</p>
-        </div>
-        <div class="hero-ctas">
-          <a href="/rejestracja" class="btn btn-primary">Załóż konto</a>
-          <a href="/logowanie" class="btn btn-secondary">Logowanie</a>
-          <a href="/logowanie?next=/szukaj" class="btn btn-secondary">Szukaj wsi</a>
+          <p class="hero-dwie-sciezki__mapa">Mapa wsi — po zalogowaniu w panelu, te same miejscowości w widoku mapy.</p>
         </div>
         <p class="hero-note">Chcesz priorytetu przy wdrożeniu? <a href="#zapisz">Zapisz wieś na listę</a> — opcjonalnie, dla chętnych na wsparcie przy starcie.</p>
         <div class="hero-meta">
@@ -127,78 +127,12 @@
           <div class="icon" style="background: rgba(212, 160, 23, 0.15);">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#a37b0c" stroke-width="2.5"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
           </div>
-          <div class="text"><strong>Katalog na żywo</strong><span>__LANDING_STAT_WSIE_AKTYWNE__ profili aktywnych · __LANDING_STAT_WSIE_LACZNIE__ miejscowości</span></div>
+          <div class="text"><strong>Plan sali gotowy</strong><span>Układ bankietowy · 40 miejsc · do wydruku</span></div>
         </div>
       </div>
     </div>
   </div>
 </header>
-
-<section class="audience" id="dla-kogo">
-  <div class="container">
-    <div class="section-header">
-      <span class="section-eyebrow">Dla kogo</span>
-      <h2>Wybierz swój <em>najkrótszy start</em>.</h2>
-      <p>Nie musisz znać wszystkich modułów. Wejdź ścieżką, która pasuje do Twojej roli.</p>
-    </div>
-    <div class="audience-grid">
-      <article class="audience-card">
-        <span class="audience-card__badge">Mieszkaniec</span>
-        <h3>Załatwię sprawy codzienne</h3>
-        <p>Ogłoszenia, świetlica, zgłoszenia, lista zakupów i powiadomienia w jednym panelu.</p>
-        <div class="audience-card__actions">
-          <a href="/logowanie?next=/panel/mieszkaniec" class="audience-card__link">Zaloguj mnie do panelu mieszkańca →</a>
-        </div>
-      </article>
-      <article class="audience-card audience-card--accent">
-        <span class="audience-card__badge">Sołtys</span>
-        <h3>Poprowadzę komunikację wsi</h3>
-        <p>Moderacja treści, rezerwacje świetlicy, dokumenty, automatyzacje i profil miejscowości.</p>
-        <div class="audience-card__actions">
-          <a href="/logowanie?next=/panel/soltys" class="audience-card__link">Zaloguj mnie do panelu sołtysa →</a>
-        </div>
-      </article>
-      <article class="audience-card">
-        <span class="audience-card__badge">Gość / nowy mieszkaniec</span>
-        <h3>Najpierw poznam okolicę</h3>
-        <p>Publiczny profil wsi i aktualności — jeśli masz link. Katalog i mapa całej Polski po zalogowaniu.</p>
-        <div class="audience-card__actions">
-          <a href="/logowanie?next=/szukaj" class="audience-card__link">Zaloguj się i przeglądaj katalog →</a>
-        </div>
-      </article>
-    </div>
-  </div>
-</section>
-
-<section class="quick-start" id="start">
-  <div class="container">
-    <div class="section-header">
-      <span class="section-eyebrow">Szybki start</span>
-      <h2>3 kroki do pierwszych efektów <em>jeszcze dziś</em>.</h2>
-      <p>Najpierw konto i wejście do panelu, potem aktywacja roli i działanie.</p>
-    </div>
-    <div class="quick-start-grid">
-      <a class="quick-start-card" href="/rejestracja">
-        <span class="quick-start-card__badge">Krok 1</span>
-        <h3>Załóż konto</h3>
-        <p>Rejestracja zajmuje chwilę. Po niej od razu możesz się zalogować i wejść do panelu.</p>
-        <span class="quick-start-card__cta">Przejdź do rejestracji →</span>
-      </a>
-      <a class="quick-start-card" href="/logowanie">
-        <span class="quick-start-card__badge">Krok 2</span>
-        <h3>Zaloguj się do panelu</h3>
-        <p>Wybierz Google albo e-mail i hasło — system zapamięta, gdzie chcesz wejść.</p>
-        <span class="quick-start-card__cta">Przejdź do logowania →</span>
-      </a>
-      <a class="quick-start-card" href="/panel">
-        <span class="quick-start-card__badge">Krok 3</span>
-        <h3>Włącz moduły swojej wsi</h3>
-        <p>Rezerwacje świetlicy, zgłoszenia, ogłoszenia, mapa i profile lokalnych organizacji.</p>
-        <span class="quick-start-card__cta">Przejdź do panelu →</span>
-      </a>
-    </div>
-  </div>
-</section>
 
 <section class="how-it-works" id="jak">
   <div class="container">
@@ -223,6 +157,36 @@
         <h3>Wieś żyje online</h3>
         <p>Kalendarz świetlicy, ogłoszenia, blog i historia, wiadomości lokalne (także z kanałów RSS), rynek sąsiedzki, fotokronika i mapa — w jednym miejscu. Zero miesięcznych opłat.</p>
       </div>
+    </div>
+  </div>
+</section>
+
+<section class="nowosci" id="nowosci">
+  <div class="container">
+    <div class="section-header">
+      <span class="section-eyebrow">Świeżo na platformie</span>
+      <h2>Co dodaliśmy <em>ostatnio</em>.</h2>
+      <p>Platforma rośnie razem z pierwszymi wsiami — oto moduły, które już działają po zalogowaniu.</p>
+    </div>
+    <div class="nowosci-grid">
+      <article class="nowosci-card">
+        <span class="nowosci-card__badge">Rolnictwo</span>
+        <h3>Ceny skupu i miejsca odbioru</h3>
+        <p>Średnie ceny GUS dla regionu, skupy z mapy OSM i ceny zgłaszane przez sąsiadów — bez moderacji sołtysa.</p>
+        <a href="/logowanie?next=/panel/mieszkaniec/rolnictwo-ceny" class="nowosci-card__link">Zaloguj i zobacz →</a>
+      </article>
+      <article class="nowosci-card nowosci-card--accent">
+        <span class="nowosci-card__badge">Rynek lokalny</span>
+        <h3>Kupno i sprzedaż bez prowizji</h3>
+        <p>Ogłoszenia z mapą Geoportalu, czat z kupującym, odznaki zaufania — zatwierdzane przez sołtysa.</p>
+        <a href="/rynek" class="nowosci-card__link">Przeglądaj rynek →</a>
+      </article>
+      <article class="nowosci-card">
+        <span class="nowosci-card__badge">Cmentarz</span>
+        <h3>Plan grobów i wirtualne znicze</h3>
+        <p>Sołtys układa kwatery na mapie, mieszkańcy szukają nazwisk — szczególnie pomocne w listopadzie.</p>
+        <a href="/logowanie?next=/panel" class="nowosci-card__link">Wejdź do panelu →</a>
+      </article>
     </div>
   </div>
 </section>
@@ -350,7 +314,7 @@
   </div>
 </section>
 
-<section class="roles">
+<section class="roles" id="dla-kogo">
   <div class="container">
     <div class="section-header">
       <span class="section-eyebrow">Kto może dołączyć</span>
@@ -362,12 +326,12 @@
         <span class="role-badge">Wolny dostęp</span>
         <h3>Gość</h3>
         <ul>
-          <li>Czyta ogłoszenia i wydarzenia</li>
-          <li>Przegląda fotokronikę</li>
-          <li>Widzi mapę wsi</li>
+          <li>Czyta ogłoszenia i wydarzenia (link do wsi)</li>
+          <li>Przegląda fotokronikę i rynek lokalny</li>
+          <li>Mapa i katalog — po zalogowaniu</li>
           <li>Zapisuje się do newslettera</li>
         </ul>
-        <div class="role-verify">Bez rejestracji. Bez haseł. Po prostu wejdź i zobacz.</div>
+        <div class="role-verify">Bez konta: publiczny profil wsi z linku. Katalog i mapa po zalogowaniu.</div>
       </div>
       <div class="role-card">
         <span class="role-badge">Email + kod pocztowy</span>
@@ -442,6 +406,7 @@
       <div class="faq-item"><div class="faq-question">Jak mieszkańcy dowiedzą się że platforma istnieje?<span class="faq-toggle"></span></div><div class="faq-answer"><div class="faq-answer-inner">Wysyłamy Ci gotowy do wydrukowania plakat z QR kodem prowadzącym do strony Twojej wsi. Wieszasz go na tablicy ogłoszeń obok świetlicy albo przy kościele. Mieszkańcy skanują telefonem i od razu widzą co się dzieje we wsi.</div></div></div>
       <div class="faq-item"><div class="faq-question">Co z danymi osobowymi i RODO?<span class="faq-toggle"></span></div><div class="faq-answer"><div class="faq-answer-inner">Zbieramy minimum danych — imię, email, wieś. Dane są przechowywane w Polsce, zgodnie z RODO. Nie udostępniamy ich nikomu, nie sprzedajemy, nie używamy do reklam. Możesz w każdej chwili pobrać wszystkie swoje dane albo zażądać ich usunięcia.</div></div></div>
       <div class="faq-item"><div class="faq-question">Nie jestem techniczny. Poradzę sobie?<span class="faq-toggle"></span></div><div class="faq-answer"><div class="faq-answer-inner">Tak. Platforma jest zaprojektowana dla sołtysów 50+, nie dla programistów. Jeśli potrafisz wysłać SMS i założyć konto na Facebooku, poradzisz sobie tutaj. Pomagamy przy pierwszym logowaniu — możesz zadzwonić, napisać email, a nawet poprosić o spotkanie online z instruktorem. Za darmo.</div></div></div>
+      <div class="faq-item"><div class="faq-question">Czy mapa wsi jest publiczna?<span class="faq-toggle"></span></div><div class="faq-answer"><div class="faq-answer-inner">Mapa katalogu i interaktywna mapa miejscowości są dostępne <strong>po zalogowaniu</strong> — to chroni dane i ogranicza nadużycia. Publiczny profil konkretnej wsi (z linku od sołtysa) działa bez konta. Po rejestracji od razu masz dostęp do wyszukiwarki i mapy w panelu.</div></div></div>
       <div class="faq-item"><div class="faq-question">Jak zacząć korzystać z platformy?<span class="faq-toggle"></span></div><div class="faq-answer"><div class="faq-answer-inner"><strong>Już teraz:</strong> zarejestruj się i zaloguj — panel mieszkańca i sołtysa jest czynny; funkcje (np. świetlica, rezerwacje) widzisz po przypisaniu roli we wsi. <strong>Lista „pierwszych 50 wsi”</strong> to dodatkowo priorytet przy konfiguracji, plakat z QR i wsparcie przy wdrożeniu — nie musisz na nią czekać, żeby mieć konto.</div></div></div>
     </div>
   </div>
@@ -489,13 +454,20 @@
   </div>
 </section>
 
+<div class="landing-sticky-cta" id="landing-sticky-cta" hidden>
+  <a href="/rejestracja" class="landing-sticky-cta__primary">Załóż konto</a>
+  <a href="/logowanie" class="landing-sticky-cta__secondary">Logowanie</a>
+</div>
+
+<button type="button" class="landing-back-top" id="landing-back-top" aria-label="Wróć na górę" hidden>↑</button>
+
 <footer>
   <div class="container">
     <div class="footer-grid">
       <div class="footer-brand">
         <a href="/" class="logo">
           <div class="logo-mark">
-            <img src="/marka/logo-naszawies.png" width="40" height="40" alt="naszawies.pl" loading="lazy" decoding="async" />
+            <img src="/marka/emblem-naszawies.png" width="40" height="40" alt="naszawies.pl" loading="lazy" decoding="async" />
           </div>
           <div class="logo-text"><span class="p1">naszawies</span><span class="p2">.pl</span></div>
         </a>
@@ -505,10 +477,10 @@
         <h4>Platforma</h4>
         <ul>
           <li><a href="/logowanie?next=/szukaj">Szukaj wsi</a></li>
-          <li><a href="/logowanie?next=/mapa">Mapa wsi</a></li>
+          <li><span class="footer-muted">Mapa wsi — po zalogowaniu</span></li>
           <li><a href="/logowanie">Logowanie</a></li>
           <li><a href="/rejestracja">Rejestracja</a></li>
-          <li><a href="/panel">Panel</a></li>
+          <li><a href="/logowanie?next=/panel">Panel</a></li>
           <li><a href="#jak">Jak to działa</a></li>
           <li><a href="#swietlica">Świetlica</a></li>
           <li><a href="#funkcje">Funkcje</a></li>
@@ -520,8 +492,8 @@
         <ul>
           <li><a href="#zapisz">Dołącz jako sołtys</a></li>
           <li><a href="#zapisz">Dołącz jako mieszkaniec</a></li>
-          <li><a href="#">Blog</a></li>
-          <li><a href="#">Wspieraj projekt</a></li>
+          <li><a href="/o-nas">O projekcie</a></li>
+          <li><a href="/kontakt">Wsparcie i kontakt</a></li>
         </ul>
       </div>
       <div class="footer-col">

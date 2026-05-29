@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { bezpiecznaSciezkaNastepna } from "@/lib/auth/bezpieczna-sciezka-nastepna";
+import { pobierzSesjeSerwer } from "@/lib/auth/pobierz-uzytkownika-serwer";
 import { ponowJesliRedirect } from "@/lib/next/ponow-redirect";
-import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
 import { pobierzPochodzeniePubliczne } from "@/lib/zadanie/pochodzenie-publiczne";
 import { LogowanieFormularz } from "./logowanie-formularz";
 import { LogowanieProwiderzy } from "./logowanie-prowiderzy";
@@ -31,11 +31,8 @@ export default async function LogowaniePage({ searchParams }: Props) {
   const emailStartowy = typeof emailParam === "string" ? emailParam.slice(0, 200) : "";
 
   try {
-    const supabase = utworzKlientaSupabaseSerwer();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (user) {
+    const session = await pobierzSesjeSerwer();
+    if (session?.user) {
       redirect(nastepna);
     }
   } catch (error) {

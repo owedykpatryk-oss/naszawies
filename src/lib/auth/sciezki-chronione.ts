@@ -38,6 +38,12 @@ export function sciezkaApiWymagaLogowania(pathname: string): boolean {
   return PREFIXY_API_CHRONIONE.some((p) => pathname === p || pathname.startsWith(`${p}/`));
 }
 
+/** Middleware: tylko te ścieżki potrzebują odpytywania Supabase Auth. */
+export function sciezkaWymagaSprawdzeniaSesji(pathname: string): boolean {
+  if (pathname === "/") return true;
+  return sciezkaWymagaLogowania(pathname) || sciezkaApiWymagaLogowania(pathname);
+}
+
 export function urlLogowaniaZPowrotem(sciezka: string, search = ""): string {
   const next = `${sciezka}${search}`;
   return `/logowanie?next=${encodeURIComponent(next)}`;

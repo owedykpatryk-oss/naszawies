@@ -2,7 +2,7 @@ import { readFileSync, existsSync } from "fs";
 import { resolve, dirname } from "path";
 import { fileURLToPath } from "url";
 import { createAdminSupabaseClient } from "../src/lib/supabase/admin-client";
-import { synchronizujCenyGus } from "../src/lib/gus/synchronizuj-ceny-gus-automatycznie";
+import { synchronizujGusPelny } from "../src/lib/gus/synchronizuj-gus-pelny";
 
 const __dirname = dirname(fileURLToPath(import.meta.url));
 const root = resolve(__dirname, "..");
@@ -30,9 +30,9 @@ async function main() {
     process.exit(1);
   }
 
-  console.log("Start synchronizacji cen GUS BDL...");
+  console.log("Start pełnej synchronizacji GUS BDL...");
   const start = Date.now();
-  const wynik = await synchronizujCenyGus(admin);
+  const wynik = await synchronizujGusPelny(admin);
   console.log(JSON.stringify(wynik, null, 2));
   console.log(`Czas: ${((Date.now() - start) / 1000).toFixed(1)}s`);
 

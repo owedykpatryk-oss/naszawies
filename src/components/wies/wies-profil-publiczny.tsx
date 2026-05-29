@@ -404,6 +404,15 @@ export function WiesProfilPubliczny({
             Szacunkowa liczba mieszkańców:{" "}
             <span className="font-semibold tabular-nums text-green-950">{wies.population.toLocaleString("pl-PL")}</span>
           </p>
+        ) : wies.gmina_population != null && wies.gmina_population > 0 ? (
+          <p className="mt-2 text-sm text-stone-600">
+            Ludność gminy {wies.commune}
+            {wies.gmina_population_rok ? ` (${wies.gmina_population_rok}, GUS)` : ""}:{" "}
+            <span className="font-semibold tabular-nums text-green-950">
+              {wies.gmina_population.toLocaleString("pl-PL")}
+            </span>
+            <span className="text-stone-500"> — dane dla całej gminy, nie tylko tej wsi</span>
+          </p>
         ) : null}
         {wies.website ? (
           <p className="mt-3 text-sm">

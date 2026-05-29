@@ -9,27 +9,18 @@ import {
   wybierzWsiBezTransportuNaMapie,
   wybierzWsiZMalymPoi,
 } from "@/lib/mapa/wybierz-wsi-do-uzupelnienia";
-import { mapujObrysyCmentarzyDlaMapy, linkiPlanuCmentarzaPoWsi } from "@/lib/mapa/mapuj-obrysy-cmentarzy-dla-mapy";
 import { MapaWsiStronaDynamic } from "@/components/mapa/mapa-wsi-strona-dynamic";
 import type {
   ZnacznikAdres,
-  ZnacznikCmentarzObrys,
   ZnacznikGeoKontekst,
-  ZnacznikPoi,
   ZnacznikPolowanie,
-  ZnacznikRynek,
-  ZnacznikRynekDzialka,
-  ZnacznikWsi,
   ZnacznikZgloszenie,
 } from "@/components/mapa/mapa-wsi-leaflet";
 import { centroidObszaruPolowania } from "@/lib/lowiectwo/geojson-obszar";
-import { mapujOgloszeniaRynekDlaMapy } from "@/lib/mapa/rynek-na-mapie";
-import { mapujDzialkiRynekDlaMapy } from "@/lib/mapa/rynek-dzialki-na-mapie";
-import { mapujPoiDlaMapy, POLE_SELECT_POI_MAPY, type WierszPoiMapy } from "@/lib/mapa/mapuj-poi-dla-mapy";
-import { mapujGeoKontekstDlaMapy } from "@/lib/mapa/mapuj-geo-kontekst-dla-mapy";
+import { pobierzPubliczneDaneMapy } from "@/lib/mapa/pobierz-publiczne-dane-mapy";
+import { pobierzUzytkownikaSerwer } from "@/lib/auth/pobierz-uzytkownika-serwer";
 import { createPublicSupabaseClient } from "@/lib/supabase/public-client";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
-import { sciezkaProfiluWsi } from "@/lib/wies/sciezka-publiczna";
 import { wymagajLogowaniaStrona } from "@/lib/auth/wymagaj-logowania-strona";
 
 export const metadata: Metadata = {
@@ -39,29 +30,9 @@ export const metadata: Metadata = {
   robots: { index: false, follow: false },
 };
 
-type WierszRpc = {
-  id: string;
-  name: string;
-  slug: string;
-  voivodeship: string;
-  county: string;
-  commune: string;
-  teryt_id: string;
-  latitude: string | number | null;
-  longitude: string | number | null;
-  population: number | null;
-  boundary_geojson: unknown | null;
-  public_offers_count: number | string | null;
-};
-
 function doLiczby(v: string | number | null | undefined): number {
   if (v == null) return NaN;
   return typeof v === "number" ? v : Number.parseFloat(String(v));
-}
-
-function doLiczbyCalkowitej(v: number | string | null | undefined): number {
-  if (v == null) return 0;
-  return typeof v === "number" ? Math.trunc(v) : Number.parseInt(String(v), 10) || 0;
 }
 
 function etykietaLiczbyWsi(n: number): string {
@@ -75,185 +46,19 @@ function etykietaLiczbyWsi(n: number): string {
 export default async function MapaPage() {
   await wymagajLogowaniaStrona("/mapa");
 
+  const { znaczniki, punktyPoi, punktyRynek, punktyRynekDzialki, obrysyCmentarzy, bladZapytania } =
+    await pobierzPubliczneDaneMapy();
+
   const supabase = createPublicSupabaseClient();
-  let znaczniki: ZnacznikWsi[] = [];
-  let bladZapytania: string | null = null;
-
-  if (!supabase) {
-    bladZapytania = "Mapa jest chwilowo niedostępna. Spróbuj ponownie później.";
-  } else {
-    const { data, error } = await supabase.rpc("mapa_wsi_znaczniki");
-
-    if (!error && data && Array.isArray(data)) {
-      znaczniki = (data as WierszRpc[]).flatMap((w) => {
-        const lat = doLiczby(w.latitude);
-        const lon = doLiczby(w.longitude);
-        if (Number.isNaN(lat) || Number.isNaN(lon)) return [];
-        const z: ZnacznikWsi = {
-          id: w.id,
-          name: w.name,
-          sciezka: sciezkaProfiluWsi({
-            voivodeship: w.voivodeship,
-            county: w.county,
-            commune: w.commune,
-            slug: w.slug,
-          }),
-          lat,
-          lon,
-          population: w.population,
-          boundary_geojson: w.boundary_geojson,
-          public_offers_count: doLiczbyCalkowitej(w.public_offers_count),
-          commune: w.commune,
-          county: w.county,
-          voivodeship: w.voivodeship,
-          teryt_id: w.teryt_id,
-        };
-        return [z];
-      });
-    } else {
-      const opisRpc = error?.message ?? "Nie udało się wczytać mapy.";
-      const { data: wiersze, error: err2 } = await supabase
-        .from("villages")
-        .select("id, name, slug, voivodeship, county, commune, teryt_id, latitude, longitude, population, boundary_geojson")
-        .eq("is_active", true)
-        .not("latitude", "is", null)
-        .not("longitude", "is", null)
-        .order("name", { ascending: true })
-        .limit(5000);
-
-      if (err2) {
-        bladZapytania = `${opisRpc} · ${err2.message}`;
-      } else {
-        znaczniki = (wiersze ?? []).map((w) => {
-          const lat = doLiczby(w.latitude as string | number | null);
-          const lon = doLiczby(w.longitude as string | number | null);
-          return {
-            id: w.id,
-            name: w.name,
-            sciezka: sciezkaProfiluWsi({
-              voivodeship: w.voivodeship,
-              county: w.county,
-              commune: w.commune,
-              slug: w.slug,
-            }),
-            lat,
-            lon,
-            population: (w as { population?: number | null }).population ?? null,
-            boundary_geojson: (w as { boundary_geojson?: unknown | null }).boundary_geojson ?? null,
-            public_offers_count: 0,
-            commune: w.commune,
-            county: w.county,
-            voivodeship: w.voivodeship,
-            teryt_id: (w as { teryt_id?: string }).teryt_id,
-          };
-        });
-        bladZapytania = error ? `${opisRpc} · Wyświetlono listę wsi w trybie ograniczonym (np. bez liczników ofert).` : null;
-      }
-    }
-  }
-
-  let punktyPoi: ZnacznikPoi[] = [];
-  let punktyRynek: ZnacznikRynek[] = [];
-  let punktyRynekDzialki: ZnacznikRynekDzialka[] = [];
-  let obrysyCmentarzy: ZnacznikCmentarzObrys[] = [];
   const punktyAdresy: ZnacznikAdres[] = [];
-  let punktyGeoKontekst: ZnacznikGeoKontekst[] = [];
-  if (supabase && znaczniki.length > 0) {
-    const wiesPoId = new Map(znaczniki.map((z) => [z.id, { name: z.name, sciezka: z.sciezka } as const]));
-    const idsWsi = znaczniki.map((z) => z.id);
-    const { data: wierszePoi, error: errPoi } = await supabase
-      .from("pois")
-      .select(POLE_SELECT_POI_MAPY)
-      .in("village_id", idsWsi);
-    if (!errPoi && wierszePoi) {
-      punktyPoi = mapujPoiDlaMapy(wierszePoi as WierszPoiMapy[], wiesPoId);
-    }
-
-    const { data: planyCmentarza } = await supabase
-      .from("village_cemetery_plans")
-      .select("id, village_id, name, boundary_geojson, is_published")
-      .in("village_id", idsWsi)
-      .eq("is_published", true);
-    const linkiPlanu = linkiPlanuCmentarzaPoWsi(
-      (planyCmentarza ?? []) as Parameters<typeof linkiPlanuCmentarzaPoWsi>[0],
-      wiesPoId,
-    );
-    if (linkiPlanu.size > 0) {
-      punktyPoi = punktyPoi.map((p) => {
-        if (p.category.trim().toLowerCase() !== "cmentarz") return p;
-        const link = linkiPlanu.get(p.villageId);
-        return link ? { ...p, linkPlanuCmentarza: link } : p;
-      });
-    }
-    obrysyCmentarzy = mapujObrysyCmentarzyDlaMapy(
-      (planyCmentarza ?? []) as Parameters<typeof mapujObrysyCmentarzyDlaMapy>[0],
-      wiesPoId,
-    );
-    const { data: wierszeRynek } = await supabase
-      .from("marketplace_listings")
-      .select("id, title, listing_type, latitude, longitude, village_id")
-      .in("village_id", idsWsi)
-      .eq("status", "approved")
-      .not("latitude", "is", null)
-      .not("longitude", "is", null)
-      .limit(400);
-    punktyRynek = mapujOgloszeniaRynekDlaMapy((wierszeRynek ?? []) as Parameters<typeof mapujOgloszeniaRynekDlaMapy>[0], wiesPoId);
-
-    const { data: wierszeDzialki } = await supabase
-      .from("marketplace_listings")
-      .select("id, title, listing_type, equipment_category, category, parcel_geojson, parcel_area_m2, village_id")
-      .in("village_id", idsWsi)
-      .eq("status", "approved")
-      .not("parcel_geojson", "is", null)
-      .limit(120);
-    punktyRynekDzialki = mapujDzialkiRynekDlaMapy(
-      (wierszeDzialki ?? []) as Parameters<typeof mapujDzialkiRynekDlaMapy>[0],
-      wiesPoId,
-    );
-
-    const { data: wierszeAdresy } = await supabase
-      .from("address_points")
-      .select("id, village_id, street_name, house_number, latitude, longitude")
-      .in("village_id", idsWsi)
-      .limit(3000);
-    for (const a of wierszeAdresy ?? []) {
-      const w = wiesPoId.get(a.village_id as string);
-      if (!w) continue;
-      const lat = doLiczby(a.latitude as string | number | null);
-      const lon = doLiczby(a.longitude as string | number | null);
-      if (Number.isNaN(lat) || Number.isNaN(lon)) continue;
-      punktyAdresy.push({
-        id: a.id as string,
-        villageId: a.village_id as string,
-        villageName: w.name,
-        streetName: (a.street_name as string | null) ?? null,
-        houseNumber: String(a.house_number ?? "").trim() || "?",
-        lat,
-        lon,
-      });
-    }
-
-    const { data: wierszeGeoKontekst } = await supabase
-      .from("geo_context_features")
-      .select("id, village_id, dataset, layer_name, feature_category, feature_name, latitude, longitude")
-      .in("village_id", idsWsi)
-      .not("latitude", "is", null)
-      .not("longitude", "is", null)
-      .limit(2500);
-    punktyGeoKontekst = mapujGeoKontekstDlaMapy(
-      (wierszeGeoKontekst ?? []) as Parameters<typeof mapujGeoKontekstDlaMapy>[0],
-      wiesPoId,
-    );
-  }
-
+  const punktyGeoKontekst: ZnacznikGeoKontekst[] = [];
   const punktyZgloszenia: ZnacznikZgloszenie[] = [];
   const punktyPolowania: ZnacznikPolowanie[] = [];
+
   try {
-    const sbAuth = utworzKlientaSupabaseSerwer();
-    const {
-      data: { user },
-    } = await sbAuth.auth.getUser();
+    const user = await pobierzUzytkownikaSerwer();
     if (user && znaczniki.length > 0) {
+      const sbAuth = utworzKlientaSupabaseSerwer();
       const { data: roleRows } = await sbAuth
         .from("user_village_roles")
         .select("village_id")

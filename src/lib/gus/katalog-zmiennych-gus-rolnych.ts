@@ -123,7 +123,7 @@ export const KATALOG_ZMIENNYCH_GUS_ROLNYCH: Record<number, Record<string, WpisZm
     ziemniaki: { id: 218181, unit: "zł/dt" },
     mleko: { id: 218241, unit: "zł/hl" },
     wolowina: { id: 218161, unit: "zł/kg" },
-    wieprzowina: { id: 218141, unit: "zł/kg" },
+    wieprzowina: { id: 218281, unit: "zł/kg" },
     drob: { id: 218261, unit: "zł/kg" },
   },
 };

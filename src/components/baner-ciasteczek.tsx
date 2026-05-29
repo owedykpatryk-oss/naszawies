@@ -19,10 +19,29 @@ export function BanerCiasteczek() {
     }
   }, []);
 
+  useEffect(() => {
+    if (!widoczny) {
+      document.documentElement.style.removeProperty("--app-bottom-bar-offset");
+      return;
+    }
+    const sync = () => {
+      const el = document.getElementById("baner-ciasteczek");
+      const h = el?.offsetHeight ?? 0;
+      document.documentElement.style.setProperty("--app-bottom-bar-offset", `${h}px`);
+    };
+    sync();
+    window.addEventListener("resize", sync);
+    return () => {
+      window.removeEventListener("resize", sync);
+      document.documentElement.style.removeProperty("--app-bottom-bar-offset");
+    };
+  }, [widoczny]);
+
   if (!widoczny) return null;
 
   return (
     <div
+      id="baner-ciasteczek"
       role="dialog"
       aria-labelledby="baner-ciasteczek-tytul"
       className="fixed bottom-0 left-0 right-0 z-[200] border-t border-stone-200 bg-stone-50/95 px-4 py-3 shadow-lg backdrop-blur-sm md:px-8"

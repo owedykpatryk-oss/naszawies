@@ -7,6 +7,15 @@
   --nasza-zielen-jasna: #5a9c3e;
   --nasza-tlo-panel: #f4f0e6;
   --nasza-szklo: rgba(255, 255, 255, 0.72);
+  --site-header-offset: 7.25rem;
+  --panel-header-offset: 6.75rem;
+  --sticky-nav-offset: var(--site-header-offset);
+}
+
+@media (min-width: 640px) {
+  :root {
+    --site-header-offset: 6.25rem;
+  }
 }
 
 html {
@@ -141,7 +150,8 @@ html.tryb-senior textarea {
     @apply min-h-0 resize-y;
   }
   .sekcja-form-nav {
-    @apply no-print sticky top-[8.4rem] z-20 overflow-x-auto rounded-xl border border-stone-200/80 bg-white px-2 py-2 text-xs [-webkit-overflow-scrolling:touch] [scrollbar-width:thin];
+    @apply no-print sticky z-20 overflow-x-auto rounded-xl border border-stone-200/80 bg-white px-2 py-2 text-xs [-webkit-overflow-scrolling:touch] [scrollbar-width:thin];
+    top: calc(var(--sticky-nav-offset) + 2rem);
   }
   .sekcja-form-nav-link {
     @apply shrink-0 rounded-lg border border-stone-200 bg-stone-50 px-2.5 py-1.5 text-stone-700 transition hover:border-green-300 hover:bg-green-50 hover:text-green-950;
@@ -168,6 +178,7 @@ html.tryb-senior textarea {
   }
   .panel-tlo {
     @apply relative isolate min-h-screen overflow-x-hidden;
+    --sticky-nav-offset: var(--panel-header-offset);
     background-color: var(--nasza-tlo-panel);
     background-image:
       radial-gradient(ellipse 80% 50% at 10% -10%, rgba(90, 156, 62, 0.14), transparent 55%),

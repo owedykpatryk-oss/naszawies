@@ -1,7 +1,11 @@
 import type { CookieOptions } from "@supabase/ssr";
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
-import { sciezkaApiWymagaLogowania, sciezkaWymagaLogowania } from "@/lib/auth/sciezki-chronione";
+import {
+  sciezkaApiWymagaLogowania,
+  sciezkaWymagaLogowania,
+  sciezkaWymagaSprawdzeniaSesji,
+} from "@/lib/auth/sciezki-chronione";
 import { dolaczNaglowkiBezpieczenstwa } from "@/lib/bezpieczenstwo/naglowki-odpowiedzi";
 import { ipZRequestu, sprawdzLimitApi } from "@/lib/rate-limit/sprawdz-limit-upstash";
 
@@ -39,11 +43,17 @@ export async function middleware(request: NextRequest) {
   }
 
   if (sciezka.startsWith("/api/") && !sciezka.startsWith("/api/health")) {
-    const limit = await sprawdzLimitApi("api_publiczne", ip);
-    if (!limit.ok) {
-      return odpowiedzZBazowymiNaglowkami(
-        NextResponse.json({ blad: "Zbyt wiele żądań. Odczekaj chwilę." }, { status: 429 }),
-      );
+    const apiGusGet =
+      request.method === "GET" &&
+      (sciezka.startsWith("/api/gus/") ||
+        (sciezka.startsWith("/api/wies/") && sciezka.includes("/rolnictwo")));
+    if (!apiGusGet) {
+      const limit = await sprawdzLimitApi("api_publiczne", ip);
+      if (!limit.ok) {
+        return odpowiedzZBazowymiNaglowkami(
+          NextResponse.json({ blad: "Zbyt wiele żądań. Odczekaj chwilę." }, { status: 429 }),
+        );
+      }
     }
   }
 
@@ -51,6 +61,11 @@ export async function middleware(request: NextRequest) {
   const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
   const wymagaKontaBezSesji =
     sciezkaWymagaLogowania(sciezka) || sciezkaApiWymagaLogowania(sciezka);
+  const sprawdzSesje = sciezkaWymagaSprawdzeniaSesji(sciezka);
+
+  if (!sprawdzSesje) {
+    return odpowiedzZBazowymiNaglowkami(NextResponse.next({ request }));
+  }
 
   if (!url || !anonKey) {
     if (wymagaKontaBezSesji) {
@@ -82,6 +97,21 @@ export async function middleware(request: NextRequest) {
       },
     },
   });
+
+  const tylkoRedirectGlowna = sciezka === "/" && !wymagaKontaBezSesji;
+
+  if (tylkoRedirectGlowna) {
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+    if (session?.user) {
+      const przekierowanie = request.nextUrl.clone();
+      przekierowanie.pathname = "/panel";
+      przekierowanie.search = "";
+      return odpowiedzZBazowymiNaglowkami(NextResponse.redirect(przekierowanie));
+    }
+    return odpowiedzZBazowymiNaglowkami(odpowiedz);
+  }
 
   const {
     data: { user },

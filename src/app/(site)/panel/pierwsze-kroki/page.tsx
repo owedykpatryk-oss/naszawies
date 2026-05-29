@@ -33,7 +33,7 @@ export default function PanelPierwszeKrokiPage() {
 
       <nav
         aria-label="Spis treści przewodnika"
-        className="mt-6 rounded-xl border border-stone-200 bg-stone-50/80 p-4 sm:sticky sm:top-20"
+        className="mt-6 rounded-xl border border-stone-200 bg-stone-50/80 p-4 sm:sticky [top:var(--sticky-nav-offset)]"
       >
         <p className="text-xs font-semibold uppercase tracking-wide text-stone-500">Na tej stronie</p>
         <ul className="mt-2 flex flex-wrap gap-2 text-sm">

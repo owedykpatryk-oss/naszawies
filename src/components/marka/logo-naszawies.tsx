@@ -1,8 +1,16 @@
 import Image from "next/image";
 import Link from "next/link";
+import { MARKA_SCIEZKI } from "@/lib/marka/sciezki";
 
-/** Oficjalne logo marki (ikona z emblematem wsi). */
-export const LOGO_MARKI_SRC = "/marka/logo-naszawies.png";
+/** Okrągły emblem (przezroczyste tło). */
+export const EMBLEM_MARKI_SRC = MARKA_SCIEZKI.emblem;
+/** Pełne logo z napisem (przezroczyste tło). */
+export const LOGO_PELNE_SRC = MARKA_SCIEZKI.logoPelne;
+/** Ikona PWA z gradientem. */
+export const LOGO_APP_SRC = MARKA_SCIEZKI.logoApp;
+
+/** @deprecated Użyj {@link EMBLEM_MARKI_SRC} lub {@link LOGO_PELNE_SRC}. */
+export const LOGO_MARKI_SRC = EMBLEM_MARKI_SRC;
 
 type Wariant = "jasny" | "ciemny";
 
@@ -14,25 +22,20 @@ type Props = {
   className?: string;
   /** Bez linku do strony głównej (np. w mailu). */
   bezLinku?: boolean;
+  /** Docelowy URL po kliknięciu (domyślnie strona główna; zalogowani → panel). */
+  href?: string;
 };
 
-/** Emblem (górna część pliku PNG — bez powtórzonego napisu w nagłówku). */
 function EmblemMarki({ rozmiar }: { rozmiar: number }) {
   return (
-    <span
-      className="inline-flex shrink-0 overflow-hidden rounded-xl shadow-md shadow-green-950/15 ring-1 ring-white/25"
-      style={{ width: rozmiar, height: rozmiar }}
-    >
-      <Image
-        src={LOGO_MARKI_SRC}
-        alt=""
-        width={rozmiar}
-        height={Math.round(rozmiar * 1.42)}
-        className="h-auto max-w-none object-cover object-top"
-        style={{ width: rozmiar, marginTop: 0 }}
-        priority
-      />
-    </span>
+    <Image
+      src={EMBLEM_MARKI_SRC}
+      alt=""
+      width={rozmiar}
+      height={rozmiar}
+      className="shrink-0"
+      priority
+    />
   );
 }
 
@@ -54,7 +57,13 @@ function TekstLogo({ kompakt, wariant }: { kompakt?: boolean; wariant: Wariant }
 /**
  * Logo marki: emblem + „naszawies.pl” — zgodne z oficjalną ikoną aplikacji.
  */
-export function LogoNaszawies({ kompakt, wariant = "jasny", className = "", bezLinku = false }: Props) {
+export function LogoNaszawies({
+  kompakt,
+  wariant = "jasny",
+  className = "",
+  bezLinku = false,
+  href = "/",
+}: Props) {
   const rozmiarEmblematu = kompakt ? 36 : 44;
   const zawartosc = (
     <>
@@ -66,12 +75,14 @@ export function LogoNaszawies({ kompakt, wariant = "jasny", className = "", bezL
   const klasy =
     "group inline-flex max-w-full min-w-0 items-center gap-2 sm:gap-2.5 no-underline outline-none ring-green-800 ring-offset-2 ring-offset-[#f5f1e8] focus-visible:ring-2";
 
+  const etykietaLinku = href === "/panel" ? "naszawies.pl — panel" : "naszawies.pl — strona główna";
+
   if (bezLinku) {
     return <span className={`${klasy} ${className}`}>{zawartosc}</span>;
   }
 
   return (
-    <Link href="/" className={`${klasy} ${className}`} aria-label="naszawies.pl — strona główna">
+    <Link href={href} className={`${klasy} ${className}`} aria-label={etykietaLinku}>
       {zawartosc}
     </Link>
   );
@@ -83,11 +94,11 @@ export function LogoNaszawiesWycentrowane({ className = "" }: { className?: stri
     <div className={`flex flex-col items-center pb-6 ${className}`}>
       <Link href="/" className="block no-underline outline-none" aria-label="naszawies.pl — strona główna">
         <Image
-          src={LOGO_MARKI_SRC}
+          src={LOGO_PELNE_SRC}
           alt="naszawies.pl"
-          width={152}
-          height={152}
-          className="h-auto w-[min(152px,42vw)] rounded-2xl shadow-lg shadow-green-950/20"
+          width={220}
+          height={220}
+          className="h-auto w-[min(220px,52vw)]"
           priority
         />
       </Link>

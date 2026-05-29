@@ -8,6 +8,8 @@ type Props = {
   linkiGlowne?: LinkPrawy[];
   /** Akcje po prawej (Logowanie, Rejestracja, Kontakt...) */
   linkiAkcje?: LinkPrawy[];
+  /** Link z logo (domyślnie strona główna). */
+  logoHref?: string;
   className?: string;
 };
 
@@ -19,15 +21,17 @@ type Props = {
 export function NaglowekStrony({
   linkiGlowne = [],
   linkiAkcje = [],
+  logoHref = "/",
   className = "",
 }: Props) {
   return (
     <header
+      id="site-header"
       className={`sticky top-0 z-50 border-b border-green-900/10 bg-[#f5f1e8]/95 backdrop-blur-md supports-[backdrop-filter]:bg-[#f5f1e8]/90 ${className}`}
     >
       <div className="page-shell flex min-w-0 items-center justify-between gap-3 px-1 py-2.5 sm:gap-4 sm:px-2 sm:py-3">
         <div className="shrink-0">
-          <LogoNaszawies kompakt />
+          <LogoNaszawies kompakt href={logoHref} />
         </div>
 
         {linkiAkcje.length > 0 ? (

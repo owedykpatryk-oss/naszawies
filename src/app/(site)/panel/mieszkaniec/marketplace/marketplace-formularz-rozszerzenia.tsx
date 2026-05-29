@@ -23,9 +23,16 @@ type Props = {
   pois: PoiOpcja[];
   wartosci: WartosciRozszerzone;
   onChange: (v: WartosciRozszerzone) => void;
+  punktOdniesieniaWsi?: { lat: number; lng: number } | null;
 };
 
-export function MarketplaceFormularzRozszerzenia({ kat, pois, wartosci, onChange }: Props) {
+export function MarketplaceFormularzRozszerzenia({
+  kat,
+  pois,
+  wartosci,
+  onChange,
+  punktOdniesieniaWsi = null,
+}: Props) {
   const pokazJedzenie = czyKategoriaProduktuLokalnego(kat);
   const poisWsi = pois.filter(() => true);
 
@@ -88,8 +95,10 @@ export function MarketplaceFormularzRozszerzenia({ kat, pois, wartosci, onChange
         </label>
       ) : null}
       <WyborPunktuMapyKlient
-        domyslnaLat={wartosci.latitude}
-        domyslnaLng={wartosci.longitude}
+        domyslnaLat={wartosci.latitude ?? punktOdniesieniaWsi?.lat}
+        domyslnaLng={wartosci.longitude ?? punktOdniesieniaWsi?.lng}
+        punktOdniesienia={punktOdniesieniaWsi}
+        wskazowka="Opcjonalnie — ułatwia znalezienie miejsca odbioru na mapie rynku. Możesz użyć GPS telefonu na miejscu lub wpisać współrzędne z Google Maps."
         onChange={(lat, lng) => onChange({ ...wartosci, latitude: lat, longitude: lng })}
       />
 

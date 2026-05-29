@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { bezpiecznaSciezkaNastepna } from "@/lib/auth/bezpieczna-sciezka-nastepna";
-import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
+import { pobierzSesjeSerwer } from "@/lib/auth/pobierz-uzytkownika-serwer";
 import { pobierzPochodzeniePubliczne } from "@/lib/zadanie/pochodzenie-publiczne";
 import { LogowanieProwiderzy } from "../logowanie/logowanie-prowiderzy";
 import { RejestracjaFormularz } from "./rejestracja-formularz";
@@ -24,11 +24,8 @@ export default async function RejestracjaPage({ searchParams }: Props) {
     typeof nastepnyParam === "string" ? bezpiecznaSciezkaNastepna(nastepnyParam) : "/panel";
 
   try {
-    const supabase = utworzKlientaSupabaseSerwer();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (user) {
+    const session = await pobierzSesjeSerwer();
+    if (session?.user) {
       redirect(nastepna);
     }
   } catch {

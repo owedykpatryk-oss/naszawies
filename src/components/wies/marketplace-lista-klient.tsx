@@ -513,7 +513,7 @@ export function MarketplaceListaKlient({
         />
       ) : null}
 
-      <div className="sticky top-[4.25rem] z-30 space-y-2 rounded-2xl border border-stone-200/90 bg-[#f5f1e8]/95 p-2.5 shadow-sm backdrop-blur-md sm:top-[5rem] sm:p-3">
+      <div className="sticky z-30 space-y-2 rounded-2xl border border-stone-200/90 bg-[#f5f1e8]/95 p-2.5 shadow-sm backdrop-blur-md sm:p-3 [top:var(--sticky-nav-offset)]">
         {chipyKategorii}
         <div className="flex flex-wrap items-center gap-2">
           <input

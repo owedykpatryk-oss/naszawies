@@ -1,4 +1,5 @@
 import type { MetadataRoute } from "next";
+import { MARKA_SCIEZKI } from "@/lib/marka/sciezki";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
@@ -33,13 +34,19 @@ export default function manifest(): MetadataRoute.Manifest {
     ],
     icons: [
       {
-        src: "/marka/logo-naszawies.png",
+        src: MARKA_SCIEZKI.emblem192,
+        sizes: "192x192",
+        type: "image/png",
+        purpose: "any",
+      },
+      {
+        src: MARKA_SCIEZKI.emblem512,
         sizes: "512x512",
         type: "image/png",
         purpose: "any",
       },
       {
-        src: "/marka/logo-naszawies.png",
+        src: MARKA_SCIEZKI.logoApp,
         sizes: "512x512",
         type: "image/png",
         purpose: "maskable",

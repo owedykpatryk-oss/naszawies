@@ -1,5 +1,5 @@
 import Image from "next/image";
-import { LOGO_MARKI_SRC } from "./logo-naszawies";
+import { EMBLEM_MARKI_SRC } from "./logo-naszawies";
 
 type Props = {
   /** Rozmiar ikony w px. */
@@ -7,20 +7,20 @@ type Props = {
   className?: string;
 };
 
-/** Kwadratowy emblem marki (oficjalna ikona). */
+/** Okrągły emblem marki (przezroczyste tło). */
 export function ZnakNaszawies({ rozmiar = 24, className = "" }: Props) {
   return (
     <Image
-      src={LOGO_MARKI_SRC}
+      src={EMBLEM_MARKI_SRC}
       alt="naszawies.pl"
       width={rozmiar}
       height={rozmiar}
-      className={`shrink-0 rounded-lg ${className}`}
+      className={`shrink-0 ${className}`}
     />
   );
 }
 
-/** Emblem w zaokrąglonym kwadracie — nagłówek, stopka. */
+/** Emblem — nagłówek, stopka. */
 export function ZnakNaszawiesOkrag({
   rozmiarKola = 44,
   className = "",
@@ -29,18 +29,12 @@ export function ZnakNaszawiesOkrag({
   className?: string;
 }) {
   return (
-    <span
-      className={`inline-flex shrink-0 overflow-hidden rounded-xl shadow-md shadow-green-950/15 ring-1 ring-white/25 ${className}`}
-      style={{ width: rozmiarKola, height: rozmiarKola }}
-    >
-      <Image
-        src={LOGO_MARKI_SRC}
-        alt=""
-        width={rozmiarKola}
-        height={Math.round(rozmiarKola * 1.42)}
-        className="h-auto max-w-none object-cover object-top"
-        style={{ width: rozmiarKola }}
-      />
-    </span>
+    <Image
+      src={EMBLEM_MARKI_SRC}
+      alt=""
+      width={rozmiarKola}
+      height={rozmiarKola}
+      className={`shrink-0 ${className}`}
+    />
   );
 }

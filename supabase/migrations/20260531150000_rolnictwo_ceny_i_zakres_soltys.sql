@@ -179,73 +179,86 @@ WITH CHECK (
 
 -- Posts: moderacja → rada / współadmin
 DROP POLICY IF EXISTS "Soltys moderates village posts" ON public.posts;
+DROP POLICY IF EXISTS "Council moderates village posts" ON public.posts;
 CREATE POLICY "Council moderates village posts"
 ON public.posts FOR UPDATE
 USING (public.can_moderate_village_content(village_id));
 
 DROP POLICY IF EXISTS "Soltys deletes village posts" ON public.posts;
+DROP POLICY IF EXISTS "Council deletes village posts" ON public.posts;
 CREATE POLICY "Council deletes village posts"
 ON public.posts FOR DELETE
 USING (public.can_moderate_village_content(village_id));
 
 -- Marketplace
 DROP POLICY IF EXISTS "Soltys moderates marketplace listings" ON public.marketplace_listings;
+DROP POLICY IF EXISTS "Council moderates marketplace listings" ON public.marketplace_listings;
 CREATE POLICY "Council moderates marketplace listings"
 ON public.marketplace_listings FOR UPDATE
 USING (public.can_moderate_village_content(village_id));
 
 DROP POLICY IF EXISTS "Soltys deletes marketplace listings" ON public.marketplace_listings;
+DROP POLICY IF EXISTS "Council deletes marketplace listings" ON public.marketplace_listings;
 CREATE POLICY "Council deletes marketplace listings"
 ON public.marketplace_listings FOR DELETE
 USING (public.can_moderate_village_content(village_id));
 
 -- Pomoc sąsiedzka
 DROP POLICY IF EXISTS "Soltys moderates neighbor help" ON public.neighbor_help_offers;
+DROP POLICY IF EXISTS "Council moderates neighbor help" ON public.neighbor_help_offers;
 CREATE POLICY "Council moderates neighbor help"
 ON public.neighbor_help_offers FOR UPDATE
 USING (public.can_moderate_village_content(village_id));
 
 -- Zdjęcia fotokroniki
 DROP POLICY IF EXISTS "Soltys moderates photos" ON public.photos;
+DROP POLICY IF EXISTS "Council moderates photos" ON public.photos;
 CREATE POLICY "Council moderates photos"
 ON public.photos FOR UPDATE
 USING (public.can_moderate_village_content(village_id));
 
 DROP POLICY IF EXISTS "Soltys deletes photos" ON public.photos;
+DROP POLICY IF EXISTS "Council deletes photos" ON public.photos;
 CREATE POLICY "Council deletes photos"
 ON public.photos FOR DELETE
 USING (public.can_moderate_village_content(village_id));
 
 DROP POLICY IF EXISTS "Soltys moderates photo albums" ON public.photo_albums;
 DROP POLICY IF EXISTS "Soltys manages albums" ON public.photo_albums;
+DROP POLICY IF EXISTS "Council moderates photo albums" ON public.photo_albums;
 CREATE POLICY "Council moderates photo albums"
 ON public.photo_albums FOR UPDATE
 USING (public.can_moderate_village_content(village_id));
 
 -- Wiadomości lokalne
 DROP POLICY IF EXISTS "Soltys moderates local news" ON public.local_news_items;
+DROP POLICY IF EXISTS "Council moderates local news" ON public.local_news_items;
 CREATE POLICY "Council moderates local news"
 ON public.local_news_items FOR UPDATE
 USING (public.can_moderate_village_content(village_id));
 
 -- Blog (moderacja)
 DROP POLICY IF EXISTS "Soltys moderates village blog posts" ON public.village_blog_posts;
+DROP POLICY IF EXISTS "Council moderates village blog posts" ON public.village_blog_posts;
 CREATE POLICY "Council moderates village blog posts"
 ON public.village_blog_posts FOR ALL
 USING (public.can_moderate_village_content(village_id));
 
 -- Dyskusje
 DROP POLICY IF EXISTS "Soltys moderates discussion threads" ON public.village_discussion_threads;
+DROP POLICY IF EXISTS "Council moderates discussion threads" ON public.village_discussion_threads;
 CREATE POLICY "Council moderates discussion threads"
 ON public.village_discussion_threads FOR UPDATE
 USING (public.can_moderate_village_content(village_id));
 
 DROP POLICY IF EXISTS "Soltys moderates discussion comments" ON public.village_discussion_comments;
+DROP POLICY IF EXISTS "Council moderates discussion comments" ON public.village_discussion_comments;
 CREATE POLICY "Council moderates discussion comments"
 ON public.village_discussion_comments FOR UPDATE
 USING (public.can_moderate_village_content(village_id));
 
 DROP POLICY IF EXISTS "Soltys reviews content reports" ON public.village_content_reports;
+DROP POLICY IF EXISTS "Council reviews content reports" ON public.village_content_reports;
 CREATE POLICY "Council reviews content reports"
 ON public.village_content_reports FOR UPDATE
 USING (public.can_moderate_village_content(village_id));

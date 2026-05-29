@@ -468,7 +468,17 @@ export function MarketplaceFormularzMieszkanca({
       ) : null}
 
       {!pokazDzialke ? (
-        <MarketplaceFormularzRozszerzenia kat={kat} pois={poisWsi} wartosci={rozszerzone} onChange={ustawRozszerzone} />
+        <MarketplaceFormularzRozszerzenia
+          kat={kat}
+          pois={poisWsi}
+          wartosci={rozszerzone}
+          onChange={ustawRozszerzone}
+          punktOdniesieniaWsi={
+            metaAktywnej?.latitude != null && metaAktywnej?.longitude != null
+              ? { lat: metaAktywnej.latitude, lng: metaAktywnej.longitude }
+              : null
+          }
+        />
       ) : (
         <div className="rounded-lg border border-stone-200 bg-stone-50/50 p-3 text-sm">
           <p className="font-medium text-stone-800">Kontakt</p>

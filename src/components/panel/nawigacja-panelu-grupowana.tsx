@@ -35,7 +35,7 @@ export function NawigacjaPaneluGrupowana({ grupy, ariaLabel }: Props) {
 
   return (
     <nav
-      className="no-print mb-8 min-w-0 space-y-3 rounded-2xl border border-stone-200/60 bg-stone-100/35 p-2 shadow-inner ring-1 ring-stone-900/[0.03] lg:sticky lg:top-[5.9rem] lg:z-20 sm:p-3"
+      className="no-print mb-8 min-w-0 space-y-3 rounded-2xl border border-stone-200/60 bg-stone-100/35 p-2 shadow-inner ring-1 ring-stone-900/[0.03] lg:sticky lg:z-20 sm:p-3 [top:var(--sticky-nav-offset)]"
       aria-label={ariaLabel}
     >
       {grupy.map((grupa) => (

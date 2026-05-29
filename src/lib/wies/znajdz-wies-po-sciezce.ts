@@ -1,5 +1,7 @@
+import { unstable_cache } from "next/cache";
 import type { SupabaseClient } from "@supabase/supabase-js";
-import { slugCzesciAdministracyjnej, slugCzesciZBazy } from "@/lib/wies/slug-administracyjny";
+import { createPublicSupabaseClient } from "@/lib/supabase/public-client";
+import { slugCzesciAdministracyjnej } from "@/lib/wies/slug-administracyjny";
 
 export type WiesPubliczna = {
   id: string;
@@ -13,6 +15,9 @@ export type WiesPubliczna = {
   latitude: number | null;
   longitude: number | null;
   population: number | null;
+  gmina_population?: number | null;
+  gmina_population_rok?: number | null;
+  gmina_population_zrodlo?: string | null;
   description: string | null;
   website: string | null;
   is_active: boolean;
@@ -20,10 +25,10 @@ export type WiesPubliczna = {
   updated_at: string | null;
 };
 
-/**
- * Dopasowuje wieś do czterech segmentów URL (jak w /api/wies/szukaj — slugify nazw administracyjnych + slug wsi).
- */
-export async function znajdzWiesPoSciezce(
+const POLE_WIES =
+  "id, teryt_id, name, slug, voivodeship, county, commune, commune_type, latitude, longitude, population, gmina_population, gmina_population_rok, gmina_population_zrodlo, description, website, is_active, cover_image_url, updated_at";
+
+async function lookupWiesPoSciezce(
   supabase: SupabaseClient,
   wojSeg: string,
   powSeg: string,
@@ -37,21 +42,40 @@ export async function znajdzWiesPoSciezce(
 
   const { data, error } = await supabase
     .from("villages")
-    .select(
-      "id, teryt_id, name, slug, voivodeship, county, commune, commune_type, latitude, longitude, population, description, website, is_active, cover_image_url, updated_at",
-    )
-    .eq("slug", slug);
+    .select(POLE_WIES)
+    .eq("voivodeship_slug", w)
+    .eq("county_slug", p)
+    .eq("commune_slug", g)
+    .eq("slug", slug)
+    .maybeSingle();
 
-  if (error || !data?.length) {
+  if (error || !data) {
     return null;
   }
 
-  const hit = data.find(
-    (v) =>
-      slugCzesciZBazy(v.voivodeship) === w &&
-      slugCzesciZBazy(v.county) === p &&
-      slugCzesciZBazy(v.commune) === g,
-  );
+  return data as WiesPubliczna;
+}
 
-  return (hit as WiesPubliczna) ?? null;
+const znajdzWiesPoSciezceCached = unstable_cache(
+  async (wojSeg: string, powSeg: string, gminaSeg: string, slugWioski: string) => {
+    const supabase = createPublicSupabaseClient();
+    if (!supabase) return null;
+    return lookupWiesPoSciezce(supabase, wojSeg, powSeg, gminaSeg, slugWioski);
+  },
+  ["znajdz-wies-po-sciezce"],
+  { revalidate: 300 },
+);
+
+/**
+ * Dopasowuje wieś do czterech segmentów URL (slugi administracyjne + slug wsi).
+ * Wynik cache'owany 5 min (metadata + strona wołają tę samą funkcję wielokrotnie).
+ */
+export async function znajdzWiesPoSciezce(
+  _supabase: SupabaseClient | null,
+  wojSeg: string,
+  powSeg: string,
+  gminaSeg: string,
+  slugWioski: string,
+): Promise<WiesPubliczna | null> {
+  return znajdzWiesPoSciezceCached(wojSeg, powSeg, gminaSeg, slugWioski);
 }

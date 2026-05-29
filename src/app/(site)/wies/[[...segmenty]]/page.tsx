@@ -45,6 +45,8 @@ type Props = {
   searchParams?: { q?: string | string[]; liturgia?: string | string[]; kgw?: string | string[]; osp?: string | string[]; mysliwi?: string | string[] };
 };
 
+export const revalidate = 120;
+
 type BlogWpis = {
   id: string;
   title: string;
@@ -853,7 +855,7 @@ export default async function WiesCatchAllPage({ params, searchParams }: Props) 
           </div>
 
           <aside className="hidden lg:block">
-            <div className="sticky top-[5.25rem]">
+            <div className="sticky [top:var(--sticky-nav-offset)]">
               <RynekMapaEmbedded
                 nazwaWsi={wies.name}
                 sciezkaWsi={sciezka}
@@ -993,6 +995,7 @@ export default async function WiesCatchAllPage({ params, searchParams }: Props) 
           }}
           sciezkaWsi={sciezka}
           nazwaWsi={wies.name}
+          wojewodztwo={wies.voivodeship}
           villageId={wies.id}
           zalogowany={!!authRes.user}
           toJa={authRes.user?.id === ogl.owner_user_id}

@@ -1,14 +1,20 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { znajdzRegionDlaPowiatu, pobierzDaneZmiennejRegionalnej } from "@/lib/gus/bdl-klient";
+import { KATALOG_ZMIENNYCH_GUS_TARGOWISK } from "@/lib/gus/katalog-zmiennych-gus-targowiska";
 import {
   KATALOG_ZMIENNYCH_GUS_ROLNYCH,
   ostatnieMiesiaceGus,
 } from "@/lib/gus/katalog-zmiennych-gus-rolnych";
+import type { KanalCenyGus } from "@/lib/gus/konstanty-gus";
+import { KANALY_CEN_GUS } from "@/lib/gus/konstanty-gus";
 import { powiadomONowychCenachGus, type NowyOkresGus } from "@/lib/gus/powiadom-o-cenach-gus";
 import { PRODUKTY_ROLNE } from "@/lib/rolnictwo/produkty-rolne";
 
 export type GusSyncSummary = {
   powiaty: number;
+  /** Liczba powiatów z przypisanym regionem NUTS2 BDL. */
+  powiatyZmapowane: number;
+  /** Unikalne regiony NUTS2 (makroregiony) — zwykle 7–8 dla całej Polski. */
   regiony: number;
   zapisano: number;
   pominieto: number;
@@ -36,6 +42,7 @@ type WierszUpsert = {
   value: number;
   unit: string;
   gus_var_id: number;
+  gus_channel: KanalCenyGus;
   fetched_at: string;
 };
 
@@ -102,6 +109,7 @@ async function wykryjNoweOkresyGus(
 ): Promise<NowyOkresGus[]> {
   const maxPerPowiat = new Map<string, { year: number; month: number; region_nazwa: string }>();
   for (const w of doZapisu) {
+    if (w.gus_channel !== "skup") continue;
     const cur = maxPerPowiat.get(w.powiat_teryt_kod);
     if (!cur || w.year > cur.year || (w.year === cur.year && w.month > cur.month)) {
       maxPerPowiat.set(w.powiat_teryt_kod, {
@@ -145,6 +153,7 @@ export async function synchronizujCenyGus(
   const clientId = process.env.GUS_BDL_CLIENT_ID?.trim() || undefined;
   const summary: GusSyncSummary = {
     powiaty: 0,
+    powiatyZmapowane: 0,
     regiony: 0,
     zapisano: 0,
     pominieto: 0,
@@ -194,6 +203,7 @@ export async function synchronizujCenyGus(
   }
 
   await zapiszNoweMapowaniaRegionow(admin, unikalne, regionDlaPowiatu);
+  summary.powiatyZmapowane = regionDlaPowiatu.size;
   summary.regiony = new Set(Array.from(regionDlaPowiatu.values()).map((r) => r.id)).size;
 
   const miesiace = ostatnieMiesiaceGus(12);
@@ -203,52 +213,58 @@ export async function synchronizujCenyGus(
   const doZapisu: WierszUpsert[] = [];
   const teraz = new Date().toISOString();
 
-  for (const { year, month } of miesiace) {
-    const katalogMiesiaca = KATALOG_ZMIENNYCH_GUS_ROLNYCH[month];
-    if (!katalogMiesiaca) continue;
+  for (const kanal of KANALY_CEN_GUS) {
+    const katalog =
+      kanal === "skup" ? KATALOG_ZMIENNYCH_GUS_ROLNYCH : KATALOG_ZMIENNYCH_GUS_TARGOWISK;
 
-    for (const produkt of PRODUKTY_ROLNE) {
-      const zmienna = katalogMiesiaca[produkt.key];
-      if (!zmienna) {
-        summary.pominieto += 1;
-        continue;
-      }
+    for (const { year, month } of miesiace) {
+      const katalogMiesiaca = katalog[month];
+      if (!katalogMiesiaca) continue;
 
-      const cacheKey = `${zmienna.id}:${year}`;
-      if (!pobraneZmienne.has(cacheKey)) {
-        const dane = await pobierzDaneZmiennejRegionalnej(zmienna.id, lata, clientId);
-        summary.zapytaniaApi += 1;
-        pobraneZmienne.add(cacheKey);
-        for (const w of dane) {
-          ceny.set(kluczCeny(zmienna.id, w.year, w.regionId), w.value);
-        }
-      }
-
-      for (const [kod, meta] of Array.from(unikalne.entries())) {
-        const region = regionDlaPowiatu.get(kod);
-        if (!region) continue;
-
-        const val = ceny.get(kluczCeny(zmienna.id, year, region.id));
-        if (val == null) {
+      for (const produkt of PRODUKTY_ROLNE) {
+        const zmienna = katalogMiesiaca[produkt.key];
+        if (!zmienna) {
           summary.pominieto += 1;
           continue;
         }
 
-        doZapisu.push({
-          powiat_teryt_kod: kod,
-          powiat_nazwa: meta.county,
-          wojewodztwo: meta.voivodeship,
-          gus_region_id: region.id,
-          gus_region_nazwa: region.name,
-          product_key: produkt.key,
-          product_label: produkt.label,
-          year,
-          month,
-          value: val,
-          unit: zmienna.unit,
-          gus_var_id: zmienna.id,
-          fetched_at: teraz,
-        });
+        const cacheKey = `${kanal}:${zmienna.id}:${year}`;
+        if (!pobraneZmienne.has(cacheKey)) {
+          const dane = await pobierzDaneZmiennejRegionalnej(zmienna.id, lata, clientId);
+          summary.zapytaniaApi += 1;
+          pobraneZmienne.add(cacheKey);
+          for (const w of dane) {
+            ceny.set(kluczCeny(zmienna.id, w.year, w.regionId), w.value);
+          }
+        }
+
+        for (const [kod, meta] of Array.from(unikalne.entries())) {
+          const region = regionDlaPowiatu.get(kod);
+          if (!region) continue;
+
+          const val = ceny.get(kluczCeny(zmienna.id, year, region.id));
+          if (val == null) {
+            summary.pominieto += 1;
+            continue;
+          }
+
+          doZapisu.push({
+            powiat_teryt_kod: kod,
+            powiat_nazwa: meta.county,
+            wojewodztwo: meta.voivodeship,
+            gus_region_id: region.id,
+            gus_region_nazwa: region.name,
+            product_key: produkt.key,
+            product_label: produkt.label,
+            year,
+            month,
+            value: val,
+            unit: zmienna.unit,
+            gus_var_id: zmienna.id,
+            gus_channel: kanal,
+            fetched_at: teraz,
+          });
+        }
       }
     }
   }
@@ -259,7 +275,7 @@ export async function synchronizujCenyGus(
     const paczka = doZapisu.slice(i, i + ROZMIAR_PACZKI);
     const { error: upsertErr } = await admin
       .from("agri_ceny_gus")
-      .upsert(paczka, { onConflict: "powiat_teryt_kod,product_key,year,month" });
+      .upsert(paczka, { onConflict: "powiat_teryt_kod,product_key,year,month,gus_channel" });
     if (upsertErr) {
       summary.bledy.push(`Paczka ${i}: ${upsertErr.message}`);
     } else {

@@ -37,6 +37,25 @@ export function PwaServiceWorkerKlient() {
     ustawZdarzenieInstalacji(null);
   }, []);
 
+  useEffect(() => {
+    if (!pokazBaner) {
+      document.documentElement.style.removeProperty("--pwa-bottom-bar-offset");
+      return;
+    }
+    const sync = () => {
+      const cookieH = document.getElementById("baner-ciasteczek")?.offsetHeight ?? 0;
+      const pwaEl = document.querySelector('[aria-label="Instalacja aplikacji"]');
+      const pwaH = pwaEl instanceof HTMLElement ? pwaEl.offsetHeight : 0;
+      document.documentElement.style.setProperty("--app-bottom-bar-offset", `${cookieH + pwaH}px`);
+      document.documentElement.style.setProperty("--pwa-bottom-bar-offset", `${cookieH}px`);
+    };
+    sync();
+    window.addEventListener("resize", sync);
+    return () => {
+      window.removeEventListener("resize", sync);
+    };
+  }, [pokazBaner]);
+
   const instaluj = useCallback(async () => {
     if (!zdarzenieInstalacji) return;
     try {
@@ -52,7 +71,7 @@ export function PwaServiceWorkerKlient() {
 
   return (
     <div
-      className="no-print fixed inset-x-0 bottom-0 z-[90] border-t border-stone-200 bg-white/95 px-4 py-3 shadow-[0_-8px_30px_rgba(0,0,0,0.08)] backdrop-blur-sm"
+      className="no-print fixed inset-x-0 bottom-0 z-[110] border-t border-stone-200 bg-white/95 px-4 py-3 shadow-[0_-8px_30px_rgba(0,0,0,0.08)] backdrop-blur-sm [bottom:var(--pwa-bottom-bar-offset,0px)]"
       role="dialog"
       aria-label="Instalacja aplikacji"
     >

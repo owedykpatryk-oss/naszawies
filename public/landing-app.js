@@ -51,6 +51,43 @@
         startY,
         startLeft,
         startTop;
+      let rafId = 0;
+      let nextLeft = 0;
+      let nextTop = 0;
+
+      function flushMove() {
+        rafId = 0;
+        el.style.transform =
+          "translate(" + (nextLeft - startLeft) + "%, " + (nextTop - startTop) + "%)";
+      }
+
+      function onMove(e) {
+        if (!isDragging) return;
+        const rect = canvas.getBoundingClientRect();
+        const pt = e.touches ? e.touches[0] : e;
+        const dx = ((pt.clientX - startX) / rect.width) * 100;
+        const dy = ((pt.clientY - startY) / rect.height) * 100;
+        nextLeft = Math.max(1, Math.min(88, startLeft + dx));
+        nextTop = Math.max(18, Math.min(82, startTop + dy));
+        if (!rafId) rafId = requestAnimationFrame(flushMove);
+      }
+
+      function onUp() {
+        if (!isDragging) return;
+        isDragging = false;
+        el.classList.remove("dragging");
+        el.style.left = nextLeft + "%";
+        el.style.top = nextTop + "%";
+        el.style.transform = "";
+        document.removeEventListener("mousemove", onMove);
+        document.removeEventListener("touchmove", onMove);
+        document.removeEventListener("mouseup", onUp);
+        document.removeEventListener("touchend", onUp);
+        if (rafId) {
+          cancelAnimationFrame(rafId);
+          rafId = 0;
+        }
+      }
 
       const onDown = function (e) {
         isDragging = true;
@@ -58,30 +95,19 @@
         const pt = e.touches ? e.touches[0] : e;
         startX = pt.clientX;
         startY = pt.clientY;
-        startLeft = parseFloat(el.style.left);
-        startTop = parseFloat(el.style.top);
+        startLeft = parseFloat(el.style.left) || 0;
+        startTop = parseFloat(el.style.top) || 0;
+        nextLeft = startLeft;
+        nextTop = startTop;
+        document.addEventListener("mousemove", onMove, { passive: true });
+        document.addEventListener("touchmove", onMove, { passive: false });
+        document.addEventListener("mouseup", onUp);
+        document.addEventListener("touchend", onUp);
         e.preventDefault();
-      };
-      const onMove = function (e) {
-        if (!isDragging) return;
-        const rect = canvas.getBoundingClientRect();
-        const pt = e.touches ? e.touches[0] : e;
-        const dx = ((pt.clientX - startX) / rect.width) * 100;
-        const dy = ((pt.clientY - startY) / rect.height) * 100;
-        el.style.left = Math.max(1, Math.min(88, startLeft + dx)) + "%";
-        el.style.top = Math.max(18, Math.min(82, startTop + dy)) + "%";
-      };
-      const onUp = function () {
-        isDragging = false;
-        el.classList.remove("dragging");
       };
 
       el.addEventListener("mousedown", onDown);
       el.addEventListener("touchstart", onDown, { passive: false });
-      document.addEventListener("mousemove", onMove);
-      document.addEventListener("touchmove", onMove, { passive: false });
-      document.addEventListener("mouseup", onUp);
-      document.addEventListener("touchend", onUp);
     }
 
     function renderLayout(layoutName) {
@@ -299,9 +325,133 @@
     });
   }
 
-  init();
+  function initMobileNav() {
+    var toggle = document.querySelector(".nav-toggle");
+    var menu = document.getElementById("nav-menu");
+    if (!toggle || !menu) return;
+
+    function closeMenu() {
+      toggle.setAttribute("aria-expanded", "false");
+      menu.classList.remove("is-open");
+    }
+
+    toggle.addEventListener("click", function () {
+      var open = toggle.getAttribute("aria-expanded") === "true";
+      toggle.setAttribute("aria-expanded", open ? "false" : "true");
+      menu.classList.toggle("is-open", !open);
+    });
+
+    menu.querySelectorAll("a").forEach(function (link) {
+      link.addEventListener("click", closeMenu);
+    });
+
+    document.addEventListener("click", function (e) {
+      if (!menu.classList.contains("is-open")) return;
+      if (toggle.contains(e.target) || menu.contains(e.target)) return;
+      closeMenu();
+    });
+
+    document.addEventListener("keydown", function (e) {
+      if (e.key === "Escape") closeMenu();
+    });
+
+    window.addEventListener(
+      "scroll",
+      function () {
+        if (menu.classList.contains("is-open")) closeMenu();
+      },
+      { passive: true },
+    );
+  }
+
+  function syncLandingBottomStack() {
+    var root = document.documentElement;
+    var cookie = document.getElementById("baner-ciasteczek");
+    var pwa = document.querySelector('[aria-label="Instalacja aplikacji"]');
+    var sticky = document.getElementById("landing-sticky-cta");
+    var cookieH = cookie ? cookie.offsetHeight : 0;
+    var pwaH = pwa ? pwa.offsetHeight : 0;
+    var stack = cookieH + pwaH;
+    root.style.setProperty("--landing-bottom-stack", stack ? stack + "px" : "0px");
+    if (sticky && !sticky.hasAttribute("hidden")) {
+      root.style.setProperty("--landing-sticky-cta-height", sticky.offsetHeight + "px");
+    } else {
+      root.style.setProperty("--landing-sticky-cta-height", "0px");
+    }
+  }
+
+  function initStickyCta() {
+    var bar = document.getElementById("landing-sticky-cta");
+    if (!bar || !window.matchMedia("(max-width: 1180px)").matches) return;
+
+    var hero = document.querySelector(".hero");
+    if (!hero) return;
+
+    function update() {
+      var pastHero = window.scrollY > hero.offsetHeight * 0.45;
+      if (pastHero) bar.removeAttribute("hidden");
+      else bar.setAttribute("hidden", "");
+      syncLandingBottomStack();
+    }
+
+    update();
+    window.addEventListener("scroll", update, { passive: true });
+    window.addEventListener("resize", syncLandingBottomStack);
+    if (typeof ResizeObserver !== "undefined") {
+      var ro = new ResizeObserver(syncLandingBottomStack);
+      ["baner-ciasteczek"].forEach(function (id) {
+        var el = document.getElementById(id);
+        if (el) ro.observe(el);
+      });
+    }
+    syncLandingBottomStack();
+  }
+
+  function initBackToTop() {
+    var btn = document.getElementById("landing-back-top");
+    if (!btn) return;
+
+    function update() {
+      if (window.scrollY > 600) btn.removeAttribute("hidden");
+      else btn.setAttribute("hidden", "");
+      syncLandingBottomStack();
+    }
+
+    btn.addEventListener("click", function () {
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    });
+
+    update();
+    window.addEventListener("scroll", update, { passive: true });
+  }
+
+  function initPlannerLazy() {
+    var sekcja = document.getElementById("swietlica");
+    if (!sekcja || !("IntersectionObserver" in window)) {
+      init();
+      return;
+    }
+    var started = false;
+    var obs = new IntersectionObserver(
+      function (entries) {
+        if (started) return;
+        if (entries.some(function (e) { return e.isIntersecting; })) {
+          started = true;
+          obs.disconnect();
+          init();
+        }
+      },
+      { rootMargin: "240px" },
+    );
+    obs.observe(sekcja);
+  }
+
+  initPlannerLazy();
   initFaq();
   initTabs();
   initWaitlist();
   initWaitlistTurnstile();
+  initMobileNav();
+  initStickyCta();
+  initBackToTop();
 })();

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState, useTransition } from "react";
+import { useEffect, useRef, useState, useTransition } from "react";
 import Link from "next/link";
 import { LazyWidoczny } from "@/components/ui/lazy-widoczny";
 import { OslonaSekcjiWies, KARTA_LISTY_WIES } from "@/components/wies/oslona-sekcji-wies";
@@ -31,8 +31,24 @@ type CenaLokalna = {
 };
 
 type DaneRolnictwa = {
-  wies: { name: string; county: string; voivodeship: string; regionGus?: string };
+  wies: {
+    name: string;
+    commune?: string;
+    county: string;
+    voivodeship: string;
+    regionGus?: string;
+    gmina_population?: number | null;
+    gmina_population_rok?: number | null;
+  };
+  psrGminy: {
+    liczba_gospodarstw: number | null;
+    powierzchnia_ha: number | null;
+    rok: number;
+  } | null;
   cenyGusAktualne: CenaGusAktualna[];
+  cenyTargAktualne?: CenaGusAktualna[];
+  historiaGusSkup: PunktHistoriiGus[];
+  historiaGusTarg: PunktHistoriiGus[];
   historiaGus: PunktHistoriiGus[];
   produktWykres: string;
   poisRolne: PoiRolny[];
@@ -47,34 +63,66 @@ const MIESIACE = [
   "lipiec", "sierpień", "wrzesień", "październik", "listopad", "grudzień",
 ];
 
-function WykresCenGus({ punkty, jednostka }: { punkty: PunktHistoriiGus[]; jednostka: string }) {
-  if (punkty.length < 2) return null;
-  const wartosci = punkty.map((p) => p.value);
+function WykresSkupVsTarg({
+  skup,
+  targ,
+  jednostka,
+}: {
+  skup: PunktHistoriiGus[];
+  targ: PunktHistoriiGus[];
+  jednostka: string;
+}) {
+  if (skup.length < 2 && targ.length < 2) return null;
+
+  const etykiety = skup.length >= targ.length ? skup : targ;
+  const mapaSkup = new Map(skup.map((p) => [`${p.year}-${p.month}`, p.value]));
+  const mapaTarg = new Map(targ.map((p) => [`${p.year}-${p.month}`, p.value]));
+  const wartosci = [
+    ...skup.map((p) => p.value),
+    ...targ.map((p) => p.value),
+  ];
   const max = Math.max(...wartosci);
   const min = Math.min(...wartosci);
   const zakres = max - min || 1;
 
   return (
-    <div className="mt-4" role="img" aria-label={`Wykres cen GUS w ${jednostka}`}>
-      <div className="flex h-28 items-end gap-0.5 sm:gap-1">
-        {punkty.map((p) => {
-          const wysokosc = ((p.value - min) / zakres) * 72 + 16;
+    <div className="mt-4" role="img" aria-label={`Wykres skup vs targ w ${jednostka}`}>
+      <div className="mb-2 flex flex-wrap gap-3 text-xs text-stone-600">
+        <span className="inline-flex items-center gap-1.5">
+          <span className="h-2.5 w-2.5 rounded-sm bg-emerald-600" aria-hidden /> Skup (P2967)
+        </span>
+        <span className="inline-flex items-center gap-1.5">
+          <span className="h-2.5 w-2.5 rounded-sm bg-amber-500" aria-hidden /> Targowisko (P2968)
+        </span>
+      </div>
+      <div className="flex h-32 items-end gap-1 overflow-x-auto pb-1">
+        {etykiety.map((p) => {
+          const klucz = `${p.year}-${p.month}`;
+          const vSkup = mapaSkup.get(klucz);
+          const vTarg = mapaTarg.get(klucz);
           return (
-            <div
-              key={`${p.year}-${p.month}`}
-              className="group flex min-w-0 flex-1 flex-col items-center gap-1"
-            >
-              <span className="hidden text-[10px] font-medium text-emerald-800 group-hover:block sm:block">
-                {p.value}
-              </span>
-              <div
-                className="w-full rounded-t bg-emerald-600 transition-colors group-hover:bg-emerald-700"
-                style={{ height: `${wysokosc}px` }}
-                title={`${p.label}: ${p.value} ${jednostka}`}
-              />
-              <span className="max-w-full truncate text-[8px] text-stone-500 sm:text-[9px]">
-                {p.label}
-              </span>
+            <div key={klucz} className="flex min-w-[2.25rem] flex-1 flex-col items-center gap-1">
+              <div className="flex h-24 w-full items-end justify-center gap-0.5">
+                {vSkup != null ? (
+                  <div
+                    className="w-[42%] rounded-t bg-emerald-600"
+                    style={{ height: `${((vSkup - min) / zakres) * 72 + 12}px` }}
+                    title={`Skup ${p.label}: ${vSkup} ${jednostka}`}
+                  />
+                ) : (
+                  <div className="w-[42%]" />
+                )}
+                {vTarg != null ? (
+                  <div
+                    className="w-[42%] rounded-t bg-amber-500"
+                    style={{ height: `${((vTarg - min) / zakres) * 72 + 12}px` }}
+                    title={`Targ ${p.label}: ${vTarg} ${jednostka}`}
+                  />
+                ) : (
+                  <div className="w-[42%]" />
+                )}
+              </div>
+              <span className="max-w-full truncate text-[8px] text-stone-500 sm:text-[9px]">{p.label}</span>
             </div>
           );
         })}
@@ -93,10 +141,17 @@ function TrescRolnictwa({
   const [stan, setStan] = useState<"laduje" | "ok" | "blad">("laduje");
   const [dane, setDane] = useState<DaneRolnictwa | null>(null);
   const [produktWykres, setProduktWykres] = useState("pszenica");
+  const [ladujeWykres, setLadujeWykres] = useState(false);
   const [, startTransition] = useTransition();
+  const pierwszeLadowanie = useRef(true);
 
   useEffect(() => {
     let anuluj = false;
+    if (pierwszeLadowanie.current) {
+      setStan("laduje");
+    } else {
+      setLadujeWykres(true);
+    }
     async function pobierz() {
       try {
         const res = await fetch(`/api/wies/${villageId}/rolnictwo?produkt=${produktWykres}`);
@@ -107,8 +162,11 @@ function TrescRolnictwa({
         }
         setDane((await res.json()) as DaneRolnictwa);
         setStan("ok");
+        pierwszeLadowanie.current = false;
       } catch {
         if (!anuluj) setStan("blad");
+      } finally {
+        if (!anuluj) setLadujeWykres(false);
       }
     }
     void pobierz();
@@ -142,6 +200,37 @@ function TrescRolnictwa({
         {dane.disclaimer}
       </p>
 
+      {dane.psrGminy &&
+      (dane.psrGminy.liczba_gospodarstw != null || dane.psrGminy.powierzchnia_ha != null) ? (
+        <div className={`${KARTA_LISTY_WIES} mb-6 p-4`}>
+          <h3 className="mb-2 font-semibold text-stone-900">
+            Rolnictwo w gminie {dane.wies.commune ?? dane.wies.county}
+          </h3>
+          <p className="mb-3 text-xs text-stone-500">
+            PSR {dane.psrGminy.rok} (GUS BDL) — dane dla całej gminy, spis rolny.
+          </p>
+          <dl className="grid gap-3 sm:grid-cols-2">
+            {dane.psrGminy.liczba_gospodarstw != null ? (
+              <div className="rounded-xl bg-stone-50 px-3 py-2.5">
+                <dt className="text-xs text-stone-500">Gospodarstwa rolne</dt>
+                <dd className="font-serif text-2xl text-green-950">
+                  {dane.psrGminy.liczba_gospodarstw.toLocaleString("pl-PL")}
+                </dd>
+              </div>
+            ) : null}
+            {dane.psrGminy.powierzchnia_ha != null ? (
+              <div className="rounded-xl bg-stone-50 px-3 py-2.5">
+                <dt className="text-xs text-stone-500">Powierzchnia użytków rolnych</dt>
+                <dd className="font-serif text-2xl text-green-950">
+                  {dane.psrGminy.powierzchnia_ha.toLocaleString("pl-PL")}{" "}
+                  <span className="text-base font-sans text-stone-600">ha</span>
+                </dd>
+              </div>
+            ) : null}
+          </dl>
+        </div>
+      ) : null}
+
       {dane.cenyGusAktualne.length > 0 ? (
         <div className={`${KARTA_LISTY_WIES} mb-6 p-4`}>
           <h3 className="mb-3 font-semibold text-stone-900">
@@ -163,7 +252,7 @@ function TrescRolnictwa({
 
           <div className="mt-5 border-t border-stone-100 pt-4">
             <p className="mb-2 text-xs font-medium uppercase tracking-wide text-stone-500">
-              Trend 12 miesięcy
+              Trend 12 miesięcy — skup vs targ
             </p>
             <div className="mb-3 flex flex-wrap gap-1.5">
               {PRODUKTY_ROLNE.map((p) => (
@@ -181,7 +270,27 @@ function TrescRolnictwa({
                 </button>
               ))}
             </div>
-            <WykresCenGus punkty={dane.historiaGus} jednostka={jednostkaWykres} />
+            <div className={`relative ${ladujeWykres ? "opacity-40" : ""}`} aria-busy={ladujeWykres}>
+              <WykresSkupVsTarg
+                skup={dane.historiaGusSkup ?? dane.historiaGus}
+                targ={dane.historiaGusTarg ?? []}
+                jednostka={jednostkaWykres}
+              />
+              {ladujeWykres ? (
+                <p className="absolute inset-0 flex items-center justify-center text-xs text-stone-500">
+                  Ładowanie wykresu…
+                </p>
+              ) : null}
+            </div>
+            {(dane.cenyTargAktualne?.length ?? 0) > 0 ? (
+              <p className="mt-3 text-xs text-stone-500">
+                Targ (P2968):{" "}
+                {dane.cenyTargAktualne
+                  ?.filter((c) => c.product_key === produktWykres)
+                  .map((c) => `${c.value} ${c.unit}`)
+                  .join(" · ") || "brak dla wybranego produktu"}
+              </p>
+            ) : null}
           </div>
         </div>
       ) : (

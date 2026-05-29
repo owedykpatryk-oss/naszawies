@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { czyZapytanieCronAutoryzowane } from "@/lib/api/autoryzacja-cron";
 import { pobierzIpIUserAgentZRequestu, zapiszCronRun } from "@/lib/api/zapisz-cron-run";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin-client";
-import { synchronizujCenyGus } from "@/lib/gus/synchronizuj-ceny-gus-automatycznie";
+import { synchronizujGusPelny } from "@/lib/gus/synchronizuj-gus-pelny";
 
 const ENDPOINT = "/api/gus/sync";
 
@@ -20,12 +20,14 @@ async function uruchom(request: Request) {
   }
 
   try {
-    const wynik = await synchronizujCenyGus(admin);
+    const wynik = await synchronizujGusPelny(admin);
+    const zapisano =
+      wynik.ceny.zapisano + wynik.ludnosc.zaktualizowano_wsi + wynik.psr.zapisano + wynik.grunty.zapisano;
     await zapiszCronRun(admin, {
       endpoint: ENDPOINT,
       started_at: startedAt,
-      status: wynik.zapisano > 0 ? "success" : "error",
-      affected_rows: wynik.zapisano,
+      status: zapisano > 0 ? "success" : "error",
+      affected_rows: zapisano,
       error_message: wynik.bledy.length ? wynik.bledy.join("; ") : null,
       source_ip,
       user_agent,

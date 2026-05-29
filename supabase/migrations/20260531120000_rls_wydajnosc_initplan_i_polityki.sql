@@ -216,6 +216,7 @@ END $$;
 -- ---------------------------------------------------------------------------
 DROP POLICY IF EXISTS "Dolaczenie do konwersacji" ON public.chat_members;
 DROP POLICY IF EXISTS "Tworca dodaje czlonka do grupy" ON public.chat_members;
+DROP POLICY IF EXISTS "Czlonkowie dolaczaja lub admin dodaje" ON public.chat_members;
 
 CREATE POLICY "Czlonkowie dolaczaja lub admin dodaje"
 ON public.chat_members

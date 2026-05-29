@@ -3,6 +3,7 @@ import dynamic from "next/dynamic";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { pobierzStanPrzewodnikaStartu } from "@/lib/panel/stan-przewodnika-startu";
+import { pobierzUzytkownikaSerwer } from "@/lib/auth/pobierz-uzytkownika-serwer";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
 
 const PanelPrzewodnikStartu = dynamic(
@@ -32,10 +33,8 @@ export const metadata: Metadata = {
 };
 
 export default async function PanelPage() {
+  const user = await pobierzUzytkownikaSerwer();
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
 
   if (!user) {
     redirect("/logowanie?next=/panel");

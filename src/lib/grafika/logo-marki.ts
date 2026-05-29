@@ -1,7 +1,7 @@
-import { LOGO_MARKI_SRC } from "@/components/marka/logo-naszawies";
+import { LOGO_APP_SRC } from "@/components/marka/logo-naszawies";
 
 /** Logo platformy na plakatach (kościół, wieś, pszenica). */
-export const LOGO_GRAFIKA_SRC = LOGO_MARKI_SRC;
+export const LOGO_GRAFIKA_SRC = LOGO_APP_SRC;
 
 let cacheDataUrl: string | null = null;
 

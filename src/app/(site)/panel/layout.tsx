@@ -1,5 +1,6 @@
 import { PanelNaglowekZLogo } from "@/components/panel/panel-naglowek-z-logo";
 import { czyAdminPlatformy } from "@/lib/admin/czy-admin-platformy";
+import { pobierzUzytkownikaSerwer } from "@/lib/auth/pobierz-uzytkownika-serwer";
 import { pobierzLiczbeNieprzeczytanychCzatu } from "@/lib/czat/pobierz-nieprzeczytane";
 import { pobierzVillageIdsRoliPaneluSoltysaDlaUzytkownikaCache } from "@/lib/panel/rola-panelu-soltysa";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
@@ -8,10 +9,8 @@ import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
 export const dynamic = "force-dynamic";
 
 export default async function PanelLayout({ children }: { children: React.ReactNode }) {
+  const user = await pobierzUzytkownikaSerwer();
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
   let pokazLinkSoltysa = false;
   let liczbaWiadomosciNieprzeczytanych = 0;
   let pokazAdmin = false;

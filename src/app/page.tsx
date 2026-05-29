@@ -1,9 +1,8 @@
-import fs from "node:fs";
-import path from "node:path";
 import type { Metadata } from "next";
 import Script from "next/script";
 import { StronaGlownaJsonLd } from "@/components/landing/strona-glowna-json-ld";
 import { pobierzStatystykiKataloguWsi } from "@/lib/landing/statystyki-katalogu-wsi";
+import { pobierzSzablonHtmlLandingu } from "@/lib/landing/pobierz-szablon-html-landingu";
 import { wstrzyknijStatystykiWHtmlLandingu } from "@/lib/landing/wstrzyknij-placeholdery-html";
 import "../styles/landing-trasy.css";
 
@@ -16,8 +15,7 @@ export const metadata: Metadata = {
 };
 
 export default async function Home() {
-  const sciezkaHtml = path.join(process.cwd(), "src/content/landing-body.html");
-  const htmlRaw = fs.readFileSync(sciezkaHtml, "utf8");
+  const htmlRaw = pobierzSzablonHtmlLandingu();
   const stats = await pobierzStatystykiKataloguWsi();
   const html = wstrzyknijStatystykiWHtmlLandingu(htmlRaw, stats);
 
@@ -33,7 +31,7 @@ export default async function Home() {
         {/* eslint-disable-next-line react/no-danger */}
         <div dangerouslySetInnerHTML={{ __html: html }} />
       </main>
-      <Script src="/landing-app.js" strategy="afterInteractive" />
+      <Script src="/landing-app.js" strategy="lazyOnload" />
     </>
   );
 }

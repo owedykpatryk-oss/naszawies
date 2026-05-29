@@ -83,6 +83,7 @@ export function RynekOgloszenieSzczegoly({
   ogloszenie,
   sciezkaWsi,
   nazwaWsi,
+  wojewodztwo,
   villageId,
   zalogowany,
   toJa,
@@ -95,6 +96,7 @@ export function RynekOgloszenieSzczegoly({
   ogloszenie: OgloszenieRynekPubliczne;
   sciezkaWsi: string;
   nazwaWsi?: string;
+  wojewodztwo?: string;
   villageId: string;
   zalogowany: boolean;
   toJa: boolean;
@@ -106,6 +108,11 @@ export function RynekOgloszenieSzczegoly({
 }) {
   const [zdjecieAktywne, ustawZdjecieAktywne] = useState(0);
   const [lightbox, ustawLightbox] = useState(false);
+  const [cenaGruntuGus, ustawCeneGruntuGus] = useState<{
+    value: number;
+    rok: number;
+    unit: string;
+  } | null>(null);
   const zdjecia = ogloszenie.image_urls ?? [];
   const kat = ogloszenie.equipment_category ?? ogloszenie.category;
   const bazaUrl = process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") ?? "https://naszawies.pl";
@@ -121,6 +128,26 @@ export function RynekOgloszenieSzczegoly({
     powierzchniaM2: ogloszenie.parcel_area_m2,
     nazwaWsi,
   });
+
+  useEffect(() => {
+    if (!jestNieruchomoscia || !wojewodztwo?.trim()) return;
+    let anuluj = false;
+    void (async () => {
+      try {
+        const res = await fetch(
+          `/api/gus/ceny-gruntow?wojewodztwo=${encodeURIComponent(wojewodztwo.trim())}`,
+        );
+        if (!res.ok || anuluj) return;
+        const json = (await res.json()) as { cena: { value: number; rok: number; unit: string } | null };
+        if (json.cena && !anuluj) ustawCeneGruntuGus(json.cena);
+      } catch {
+        /* opcjonalne */
+      }
+    })();
+    return () => {
+      anuluj = true;
+    };
+  }, [jestNieruchomoscia, wojewodztwo]);
 
   useEffect(() => {
     if (!lightbox) return;
@@ -216,6 +243,16 @@ export function RynekOgloszenieSzczegoly({
 
           {jestNieruchomoscia ? (
             <div className="mt-6">
+              {cenaGruntuGus ? (
+                <p className="mb-3 rounded-xl border border-emerald-200/80 bg-emerald-50/60 px-3 py-2.5 text-sm text-stone-700">
+                  <strong className="text-green-950">Kontekst GUS (P3415):</strong> średnia cena użytków rolnych
+                  w województwie to ok.{" "}
+                  <span className="font-semibold tabular-nums text-green-900">
+                    {cenaGruntuGus.value.toLocaleString("pl-PL")} {cenaGruntuGus.unit}
+                  </span>{" "}
+                  ({cenaGruntuGus.rok}, obroty prywatne). To orientacja statystyczna — nie wycena tej działki.
+                </p>
+              ) : null}
               {maMapeDzialki ? (
                 <MapaDzialkiOgledzin
                   geometria={ogloszenie.parcel_geojson ?? null}

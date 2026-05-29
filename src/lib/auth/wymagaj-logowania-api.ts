@@ -1,18 +1,11 @@
 import { NextResponse } from "next/server";
-import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
+import { pobierzUzytkownikaSerwer } from "@/lib/auth/pobierz-uzytkownika-serwer";
 
 export type WynikAuthApi = { ok: true } | { ok: false; response: NextResponse };
 
 export async function wymagajLogowaniaApi(): Promise<WynikAuthApi> {
-  try {
-    const supabase = utworzKlientaSupabaseSerwer();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    if (user) return { ok: true };
-  } catch {
-    /* brak env */
-  }
+  const user = await pobierzUzytkownikaSerwer();
+  if (user) return { ok: true };
   return {
     ok: false,
     response: NextResponse.json(
