@@ -15,6 +15,8 @@ const GRUPY: GrupaNawigacjiPanelu[] = [
     tytul: "Na co dzień",
     linki: [
       { href: "/panel/mieszkaniec/ogloszenia", label: "Ogłoszenia" },
+      { href: "/panel/mieszkaniec/marketplace", label: "Rynek lokalny", highlight: true },
+      { href: "/panel/mieszkaniec/profil-rynek", label: "Profil sprzedawcy" },
       { href: "/panel/mieszkaniec/lista-zakupow", label: "Lista zakupów" },
       { href: "/panel/mieszkaniec/swietlica", label: "Świetlica" },
       { href: "/panel/mieszkaniec/grafika", label: "Kreator grafiki", highlight: true },
@@ -37,6 +39,10 @@ export default function MieszkaniecLayout({ children }: { children: React.ReactN
     <div className="min-w-0">
       <div className="no-print mb-4 rounded-xl border border-sky-200/80 bg-sky-50/40 px-3 py-2 text-xs text-stone-700">
         <span className="font-semibold text-sky-900">Podpowiedź:</span>{" "}
+        <Link href="/panel/mieszkaniec/marketplace" className="font-medium text-green-800 underline">
+          rynek lokalny
+        </Link>
+        ,{" "}
         <Link href="/panel/mieszkaniec/grafika" className="font-medium text-green-800 underline">
           zaproszenie na imprezę
         </Link>

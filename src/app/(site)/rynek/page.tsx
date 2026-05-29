@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { RynekHubJsonLd } from "@/components/wies/rynek-hub-json-ld";
+import { RynekHubOstatnieSiatka } from "@/components/wies/rynek-hub-ostatnie-siatka";
 import { RynekHubWyszukiwarka } from "@/components/wies/rynek-hub-wyszukiwarka";
-import { RynekPrzewagiPasek } from "@/components/wies/rynek-przewagi-pasek";
 import { NaglowekStronyRynku } from "@/components/wies/rynek-ui";
 import { createPublicSupabaseClient } from "@/lib/supabase/public-client";
 import { pobierzHubRynku } from "@/lib/marketplace/pobierz-hub-rynku";
@@ -53,8 +53,6 @@ export default async function RynekHubPage() {
           liczbaOgloszen={hub.lacznieOgloszen}
           liczbaProfili={hub.lacznieWsi}
         />
-        <RynekPrzewagiPasek />
-
         <section className="mt-10">
           <h2 className="font-serif text-xl text-green-950">Wybierz wieś</h2>
           <p className="mt-1 text-sm text-stone-600">
@@ -69,21 +67,8 @@ export default async function RynekHubPage() {
         {hub.ostatnie.length > 0 ? (
           <section className="mt-10 rounded-2xl border border-orange-200/70 bg-orange-50/30 p-5 sm:p-6">
             <h2 className="font-serif text-xl text-green-950">Ostatnio na rynkach</h2>
-            <ul className="mt-3 divide-y divide-orange-200/50">
-              {hub.ostatnie.map((o) => (
-                <li key={o.id} className="flex flex-wrap items-baseline justify-between gap-2 py-2.5">
-                  <Link href={o.sciezka} className="font-medium text-green-900 hover:underline">
-                    {o.title}
-                  </Link>
-                  <span className="text-xs text-stone-600">
-                    {o.nazwaWsi} · {o.gmina}
-                    {o.published_at
-                      ? ` · ${new Date(o.published_at).toLocaleDateString("pl-PL")}`
-                      : null}
-                  </span>
-                </li>
-              ))}
-            </ul>
+            <p className="mt-1 text-sm text-stone-600">Świeże ogłoszenia z całej Polski — każde we własnej wsi.</p>
+            <RynekHubOstatnieSiatka ostatnie={hub.ostatnie} />
           </section>
         ) : null}
 

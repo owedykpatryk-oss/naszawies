@@ -85,7 +85,7 @@
 
 .hero-dwie-sciezki {
   margin-bottom: 1.75rem;
-  max-width: 560px;
+  max-width: 720px;
 }
 
 .hero-dwie-sciezki__intro {
@@ -98,8 +98,14 @@
 
 .hero-dwie-sciezki__grid {
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(3, 1fr);
   gap: 1rem;
+}
+
+@media (max-width: 900px) {
+  .hero-dwie-sciezki__grid {
+    grid-template-columns: 1fr 1fr;
+  }
 }
 
 @media (max-width: 640px) {

@@ -41,6 +41,11 @@ function grupyZLiczbami(
           badge: moderacjaSpolecznosci || undefined,
         },
         {
+          href: "/panel/soltys",
+          label: "Moderacja rynku",
+          badge: l.rynek || undefined,
+        },
+        {
           href: "/panel/soltys/spolecznosc/moderacja",
           label: "Raporty treści",
           badge: moderacjaSpolecznosci || undefined,

@@ -97,6 +97,8 @@ export function MarketplaceListaKlient({
   zalogowany = false,
   nazwaWsi,
   subskrybowaneKategorie = [],
+  ukryjPasekAkcji = false,
+  kotwicaMapyRynek,
 }: {
   oferty: RynekOfertaPubliczna[];
   sciezkaWsi: string;
@@ -111,6 +113,10 @@ export function MarketplaceListaKlient({
   nazwaWsi?: string;
   /** equipment_category z subskrypcji użytkownika (null = wszystkie) */
   subskrybowaneKategorie?: (string | null)[];
+  /** Na profilu wsi — hero ma już CTA, nie duplikuj paska akcji. */
+  ukryjPasekAkcji?: boolean;
+  /** Link do mapy inline na stronie /rynek (np. #rynek-mapa). */
+  kotwicaMapyRynek?: string;
 }) {
   const uklad = tryb ?? (pokazLinkWszystkie ? "skrot" : "pelny");
   const pathname = usePathname();
@@ -132,7 +138,7 @@ export function MarketplaceListaKlient({
   const [minCena, setMinCena] = useState("");
   const [maxCena, setMaxCena] = useState("");
   const [widok, setWidok] = useState<"siatka" | "lista">("siatka");
-  const [filtryOtwarte, setFiltryOtwarte] = useState(uklad === "pelny");
+  const [filtryOtwarte, setFiltryOtwarte] = useState(false);
   const [kopiujFiltr, ustawKopiujFiltr] = useState<"idle" | "ok">("idle");
 
   useEffect(() => {
@@ -324,140 +330,185 @@ export function MarketplaceListaKlient({
         kategoria
       : null;
 
+  const chipyKategorii = (
+    <div className="flex flex-wrap gap-2">
+      {SZYBKIE_KATEGORIE.map((s) => {
+        const aktywna = s.value === "dzialka_budowlana" ? tylkoNieruchomosci : kategoria === s.value;
+        return (
+          <button
+            key={s.value}
+            type="button"
+            onClick={() => {
+              if (s.value === "dzialka_budowlana") {
+                setTylkoNieruchomosci((v) => !v);
+                return;
+              }
+              setKategoria(kategoria === s.value ? "wszystkie" : s.value);
+            }}
+            className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold transition-all duration-200 ${
+              aktywna
+                ? "border-orange-400 bg-gradient-to-br from-orange-100 to-amber-50 text-orange-950 shadow-sm"
+                : "border-stone-200/90 bg-white text-stone-700 hover:border-orange-200 hover:bg-orange-50/50"
+            }`}
+          >
+            <span aria-hidden>{s.emoji}</span>
+            {s.label}
+          </button>
+        );
+      })}
+      {liczbaZMapaGeoportal > 0 ? (
+        <button
+          type="button"
+          onClick={() => setTylkoZMapaGeoportal((v) => !v)}
+          className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold transition-all duration-200 ${
+            tylkoZMapaGeoportal
+              ? "border-amber-500 bg-gradient-to-br from-amber-100 to-yellow-50 text-amber-950 shadow-sm"
+              : "border-stone-200/90 bg-white text-stone-700 hover:border-amber-300 hover:bg-amber-50/50"
+          }`}
+        >
+          <span aria-hidden>📐</span>
+          Geoportal
+          <span className="rounded-full bg-amber-200/80 px-1.5 py-0.5 text-[10px] font-bold text-amber-950">
+            {liczbaZMapaGeoportal}
+          </span>
+        </button>
+      ) : null}
+    </div>
+  );
+
+  if (uklad === "skrot") {
+    return (
+      <div className="mt-4 space-y-4">
+        <div className="flex flex-wrap gap-2">
+          {SZYBKIE_KATEGORIE.slice(0, 4).map((s) => (
+            <Link
+              key={s.value}
+              href={`${sciezkaWsi}/rynek${
+                s.value === "dzialka_budowlana" ? "?nieruch=1" : `?kat=${encodeURIComponent(s.value)}`
+              }`}
+              className="inline-flex items-center gap-1.5 rounded-full border border-stone-200/90 bg-white px-3 py-1.5 text-xs font-semibold text-stone-700 shadow-sm transition hover:border-orange-200 hover:bg-orange-50/50"
+            >
+              <span aria-hidden>{s.emoji}</span>
+              {s.label}
+            </Link>
+          ))}
+        </div>
+        {przefiltrowane.length === 0 ? (
+          <p className="text-sm text-stone-500">Brak aktywnych ogłoszeń w podglądzie.</p>
+        ) : (
+          <ul className="grid gap-4 sm:grid-cols-2">
+            {przefiltrowane.map((o) => (
+              <li key={o.id}>
+                <KartaOgloszeniaRynek oferta={o} href={`${sciezkaWsi}/rynek/${o.id}`} uklad="siatka" />
+              </li>
+            ))}
+          </ul>
+        )}
+        {pokazLinkWszystkie && oferty.length > (limitWyswietlania ?? 8) ? (
+          <p className="text-center">
+            <Link href={`${sciezkaWsi}/rynek`} className="text-sm font-medium text-green-800 underline">
+              Zobacz pełną listę ogłoszeń →
+            </Link>
+          </p>
+        ) : null}
+      </div>
+    );
+  }
+
   return (
-    <div className={uklad === "skrot" ? "mt-4" : "mt-6 space-y-4"}>
-      {uklad === "skrot" ? (
-        <p className="rounded-xl border border-orange-200/60 bg-gradient-to-r from-orange-50/80 to-amber-50/40 px-3 py-2.5 text-xs leading-relaxed text-stone-700">
-          Zalogowani mieszkańcy: czat w serwisie, telefon i WhatsApp przy ogłoszeniu. Ogłoszenia wygasają automatycznie —
-          przedłuż je w panelu.
-        </p>
-      ) : (
-        <div className="animate-rynek-fade-up space-y-3">
-          <div className="flex flex-wrap gap-2">
-          {SZYBKIE_KATEGORIE.map((s) => {
-            const aktywna =
-              s.value === "dzialka_budowlana" ? tylkoNieruchomosci : kategoria === s.value;
-            return (
-              <button
-                key={s.value}
-                type="button"
-                onClick={() => {
-                  if (s.value === "dzialka_budowlana") {
-                    setTylkoNieruchomosci((v) => !v);
-                    return;
-                  }
-                  setKategoria(kategoria === s.value ? "wszystkie" : s.value);
-                }}
-                className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold transition-all duration-200 ${
-                  aktywna
-                    ? "border-orange-400 bg-gradient-to-br from-orange-100 to-amber-50 text-orange-950 shadow-sm"
-                    : "border-stone-200/90 bg-white text-stone-700 hover:border-orange-200 hover:bg-orange-50/50"
-                }`}
-              >
-                <span aria-hidden>{s.emoji}</span>
-                {s.label}
-              </button>
-            );
-          })}
-          {uklad === "pelny" && liczbaZMapaGeoportal > 0 ? (
+    <div className="mt-4 space-y-4">
+      {!ukryjPasekAkcji ? (
+        <PasekAkcjiRynku
+          sciezkaWsi={sciezkaWsi}
+          villageId={villageId}
+          kotwicaZasadSwietlicy={kotwicaZasadSwietlicy}
+          pokazLinkWszystkie={pokazLinkWszystkie}
+          liczbaOgloszen={oferty.length}
+          kotwicaMapyRynek={kotwicaMapyRynek ?? (liczbaZMapaGeoportal > 0 ? "#rynek-mapa" : undefined)}
+        />
+      ) : null}
+
+      <div className="sticky top-[4.25rem] z-30 space-y-2 rounded-2xl border border-stone-200/90 bg-[#f5f1e8]/95 p-2.5 shadow-sm backdrop-blur-md sm:top-[5rem] sm:p-3">
+        {chipyKategorii}
+        <div className="flex flex-wrap items-center gap-2">
+          <input
+            value={fraza}
+            onChange={(e) => setFraza(e.target.value)}
+            placeholder="Szukaj na liście…"
+            className="min-w-[8rem] flex-1 rounded-xl border border-stone-300 bg-white px-3 py-1.5 text-sm focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200"
+          />
+          <button
+            type="button"
+            onClick={() => setFiltryOtwarte((v) => !v)}
+            className="rounded-xl border border-stone-200 bg-white px-3 py-1.5 text-xs font-semibold text-stone-800 shadow-sm hover:border-orange-300"
+            aria-expanded={filtryOtwarte}
+          >
+            Filtry{aktywneFiltry > 0 ? ` (${aktywneFiltry})` : ""}
+          </button>
+          <div className="flex rounded-lg border border-stone-200 bg-white p-0.5">
             <button
               type="button"
-              onClick={() => setTylkoZMapaGeoportal((v) => !v)}
-              className={`inline-flex items-center gap-1.5 rounded-full border px-3 py-1.5 text-xs font-semibold transition-all duration-200 ${
-                tylkoZMapaGeoportal
-                  ? "border-amber-500 bg-gradient-to-br from-amber-100 to-yellow-50 text-amber-950 shadow-sm"
-                  : "border-stone-200/90 bg-white text-stone-700 hover:border-amber-300 hover:bg-amber-50/50"
-              }`}
+              aria-pressed={widok === "siatka"}
+              onClick={() => setWidok("siatka")}
+              className={`rounded-md px-2 py-1 text-xs font-semibold ${widok === "siatka" ? "bg-orange-100 text-orange-950" : "text-stone-600"}`}
             >
-              <span aria-hidden>📐</span>
-              Geoportal
-              <span className="rounded-full bg-amber-200/80 px-1.5 py-0.5 text-[10px] font-bold text-amber-950">
-                {liczbaZMapaGeoportal}
-              </span>
+              ⊞
             </button>
-          ) : null}
+            <button
+              type="button"
+              aria-pressed={widok === "lista"}
+              onClick={() => setWidok("lista")}
+              className={`rounded-md px-2 py-1 text-xs font-semibold ${widok === "lista" ? "bg-orange-100 text-orange-950" : "text-stone-600"}`}
+            >
+              ☰
+            </button>
           </div>
-          {uklad === "pelny" && villageId && kategoria !== "wszystkie" && nazwaWsi ? (
-            <RynekSubskrypcjaKategorii
-              villageId={villageId}
-              nazwaWsi={nazwaWsi}
-              kategoria={kategoria}
-              zalogowany={zalogowany}
-              juzSubskrybuje={
-                subskrybowaneKategorie.includes(kategoria) || subskrybowaneKategorie.includes(null)
-              }
-            />
-          ) : null}
+          <p className="text-xs text-stone-500">
+            <span className="font-semibold text-stone-800">{przefiltrowane.length}</span> wyników
+          </p>
         </div>
-      )}
+        {villageId && kategoria !== "wszystkie" && nazwaWsi ? (
+          <RynekSubskrypcjaKategorii
+            villageId={villageId}
+            nazwaWsi={nazwaWsi}
+            kategoria={kategoria}
+            zalogowany={zalogowany}
+            juzSubskrybuje={
+              subskrybowaneKategorie.includes(kategoria) || subskrybowaneKategorie.includes(null)
+            }
+          />
+        ) : null}
+      </div>
 
       <div className="overflow-hidden rounded-2xl border border-stone-200/90 bg-white shadow-sm ring-1 ring-stone-950/[0.03]">
-        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-stone-100 bg-gradient-to-r from-stone-50/80 to-white px-3 py-2.5 sm:px-4">
+        <div className="flex flex-wrap items-center justify-between gap-2 border-b border-stone-100 bg-gradient-to-r from-stone-50/80 to-white px-3 py-2 sm:px-4">
           <div className="flex flex-wrap items-center gap-2">
-            <button
-              type="button"
-              onClick={() => setFiltryOtwarte((v) => !v)}
-              className="rounded-xl border border-stone-200 bg-white px-3 py-1.5 text-sm font-semibold text-stone-800 shadow-sm transition hover:border-orange-300 hover:bg-orange-50/40"
-              aria-expanded={filtryOtwarte}
-            >
-              {filtryOtwarte ? "Ukryj filtry" : "Filtry i sortowanie"}
-              {aktywneFiltry > 0 ? (
-                <span className="ml-1.5 rounded-full bg-orange-200 px-1.5 py-0.5 text-xs font-semibold text-orange-950">
-                  {aktywneFiltry}
-                </span>
-              ) : null}
-            </button>
             {aktywneFiltry > 0 ? (
               <button type="button" onClick={wyczyscFiltry} className="text-xs text-stone-600 underline hover:text-stone-900">
                 Wyczyść filtry
               </button>
             ) : null}
-            {uklad === "pelny" ? (
-              <>
-                <button
-                  type="button"
-                  onClick={kopiujLinkFiltrów}
-                  className="text-xs font-medium text-green-800 underline hover:text-green-950"
-                >
-                  {kopiujFiltr === "ok" ? "Skopiowano link!" : "Kopiuj link z filtrami"}
-                </button>
-                <div className="flex rounded-lg border border-stone-200 bg-white p-0.5">
-                  <button
-                    type="button"
-                    aria-pressed={widok === "siatka"}
-                    onClick={() => setWidok("siatka")}
-                    className={`rounded-md px-2 py-1 text-xs font-semibold ${widok === "siatka" ? "bg-orange-100 text-orange-950" : "text-stone-600"}`}
-                  >
-                    ⊞ Siatka
-                  </button>
-                  <button
-                    type="button"
-                    aria-pressed={widok === "lista"}
-                    onClick={() => setWidok("lista")}
-                    className={`rounded-md px-2 py-1 text-xs font-semibold ${widok === "lista" ? "bg-orange-100 text-orange-950" : "text-stone-600"}`}
-                  >
-                    ☰ Lista
-                  </button>
-                </div>
-              </>
-            ) : null}
+            <button
+              type="button"
+              onClick={kopiujLinkFiltrów}
+              className="text-xs font-medium text-green-800 underline hover:text-green-950"
+            >
+              {kopiujFiltr === "ok" ? "Skopiowano!" : "Kopiuj link z filtrami"}
+            </button>
           </div>
-          <p className="text-xs text-stone-500">
-            <span className="font-medium text-stone-800">{przefiltrowane.length}</span>{" "}
-            {przefiltrowane.length === 1 ? "ogłoszenie" : "ogłoszeń"}
-            {oferty.length !== przefiltrowane.length ? ` z ${oferty.length}` : ""}
-          </p>
+          {filtryOtwarte ? (
+            <button
+              type="button"
+              onClick={() => setFiltryOtwarte(false)}
+              className="text-xs text-stone-600 underline"
+            >
+              Zwiń filtry
+            </button>
+          ) : null}
         </div>
 
         {filtryOtwarte ? (
           <div className="space-y-3 p-3 sm:p-4">
-            <input
-              value={fraza}
-              onChange={(e) => setFraza(e.target.value)}
-              placeholder="Szukaj: miód, działka, ciągnik, dom…"
-              className="w-full rounded-xl border border-stone-300 bg-stone-50 px-3 py-2.5 text-sm focus:border-orange-400 focus:bg-white focus:outline-none focus:ring-2 focus:ring-orange-200"
-            />
-
             <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
               <select
                 value={typ}
@@ -579,34 +630,6 @@ export function MarketplaceListaKlient({
                 Tylko z mapą działki (Geoportal)
               </label>
             </div>
-
-            <div className="flex flex-wrap gap-1.5">
-              {SZYBKIE_KATEGORIE.map((s) => (
-                <button
-                  key={s.value}
-                  type="button"
-                  onClick={() => {
-                    if (s.value === "dzialka_budowlana") {
-                      setTylkoNieruchomosci((v) => !v);
-                      return;
-                    }
-                    setKategoria(kategoria === s.value ? "wszystkie" : s.value);
-                  }}
-                  className={`inline-flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs font-semibold transition ${
-                    s.value === "dzialka_budowlana"
-                      ? tylkoNieruchomosci
-                        ? "border-orange-400 bg-orange-100 text-orange-950 shadow-sm"
-                        : "border-stone-200 bg-stone-50 text-stone-700 hover:bg-white"
-                      : kategoria === s.value
-                        ? "border-orange-400 bg-orange-100 text-orange-950 shadow-sm"
-                        : "border-stone-200 bg-stone-50 text-stone-700 hover:bg-white"
-                  }`}
-                >
-                  <span aria-hidden>{s.emoji}</span>
-                  {s.label}
-                </button>
-              ))}
-            </div>
           </div>
         ) : null}
 
@@ -637,14 +660,6 @@ export function MarketplaceListaKlient({
           </div>
         ) : null}
       </div>
-
-      <PasekAkcjiRynku
-        sciezkaWsi={sciezkaWsi}
-        villageId={villageId}
-        kotwicaZasadSwietlicy={kotwicaZasadSwietlicy}
-        pokazLinkWszystkie={pokazLinkWszystkie}
-        liczbaOgloszen={oferty.length}
-      />
 
       {przefiltrowane.length === 0 ? (
         oferty.length === 0 ? (
@@ -689,9 +704,8 @@ export function MarketplaceListaKlient({
             ) : null}
           </div>
         )
-      ) : uklad === "pelny" ? (
-        widok === "siatka" ? (
-        <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
+      ) : widok === "siatka" ? (
+        <ul className="grid gap-4 sm:grid-cols-2 lg:grid-cols-2 xl:grid-cols-3">
           {przefiltrowane.map((o, i) => (
             <li
               key={o.id}
@@ -720,29 +734,8 @@ export function MarketplaceListaKlient({
             </li>
           ))}
         </ul>
-        )
-      ) : (
-        <ul className="space-y-3">
-          {przefiltrowane.map((o) => (
-            <li key={o.id}>
-              <KartaOgloszeniaRynek
-                oferta={o}
-                href={`${sciezkaWsi}/rynek/${o.id}`}
-                uklad="lista"
-                hrefMapy={hrefMapyRynek}
-              />
-            </li>
-          ))}
-        </ul>
-      )}
+        )}
 
-      {uklad === "skrot" && pokazLinkWszystkie && oferty.length > (limitWyswietlania ?? 8) ? (
-        <p className="text-center">
-          <Link href={`${sciezkaWsi}/rynek`} className="text-sm font-medium text-green-800 underline">
-            Zobacz pełną listę ogłoszeń →
-          </Link>
-        </p>
-      ) : null}
     </div>
   );
 }

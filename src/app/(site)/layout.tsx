@@ -4,6 +4,8 @@ import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
 
 const LINKI_PUBLICZNE = [
   { href: "/rynek", label: "Rynek lokalny" },
+  { href: "/logowanie?next=/szukaj", label: "Szukaj wsi" },
+  { href: "/logowanie?next=/mapa", label: "Mapa" },
   { href: "/pomoc", label: "Pomoc" },
   { href: "/kontakt", label: "Kontakt" },
 ] as const;

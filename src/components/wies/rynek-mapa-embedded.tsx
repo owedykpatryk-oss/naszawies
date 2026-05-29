@@ -26,6 +26,8 @@ export function RynekMapaEmbedded({
   znacznikWsi,
   punktyRynek,
   punktyRynekDzialki,
+  kompakt = false,
+  className = "",
 }: {
   nazwaWsi: string;
   sciezkaWsi: string;
@@ -33,6 +35,9 @@ export function RynekMapaEmbedded({
   znacznikWsi: ZnacznikWsi | null;
   punktyRynek: ZnacznikRynek[];
   punktyRynekDzialki: ZnacznikRynekDzialka[];
+  /** Mniejszy nagłówek — panel boczny na desktopie. */
+  kompakt?: boolean;
+  className?: string;
 }) {
   const liczbaPinezek = punktyRynek.length;
   const liczbaDzialek = punktyRynekDzialki.length;
@@ -41,11 +46,14 @@ export function RynekMapaEmbedded({
   const znaczniki = znacznikWsi ? [znacznikWsi] : [];
 
   return (
-    <section id="rynek-mapa" className="mt-8 scroll-mt-24 overflow-hidden rounded-2xl border border-orange-200/70 bg-gradient-to-br from-orange-50/40 via-white to-amber-50/30 p-4 shadow-sm ring-1 ring-stone-950/[0.03] sm:p-5">
+    <section
+      id="rynek-mapa"
+      className={`scroll-mt-24 overflow-hidden rounded-2xl border border-orange-200/70 bg-gradient-to-br from-orange-50/40 via-white to-amber-50/30 p-4 shadow-sm ring-1 ring-stone-950/[0.03] sm:p-5 ${kompakt ? "mt-0" : "mt-8"} ${className}`}
+    >
       <div className="flex flex-wrap items-end justify-between gap-2">
         <div>
-          <h2 className="font-serif text-lg text-green-950">Rynek na mapie</h2>
-          <p className="mt-1 text-sm text-stone-600">
+          <h2 className={`font-serif text-green-950 ${kompakt ? "text-base" : "text-lg"}`}>Rynek na mapie</h2>
+          <p className={`mt-1 text-stone-600 ${kompakt ? "text-xs" : "text-sm"}`}>
             {liczbaPinezek > 0 ? `${liczbaPinezek} ogłoszeń z lokalizacją` : null}
             {liczbaPinezek > 0 && liczbaDzialek > 0 ? " · " : null}
             {liczbaDzialek > 0 ? `${liczbaDzialek} działek z Geoportalem` : null}

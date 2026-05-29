@@ -69,23 +69,43 @@ export function PasekOdznakSprzedawcy({
   znanyWWsi,
   aktywnySprzedawca,
   liczbaOgloszen,
+  kompakt = false,
 }: {
   sellerVerified?: boolean;
   znanyWWsi?: boolean;
   aktywnySprzedawca?: boolean;
   liczbaOgloszen?: number;
+  /** Na siatce kart — max 2 odznaki widoczne. */
+  kompakt?: boolean;
 }) {
   if (!sellerVerified && !znanyWWsi && !aktywnySprzedawca && !(liczbaOgloszen && liczbaOgloszen >= 2)) {
     return null;
   }
+
+  const odznaki: ReactNode[] = [];
+  if (sellerVerified) odznaki.push(<OdznakaZweryfikowany key="v" />);
+  if (znanyWWsi) odznaki.push(<OdznakaZnanyWWsi key="z" />);
+  if (aktywnySprzedawca) odznaki.push(<OdznakaAktywnySprzedawca key="a" />);
+  if (liczbaOgloszen != null && liczbaOgloszen >= 2 && !aktywnySprzedawca) {
+    odznaki.push(
+      <span key="n" className="rounded-full bg-stone-100 px-1.5 py-0.5 text-[10px] font-medium text-stone-700">
+        {liczbaOgloszen} ogłoszeń
+      </span>,
+    );
+  }
+
+  const widoczne = kompakt ? odznaki.slice(0, 2) : odznaki;
+  const ukryte = kompakt ? Math.max(0, odznaki.length - 2) : 0;
+
   return (
     <span className="inline-flex flex-wrap items-center gap-1">
-      {sellerVerified ? <OdznakaZweryfikowany /> : null}
-      {znanyWWsi ? <OdznakaZnanyWWsi /> : null}
-      {aktywnySprzedawca ? <OdznakaAktywnySprzedawca /> : null}
-      {liczbaOgloszen != null && liczbaOgloszen >= 2 && !aktywnySprzedawca ? (
-        <span className="rounded-full bg-stone-100 px-1.5 py-0.5 text-[10px] font-medium text-stone-700">
-          {liczbaOgloszen} ogłoszeń
+      {widoczne}
+      {ukryte > 0 ? (
+        <span
+          className="rounded-full bg-stone-100 px-1.5 py-0.5 text-[10px] font-semibold text-stone-600"
+          title="Więcej odznak zaufania sprzedawcy"
+        >
+          +{ukryte}
         </span>
       ) : null}
     </span>
@@ -249,6 +269,7 @@ export function KartaOgloszeniaRynek({
               znanyWWsi={oferta.znanyWWsi}
               aktywnySprzedawca={oferta.aktywnySprzedawca}
               liczbaOgloszen={oferta.liczbaOgloszenSprzedawcy}
+              kompakt
             />
           </p>
           <p className="mt-1.5 flex flex-wrap items-center gap-1.5 text-xs text-stone-600">
@@ -452,18 +473,27 @@ export function PasekAkcjiRynku({
   pokazLinkWszystkie,
   liczbaOgloszen,
   villageId,
+  kotwicaMapyRynek,
 }: {
   sciezkaWsi: string;
   kotwicaZasadSwietlicy?: string;
   pokazLinkWszystkie: boolean;
   liczbaOgloszen: number;
-  /** Gdy podane — link „Pokaż na mapie” do warstwy rynku. */
   villageId?: string;
+  kotwicaMapyRynek?: string;
 }) {
   const linkMapa = villageId ? `/mapa?wies=${encodeURIComponent(villageId)}` : null;
 
   return (
     <div className="flex flex-wrap items-center gap-2 rounded-2xl border border-stone-200/80 bg-gradient-to-r from-white via-orange-50/20 to-white p-2.5 text-sm shadow-sm">
+      {kotwicaMapyRynek ? (
+        <a
+          href={kotwicaMapyRynek}
+          className="rounded-xl border border-amber-300/70 bg-amber-50/90 px-3.5 py-2 font-semibold text-amber-950 shadow-sm transition hover:border-amber-400 hover:bg-amber-100"
+        >
+          📐 Mapa działek
+        </a>
+      ) : null}
       {linkMapa ? (
         <Link
           href={linkMapa}

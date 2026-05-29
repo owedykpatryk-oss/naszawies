@@ -326,27 +326,35 @@ export function WiesProfilPubliczny({
           </p>
         ) : null}
         {wies.latitude != null && wies.longitude != null ? (
+          <details className="mt-2 text-xs text-stone-500">
+            <summary className="cursor-pointer font-medium text-green-800 hover:underline">Szczegóły techniczne</summary>
+            <p className="mt-1">
+              Współrzędne: {Number(wies.latitude).toFixed(5)}, {Number(wies.longitude).toFixed(5)} ·{" "}
+              <a
+                href={`https://www.openstreetmap.org/?mlat=${wies.latitude}&mlon=${wies.longitude}&zoom=14`}
+                className="text-green-800 underline"
+                target="_blank"
+                rel="noopener noreferrer"
+              >
+                Otwórz na mapie
+              </a>
+              {wies.updated_at ? (
+                <>
+                  {" "}
+                  · Katalog: {new Date(wies.updated_at).toLocaleDateString("pl-PL")}
+                </>
+              ) : null}
+            </p>
+          </details>
+        ) : wies.updated_at ? (
           <p className="mt-2 text-xs text-stone-500">
-            Współrzędne: {Number(wies.latitude).toFixed(5)}, {Number(wies.longitude).toFixed(5)} ·{" "}
-            <a
-              href={`https://www.openstreetmap.org/?mlat=${wies.latitude}&mlon=${wies.longitude}&zoom=14`}
-              className="text-green-800 underline"
-              target="_blank"
-              rel="noopener noreferrer"
-            >
-              Otwórz na mapie
-            </a>
+            Katalog wsi: {new Date(wies.updated_at).toLocaleDateString("pl-PL")}
           </p>
         ) : null}
-        <p className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs text-stone-500">
-          <Link href={`${sciezka}/szukaj`} className="text-green-800 underline">
+        <p className="mt-2">
+          <Link href={`${sciezka}/szukaj`} className="text-xs text-green-800 underline">
             Szukaj na stronie wsi
           </Link>
-          {wies.updated_at ? (
-            <span>
-              Katalog wsi zaktualizowany: {new Date(wies.updated_at).toLocaleDateString("pl-PL")}
-            </span>
-          ) : null}
         </p>
         <MojeObserwujWiesPasek
           villageId={wies.id}
@@ -364,6 +372,7 @@ export function WiesProfilPubliczny({
         >
           {[
             { href: "#informacje-mieszkancow", label: "Informacje" },
+            ...(maRynek ? [{ href: "#sekcja-rynek-lokalny", label: "Rynek" }] : []),
             { href: "#sekcja-mapa", label: "Mapa" },
             { href: "#sekcja-aktualnosci-laczone", label: "Aktualności" },
             { href: "#sekcja-transport", label: "Transport" },
@@ -423,6 +432,64 @@ export function WiesProfilPubliczny({
       <SekcjaPrzewodnikSamorzadowy wies={wies} przewodnik={przewodnikSamorzadowy} />
 
       <WiesLaczonyFeedAktualnosci wpisy={laczonyFeed} />
+
+      {maRynek ? (
+        <OslonaSekcjiWies id="sekcja-rynek-lokalny">
+          <div className="rynek-hero-wow mb-6 !p-4 sm:!p-5">
+            <TytulSekcjiWies
+              etykieta="Rynek"
+              tytul="Darmowy rynek lokalny"
+              opis="Produkty z gospodarstw, maszyny i usługi mieszkańców — bezpłatnie, z wiadomościami między zalogowanymi użytkownikami."
+            />
+            <div className="relative z-[1] mt-4 flex flex-wrap gap-2">
+              <Link
+                href={`${sciezka}/rynek`}
+                className="rounded-xl bg-gradient-to-br from-green-800 to-green-900 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:from-green-900 hover:to-green-950"
+              >
+                Przeglądaj wszystkie ogłoszenia
+              </Link>
+              <Link
+                href="/panel/mieszkaniec/marketplace"
+                className="rounded-xl border border-green-800/40 bg-white/90 px-4 py-2 text-sm font-semibold text-green-900 shadow-sm transition hover:bg-green-50"
+              >
+                + Dodaj ogłoszenie
+              </Link>
+            </div>
+          </div>
+
+          {profileUslug.length > 0 ? (
+            <section className="mt-6">
+              <h3 className="text-sm font-semibold text-stone-800">Profile usługodawców</h3>
+              <ul className="mt-3 grid gap-3 sm:grid-cols-2">
+                {profileUslug.map((p) => (
+                  <li key={p.id}>
+                    <KartaProfiluRynku profil={p} sciezkaWsi={sciezka} />
+                  </li>
+                ))}
+              </ul>
+            </section>
+          ) : null}
+
+          {rynek.length > 0 ? (
+            <section className={profileUslug.length > 0 ? "mt-8" : "mt-6"}>
+              <h3 className="text-sm font-semibold text-stone-800">
+                {profileUslug.length > 0 ? "Najnowsze ogłoszenia" : "Ogłoszenia"}
+              </h3>
+              <MarketplaceListaKlient
+                oferty={rynek}
+                sciezkaWsi={sciezka}
+                villageId={wies.id}
+                kotwicaZasadSwietlicy={`${sciezka}#swietlica-regulamin`}
+                limitWyswietlania={6}
+                tryb="skrot"
+                ukryjPasekAkcji
+              />
+            </section>
+          ) : profileUslug.length > 0 ? (
+            <p className="mt-4 text-sm text-stone-500">Brak aktywnych ogłoszeń — zobacz profile usługodawców powyżej.</p>
+          ) : null}
+        </OslonaSekcjiWies>
+      ) : null}
 
       <PomocSasiedzkaSekcja
         oferty={pomocSasiedzka}
@@ -840,63 +907,6 @@ export function WiesProfilPubliczny({
               Wszystkie zapisy o dofinansowaniu
             </Link>
           </p>
-        </OslonaSekcjiWies>
-      ) : null}
-
-      {maRynek ? (
-        <OslonaSekcjiWies id="sekcja-rynek-lokalny">
-          <div className="rynek-hero-wow mb-6 !p-4 sm:!p-5">
-            <TytulSekcjiWies
-              etykieta="Rynek"
-              tytul="Darmowy rynek lokalny"
-              opis="Produkty z gospodarstw, maszyny i usługi mieszkańców — bezpłatnie, z wiadomościami między zalogowanymi użytkownikami."
-            />
-            <div className="relative z-[1] mt-4 flex flex-wrap gap-2">
-              <Link
-                href={`${sciezka}/rynek`}
-                className="rounded-xl bg-gradient-to-br from-green-800 to-green-900 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:from-green-900 hover:to-green-950"
-              >
-                Przeglądaj wszystkie ogłoszenia
-              </Link>
-              <Link
-                href="/panel/mieszkaniec/marketplace"
-                className="rounded-xl border border-green-800/40 bg-white/90 px-4 py-2 text-sm font-semibold text-green-900 shadow-sm transition hover:bg-green-50"
-              >
-                + Dodaj ogłoszenie
-              </Link>
-            </div>
-          </div>
-
-          {profileUslug.length > 0 ? (
-            <section className="mt-6">
-              <h3 className="text-sm font-semibold text-stone-800">Profile usługodawców</h3>
-              <ul className="mt-3 grid gap-3 sm:grid-cols-2">
-                {profileUslug.map((p) => (
-                  <li key={p.id}>
-                    <KartaProfiluRynku profil={p} sciezkaWsi={sciezka} />
-                  </li>
-                ))}
-              </ul>
-            </section>
-          ) : null}
-
-          {rynek.length > 0 ? (
-            <section className={profileUslug.length > 0 ? "mt-8" : "mt-6"}>
-              <h3 className="text-sm font-semibold text-stone-800">
-                {profileUslug.length > 0 ? "Najnowsze ogłoszenia" : "Ogłoszenia"}
-              </h3>
-              <MarketplaceListaKlient
-                oferty={rynek}
-                sciezkaWsi={sciezka}
-                villageId={wies.id}
-                kotwicaZasadSwietlicy={`${sciezka}#swietlica-regulamin`}
-                limitWyswietlania={6}
-                tryb="skrot"
-              />
-            </section>
-          ) : profileUslug.length > 0 ? (
-            <p className="mt-4 text-sm text-stone-500">Brak aktywnych ogłoszeń — zobacz profile usługodawców powyżej.</p>
-          ) : null}
         </OslonaSekcjiWies>
       ) : null}
 

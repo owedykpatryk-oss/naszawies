@@ -783,42 +783,65 @@ export default async function WiesCatchAllPage({ params, searchParams }: Props) 
           liczbaProfili={profile.length}
         />
 
-        <RynekMapaEmbedded
-          nazwaWsi={wies.name}
-          sciezkaWsi={sciezka}
-          villageId={wies.id}
-          znacznikWsi={znacznikMapy}
-          punktyRynek={punktyRynek}
-          punktyRynekDzialki={punktyRynekDzialki}
-        />
+        <div className="mt-6 lg:grid lg:grid-cols-[minmax(0,1fr)_minmax(280px,32%)] lg:items-start lg:gap-8">
+          <div className="min-w-0 space-y-8">
+            {profile.length > 0 ? (
+              <section>
+                <h2 className="text-sm font-semibold text-stone-800">Profile usługodawców</h2>
+                <ul className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-2">
+                  {profile.map((p) => (
+                    <li key={p.id}>
+                      <KartaProfiluRynku profil={p} sciezkaWsi={sciezka} />
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            ) : null}
 
-        {profile.length > 0 ? (
-          <section className="mt-8">
-            <h2 className="text-sm font-semibold text-stone-800">Profile usługodawców</h2>
-            <ul className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-              {profile.map((p) => (
-                <li key={p.id}>
-                  <KartaProfiluRynku profil={p} sciezkaWsi={sciezka} />
-                </li>
-              ))}
-            </ul>
-          </section>
-        ) : null}
+            <section>
+              <h2 className="text-sm font-semibold text-stone-800">Wszystkie ogłoszenia</h2>
+              <MarketplaceListaKlient
+                oferty={ogloszenia}
+                sciezkaWsi={sciezka}
+                villageId={wies.id}
+                nazwaWsi={wies.name}
+                zalogowany={!!authRes.user}
+                subskrybowaneKategorie={subskrybowaneKategorie}
+                kotwicaZasadSwietlicy={`${sciezka}#swietlica-regulamin`}
+                pokazLinkWszystkie={false}
+                tryb="pelny"
+                kotwicaMapyRynek="#rynek-mapa"
+              />
+            </section>
 
-        <section className="mt-8">
-          <h2 className="text-sm font-semibold text-stone-800">Wszystkie ogłoszenia</h2>
-          <MarketplaceListaKlient
-            oferty={ogloszenia}
-            sciezkaWsi={sciezka}
-            villageId={wies.id}
-            nazwaWsi={wies.name}
-            zalogowany={!!authRes.user}
-            subskrybowaneKategorie={subskrybowaneKategorie}
-            kotwicaZasadSwietlicy={`${sciezka}#swietlica-regulamin`}
-            pokazLinkWszystkie={false}
-            tryb="pelny"
-          />
-        </section>
+            <div className="lg:hidden">
+              <RynekMapaEmbedded
+                nazwaWsi={wies.name}
+                sciezkaWsi={sciezka}
+                villageId={wies.id}
+                znacznikWsi={znacznikMapy}
+                punktyRynek={punktyRynek}
+                punktyRynekDzialki={punktyRynekDzialki}
+                className="mt-0"
+              />
+            </div>
+          </div>
+
+          <aside className="hidden lg:block">
+            <div className="sticky top-[5.25rem]">
+              <RynekMapaEmbedded
+                nazwaWsi={wies.name}
+                sciezkaWsi={sciezka}
+                villageId={wies.id}
+                znacznikWsi={znacznikMapy}
+                punktyRynek={punktyRynek}
+                punktyRynekDzialki={punktyRynekDzialki}
+                kompakt
+                className="mt-0"
+              />
+            </div>
+          </aside>
+        </div>
       </main>
     );
   }

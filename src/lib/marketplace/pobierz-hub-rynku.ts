@@ -19,9 +19,22 @@ export type OstatnieOgloszenieHub = {
   id: string;
   title: string;
   sciezka: string;
+  sciezkaWsiRynek: string;
   nazwaWsi: string;
   gmina: string;
   published_at: string | null;
+  listing_type: string;
+  equipment_category: string | null;
+  category: string | null;
+  price_amount: number | null;
+  price_unit: string | null;
+  currency: string | null;
+  image_urls: string[] | null;
+  seller_verified: boolean | null;
+  geoportal_parcel_id: string | null;
+  parcel_area_m2: number | null;
+  parcel_number: string | null;
+  view_count?: number;
 };
 
 export type HubRynkuDane = {
@@ -46,6 +59,18 @@ type WierszListing = {
   id: string;
   village_id: string;
   title: string;
+  listing_type: string;
+  equipment_category: string | null;
+  category: string | null;
+  price_amount: number | null;
+  price_unit: string | null;
+  currency: string | null;
+  image_urls: string[] | null;
+  seller_verified: boolean | null;
+  geoportal_parcel_id: string | null;
+  parcel_area_m2: number | null;
+  parcel_number: string | null;
+  view_count: number | null;
   published_at: string | null;
   villages: WierszWiesHub | WierszWiesHub[] | null;
 };
@@ -54,7 +79,7 @@ export async function pobierzHubRynku(supabase: SupabaseClient): Promise<HubRynk
   const { data: wiersze } = await supabase
     .from("marketplace_listings")
     .select(
-      "id, village_id, title, published_at, villages(id, name, slug, voivodeship, county, commune, rynek_banner_text, rynek_banner_until)",
+      "id, village_id, title, listing_type, equipment_category, category, price_amount, price_unit, currency, image_urls, seller_verified, geoportal_parcel_id, parcel_area_m2, parcel_number, view_count, published_at, villages(id, name, slug, voivodeship, county, commune, rynek_banner_text, rynek_banner_until)",
     )
     .eq("status", "approved")
     .order("published_at", { ascending: false, nullsFirst: false })
@@ -93,9 +118,22 @@ export async function pobierzHubRynku(supabase: SupabaseClient): Promise<HubRynk
         id: row.id,
         title: row.title,
         sciezka: `${sciezka}/rynek/${row.id}`,
+        sciezkaWsiRynek: `${sciezka}/rynek`,
         nazwaWsi: v.name,
         gmina: v.commune,
         published_at: row.published_at,
+        listing_type: row.listing_type,
+        equipment_category: row.equipment_category,
+        category: row.category,
+        price_amount: row.price_amount,
+        price_unit: row.price_unit,
+        currency: row.currency,
+        image_urls: row.image_urls,
+        seller_verified: row.seller_verified,
+        geoportal_parcel_id: row.geoportal_parcel_id,
+        parcel_area_m2: row.parcel_area_m2,
+        parcel_number: row.parcel_number,
+        view_count: row.view_count ?? undefined,
       });
     }
   }
