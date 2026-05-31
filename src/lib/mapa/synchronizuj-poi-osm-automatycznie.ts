@@ -1,6 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { pobierzPoiZOsmWokolPunktu, type SugerowanyPoiZOsm } from "@/lib/mapa/overpass-poi-dla-punktu";
-import { KATEGORIE_POI_BAZOWE } from "@/lib/mapa/kategorie-poi-bazowe";
+import { KATEGORIE_POI_BAZOWE, KATEGORIE_POI_WIELOKROTNE } from "@/lib/mapa/kategorie-poi-bazowe";
 
 type VillageRow = {
   id: string;
@@ -42,6 +42,7 @@ const LIMITY_KATEGORII: Record<string, number> = {
   sklep: 4,
   skup_zboz: 3,
   sklep_rolniczy: 3,
+  osp_punkt_czerpania_wody: 35,
 };
 
 const LIMITY_DOMYSLNE = {
@@ -106,6 +107,22 @@ function missingKategorie(rows: PoiRow[]): string[] {
   return KATEGORIE_BAZOWE.filter((k) => !set.has(k));
 }
 
+function czyWymagaSynchronizacjiOsm(existing: PoiRow[]): boolean {
+  const missing = missingKategorie(existing);
+  if (missing.length > 0) return true;
+  for (const kat of KATEGORIE_POI_WIELOKROTNE) {
+    const cnt = existing.filter((p) => p.category === kat).length;
+    const limit = LIMITY_KATEGORII[kat] ?? 2;
+    if (cnt < limit) return true;
+  }
+  return false;
+}
+
+function promienDuplikatuKategorii(category: string): number {
+  if (category === "osp_punkt_czerpania_wody") return 35;
+  return 120;
+}
+
 function filtrujKandydatyDoZapisu(
   kandydaci: SugerowanyPoiZOsm[],
   istniejace: PoiRow[],
@@ -135,16 +152,19 @@ function filtrujKandydatyDoZapisu(
     const cnt = byCategoryCount.get(p.category) ?? 0;
     if (cnt >= limit) continue;
 
+    const promien = promienDuplikatuKategorii(p.category);
     const zaBliskoIstniejacego = istniejace.some((e) => {
       if (e.category !== p.category) return false;
       const lat = Number(e.latitude);
       const lon = Number(e.longitude);
       if (!Number.isFinite(lat) || !Number.isFinite(lon)) return false;
-      return odlegloscMetry(lat, lon, p.lat, p.lon) < 120;
+      return odlegloscMetry(lat, lon, p.lat, p.lon) < promien;
     });
     if (zaBliskoIstniejacego) continue;
 
-    const zaBliskoNowego = wybrane.some((w) => w.category === p.category && odlegloscMetry(w.lat, w.lon, p.lat, p.lon) < 120);
+    const zaBliskoNowego = wybrane.some(
+      (w) => w.category === p.category && odlegloscMetry(w.lat, w.lon, p.lat, p.lon) < promien,
+    );
     if (zaBliskoNowego) continue;
 
     wybrane.push(p);
@@ -242,7 +262,7 @@ export async function synchronizujPoiOsmAutomatycznie(
 
     const existing = byVillage.get(v.id) ?? [];
     const missing = missingKategorie(existing);
-    if (missing.length === 0) {
+    if (!czyWymagaSynchronizacjiOsm(existing)) {
       summary.skippedComplete += 1;
       continue;
     }
@@ -278,9 +298,12 @@ export async function synchronizujPoiOsmAutomatycznie(
         latitude: p.lat,
         longitude: p.lon,
         source: "osm_auto",
-        confidence: 0.45,
+        confidence: p.category === "osp_punkt_czerpania_wody" ? 0.55 : 0.45,
         verified_at: null,
         is_local_override: false,
+        ...(p.category === "osp_punkt_czerpania_wody" && p.ospWaterSourceType
+          ? { osp_water_source_type: p.ospWaterSourceType }
+          : {}),
       })),
     );
 

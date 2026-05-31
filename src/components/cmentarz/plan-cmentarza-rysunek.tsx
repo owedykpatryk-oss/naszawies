@@ -26,10 +26,14 @@ type Props = {
   tloUrl?: string | null;
   /** Siatka kafelków satelitarnych — lepsze dopasowanie niż jeden kafelek */
   kafelkiSatelitarne?: KafelSatelitarny[];
+  /** Obrys cmentarza (GeoJSON) — ścieżka SVG w viewBox po georeferencji */
+  sciezkaObrysu?: string | null;
   tloOpacity?: number;
   onElementClick?: (id: string) => void;
   /** Tryb edytora — przeciąganie, większe strefy kliku */
   trybEdycji?: boolean;
+  /** Krok siatki wizualnej (viewBox); domyślnie 5 */
+  krokSiatki?: number;
   onPointerDownElement?: (e: ReactPointerEvent, id: string) => void;
   onPointerDownResize?: (e: ReactPointerEvent, id: string) => void;
 };
@@ -40,9 +44,11 @@ export function PlanCmentarzaRysunek({
   podswietlId = null,
   tloUrl,
   kafelkiSatelitarne = [],
+  sciezkaObrysu = null,
   tloOpacity = 0.55,
   onElementClick,
   trybEdycji = false,
+  krokSiatki = 5,
   onPointerDownElement,
   onPointerDownResize,
 }: Props) {
@@ -86,9 +92,24 @@ export function PlanCmentarzaRysunek({
       {wTle ? (
         <rect x="0" y="0" width={VB_W} height={VB_H} fill="rgba(255,255,255,0.08)" pointerEvents="none" />
       ) : null}
+      {sciezkaObrysu ? (
+        <path
+          d={sciezkaObrysu}
+          fill="rgba(34,197,94,0.12)"
+          stroke="#15803d"
+          strokeWidth="0.35"
+          strokeDasharray="1.2 0.8"
+          pointerEvents="none"
+        />
+      ) : null}
       <defs>
-        <pattern id="siatka-cmentarz" width="5" height="5" patternUnits="userSpaceOnUse">
-          <path d="M 5 0 L 0 0 0 5" fill="none" stroke="#c4b8a8" strokeWidth="0.08" />
+        <pattern id="siatka-cmentarz" width={krokSiatki} height={krokSiatki} patternUnits="userSpaceOnUse">
+          <path
+            d={`M ${krokSiatki} 0 L 0 0 0 ${krokSiatki}`}
+            fill="none"
+            stroke="#c4b8a8"
+            strokeWidth="0.08"
+          />
         </pattern>
       </defs>
       <rect x="0" y="0" width={VB_W} height={VB_H} fill="url(#siatka-cmentarz)" opacity={wTle ? 0.25 : 0.4} pointerEvents="none" />

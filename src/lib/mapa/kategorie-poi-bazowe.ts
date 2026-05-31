@@ -18,6 +18,18 @@ export const KATEGORIE_POI_BAZOWE = [
   "cmentarz",
   "skup_zboz",
   "sklep_rolniczy",
+  /** Hydranty i inne źródła wody OSP — wiele punktów na wieś (import z OSM). */
+  "osp_punkt_czerpania_wody",
+] as const;
+
+/** Kategorie, dla których cron OSM może dodawać kolejne punkty (nie tylko pierwszy brak). */
+export const KATEGORIE_POI_WIELOKROTNE = [
+  "przystanek",
+  "osp_punkt_czerpania_wody",
+  "sklep",
+  "boisko",
+  "skup_zboz",
+  "sklep_rolniczy",
 ] as const;
 
 export type KategoriaPoiBazowa = (typeof KATEGORIE_POI_BAZOWE)[number];

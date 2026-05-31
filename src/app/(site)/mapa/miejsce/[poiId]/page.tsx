@@ -6,6 +6,7 @@ import { sciezkaProfiluWsi } from "@/lib/wies/sciezka-publiczna";
 import { formatujGodzinyOtwarcia } from "@/lib/mapa/formatuj-godziny-otwarcia";
 import { etykietaZrodlaPoi } from "@/lib/mapa/etykieta-zrodla-poi";
 import { MiejscePoiKlient, type KomentarzPoiWiersz } from "./miejsce-poi-klient";
+import { RozkladPrzystankuPubliczny } from "@/components/mapa/rozklad-przystanku-publiczny";
 
 type Props = { params: { poiId: string } };
 
@@ -92,6 +93,9 @@ export default async function MiejscePoiPage({ params }: Props) {
         zrodloKlasy={zrodlo.klasy}
         wymagaWeryfikacji={zrodlo.wymagaWeryfikacji}
       />
+      <div className="mt-6">
+        <RozkladPrzystankuPubliczny poiId={poi.id} kategoria={poi.category} />
+      </div>
     </main>
   );
 }

@@ -3,6 +3,11 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { pobierzObrysyCmentarzyZOsm } from "@/lib/cmentarz/overpass-cmentarz-obrys";
+import {
+  georefZCmentarzaBoundary,
+  uzupelnijWspolrzedneGrobow,
+  wspolrzedneElementuPlanu,
+} from "@/lib/cmentarz/georef-cmentarza";
 import { parsujPlanCmentarza, schemaPlanCmentarza, szablonPlanuCmentarzaStartowy } from "@/lib/cmentarz/plan-cmentarza";
 import { pobierzVillageIdsRoliPaneluSoltysa } from "@/lib/panel/rola-panelu-soltysa";
 import { sciezkaProfiluWsi } from "@/lib/wies/sciezka-publiczna";
@@ -106,7 +111,7 @@ export async function zapiszPlanCmentarza(
 
   const { data: row } = await supabase
     .from("village_cemetery_plans")
-    .select("id, village_id")
+    .select("id, village_id, boundary_geojson")
     .eq("id", id.data)
     .maybeSingle();
   if (!row) return { blad: "Nie znaleziono planu." };
@@ -114,7 +119,22 @@ export async function zapiszPlanCmentarza(
   const vids = await pobierzVillageIdsRoliPaneluSoltysa(supabase, user.id);
   if (!vids.includes(row.village_id)) return { blad: "Brak uprawnień." };
 
-  const update: Record<string, unknown> = { plan_data: parsed.data };
+  let planDoZapisu = parsed.data;
+  const boundary = row.boundary_geojson as GeoJSON.Polygon | GeoJSON.MultiPolygon | null;
+  if (boundary?.type === "Polygon" || boundary?.type === "MultiPolygon") {
+    const georef = georefZCmentarzaBoundary(boundary);
+    if (georef) {
+      planDoZapisu = {
+        ...planDoZapisu,
+        elementy: uzupelnijWspolrzedneGrobow(
+          planDoZapisu.elementy.map((e) => ({ ...e, obrot: e.obrot ?? 0 })),
+          georef,
+        ),
+      };
+    }
+  }
+
+  const update: Record<string, unknown> = { plan_data: planDoZapisu };
   if (meta?.name != null) update.name = meta.name.trim();
   if (meta?.is_published != null) update.is_published = meta.is_published;
   if (meta?.virtual_candles_enabled != null) update.virtual_candles_enabled = meta.virtual_candles_enabled;
@@ -122,6 +142,22 @@ export async function zapiszPlanCmentarza(
 
   const { error } = await supabase.from("village_cemetery_plans").update(update).eq("id", id.data);
   if (error) return { blad: "Nie udało się zapisać planu." };
+
+  if (boundary?.type === "Polygon" || boundary?.type === "MultiPolygon") {
+    const georef = georefZCmentarzaBoundary(boundary);
+    if (georef) {
+      for (const el of planDoZapisu.elementy) {
+        if (el.typ !== "grob" || !el.grave_record_id) continue;
+        const elNorm = { ...el, obrot: el.obrot ?? 0 };
+        const { lat, lng } = wspolrzedneElementuPlanu(elNorm, georef);
+        await supabase
+          .from("cemetery_grave_records")
+          .update({ latitude: lat, longitude: lng })
+          .eq("id", el.grave_record_id)
+          .eq("cemetery_plan_id", id.data);
+      }
+    }
+  }
 
   await revalidateCmentarz(supabase, row.village_id);
   return { ok: true };

@@ -203,6 +203,7 @@ export default async function SoltysSwietlicaHallPage({ params }: Props) {
           poczatkowyPlan={plan}
           pojemnoscSali={sala.max_capacity}
           wymiaryZRzutu={wymiaryZRzutu}
+          rzutParteru={rzutParteru}
           znacznikiRzutu={znacznikiRzutu}
           obszarStolow={obszarStolow}
           layoutPresety={layoutPresety}

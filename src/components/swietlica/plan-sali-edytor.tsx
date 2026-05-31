@@ -23,8 +23,15 @@ import {
 import { zapiszPlanSali } from "@/app/(site)/panel/soltys/akcje";
 import { PlanSaliRysunek, type ZnacznikNaPlanie } from "./plan-sali-rysunek";
 import { PresetyPlanuSaliKlient } from "./presety-planu-sali-klient";
+import { PodkladRzutuNaPlanieStolow } from "@/components/planner/podklad-rzutu-na-planie-stolow";
 import type { PresetPlanuSali } from "@/lib/swietlica/plan-sali";
 import { ograniczElementDoObszaru, type ProstokatProc } from "@/lib/swietlica/mapowanie-rzutu-plan";
+import type { RzutParteruSaliJson } from "@/lib/swietlica/rzut-parteru-sali";
+import {
+  KROK_SIATKI_DOMYSLNY,
+  snapPozycje,
+  snapRozmiar,
+} from "@/lib/planner/edytor-plan-procent";
 
 type SzablonLokalny = { id: string; nazwa: string; json: string };
 
@@ -35,6 +42,8 @@ type Props = {
   pojemnoscSali?: number | null;
   /** Wymiary bryły z rzutu parteru — do przeniesienia na plan stołów. */
   wymiaryZRzutu?: { bryla_szer_m: number; bryla_gleb_m: number } | null;
+  /** Pełny rzut parteru — podkład sali głównej pod stołami */
+  rzutParteru?: RzutParteruSaliJson | null;
   /** Znaczniki wejść/okien z rzutu parteru */
   znacznikiRzutu?: ZnacznikNaPlanie[];
   /** Obszar do ograniczenia stołów */
@@ -111,6 +120,7 @@ export function PlanSaliEdytor({
   poczatkowyPlan,
   pojemnoscSali = null,
   wymiaryZRzutu = null,
+  rzutParteru = null,
   znacznikiRzutu = [],
   obszarStolow = { x: 0, y: 0, w: 100, h: 70 },
   layoutPresety = [],
@@ -128,9 +138,13 @@ export function PlanSaliEdytor({
   const [ponowDostepne, ustawPonowDostepne] = useState(false);
   const [brudnyPlan, ustawBrudnyPlan] = useState(false);
   const [kopiaWSchowkuEdytora, ustawKopiaWSchowkuEdytora] = useState(false);
+  const [snapWlaczone, ustawSnapWlaczone] = useState(true);
+  const [pokazRzutNaPlanie, ustawPokazRzutNaPlanie] = useState(true);
   const wrapRef = useRef<HTMLDivElement>(null);
   const planRef = useRef(plan);
   planRef.current = plan;
+  const snapRef = useRef(snapWlaczone);
+  snapRef.current = snapWlaczone;
   const przeciag = useRef<{ id: string; startClientX: number; startClientY: number; startX: number; startY: number } | null>(
     null
   );
@@ -367,10 +381,14 @@ export function PlanSaliEdytor({
           if (!el) return p;
           const dx = ((e.clientX - d.startClientX) / rect.width) * 100;
           const dy = ((e.clientY - d.startClientY) / rect.height) * 70;
-          const pos = ograniczElementDoObszaru(
+          let pos = ograniczElementDoObszaru(
             { x: d.startX + dx, y: d.startY + dy, szer: el.szer, wys: el.wys },
             obszarStolow,
           );
+          if (snapRef.current) {
+            pos = snapPozycje(pos.x, pos.y, KROK_SIATKI_DOMYSLNY);
+            pos = ograniczElementDoObszaru({ ...pos, szer: el.szer, wys: el.wys }, obszarStolow);
+          }
           const nx = pos.x;
           const ny = pos.y;
           return {
@@ -390,8 +408,14 @@ export function PlanSaliEdytor({
             if (x.id !== r.id) return x;
             const maxSzer = obszarStolow.x + obszarStolow.w - x.x;
             const maxWys = obszarStolow.y + obszarStolow.h - x.y;
-            const szer = Math.min(maxSzer, Math.max(2, r.startSzer + dx));
-            const wys = Math.min(maxWys, Math.max(2, r.startWys + dy));
+            let szer = Math.min(maxSzer, Math.max(2, r.startSzer + dx));
+            let wys = Math.min(maxWys, Math.max(2, r.startWys + dy));
+            if (snapRef.current) {
+              szer = snapRozmiar(szer, KROK_SIATKI_DOMYSLNY, 2);
+              wys = snapRozmiar(wys, KROK_SIATKI_DOMYSLNY, 2);
+              szer = Math.min(maxSzer, szer);
+              wys = Math.min(maxWys, wys);
+            }
             return { ...x, szer, wys };
           }),
         }));
@@ -497,21 +521,27 @@ export function PlanSaliEdytor({
         (e.key === "ArrowLeft" || e.key === "ArrowRight" || e.key === "ArrowUp" || e.key === "ArrowDown")
       ) {
         e.preventDefault();
-        const krok = e.shiftKey ? 2 : 0.5;
+        const krok = e.shiftKey ? 2 : snapWlaczone ? KROK_SIATKI_DOMYSLNY : 0.5;
         const dx = e.key === "ArrowLeft" ? -krok : e.key === "ArrowRight" ? krok : 0;
         const dy = e.key === "ArrowUp" ? -krok : e.key === "ArrowDown" ? krok : 0;
         mutujZOstatnimStanie((p) => {
           const el = p.elementy.find((x) => x.id === wybrany);
           if (!el) return p;
-          const nx = Math.min(100 - el.szer, Math.max(0, el.x + dx));
-          const ny = Math.min(70 - el.wys, Math.max(0, el.y + dy));
-          return { ...p, elementy: p.elementy.map((x) => (x.id === wybrany ? { ...x, x: nx, y: ny } : x)) };
+          let pos = ograniczElementDoObszaru(
+            { x: el.x + dx, y: el.y + dy, szer: el.szer, wys: el.wys },
+            obszarStolow,
+          );
+          if (snapWlaczone) {
+            pos = snapPozycje(pos.x, pos.y, KROK_SIATKI_DOMYSLNY);
+            pos = ograniczElementDoObszaru({ ...pos, szer: el.szer, wys: el.wys }, obszarStolow);
+          }
+          return { ...p, elementy: p.elementy.map((x) => (x.id === wybrany ? { ...x, x: pos.x, y: pos.y } : x)) };
         });
       }
     };
     window.addEventListener("keydown", h);
     return () => window.removeEventListener("keydown", h);
-  }, [wybrany, cofnij, ponow, mutujZOstatnimStanie, duplikujWybrany, wklejElementZeSchowka]);
+  }, [wybrany, cofnij, ponow, mutujZOstatnimStanie, duplikujWybrany, wklejElementZeSchowka, snapWlaczone, obszarStolow]);
 
   const usunWybrany = () => {
     if (!wybrany) return;
@@ -584,6 +614,7 @@ export function PlanSaliEdytor({
 
   const tloSiatka = {
     id: "siatka-edytor-plan" as const,
+    krok: snapWlaczone ? KROK_SIATKI_DOMYSLNY : 5,
   };
 
   const zapiszBiezacyJakoSzablon = useCallback(() => {
@@ -786,12 +817,12 @@ export function PlanSaliEdytor({
             <defs>
               <pattern
                 id={tloSiatka.id}
-                width="5"
-                height="5"
+                width={tloSiatka.krok}
+                height={tloSiatka.krok}
                 patternUnits="userSpaceOnUse"
               >
                 <path
-                  d="M 5 0 L 0 0 0 5"
+                  d={`M ${tloSiatka.krok} 0 L 0 0 0 ${tloSiatka.krok}`}
                   fill="none"
                   stroke="#c4b8a8"
                   strokeWidth="0.1"
@@ -801,6 +832,7 @@ export function PlanSaliEdytor({
             </defs>
             <rect x="0" y="0" width="100" height="70" fill="#faf8f3" />
             <rect x="0" y="0" width="100" height="70" fill={`url(#${tloSiatka.id})`} />
+            {pokazRzutNaPlanie && rzutParteru ? <PodkladRzutuNaPlanieStolow rzut={rzutParteru} /> : null}
             <rect x="0.5" y="0.5" width="99" height="69" fill="none" stroke="#2d5a2d" strokeWidth="0.45" rx="0.4" />
             {plan.szerokosc_sali_m != null && plan.dlugosc_sali_m != null ? (
               <text
@@ -1271,6 +1303,24 @@ export function PlanSaliEdytor({
         <div>
           <p className="mb-1.5 text-[10px] font-bold uppercase tracking-widest text-stone-500 sm:mb-2">Edycja</p>
           <div className="flex flex-col gap-2">
+            <label className="inline-flex items-center gap-2 text-xs text-stone-600">
+              <input
+                type="checkbox"
+                checked={snapWlaczone}
+                onChange={(e) => ustawSnapWlaczone(e.target.checked)}
+              />
+              Przyciąganie do siatki
+            </label>
+            {rzutParteru ? (
+              <label className="inline-flex items-center gap-2 text-xs text-stone-600">
+                <input
+                  type="checkbox"
+                  checked={pokazRzutNaPlanie}
+                  onChange={(e) => ustawPokazRzutNaPlanie(e.target.checked)}
+                />
+                Podkład rzutu parteru (sala główna)
+              </label>
+            ) : null}
             <div className="grid grid-cols-2 gap-2 min-[400px]:grid-cols-4 min-[400px]:gap-1.5 sm:flex sm:flex-wrap sm:items-center">
               <button
                 type="button"

@@ -147,6 +147,9 @@ export default async function SoltysCmentarzPage() {
                     opublikowany={plan.is_published}
                     zniczeWlaczone={plan.virtual_candles_enabled}
                     ortofotoWlaczone={plan.orthophoto_enabled}
+                    boundaryGeojson={
+                      plan.boundary_geojson as GeoJSON.Polygon | GeoJSON.MultiPolygon | null
+                    }
                     maObrys={!!plan.boundary_geojson}
                     centroidLat={centroidLat}
                     centroidLng={centroidLng}

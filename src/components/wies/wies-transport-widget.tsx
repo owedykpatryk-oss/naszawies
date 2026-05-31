@@ -28,6 +28,27 @@ export type PrzystanekPubliczny = {
   latitude: number | string | null;
   longitude: number | string | null;
   description: string | null;
+  photoUrl?: string | null;
+  photoCaption?: string | null;
+  maRecznyRozklad?: boolean;
+};
+
+export type RozkladRecznyPrzystankuPubliczny = {
+  poiId: string;
+  nazwa: string;
+  odjazdy: {
+    czas: string;
+    linia: string;
+    cel: string | null;
+    opis?: string | null;
+    przyjazd?: string | null;
+    przez?: string | null;
+    zrodlo?: "soltys";
+  }[];
+  notatka: string | null;
+  linkPdf: string | null;
+  photoUrl: string | null;
+  zaktualizowano: string | null;
 };
 
 export type OdjazdAutobusuPubliczny = {
@@ -58,6 +79,7 @@ export type TransportDaneWsi = {
   hubWojewodztwa?: { fraza: string; voivodeship: string | null; stacjaPkp?: string | null };
   ostatniaAktualizacja?: { kolej: string | null; autobus: string | null };
   przystanki: PrzystanekPubliczny[];
+  rozkladRecznyPrzystankow?: RozkladRecznyPrzystankuPubliczny[];
   stacjeKolejowe: PrzystanekPubliczny[];
   stacjePkp: { station_name: string; distance_km: number | null }[];
   linkiZewnetrzne: LinkTransportuZewnetrzny[];
@@ -85,6 +107,7 @@ export function WiesTransportWidget({
   hubPowiatu,
   ostatniaAktualizacja,
   przystanki,
+  rozkladRecznyPrzystankow = [],
   stacjeKolejowe,
   stacjePkp,
   linkiZewnetrzne,
@@ -357,6 +380,53 @@ export function WiesTransportWidget({
 
       {zakladka === "autobus" ? (
         <div className="mt-3">
+          {rozkladRecznyPrzystankow.length > 0 ? (
+            <div className="mb-4 space-y-3">
+              <p className="text-xs font-semibold uppercase tracking-wide text-sky-900">Rozkład od sołtysa</p>
+              {rozkladRecznyPrzystankow.map((grupa) => (
+                <div key={grupa.poiId} className={`${KARTA_LISTY_WIES} border-sky-200/80 bg-sky-50/50`}>
+                  <p className="text-xs font-medium uppercase tracking-wide text-sky-800">{grupa.nazwa}</p>
+                  {grupa.notatka ? <p className="mt-1 text-sm text-stone-700">{grupa.notatka}</p> : null}
+                  {grupa.odjazdy.length > 0 ? (
+                    <ul className="mt-2 space-y-1.5">
+                      {grupa.odjazdy.map((b, i) => (
+                        <li key={`${grupa.poiId}-${i}`} className="text-sm text-stone-800">
+                          <strong>{b.czas}</strong>
+                          {b.przyjazd ? ` (przyj. ${b.przyjazd})` : ""}
+                          {" · "}
+                          {b.linia}
+                          {b.cel ? ` → ${b.cel}` : ""}
+                          {b.przez ? ` · przez ${b.przez}` : ""}
+                          {b.opis && !b.przez ? ` · ${b.opis}` : ""}
+                        </li>
+                      ))}
+                    </ul>
+                  ) : null}
+                  {grupa.linkPdf ? (
+                    <p className="mt-2 text-xs">
+                      <a href={grupa.linkPdf} target="_blank" rel="noopener noreferrer" className="text-green-800 underline">
+                        PDF rozkładu ↗
+                      </a>
+                    </p>
+                  ) : null}
+                  {grupa.photoUrl ? (
+                    <p className="mt-2 text-xs">
+                      <a href={`/mapa/miejsce/${grupa.poiId}`} className="text-green-800 underline">
+                        Zdjęcie tabliczki na stronie przystanku
+                      </a>
+                    </p>
+                  ) : null}
+                  {grupa.zaktualizowano ? (
+                    <p className="mt-1 text-[10px] text-stone-500">
+                      Aktualizacja:{" "}
+                      {new Date(grupa.zaktualizowano).toLocaleDateString("pl-PL", { dateStyle: "medium" })}
+                    </p>
+                  ) : null}
+                </div>
+              ))}
+            </div>
+          ) : null}
+
           {odjazdyAutobusPoPrzystanku.length > 0 ? (
             <div className="mb-4 space-y-3">
               {odjazdyAutobusPoPrzystanku.map((grupa) => (
@@ -402,16 +472,27 @@ export function WiesTransportWidget({
             <ul className="space-y-2">
               {przystanki.slice(0, 12).map((p) => (
                 <li key={p.id} className={KARTA_LISTY_WIES}>
-                  <p className="font-medium text-stone-900">{p.name}</p>
+                  <p className="font-medium text-stone-900">
+                    {p.name}
+                    {p.maRecznyRozklad ? (
+                      <span className="ml-2 rounded-full bg-sky-100 px-2 py-0.5 text-[10px] font-medium text-sky-900">
+                        rozkład sołtysa
+                      </span>
+                    ) : null}
+                  </p>
                   {p.description ? <p className="mt-1 text-xs text-stone-600">{p.description}</p> : null}
                   <p className="mt-2 text-xs">
+                    <a href={`/mapa/miejsce/${encodeURIComponent(p.id)}`} className="font-medium text-green-800 underline">
+                      Szczegóły przystanku
+                    </a>
+                    {" · "}
                     <a
                       href={linkRozkladPrzystanku(p.name, wies)}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="font-medium text-green-800 underline"
                     >
-                      Szukaj kursu (e-podróżnik) ↗
+                      e-podróżnik ↗
                     </a>
                     {" · "}
                     <Link href={linkMapy} className="text-green-800 underline">

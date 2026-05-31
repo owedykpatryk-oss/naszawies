@@ -12,7 +12,35 @@ export type SugerowanyPoiZOsm = {
   lon: number;
   osmType: "node" | "way" | "relation";
   osmId: number;
+  /** Dla `osp_punkt_czerpania_wody` — typ źródła z tagów OSM. */
+  ospWaterSourceType?: "hydrant" | "staw" | "zbiornik" | "rzeka" | "inne";
 };
+
+export type MapowaniePoiZOsm = {
+  category: string;
+  ospWaterSourceType?: SugerowanyPoiZOsm["ospWaterSourceType"];
+};
+
+/** Pomniki, rezerwaty i czysta przyroda — nie importujemy automatycznie na mapę wsi. */
+export function czyPominacTagiOsm(tags: Record<string, string>): boolean {
+  const historic = tags.historic?.trim();
+  if (
+    historic === "memorial" ||
+    historic === "monument" ||
+    historic === "memorial_plaque" ||
+    historic === "wayside_shrine" ||
+    historic === "wayside_cross"
+  ) {
+    return true;
+  }
+  if (tags.man_made === "cross" || tags.tourism === "artwork") return true;
+  if (tags.leisure === "nature_reserve" || tags.boundary === "protected_area") return true;
+  if (tags.natural === "peak" || tags.natural === "tree" || tags.natural === "wood" || tags.natural === "scrub") {
+    return true;
+  }
+  if (tags.tourism === "viewpoint" && !tags.emergency) return true;
+  return false;
+}
 
 type OverpassElement = {
   type: string;
@@ -45,7 +73,9 @@ function nazwaZTagow(tags: Record<string, string>, domyslna: string): string {
 }
 
 /** Mapuje tagi OSM na klucze `pois.category` z `kategorie-poi.ts`. */
-export function kategoriaPoiZOsmTagow(tags: Record<string, string>): string | null {
+export function mapujPoiZOsmTagow(tags: Record<string, string>): MapowaniePoiZOsm | null {
+  if (czyPominacTagiOsm(tags)) return null;
+
   const a = tags.amenity?.trim();
   const lu = tags.landuse?.trim();
   const s = tags.shop?.trim();
@@ -56,39 +86,82 @@ export function kategoriaPoiZOsmTagow(tags: Record<string, string>): string | nu
   const mm = tags.man_made?.trim();
   const content = tags.content?.trim();
   const coop = tags.cooperative?.trim();
-  if (a === "school") return "szkola";
-  if (a === "kindergarten") return "przedszkole";
-  if (a === "place_of_worship") return "kosciol";
-  if (a === "community_centre") return "swietlica";
-  if (a === "fire_station") return "osp";
-  if (a === "library") return "biblioteka";
-  if (a === "grave_yard") return "cmentarz";
-  if (lu === "cemetery") return "cmentarz";
-  if (a === "townhall") return "urzad";
-  if (tags.office === "government") return "urzad";
-  if (a === "pharmacy") return "apteka";
-  if (a === "post_office") return "poczta";
-  if (a === "fuel") return "stacja_paliw";
-  if (a === "clinic" || a === "doctors" || a === "hospital") return "przychodnia";
+  const emergency = tags.emergency?.trim();
+  const natural = tags.natural?.trim();
+  const water = tags.water?.trim();
+
+  if (a === "fire_hydrant" || emergency === "fire_hydrant") {
+    return { category: "osp_punkt_czerpania_wody", ospWaterSourceType: "hydrant" };
+  }
+  if (emergency === "water_tank" || (mm === "storage_tank" && content === "water")) {
+    return { category: "osp_punkt_czerpania_wody", ospWaterSourceType: "zbiornik" };
+  }
+  if (emergency === "water_source" || (mm === "water_well" && emergency)) {
+    return { category: "osp_punkt_czerpania_wody", ospWaterSourceType: "inne" };
+  }
+  if (natural === "water" && (water === "pond" || water === "reservoir")) {
+    return { category: "osp_punkt_czerpania_wody", ospWaterSourceType: water === "pond" ? "staw" : "zbiornik" };
+  }
+  if (lu === "reservoir" || water === "reservoir") {
+    return { category: "osp_punkt_czerpania_wody", ospWaterSourceType: "zbiornik" };
+  }
+  if (tags.waterway && emergency === "water_source") {
+    return { category: "osp_punkt_czerpania_wody", ospWaterSourceType: "rzeka" };
+  }
+
+  if (a === "school") return { category: "szkola" };
+  if (a === "kindergarten") return { category: "przedszkole" };
+  if (a === "place_of_worship") return { category: "kosciol" };
+  if (a === "community_centre") return { category: "swietlica" };
+  if (a === "fire_station") return { category: "osp" };
+  if (a === "library") return { category: "biblioteka" };
+  if (a === "grave_yard") return { category: "cmentarz" };
+  if (lu === "cemetery") return { category: "cmentarz" };
+  if (a === "townhall") return { category: "urzad" };
+  if (tags.office === "government") return { category: "urzad" };
+  if (a === "pharmacy") return { category: "apteka" };
+  if (a === "post_office") return { category: "poczta" };
+  if (a === "fuel") return { category: "stacja_paliw" };
+  if (a === "clinic" || a === "doctors" || a === "hospital") return { category: "przychodnia" };
   const leisure = tags.leisure?.trim();
   if (leisure === "pitch" || leisure === "sports_centre" || leisure === "stadium" || leisure === "track") {
-    return "boisko";
+    return { category: "boisko" };
   }
-  if (a === "bus_station") return "przystanek";
-  if (h === "bus_stop") return "przystanek";
-  if ((pt === "platform" || pt === "stop_position") && (bus === "yes" || bus === "designated")) return "przystanek";
-  if (rail === "station" || rail === "halt") return "stacja_kolejowa";
+  if (a === "bus_station") return { category: "przystanek" };
+  if (h === "bus_stop") return { category: "przystanek" };
+  if ((pt === "platform" || pt === "stop_position") && (bus === "yes" || bus === "designated")) {
+    return { category: "przystanek" };
+  }
+  if (rail === "station" || rail === "halt") return { category: "stacja_kolejowa" };
   if (s === "convenience" || s === "supermarket" || s === "general" || s === "mall" || s === "department_store") {
-    return "sklep";
+    return { category: "sklep" };
   }
-  if (s === "agrarian" || s === "farm") return "sklep_rolniczy";
-  if (mm === "silo" && (content === "grain" || content === "maize")) return "skup_zboz";
-  if (coop === "agricultural") return "spoldzielnia_rolna";
-  if (tags.produce === "yes" || tags["produce:crops"] === "yes") return "sprzedaz_z_gospodarstwa";
+  if (s === "agrarian" || s === "farm") return { category: "sklep_rolniczy" };
+  if (mm === "silo" && (content === "grain" || content === "maize")) return { category: "skup_zboz" };
+  if (coop === "agricultural") return { category: "spoldzielnia_rolna" };
+  if (tags.produce === "yes" || tags["produce:crops"] === "yes") return { category: "sprzedaz_z_gospodarstwa" };
   return null;
 }
 
-function etykietaDomyslna(kategoria: string): string {
+export function kategoriaPoiZOsmTagow(tags: Record<string, string>): string | null {
+  return mapujPoiZOsmTagow(tags)?.category ?? null;
+}
+
+function etykietaDomyslna(kategoria: string, ospWaterSourceType?: SugerowanyPoiZOsm["ospWaterSourceType"]): string {
+  if (kategoria === "osp_punkt_czerpania_wody") {
+    switch (ospWaterSourceType) {
+      case "hydrant":
+        return "Hydrant (OpenStreetMap)";
+      case "staw":
+        return "Staw — pobór wody (OpenStreetMap)";
+      case "zbiornik":
+        return "Zbiornik wody (OpenStreetMap)";
+      case "rzeka":
+        return "Ciek / rzeka — pobór wody (OpenStreetMap)";
+      default:
+        return "Punkt czerpania wody (OpenStreetMap)";
+    }
+  }
   switch (kategoria) {
     case "szkola":
       return "Szkoła (OpenStreetMap, brak nazwy)";
@@ -200,6 +273,14 @@ function zbudujZapytanieOverpass(lat: number, lon: number, promienM: number): st
   nwr["man_made"="silo"]["content"="grain"](around:${r},${lat},${lon});
   nwr["man_made"="silo"]["content"="maize"](around:${r},${lat},${lon});
   nwr["cooperative"="agricultural"](around:${r},${lat},${lon});
+  nwr["amenity"="fire_hydrant"](around:${r},${lat},${lon});
+  nwr["emergency"="fire_hydrant"](around:${r},${lat},${lon});
+  nwr["emergency"="water_tank"](around:${r},${lat},${lon});
+  nwr["emergency"="water_source"](around:${r},${lat},${lon});
+  nwr["man_made"="storage_tank"]["content"="water"](around:${r},${lat},${lon});
+  nwr["natural"="water"]["water"="pond"](around:${r},${lat},${lon});
+  nwr["natural"="water"]["water"="reservoir"](around:${r},${lat},${lon});
+  nwr["landuse"="reservoir"](around:${r},${lat},${lon});
 );
 out center tags;
 `;
@@ -250,22 +331,23 @@ export async function pobierzPoiZOsmWokolPunktu(
   for (const el of elements) {
     if (el.type !== "node" && el.type !== "way" && el.type !== "relation") continue;
     const tags = el.tags ?? {};
-    const kat = kategoriaPoiZOsmTagow(tags);
-    if (!kat) continue;
+    const mapa = mapujPoiZOsmTagow(tags);
+    if (!mapa) continue;
     const xy = wspolrzedne(el);
     if (!xy) continue;
     const osmType = el.type as SugerowanyPoiZOsm["osmType"];
     surowe.push({
-      category: kat,
-      name: nazwaZTagow(tags, etykietaDomyslna(kat)),
+      category: mapa.category,
+      name: nazwaZTagow(tags, etykietaDomyslna(mapa.category, mapa.ospWaterSourceType)),
       lat: xy.lat,
       lon: xy.lon,
       osmType,
       osmId: el.id,
+      ospWaterSourceType: mapa.ospWaterSourceType,
     });
   }
 
-  const punkty = deduplikujWewnetrznie(surowe, 55);
+  const punkty = deduplikujWewnetrznie(surowe, 45);
   return { ok: true, punkty };
 }
 

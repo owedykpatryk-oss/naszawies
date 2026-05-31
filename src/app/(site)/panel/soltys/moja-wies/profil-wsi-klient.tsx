@@ -21,6 +21,10 @@ import type { SugestiaAutomatyzacjiMapy } from "@/lib/mapa/pobierz-sugestie-auto
 import type { PoiDoWeryfikacji } from "@/lib/mapa/pobierz-poi-do-weryfikacji-wsi";
 import type { PropozycjaPoiDoReview } from "@/lib/mapa/pobierz-propozycje-poi-wsi";
 import type { KompletnoscMapyWsi } from "@/lib/mapa/oblicz-kompletnosc-mapy-wsi";
+import {
+  EdytorRozkladuPrzystankuSoltys,
+  type PrzystanekDoRozkladu,
+} from "@/components/panel/edytor-rozkladu-przystanku-soltys";
 
 export type WiesDoEdycji = {
   id: string;
@@ -46,6 +50,7 @@ export function ProfilWsiSoltysKlient({
   poiDoWeryfikacji = {},
   propozycjePoi = {},
   kompletnoscMapy = {},
+  przystankiRozkladByVillage = {},
 }: {
   wies: WiesDoEdycji[];
   sugestieMapy?: Record<string, SugestiaAutomatyzacjiMapy[]>;
@@ -54,6 +59,7 @@ export function ProfilWsiSoltysKlient({
   poiDoWeryfikacji?: Record<string, PoiDoWeryfikacji[]>;
   propozycjePoi?: Record<string, PropozycjaPoiDoReview[]>;
   kompletnoscMapy?: Record<string, KompletnoscMapyWsi>;
+  przystankiRozkladByVillage?: Record<string, PrzystanekDoRozkladu[]>;
 }) {
   const [czek, startT] = useTransition();
   const [czekOsm, startOsm] = useTransition();
@@ -360,6 +366,24 @@ export function ProfilWsiSoltysKlient({
                   Plan cmentarza (kwatery, rzędy, groby, QR przy bramie) →
                 </Link>
               </p>
+
+              <p className="mt-4 text-sm">
+                <Link href="/panel/soltys/mapa" className="font-medium text-green-900 underline hover:text-green-950">
+                  Edytor mapy — dodaj pinezki kliknięciem (satelita / plan) →
+                </Link>
+              </p>
+
+              <div className="mt-6 rounded-xl border border-sky-200/90 bg-sky-50/40 p-4">
+                <h4 className="font-medium text-sky-950">Przystanki PKS — ręczny rozkład</h4>
+                <p className="mt-1 text-xs text-stone-700">
+                  Wpisz godziny odjazdów, kierunek i opcjonalnie zdjęcie tabliczki. Mieszkańcy zobaczą to na mapie i w sekcji
+                  transport wsi (ma pierwszeństwo przed automatycznym cache).
+                </p>
+                <EdytorRozkladuPrzystankuSoltys
+                  villageId={w.id}
+                  przystanki={przystankiRozkladByVillage[w.id] ?? []}
+                />
+              </div>
 
               <div className="mt-6 rounded-xl border border-emerald-200/80 bg-emerald-50/30 p-4">
                 <h4 className="font-medium text-emerald-950">Telefon i godziny otwarcia (POI)</h4>

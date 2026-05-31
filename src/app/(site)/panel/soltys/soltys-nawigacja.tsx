@@ -23,6 +23,7 @@ function grupyZLiczbami(
       tytul: "Wieś i promocja",
       linki: [
         { href: "/panel/soltys/moja-wies", label: "Profil wsi", badge: (l.poiWeryfikacja + l.propozycjePoi) || undefined },
+        { href: "/panel/soltys/mapa", label: "Mapa wsi", highlight: true },
         { href: "/panel/soltys/grafika", label: "Kreator grafiki", highlight: true },
         { href: "/panel/soltys/konkursy", label: "Konkursy zdjęć" },
         { href: "/panel/soltys/transport", label: "Transport PKP" },

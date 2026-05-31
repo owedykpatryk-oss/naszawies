@@ -707,22 +707,50 @@ function podlaczOdjazdyDoPopupPoi(
       }
       const json = (await res.json()) as {
         typ?: string;
-        odjazdy?: { czas: string; linia: string; cel: string | null; peron?: string | null; anulowany?: boolean }[];
+        maReczny?: boolean;
+        notatka?: string | null;
+        linkPdf?: string | null;
+        odjazdy?: {
+          czas: string;
+          linia: string;
+          cel: string | null;
+          peron?: string | null;
+          anulowany?: boolean;
+          zrodlo?: string;
+          przyjazd?: string | null;
+          przez?: string | null;
+          opis?: string | null;
+        }[];
       };
       const lista = json.odjazdy ?? [];
-      if (lista.length === 0) {
-        root.innerHTML = `<span class="text-xs text-stone-500">Brak nadchodzących odjazdów w cache.</span>`;
+      if (lista.length === 0 && !json.notatka) {
+        root.innerHTML = `<span class="text-xs text-stone-500">Brak rozkładu — sołtys może dodać godziny w panelu Moja wieś.</span>`;
       } else {
         const items = lista
           .map((o) => {
             const cel = o.cel ? ` → ${escapeHtml(o.cel)}` : "";
             const peron = o.peron ? ` · peron ${escapeHtml(o.peron)}` : "";
             const anul = o.anulowany ? " <em>(odwołany)</em>" : "";
-            return `<li><strong>${escapeHtml(o.czas)}</strong> ${escapeHtml(o.linia)}${cel}${peron}${anul}</li>`;
+            const przyj = o.przyjazd ? ` · przyj. ${escapeHtml(o.przyjazd)}` : "";
+            const przez = o.przez ? ` · przez ${escapeHtml(o.przez)}` : "";
+            const zrodlo =
+              o.zrodlo === "soltys" ? ' <span class="text-sky-800">· sołtys</span>' : "";
+            return `<li><strong>${escapeHtml(o.czas)}</strong>${przyj} ${escapeHtml(o.linia)}${cel}${przez}${peron}${anul}${zrodlo}</li>`;
           })
           .join("");
-        const naglowek = json.typ === "kolej" ? "Najbliższe pociągi" : "Najbliższe autobusy";
-        root.innerHTML = `<p class="text-xs font-medium text-stone-700">${naglowek}</p>${htmlListaOdjazdow(items)}`;
+        const notatka = json.notatka
+          ? `<p class="text-xs text-stone-600 mt-1">${escapeHtml(json.notatka)}</p>`
+          : "";
+        const pdf = json.linkPdf
+          ? `<p class="text-xs mt-1"><a href="${escapeHtml(json.linkPdf)}" target="_blank" rel="noopener" class="text-green-800 underline">PDF rozkładu ↗</a></p>`
+          : "";
+        const naglowek =
+          json.typ === "kolej"
+            ? "Najbliższe pociągi"
+            : json.maReczny
+              ? "Autobusy (rozkład sołtysa + cache)"
+              : "Najbliższe autobusy";
+        root.innerHTML = `<p class="text-xs font-medium text-stone-700">${naglowek}</p>${notatka}${lista.length ? htmlListaOdjazdow(items) : ""}${pdf}`;
       }
       root.setAttribute("data-loaded", "1");
     } catch {

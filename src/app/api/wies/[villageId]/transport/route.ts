@@ -6,6 +6,11 @@ import {
   odjazdPasujeDoCelu,
 } from "@/lib/transport/huby-powiatowe";
 import { zbudujLinkiTransportuDlaWsi } from "@/lib/transport/linki-zewnetrzne";
+import {
+  najblizszeOdjazdyReczne,
+  parsujRozkladPrzystankuReczny,
+} from "@/lib/transport/rozklad-przystanku-reczny";
+import { reczneDoApiOdjazdow } from "@/lib/transport/scal-odjazdy-przystanku";
 import { createPublicSupabaseClient } from "@/lib/supabase/public-client";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
 
@@ -78,7 +83,7 @@ export async function GET(_req: Request, { params }: Params) {
         .limit(12),
       supabase
         .from("pois")
-        .select("id, name, category, latitude, longitude, description")
+        .select("id, name, category, latitude, longitude, description, photo_url, photo_caption, bus_schedule_manual")
         .eq("village_id", id.data)
         .in("category", ["przystanek", "stacja_kolejowa"])
         .order("name", { ascending: true })
@@ -98,8 +103,26 @@ export async function GET(_req: Request, { params }: Params) {
 
   const przystanki = (pois ?? []).filter((p) => p.category === "przystanek");
   const stacjePoi = (pois ?? []).filter((p) => p.category === "stacja_kolejowa");
+  const rozkladRecznyPrzystankow = przystanki
+    .map((p) => {
+      const rozklad = parsujRozkladPrzystankuReczny(p.bus_schedule_manual);
+      if (!rozklad) return null;
+      const odjazdy = reczneDoApiOdjazdow(najblizszeOdjazdyReczne(rozklad, { limit: 6 }));
+      if (odjazdy.length === 0 && !rozklad.notatka?.trim() && !rozklad.linkPdf?.trim()) return null;
+      return {
+        poiId: p.id,
+        nazwa: p.name,
+        odjazdy,
+        notatka: rozklad.notatka?.trim() || null,
+        linkPdf: rozklad.linkPdf?.trim() || null,
+        photoUrl: p.photo_url ?? null,
+        zaktualizowano: rozklad.zaktualizowano ?? null,
+      };
+    })
+    .filter(Boolean);
   const maKolej = (odjazdy?.length ?? 0) > 0 || !!status || (stacjeMap?.length ?? 0) > 0 || stacjePoi.length > 0;
-  const maAutobus = przystanki.length > 0 || (odjazdyAutobus?.length ?? 0) > 0;
+  const maAutobus =
+    przystanki.length > 0 || (odjazdyAutobus?.length ?? 0) > 0 || rozkladRecznyPrzystankow.length > 0;
 
   const frazaPowiat = frazaStacjiDlaPowiatu(wies.county ?? "");
   const frazaWoj = frazaStacjiDlaWojewodztwa(wies.voivodeship ?? "");
@@ -180,7 +203,17 @@ export async function GET(_req: Request, { params }: Params) {
           return max;
         }, null),
       },
-      przystanki,
+      przystanki: przystanki.map((p) => ({
+        id: p.id,
+        name: p.name,
+        latitude: p.latitude,
+        longitude: p.longitude,
+        description: p.description,
+        photoUrl: p.photo_url ?? null,
+        photoCaption: p.photo_caption ?? null,
+        maRecznyRozklad: Boolean(parsujRozkladPrzystankuReczny(p.bus_schedule_manual)),
+      })),
+      rozkladRecznyPrzystankow,
       stacjeKolejowe: stacjePoi,
       stacjePkp: stacjeMap ?? [],
       maKolej,

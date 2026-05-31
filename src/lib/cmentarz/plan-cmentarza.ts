@@ -23,6 +23,9 @@ export type ElementPlanuCmentarza = {
   etykieta: string;
   /** Powiązany rekord grobu (opcjonalnie) */
   grave_record_id?: string | null;
+  /** WGS84 — uzupełniane przy zapisie, gdy jest obrys OSM */
+  latitude?: number | null;
+  longitude?: number | null;
 };
 
 export type PlanCmentarzaJson = {
@@ -45,6 +48,8 @@ const schemaElement = z.object({
   obrot: z.number().min(0).max(359).optional(),
   etykieta: z.string().trim().max(32),
   grave_record_id: z.string().uuid().nullable().optional(),
+  latitude: z.number().min(-90).max(90).nullable().optional(),
+  longitude: z.number().min(-180).max(180).nullable().optional(),
 });
 
 export const schemaPlanCmentarza = z.object({
@@ -68,6 +73,8 @@ export function parsujPlanCmentarza(raw: unknown): PlanCmentarzaJson {
       obrot: e.obrot ?? 0,
       etykieta: e.etykieta,
       grave_record_id: e.grave_record_id ?? null,
+      latitude: e.latitude ?? null,
+      longitude: e.longitude ?? null,
     })),
   };
 }
@@ -151,4 +158,56 @@ export function szablonPlanuCmentarzaStartowy(): PlanCmentarzaJson {
   brama.etykieta = "Wejście";
   el.push(brama);
   return { wersja: 1, elementy: el };
+}
+
+/** Auto-układ grobów i rzędów wewnątrz zaznaczonej kwatery. */
+export function generujGrobyWKwaterze(
+  plan: PlanCmentarzaJson,
+  kwateraId: string,
+  opcje: { rzedy: number; grobyNaRzad: number },
+): PlanCmentarzaJson | { blad: string } {
+  const kwatera = plan.elementy.find((e) => e.id === kwateraId && e.typ === "kwatera");
+  if (!kwatera) {
+    return { blad: "Wybierz kwaterę na planie." };
+  }
+  if (opcje.rzedy < 1 || opcje.rzedy > 20 || opcje.grobyNaRzad < 1 || opcje.grobyNaRzad > 30) {
+    return { blad: "Podaj sensowną liczbę rzędów (1–20) i grobów w rzędzie (1–30)." };
+  }
+
+  const marg = 2;
+  const grobSzer = 3.5;
+  const grobWys = 6;
+  const dostepnaSzer = kwatera.szer - 2 * marg;
+  const dostepnaWys = kwatera.wys - 2 * marg;
+  const odstepX =
+    opcje.grobyNaRzad > 1
+      ? Math.max(0.3, (dostepnaSzer - opcje.grobyNaRzad * grobSzer) / (opcje.grobyNaRzad - 1))
+      : 0;
+  const odstepY =
+    opcje.rzedy > 1 ? Math.max(0.5, (dostepnaWys - opcje.rzedy * grobWys) / (opcje.rzedy - 1)) : 0;
+
+  const nowe: ElementPlanuCmentarza[] = [];
+
+  for (let r = 0; r < opcje.rzedy; r++) {
+    const yGrob = kwatera.y + marg + r * (grobWys + odstepY);
+    const rzad = { ...nowyElementCmentarza("rzad"), id: crypto.randomUUID() };
+    rzad.x = kwatera.x + marg;
+    rzad.y = yGrob + grobWys * 0.15;
+    rzad.szer = dostepnaSzer;
+    rzad.wys = Math.min(3.5, grobWys * 0.45);
+    rzad.etykieta = `Rząd ${r + 1}`;
+    nowe.push(rzad);
+
+    for (let g = 0; g < opcje.grobyNaRzad; g++) {
+      const grob = { ...nowyElementCmentarza("grob"), id: crypto.randomUUID() };
+      grob.x = kwatera.x + marg + g * (grobSzer + odstepX);
+      grob.y = yGrob;
+      grob.szer = grobSzer;
+      grob.wys = grobWys;
+      grob.etykieta = `${r + 1}/${g + 1}`;
+      nowe.push(grob);
+    }
+  }
+
+  return { wersja: 1, elementy: [...plan.elementy, ...nowe] };
 }

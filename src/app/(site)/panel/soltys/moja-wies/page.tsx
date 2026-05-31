@@ -12,6 +12,8 @@ import { PanelStronaSoltysa } from "@/components/panel/panel-strona-soltysa";
 import { SoltysKatalogMozliwosci } from "@/components/panel/soltys-katalog-mozliwosci";
 import { ProfilWsiSoltysKlient, type WiesDoEdycji } from "./profil-wsi-klient";
 import type { PoiDoEdycjiKontaktu } from "@/components/panel/edytor-kontaktu-poi-soltys";
+import type { PrzystanekDoRozkladu } from "@/components/panel/edytor-rozkladu-przystanku-soltys";
+import { mapujPrzystanekDoRozkladu } from "@/components/panel/edytor-rozkladu-przystanku-soltys";
 
 export const metadata: Metadata = {
   title: "Profil wsi (sołtys)",
@@ -54,7 +56,7 @@ export default async function SoltysMojaWiesPage() {
   const [{ data: poisRaw }, { data: saleRaw }] = await Promise.all([
     supabase
       .from("pois")
-      .select("id, village_id, name, category, phone, opening_hours, linked_hall_id, source")
+      .select("id, village_id, name, category, phone, opening_hours, linked_hall_id, source, photo_url, photo_caption, bus_schedule_manual")
       .in("village_id", villageIds)
       .order("category")
       .order("name"),
@@ -62,7 +64,11 @@ export default async function SoltysMojaWiesPage() {
   ]);
 
   const poisByVillage: Record<string, PoiDoEdycjiKontaktu[]> = {};
-  for (const id of villageIds) poisByVillage[id] = [];
+  const przystankiRozkladByVillage: Record<string, PrzystanekDoRozkladu[]> = {};
+  for (const id of villageIds) {
+    poisByVillage[id] = [];
+    przystankiRozkladByVillage[id] = [];
+  }
   for (const p of poisRaw ?? []) {
     const lista = poisByVillage[p.village_id];
     if (lista) {
@@ -75,6 +81,10 @@ export default async function SoltysMojaWiesPage() {
         linked_hall_id: p.linked_hall_id,
         source: p.source,
       });
+    }
+    if (p.category === "przystanek") {
+      const pr = przystankiRozkladByVillage[p.village_id];
+      if (pr) pr.push(mapujPrzystanekDoRozkladu(p));
     }
   }
 
@@ -141,6 +151,7 @@ export default async function SoltysMojaWiesPage() {
             poiDoWeryfikacji={poiDoWeryfikacji}
             propozycjePoi={propozycjePoi}
             kompletnoscMapy={kompletnoscMapy}
+            przystankiRozkladByVillage={przystankiRozkladByVillage}
           />
         </>
       }

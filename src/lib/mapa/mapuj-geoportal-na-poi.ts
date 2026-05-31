@@ -32,16 +32,6 @@ function normalizujNazweWarstwy(layerName: string): string {
   return idx >= 0 ? t.slice(idx + 1) : t;
 }
 
-function kategoriaPrng(featureCategory: string | null, featureName: string | null): string {
-  const blob = `${featureCategory ?? ""} ${featureName ?? ""}`.toLowerCase();
-  if (/rzek|potok|ciek|strum|dopływ|doplyw/.test(blob)) return "ladne_miejsce";
-  if (/jezior|staw|zbiornik|rozlew/.test(blob)) return "ladne_miejsce";
-  if (/wzgór|wzor|gór|szczyt|pagór|wierch|kopiec/.test(blob)) return "ladne_miejsce";
-  if (/las|bór|bor\b|piek|park\b/.test(blob)) return "nazwa_geo";
-  if (/dolina|kotlin/.test(blob)) return "nazwa_geo";
-  return "nazwa_geo";
-}
-
 export function mapujGeoKontekstNaPoi(opts: {
   dataset: string;
   layerName: string;
@@ -63,15 +53,9 @@ export function mapujGeoKontekstNaPoi(opts: {
     };
   }
 
-  if (opts.dataset === "PRNG" && nazwa) {
-    const rodzaj = opts.featureCategory?.trim();
-    const kat = kategoriaPrng(rodzaj ?? null, nazwa);
-    const pelna = rodzaj && !nazwa.toLowerCase().includes(rodzaj.toLowerCase()) ? `${nazwa} (${rodzaj})` : nazwa;
-    return {
-      category: kat,
-      name: pelna.slice(0, 120),
-      sourceExternalId: `geoportal:prng:${opts.sourceExternalId}`,
-    };
+  // PRNG (nazwy geograficzne, lasy, rzeki) — nie tworzymy automatycznie pinezek na mapie wsi.
+  if (opts.dataset === "PRNG") {
+    return null;
   }
 
   return null;

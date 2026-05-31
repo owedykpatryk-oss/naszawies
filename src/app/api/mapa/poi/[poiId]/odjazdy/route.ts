@@ -1,10 +1,17 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { createPublicSupabaseClient } from "@/lib/supabase/public-client";
+import {
+  najblizszeOdjazdyReczne,
+  parsujRozkladPrzystankuReczny,
+} from "@/lib/transport/rozklad-przystanku-reczny";
+import {
+  cacheDoApiOdjazdow,
+  reczneDoApiOdjazdow,
+  scalOdjazdyAutobusApi,
+} from "@/lib/transport/scal-odjazdy-przystanku";
 
 type Params = { params: { poiId: string } };
-
-const fmt = new Intl.DateTimeFormat("pl-PL", { hour: "2-digit", minute: "2-digit" });
 
 function norm(s: string): string {
   return s
@@ -27,7 +34,7 @@ export async function GET(_req: Request, { params }: Params) {
 
   const { data: poi } = await supabase
     .from("pois")
-    .select("id, village_id, category, name")
+    .select("id, village_id, category, name, bus_schedule_manual, photo_url, photo_caption")
     .eq("id", parsed.data)
     .maybeSingle();
 
@@ -39,6 +46,9 @@ export async function GET(_req: Request, { params }: Params) {
   const odTeraz = new Date(Date.now() - 15 * 60 * 1000).toISOString();
 
   if (kat === "przystanek") {
+    const rozklad = parsujRozkladPrzystankuReczny(poi.bus_schedule_manual);
+    const reczne = reczneDoApiOdjazdow(najblizszeOdjazdyReczne(rozklad, { limit: 8 }));
+
     const { data: poPoi } = await supabase
       .from("bus_departures_cache")
       .select("line_label, destination, planned_at, stop_name, fetched_at, poi_id")
@@ -61,25 +71,26 @@ export async function GET(_req: Request, { params }: Params) {
       rows = (poWsi ?? []).filter((r) => norm(r.stop_name ?? "").includes(pn) || pn.includes(norm(r.stop_name ?? "")));
     }
 
-    const odjazdy = (rows ?? []).map((r) => ({
-      czas: fmt.format(new Date(r.planned_at)),
-      linia: r.line_label,
-      cel: r.destination,
-      opis: r.stop_name,
-    }));
+    const cache = cacheDoApiOdjazdow(rows ?? []);
+    const odjazdy = scalOdjazdyAutobusApi(reczne, cache, 8);
 
     return NextResponse.json(
       {
         typ: "autobus" as const,
         nazwa: poi.name,
         odjazdy,
-        fetchedAt: (rows ?? [])[0]?.fetched_at ?? null,
+        maReczny: reczne.length > 0 || Boolean(rozklad?.notatka?.trim()),
+        notatka: rozklad?.notatka?.trim() || null,
+        linkPdf: rozklad?.linkPdf?.trim() || null,
+        photoUrl: poi.photo_url ?? null,
+        fetchedAt: (rows ?? [])[0]?.fetched_at ?? rozklad?.zaktualizowano ?? null,
       },
       { headers: { "Cache-Control": "public, s-maxage=45, stale-while-revalidate=90" } },
     );
   }
 
   if (kat === "stacja_kolejowa") {
+    const fmt = new Intl.DateTimeFormat("pl-PL", { hour: "2-digit", minute: "2-digit" });
     const { data: mapowania } = await supabase
       .from("village_transport_stations")
       .select("station_id, station_name")
