@@ -66,7 +66,9 @@ export function CmentarzPublicznyKlient({ nazwaWsi, sciezkaWsi, plan }: Props) {
             plan={plan.plan_data}
             className="h-auto w-full max-h-[min(70vh,520px)]"
             podswietlId={podswietl}
-            tloUrl={plan.orthophoto_enabled ? plan.podkladUrl : null}
+            kafelkiSatelitarne={plan.orthophoto_enabled ? plan.kafelkiSatelitarne : []}
+            tloUrl={plan.orthophoto_enabled && plan.kafelkiSatelitarne.length === 0 ? plan.podkladUrl : null}
+            tloOpacity={0.58}
             onElementClick={(id) => {
               ustawPodswietl(id);
               const g = plan.groby.find((gr) => gr.plan_element_id === id);
@@ -74,8 +76,8 @@ export function CmentarzPublicznyKlient({ nazwaWsi, sciezkaWsi, plan }: Props) {
             }}
           />
           <p className="mt-2 text-xs text-stone-500">
-            {plan.orthophoto_enabled && plan.podkladUrl
-              ? "Podkład ortofoto — orientacyjny (Esri World Imagery)."
+            {plan.orthophoto_enabled && (plan.kafelkiSatelitarne.length > 0 || plan.podkladUrl)
+              ? "Podkład satelitarny (Esri World Imagery) — orientacyjny."
               : "Kliknij grób na planie, aby zobaczyć dane w wynikach."}
           </p>
         </div>

@@ -182,12 +182,6 @@ export async function pobierzObrysyCmentarzyZOsm(
   return { ok: true, obrysy };
 }
 
-/** URL kafelka ortofoto (Esri World Imagery) — orientacyjny podkład. */
-export function urlPodkladuOrtofoto(lat: number, lon: number, zoom = 18): string {
-  const z = zoom;
-  const n = 2 ** z;
-  const x = Math.floor(((lon + 180) / 360) * n);
-  const latRad = (lat * Math.PI) / 180;
-  const y = Math.floor(((1 - Math.log(Math.tan(latRad) + 1 / Math.cos(latRad)) / Math.PI) / 2) * n);
-  return `https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/${z}/${y}/${x}`;
-}
+/** @deprecated Użyj `podklad-satelitarny.ts` — zachowane dla importów wstecznych. */
+export { kafelkiSatelitarne, urlPodkladuOrtofoto } from "@/lib/cmentarz/podklad-satelitarny";
+export type { KafelSatelitarny } from "@/lib/cmentarz/podklad-satelitarny";

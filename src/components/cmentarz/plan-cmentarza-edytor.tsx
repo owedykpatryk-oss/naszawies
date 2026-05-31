@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useMemo, useRef, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import {
   dodajRekordGrobu,
@@ -19,7 +19,8 @@ import {
   type PlanCmentarzaJson,
   type TypElementuPlanuCmentarza,
 } from "@/lib/cmentarz/plan-cmentarza";
-import { urlPodkladuOrtofoto } from "@/lib/cmentarz/overpass-cmentarz-obrys";
+import { kafelkiSatelitarne } from "@/lib/cmentarz/podklad-satelitarny";
+import { ograniczElementDoObszaru } from "@/lib/swietlica/mapowanie-rzutu-plan";
 
 type Props = {
   planId: string;
@@ -34,6 +35,8 @@ type Props = {
   sciezkaPubliczna: string;
   oczekujaceCsv: number;
 };
+
+const OBSZAR = { x: 0, y: 0, w: 100, h: 70 };
 
 export function PlanCmentarzaEdytor({
   planId,
@@ -59,17 +62,124 @@ export function PlanCmentarzaEdytor({
   const [blad, ustawBlad] = useState("");
   const [czek, startT] = useTransition();
 
+  const wrapRef = useRef<HTMLDivElement>(null);
+  const planRef = useRef(plan);
+  planRef.current = plan;
+  const przeciag = useRef<{
+    id: string;
+    startClientX: number;
+    startClientY: number;
+    startX: number;
+    startY: number;
+  } | null>(null);
+  const zmianaRozmiaru = useRef<{
+    id: string;
+    startClientX: number;
+    startClientY: number;
+    startSzer: number;
+    startWys: number;
+  } | null>(null);
+
   const wybranyEl = plan.elementy.find((e) => e.id === wybrany) ?? null;
-  const podklad =
-    ortofoto && centroidLat != null && centroidLng != null
-      ? urlPodkladuOrtofoto(centroidLat, centroidLng)
-      : null;
+
+  const kafelki = useMemo(() => {
+    if (!ortofoto || centroidLat == null || centroidLng == null) return [];
+    return kafelkiSatelitarne(centroidLat, centroidLng, 18, 1);
+  }, [ortofoto, centroidLat, centroidLng]);
+
+  useEffect(() => {
+    const move = (e: PointerEvent) => {
+      const d = przeciag.current;
+      const r = zmianaRozmiaru.current;
+      const wrap = wrapRef.current;
+      if (!wrap) return;
+      const rect = wrap.getBoundingClientRect();
+      if (rect.width < 1 || rect.height < 1) return;
+
+      if (d) {
+        const dx = ((e.clientX - d.startClientX) / rect.width) * 100;
+        const dy = ((e.clientY - d.startClientY) / rect.height) * 70;
+        ustawPlan((p) => {
+          const el = p.elementy.find((x) => x.id === d.id);
+          if (!el) return p;
+          const pos = ograniczElementDoObszaru(
+            { x: d.startX + dx, y: d.startY + dy, szer: el.szer, wys: el.wys },
+            OBSZAR,
+          );
+          return {
+            ...p,
+            elementy: p.elementy.map((x) => (x.id === d.id ? { ...x, x: pos.x, y: pos.y } : x)),
+          };
+        });
+        return;
+      }
+
+      if (r) {
+        const dx = ((e.clientX - r.startClientX) / rect.width) * 100;
+        const dy = ((e.clientY - r.startClientY) / rect.height) * 70;
+        ustawPlan((p) => ({
+          ...p,
+          elementy: p.elementy.map((x) => {
+            if (x.id !== r.id) return x;
+            const szer = Math.min(100 - x.x, Math.max(1.5, r.startSzer + dx));
+            const wys = Math.min(70 - x.y, Math.max(1, r.startWys + dy));
+            return { ...x, szer, wys };
+          }),
+        }));
+      }
+    };
+
+    const up = () => {
+      przeciag.current = null;
+      zmianaRozmiaru.current = null;
+    };
+
+    window.addEventListener("pointermove", move);
+    window.addEventListener("pointerup", up);
+    window.addEventListener("pointercancel", up);
+    return () => {
+      window.removeEventListener("pointermove", move);
+      window.removeEventListener("pointerup", up);
+      window.removeEventListener("pointercancel", up);
+    };
+  }, []);
+
+  useEffect(() => {
+    const h = (e: KeyboardEvent) => {
+      if (e.target && (e.target as HTMLElement).closest("input,textarea,select")) return;
+      if (!wybrany) return;
+      if (e.key === "Delete" || e.key === "Backspace") {
+        e.preventDefault();
+        usunWybrany();
+        return;
+      }
+      if (e.key === "ArrowLeft" || e.key === "ArrowRight" || e.key === "ArrowUp" || e.key === "ArrowDown") {
+        e.preventDefault();
+        const krok = e.shiftKey ? 2 : 0.5;
+        const dx = e.key === "ArrowLeft" ? -krok : e.key === "ArrowRight" ? krok : 0;
+        const dy = e.key === "ArrowUp" ? -krok : e.key === "ArrowDown" ? krok : 0;
+        ustawPlan((p) => ({
+          ...p,
+          elementy: p.elementy.map((x) => {
+            if (x.id !== wybrany) return x;
+            const pos = ograniczElementDoObszaru(
+              { x: x.x + dx, y: x.y + dy, szer: x.szer, wys: x.wys },
+              OBSZAR,
+            );
+            return { ...x, x: pos.x, y: pos.y };
+          }),
+        }));
+      }
+    };
+    window.addEventListener("keydown", h);
+    return () => window.removeEventListener("keydown", h);
+  }, [wybrany]);
 
   function zapisz() {
     ustawBlad("");
     ustawKomunikat("");
     startT(async () => {
-      const w = await zapiszPlanCmentarza(planId, plan, {
+      const w = await zapiszPlanCmentarza(planId, planRef.current, {
         name: nazwa,
         is_published: publikuj,
         virtual_candles_enabled: znicze,
@@ -96,12 +206,45 @@ export function PlanCmentarzaEdytor({
     ustawWybrany(null);
   }
 
-  function aktualizujWybrany(pola: Partial<{ etykieta: string; x: number; y: number; szer: number; wys: number }>) {
+  function aktualizujWybrany(
+    pola: Partial<{ etykieta: string; x: number; y: number; szer: number; wys: number; obrot: number }>,
+  ) {
     if (!wybrany) return;
     ustawPlan((p) => ({
       ...p,
       elementy: p.elementy.map((e) => (e.id === wybrany ? { ...e, ...pola } : e)),
     }));
+  }
+
+  function onPointerDownElement(e: React.PointerEvent, id: string) {
+    e.stopPropagation();
+    ustawWybrany(id);
+    const el = planRef.current.elementy.find((x) => x.id === id);
+    if (!el) return;
+    przeciag.current = {
+      id,
+      startClientX: e.clientX,
+      startClientY: e.clientY,
+      startX: el.x,
+      startY: el.y,
+    };
+    (e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId);
+    e.preventDefault();
+  }
+
+  function onPointerDownResize(e: React.PointerEvent, id: string) {
+    ustawWybrany(id);
+    const el = planRef.current.elementy.find((x) => x.id === id);
+    if (!el) return;
+    zmianaRozmiaru.current = {
+      id,
+      startClientX: e.clientX,
+      startClientY: e.clientY,
+      startSzer: el.szer,
+      startWys: el.wys,
+    };
+    (e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId);
+    e.preventDefault();
   }
 
   return (
@@ -110,11 +253,16 @@ export function PlanCmentarzaEdytor({
         <div>
           <h2 className="font-serif text-xl text-stone-900">Edytor planu cmentarza</h2>
           <p className="mt-1 text-sm text-stone-600">
-            Kwatery, rzędy i groby — jak układ stołów w świetlicy. Publicznie:{" "}
+            Przeciągaj kwatery i groby na planie (jak stoły w świetlicy). Publicznie:{" "}
             <a href={`${sciezkaPubliczna}/cmentarz`} target="_blank" rel="noopener noreferrer" className="underline">
               {sciezkaPubliczna}/cmentarz
             </a>
           </p>
+          <ol className="mt-2 list-inside list-decimal space-y-1 text-xs text-stone-600 sm:text-sm">
+            <li>Import obrysu z OSM, włącz <strong>podkład satelitarny</strong> (Esri — jak Google Maps).</li>
+            <li><strong>Przeciągnij</strong> elementy; uchwyt w rogu zmienia rozmiar; strzałki przesuwaj wybrany.</li>
+            <li>Zapisz plan — mieszkańcy zobaczą go z wyszukiwarką grobów.</li>
+          </ol>
         </div>
         <button
           type="button"
@@ -151,9 +299,9 @@ export function PlanCmentarzaEdytor({
             <input type="checkbox" checked={znicze} onChange={(e) => ustawZnicze(e.target.checked)} />
             Znicze wirtualne
           </label>
-          <label className="inline-flex items-center gap-2">
+          <label className="inline-flex items-center gap-2" title="Esri World Imagery — widok satelitarny">
             <input type="checkbox" checked={ortofoto} onChange={(e) => ustawOrtofoto(e.target.checked)} />
-            Podkład ortofoto
+            Podkład satelitarny
           </label>
         </div>
       </div>
@@ -218,13 +366,23 @@ export function PlanCmentarzaEdytor({
       </div>
 
       <div className="grid gap-4 lg:grid-cols-[1fr_240px]">
-        <PlanCmentarzaRysunek
-          plan={plan}
-          className="w-full max-h-96 rounded-lg border border-stone-200"
-          podswietlId={wybrany}
-          tloUrl={podklad}
-          onElementClick={ustawWybrany}
-        />
+        <div
+          ref={wrapRef}
+          className="relative overflow-hidden rounded-xl border-2 border-stone-200/80 bg-[#f7f3ea] shadow-inner"
+          onPointerDown={() => ustawWybrany(null)}
+        >
+          <PlanCmentarzaRysunek
+            plan={plan}
+            className="aspect-[10/7] w-full touch-none select-none"
+            podswietlId={wybrany}
+            kafelkiSatelitarne={kafelki}
+            tloOpacity={0.62}
+            trybEdycji
+            onElementClick={ustawWybrany}
+            onPointerDownElement={onPointerDownElement}
+            onPointerDownResize={onPointerDownResize}
+          />
+        </div>
         <div className="space-y-3 text-sm">
           {wybranyEl ? (
             <>
@@ -249,12 +407,24 @@ export function PlanCmentarzaEdytor({
                   />
                 </label>
               ))}
+              <label className="block">
+                Obrót (°)
+                <input
+                  type="number"
+                  step="5"
+                  min={0}
+                  max={359}
+                  value={wybranyEl.obrot ?? 0}
+                  onChange={(e) => aktualizujWybrany({ obrot: Number(e.target.value) })}
+                  className="mt-1 w-full rounded border border-stone-300 px-2 py-1 text-sm"
+                />
+              </label>
               <button type="button" onClick={usunWybrany} className="text-xs text-red-700 underline">
-                Usuń element
+                Usuń element (Del)
               </button>
             </>
           ) : (
-            <p className="text-stone-500">Kliknij element na planie, aby edytować.</p>
+            <p className="text-stone-500">Kliknij lub przeciągnij element na planie. Puste tło — kliknij poza elementy.</p>
           )}
         </div>
       </div>

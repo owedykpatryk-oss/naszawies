@@ -134,6 +134,13 @@ export function PlanSaliEdytor({
   const przeciag = useRef<{ id: string; startClientX: number; startClientY: number; startX: number; startY: number } | null>(
     null
   );
+  const zmianaRozmiaru = useRef<{
+    id: string;
+    startClientX: number;
+    startClientY: number;
+    startSzer: number;
+    startWys: number;
+  } | null>(null);
   const przedPrzeciag = useRef<PlanSaliJson | null>(null);
   const czyRuchWDrag = useRef(false);
   const stosCofnij = useRef<PlanSaliJson[]>([]);
@@ -346,28 +353,49 @@ export function PlanSaliEdytor({
   useEffect(() => {
     const move = (e: PointerEvent) => {
       const d = przeciag.current;
-      if (!d) return;
+      const r = zmianaRozmiaru.current;
+      if (!d && !r) return;
       czyRuchWDrag.current = true;
       const wrap = wrapRef.current;
       if (!wrap) return;
-      const r = wrap.getBoundingClientRect();
-      if (r.width < 1 || r.height < 1) return;
-      ustawPlan((p) => {
-        const el = p.elementy.find((x) => x.id === d.id);
-        if (!el) return p;
-        const dx = ((e.clientX - d.startClientX) / r.width) * 100;
-        const dy = ((e.clientY - d.startClientY) / r.height) * 70;
-        const pos = ograniczElementDoObszaru(
-          { x: d.startX + dx, y: d.startY + dy, szer: el.szer, wys: el.wys },
-          obszarStolow,
-        );
-        const nx = pos.x;
-        const ny = pos.y;
-        return {
+      const rect = wrap.getBoundingClientRect();
+      if (rect.width < 1 || rect.height < 1) return;
+
+      if (d) {
+        ustawPlan((p) => {
+          const el = p.elementy.find((x) => x.id === d.id);
+          if (!el) return p;
+          const dx = ((e.clientX - d.startClientX) / rect.width) * 100;
+          const dy = ((e.clientY - d.startClientY) / rect.height) * 70;
+          const pos = ograniczElementDoObszaru(
+            { x: d.startX + dx, y: d.startY + dy, szer: el.szer, wys: el.wys },
+            obszarStolow,
+          );
+          const nx = pos.x;
+          const ny = pos.y;
+          return {
+            ...p,
+            elementy: p.elementy.map((x) => (x.id === d.id ? { ...x, x: nx, y: ny } : x)),
+          };
+        });
+        return;
+      }
+
+      if (r) {
+        const dx = ((e.clientX - r.startClientX) / rect.width) * 100;
+        const dy = ((e.clientY - r.startClientY) / rect.height) * 70;
+        ustawPlan((p) => ({
           ...p,
-          elementy: p.elementy.map((x) => (x.id === d.id ? { ...x, x: nx, y: ny } : x)),
-        };
-      });
+          elementy: p.elementy.map((x) => {
+            if (x.id !== r.id) return x;
+            const maxSzer = obszarStolow.x + obszarStolow.w - x.x;
+            const maxWys = obszarStolow.y + obszarStolow.h - x.y;
+            const szer = Math.min(maxSzer, Math.max(2, r.startSzer + dx));
+            const wys = Math.min(maxWys, Math.max(2, r.startWys + dy));
+            return { ...x, szer, wys };
+          }),
+        }));
+      }
     };
     const up = () => {
       if (przeciag.current) {
@@ -382,6 +410,18 @@ export function PlanSaliEdytor({
         czyRuchWDrag.current = false;
         przeciag.current = null;
       }
+      if (zmianaRozmiaru.current) {
+        if (przedPrzeciag.current && czyRuchWDrag.current) {
+          stosPonow.current = [];
+          ustawPonowDostepne(false);
+          stosCofnij.current = [...stosCofnij.current, klonPlanuSali(przedPrzeciag.current)];
+          if (stosCofnij.current.length > MAX_COFANIA) stosCofnij.current = stosCofnij.current.slice(-MAX_COFANIA);
+          ustawCofnijDostepne(true);
+        }
+        przedPrzeciag.current = null;
+        czyRuchWDrag.current = false;
+        zmianaRozmiaru.current = null;
+      }
     };
     window.addEventListener("pointermove", move);
     window.addEventListener("pointerup", up);
@@ -391,7 +431,7 @@ export function PlanSaliEdytor({
       window.removeEventListener("pointerup", up);
       window.removeEventListener("pointercancel", up);
     };
-  }, []);
+  }, [obszarStolow]);
 
   useEffect(() => {
     const h = (e: KeyboardEvent) => {
@@ -493,6 +533,25 @@ export function PlanSaliEdytor({
       startClientY: e.clientY,
       startX: el.x,
       startY: el.y,
+    };
+    (e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId);
+    e.preventDefault();
+  };
+
+  const onPointerDownResize = (e: React.PointerEvent, id: string) => {
+    e.stopPropagation();
+    const aktual = planRef.current;
+    przedPrzeciag.current = klonPlanuSali(aktual);
+    czyRuchWDrag.current = false;
+    ustawWybrany(id);
+    const el = aktual.elementy.find((x) => x.id === id);
+    if (!el) return;
+    zmianaRozmiaru.current = {
+      id,
+      startClientX: e.clientX,
+      startClientY: e.clientY,
+      startSzer: el.szer,
+      startWys: el.wys,
     };
     (e.currentTarget as HTMLElement).setPointerCapture?.(e.pointerId);
     e.preventDefault();
@@ -601,10 +660,7 @@ export function PlanSaliEdytor({
         )}
         <ol className="mt-3 list-inside list-decimal space-y-1.5 text-sm leading-relaxed text-stone-700 print:hidden sm:mt-2 sm:list-outside sm:pl-5">
           <li>Pod rysunkiem wpisz <strong>wymiary sali w metrach</strong> (szerokość i długość) — pokażą się też w dokumentach.</li>
-          <li>
-            <strong>Przeciągaj</strong> stoły na planie, albo wybierz szybki układ (bankiet, rząd…) i dopasuj etykiety
-            / liczbę miejsc.
-          </li>
+          <li><strong>Przeciągaj</strong> stoły; pomarańczowy uchwyt w rogu zmienia rozmiar; strzałki przesuwaj wybrany.</li>
           <li>
             Na telefonie użyj dolnego paska: <strong>Zapisz plan</strong> (albo przycisku „Zapisz” na dużym ekranie) —
             wtedy ten układ zobaczą mieszkańcy przy rezerwacji.
@@ -845,6 +901,21 @@ export function PlanSaliEdytor({
                     >
                       {el.miejsca} os.
                     </text>
+                  ) : null}
+                  {zaznaczony ? (
+                    <rect
+                      x={el.x + el.szer - 1.4}
+                      y={el.y + el.wys - 1.4}
+                      width={2.8}
+                      height={2.8}
+                      fill="#b8860b"
+                      stroke="#fff"
+                      strokeWidth={0.2}
+                      rx={0.35}
+                      className="cursor-se-resize"
+                      onPointerDown={(ev) => onPointerDownResize(ev, el.id)}
+                      style={{ touchAction: "none" }}
+                    />
                   ) : null}
                 </g>
               );

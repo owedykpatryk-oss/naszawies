@@ -1,6 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import type { KafelSatelitarny } from "@/lib/cmentarz/podklad-satelitarny";
+import { kafelkiSatelitarne } from "@/lib/cmentarz/podklad-satelitarny";
 import { parsujPlanCmentarza, type PlanCmentarzaJson } from "@/lib/cmentarz/plan-cmentarza";
-import { urlPodkladuOrtofoto } from "@/lib/cmentarz/overpass-cmentarz-obrys";
 
 export type RekordGrobuPubliczny = {
   id: string;
@@ -23,6 +24,7 @@ export type PlanCmentarzaPubliczny = {
   orthophoto_enabled: boolean;
   virtual_candles_enabled: boolean;
   podkladUrl: string | null;
+  kafelkiSatelitarne: KafelSatelitarny[];
   groby: RekordGrobuPubliczny[];
   liczbaZniczy: number;
 };
@@ -54,6 +56,7 @@ export async function pobierzPlanCmentarzaPubliczny(
     .eq("cemetery_plan_id", plan.id);
 
   let podkladUrl: string | null = null;
+  let kafelki: KafelSatelitarny[] = [];
   if (plan.orthophoto_enabled && plan.boundary_geojson) {
     const gj = plan.boundary_geojson as GeoJSON.Polygon | GeoJSON.MultiPolygon;
     const ring = gj.type === "Polygon" ? gj.coordinates[0] : gj.coordinates[0]?.[0];
@@ -65,7 +68,10 @@ export async function pobierzPlanCmentarzaPubliczny(
         sumLon += ring[i]![0];
         sumLat += ring[i]![1];
       }
-      podkladUrl = urlPodkladuOrtofoto(sumLat / n, sumLon / n);
+      const lat = sumLat / n;
+      const lon = sumLon / n;
+      kafelki = kafelkiSatelitarne(lat, lon, 18, 1);
+      podkladUrl = kafelki[4]?.url ?? kafelki[0]?.url ?? null;
     }
   }
 
@@ -77,6 +83,7 @@ export async function pobierzPlanCmentarzaPubliczny(
     orthophoto_enabled: plan.orthophoto_enabled,
     virtual_candles_enabled: plan.virtual_candles_enabled,
     podkladUrl,
+    kafelkiSatelitarne: kafelki,
     groby: (groby ?? []) as RekordGrobuPubliczny[],
     liczbaZniczy: count ?? 0,
   };
