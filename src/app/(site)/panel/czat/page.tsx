@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { redirect } from "next/navigation";
 import { NaglowekModuluPanelu } from "@/components/pomoc/naglowek-modulu-panelu";
 import { etykietaPresetu } from "@/lib/czat/grupy-preset";
