@@ -17,6 +17,7 @@ import { etykietaRoliWsi } from "@/lib/panel/role-definicje";
 import { pobierzVillageIdsRoliPaneluSoltysa } from "@/lib/panel/rola-panelu-soltysa";
 import { roleDlaUprawnienia } from "@/lib/panel/uprawnienia-wsi";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin-client";
+import { pobierzUzytkownikaDoAkcji } from "@/lib/auth/pobierz-uzytkownika-serwer";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
 import { SZABLONY_LISTY_ZAKUPOW } from "@/lib/zakupy/szablony-listy-zakupow";
 import { sciezkaProfiluWsi } from "@/lib/wies/sciezka-publiczna";
@@ -77,15 +78,21 @@ export async function zlozWniosekRoleOrganizacyjnej(
   return { ok: true, komunikat: "Wniosek wysłany — sołtys rozpatrzy go w panelu." };
 }
 
+const sciezkiPoObserwacjiWsi = ["/panel/mieszkaniec", "/panel/moje", "/panel/moje/wies"] as const;
+
+function odswiezPoObserwacjiWsi() {
+  for (const p of sciezkiPoObserwacjiWsi) {
+    revalidatePath(p);
+  }
+}
+
 export async function zlozWniosekMieszkaniec(villageId: string): Promise<WynikProsty> {
   const v = uuid.safeParse(villageId);
   if (!v.success) {
     return { blad: "Niepoprawny identyfikator wsi." };
   }
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await pobierzUzytkownikaDoAkcji();
   if (!user) {
     return { blad: "Zaloguj się." };
   }
@@ -116,6 +123,7 @@ export async function zlozWniosekMieszkaniec(villageId: string): Promise<WynikPr
 
   revalidatePath("/panel/mieszkaniec");
   revalidatePath("/panel/moje");
+  revalidatePath("/panel/moje/wies");
   revalidatePath("/panel/soltys");
   return { ok: true, komunikat: "Wniosek wysłany — czekaj na akceptację sołtysa." };
 }
@@ -126,9 +134,7 @@ export async function obserwujWies(villageId: string): Promise<WynikProsty> {
     return { blad: "Niepoprawny identyfikator wsi." };
   }
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await pobierzUzytkownikaDoAkcji();
   if (!user) {
     return { blad: "Zaloguj się." };
   }
@@ -150,8 +156,7 @@ export async function obserwujWies(villageId: string): Promise<WynikProsty> {
     return { blad: "Nie udało się dodać obserwacji." };
   }
 
-  revalidatePath("/panel/mieszkaniec");
-  revalidatePath("/panel/moje");
+  odswiezPoObserwacjiWsi();
   return { ok: true, komunikat: "Dodano obserwację — poniżej możesz dopasować kategorie powiadomień." };
 }
 

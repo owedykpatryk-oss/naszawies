@@ -1,16 +1,19 @@
 import Link from "next/link";
-import { redirect } from "next/navigation";
 import { PanelStronaMoje } from "@/components/panel/panel-strona-moje";
 import { MojeDodajWiesKlient } from "@/components/panel/moje/moje-dodaj-wies-klient";
 import { MojeKartaWsi } from "@/components/panel/moje/moje-karta-wsi";
+import { wymagajLogowaniaStrona } from "@/lib/auth/wymagaj-logowania-strona";
 import { pobierzMojePowiazania } from "@/lib/panel/pobierz-moje-powiazania";
 
 export const metadata = { title: "Moje wsie" };
 
+export const dynamic = "force-dynamic";
+
 export default async function MojeWiesPage() {
-  const dane = await pobierzMojePowiazania();
+  const user = await wymagajLogowaniaStrona("/panel/moje/wies");
+  const dane = await pobierzMojePowiazania(user);
   if (!dane) {
-    redirect("/logowanie?next=/panel/moje/wies");
+    throw new Error("Nie udało się wczytać powiązań z wsiami.");
   }
 
   const mieszkam = dane.wies.filter((w) => w.rola && w.statusRoli === "active");

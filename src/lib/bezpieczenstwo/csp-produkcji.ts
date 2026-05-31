@@ -29,6 +29,8 @@ export function budujCspProdukcji(): string {
     "https://*.supabase.co",
     "https://tile.openstreetmap.org",
     "https://*.tile.openstreetmap.org",
+    "https://server.arcgisonline.com",
+    "https://*.arcgisonline.com",
     r2Base,
     "https://cdn.naszawies.pl",
     ...(vercelLive ? ["https://vercel.com", "https://vercel.live"] : []),

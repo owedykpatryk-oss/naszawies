@@ -45,7 +45,9 @@ function odpowiedzZNastepnym(
   const requestHeaders = new Headers(request.headers);
   dolaczNaglowkiUzytkownika(requestHeaders, user);
   const odpowiedz = NextResponse.next({
-    request: { headers: requestHeaders },
+    request: {
+      headers: requestHeaders,
+    },
   });
   dolaczCiasteczkaSesji(odpowiedz, ciasteczkaSesji);
   return odpowiedz;
@@ -144,6 +146,7 @@ export async function middleware(request: NextRequest) {
   }
 
   let ciasteczkaSesji: CiasteczkaDoUstawienia = [];
+  let odpowiedz = NextResponse.next({ request });
 
   const supabase = createServerClient(url, anonKey, {
     cookies: {
@@ -153,6 +156,8 @@ export async function middleware(request: NextRequest) {
       setAll(cookiesToSet: CiasteczkaDoUstawienia) {
         ciasteczkaSesji = cookiesToSet;
         cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
+        odpowiedz = NextResponse.next({ request });
+        dolaczCiasteczkaSesji(odpowiedz, cookiesToSet);
       },
     },
   });

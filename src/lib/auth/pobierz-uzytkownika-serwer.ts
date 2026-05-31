@@ -42,3 +42,17 @@ export const pobierzUzytkownikaSerwer = cache(async (): Promise<User | null> => 
   if (zSesji) return zSesji;
   return uzytkownikZNaglowkowMiddleware();
 });
+
+/** Server Actions — getSession może odświeżyć token i zapisać ciasteczka (w RSC zapis bywa zablokowany). */
+export async function pobierzUzytkownikaDoAkcji(): Promise<User | null> {
+  try {
+    const supabase = utworzKlientaSupabaseSerwer();
+    const {
+      data: { session },
+    } = await supabase.auth.getSession();
+    if (session?.user) return session.user;
+  } catch {
+    // kontynuuj z nagłówkiem middleware
+  }
+  return uzytkownikZNaglowkowMiddleware();
+}

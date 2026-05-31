@@ -1,3 +1,4 @@
+import type { User } from "@supabase/supabase-js";
 import { etykietaRoliWsi } from "@/lib/panel/role-definicje";
 import { pobierzUzytkownikaSerwer } from "@/lib/auth/pobierz-uzytkownika-serwer";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
@@ -142,8 +143,8 @@ function zWierszaWsi(
 }
 
 /** Agreguje wsie użytkownika (role + obserwacje) oraz jednostki samorządowe. */
-export async function pobierzMojePowiazania(): Promise<MojePowiazania | null> {
-  const user = await pobierzUzytkownikaSerwer();
+export async function pobierzMojePowiazania(userWejsciowy?: User | null): Promise<MojePowiazania | null> {
+  const user = userWejsciowy ?? (await pobierzUzytkownikaSerwer());
   if (!user) return null;
 
   const supabase = utworzKlientaSupabaseSerwer();
