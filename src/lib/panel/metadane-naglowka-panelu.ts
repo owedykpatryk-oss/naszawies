@@ -1,4 +1,4 @@
-import { unstable_cache } from "next/cache";
+import { cache } from "react";
 import { czyAdminPlatformy } from "@/lib/admin/czy-admin-platformy";
 import { pobierzLiczbeNieprzeczytanychCzatu } from "@/lib/czat/pobierz-nieprzeczytane";
 import { pobierzVillageIdsRoliPaneluSoltysa } from "@/lib/panel/rola-panelu-soltysa";
@@ -24,11 +24,5 @@ async function pobierzMetadaneNaglowkaPanelu(userId: string): Promise<MetadaneNa
   };
 }
 
-/** Badge’e nagłówka panelu — krótki cache, żeby nawigacja między zakładkami nie robiła 3 zapytań za każdym razem. */
-export function pobierzMetadaneNaglowkaPaneluCache(userId: string): Promise<MetadaneNaglowkaPanelu> {
-  return unstable_cache(
-    () => pobierzMetadaneNaglowkaPanelu(userId),
-    ["panel-naglowek", userId],
-    { revalidate: 30 },
-  )();
-}
+/** Badge’e nagłówka panelu — deduplikacja w ramach jednego żądania (wymaga cookies / sesji). */
+export const pobierzMetadaneNaglowkaPaneluCache = cache(pobierzMetadaneNaglowkaPanelu);
