@@ -1,8 +1,10 @@
+import type { User } from "@supabase/supabase-js";
 import type { CookieOptions } from "@supabase/ssr";
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { bezpiecznaSciezkaNastepna } from "@/lib/auth/bezpieczna-sciezka-nastepna";
 import { maCiasteczkaSesjiSupabase } from "@/lib/auth/ciasteczka-sesji";
+import { NAGLOWEK_USER_EMAIL, NAGLOWEK_USER_ID } from "@/lib/auth/naglowki-sesji-middleware";
 import {
   sciezkaApiWymagaLogowania,
   sciezkaWymagaLogowania,
@@ -27,17 +29,42 @@ function dolaczCiasteczkaSesji(cel: NextResponse, ciasteczka: CiasteczkaDoUstawi
   ciasteczka.forEach(({ name, value, options }) => cel.cookies.set(name, value, options));
 }
 
+function dolaczNaglowkiUzytkownika(requestHeaders: Headers, user: User | null): void {
+  requestHeaders.delete(NAGLOWEK_USER_ID);
+  requestHeaders.delete(NAGLOWEK_USER_EMAIL);
+  if (!user) return;
+  requestHeaders.set(NAGLOWEK_USER_ID, user.id);
+  if (user.email) requestHeaders.set(NAGLOWEK_USER_EMAIL, user.email);
+}
+
+function odpowiedzZNastepnym(
+  request: NextRequest,
+  ciasteczkaSesji: CiasteczkaDoUstawienia,
+  user: User | null,
+): NextResponse {
+  const requestHeaders = new Headers(request.headers);
+  dolaczNaglowkiUzytkownika(requestHeaders, user);
+  const odpowiedz = NextResponse.next({
+    request: { headers: requestHeaders },
+  });
+  dolaczCiasteczkaSesji(odpowiedz, ciasteczkaSesji);
+  return odpowiedz;
+}
+
 function przekierujZachowujacSesje(
   request: NextRequest,
   ciasteczkaSesji: CiasteczkaDoUstawienia,
   pathname: string,
   search = "",
+  user: User | null = null,
 ): NextResponse {
   const url = request.nextUrl.clone();
   url.pathname = pathname;
   url.search = search;
   const przekierowanie = NextResponse.redirect(url);
   dolaczCiasteczkaSesji(przekierowanie, ciasteczkaSesji);
+  if (user?.id) przekierowanie.headers.set(NAGLOWEK_USER_ID, user.id);
+  if (user?.email) przekierowanie.headers.set(NAGLOWEK_USER_EMAIL, user.email);
   return odpowiedzZBazowymiNaglowkami(przekierowanie, pathname);
 }
 
@@ -116,7 +143,6 @@ export async function middleware(request: NextRequest) {
     return odpowiedzZBazowymiNaglowkami(NextResponse.next({ request }), sciezka);
   }
 
-  let odpowiedz = NextResponse.next({ request });
   let ciasteczkaSesji: CiasteczkaDoUstawienia = [];
 
   const supabase = createServerClient(url, anonKey, {
@@ -127,13 +153,11 @@ export async function middleware(request: NextRequest) {
       setAll(cookiesToSet: CiasteczkaDoUstawienia) {
         ciasteczkaSesji = cookiesToSet;
         cookiesToSet.forEach(({ name, value }) => request.cookies.set(name, value));
-        odpowiedz = NextResponse.next({ request });
-        dolaczCiasteczkaSesji(odpowiedz, cookiesToSet);
       },
     },
   });
 
-  let user = null;
+  let user: User | null = null;
 
   if (walidujUzytkownika || maSesje) {
     // getSession odświeża wygasły access token z refresh tokena (httpOnly cookie).
@@ -145,12 +169,12 @@ export async function middleware(request: NextRequest) {
   }
 
   if (sciezka === "/" && user) {
-    return przekierujZachowujacSesje(request, ciasteczkaSesji, "/panel");
+    return przekierujZachowujacSesje(request, ciasteczkaSesji, "/panel", "", user);
   }
 
   if (sciezka.startsWith("/logowanie") && user) {
     const nastepna = bezpiecznaSciezkaNastepna(request.nextUrl.searchParams.get("next") ?? undefined);
-    return przekierujZachowujacSesje(request, ciasteczkaSesji, nastepna);
+    return przekierujZachowujacSesje(request, ciasteczkaSesji, nastepna, "", user);
   }
 
   if (wymagaKonta && !user) {
@@ -168,7 +192,7 @@ export async function middleware(request: NextRequest) {
     );
   }
 
-  return odpowiedzZBazowymiNaglowkami(odpowiedz, sciezka);
+  return odpowiedzZBazowymiNaglowkami(odpowiedzZNastepnym(request, ciasteczkaSesji, user), sciezka);
 }
 
 export const config = {

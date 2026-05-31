@@ -1,6 +1,7 @@
 "use client";
 
 import type { AuthChangeEvent } from "@supabase/supabase-js";
+import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import { utworzKlientaSupabasePrzegladarka } from "@/lib/supabase/przegladarka";
 
@@ -9,6 +10,8 @@ import { utworzKlientaSupabasePrzegladarka } from "@/lib/supabase/przegladarka";
  * żeby nawigacja między panel / mapa / rynek nie kończyła się ponownym logowaniem.
  */
 export function OdswiezSesjeKlient() {
+  const router = useRouter();
+
   useEffect(() => {
     let aktywny = true;
 
@@ -17,7 +20,9 @@ export function OdswiezSesjeKlient() {
 
       const odswiezSesje = () => {
         if (!aktywny) return;
-        void supabase.auth.getSession();
+        void supabase.auth.getSession().then(() => {
+          if (aktywny) router.refresh();
+        });
       };
 
       const onVisibility = () => {
@@ -30,7 +35,7 @@ export function OdswiezSesjeKlient() {
       const {
         data: { subscription },
       } = supabase.auth.onAuthStateChange((event: AuthChangeEvent) => {
-        if (event === "TOKEN_REFRESHED" || event === "SIGNED_IN") {
+        if (event === "TOKEN_REFRESHED" || event === "SIGNED_IN" || event === "SIGNED_OUT") {
           odswiezSesje();
         }
       });
@@ -44,7 +49,7 @@ export function OdswiezSesjeKlient() {
     } catch {
       return undefined;
     }
-  }, []);
+  }, [router]);
 
   return null;
 }

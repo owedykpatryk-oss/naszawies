@@ -1,4 +1,4 @@
-import { headers } from "next/headers";
+import { cookies, headers } from "next/headers";
 import { DolnaNawigacjaWarunkowa } from "@/components/marka/dolna-nawigacja-warunkowa";
 import { NaglowekWarunkowy } from "@/components/marka/naglowek-warunkowy";
 import { TrybSeniorProvider } from "@/components/ui/tryb-senior-provider";
@@ -31,7 +31,11 @@ function pomijaNaglowekWitryny(pathname: string): boolean {
   return czyStronaBezNaglowkaWitryny(pathname);
 }
 
+/** Nawigacja zależy od sesji — bez cache między żądaniami. */
+export const dynamic = "force-dynamic";
+
 export default async function LayoutWitryny({ children }: { children: React.ReactNode }) {
+  cookies();
   const pathname = headers().get("x-pathname") ?? "";
   const bezNaglowka = pomijaNaglowekWitryny(pathname);
 
