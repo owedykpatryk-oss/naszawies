@@ -565,6 +565,31 @@ export function MapaWsiStrona({
             ) : null}
           </div>
 
+          <div className="mt-2 flex flex-wrap gap-1.5" role="group" aria-label="Szybki filtr kategorii POI">
+            {(
+              [
+                { id: "wszystkie", label: "Wszystkie POI" },
+                { id: "transport", label: "🚌 Transport" },
+                { id: "sklep", label: "🛒 Sklepy" },
+                { id: "apteka", label: "💊 Apteki" },
+                { id: "szkola", label: "🏫 Szkoły" },
+                { id: "przystanek", label: "🚏 Przystanki" },
+                { id: "cmentarz", label: "🕯 Cmentarze" },
+              ] as const
+            ).map(({ id, label }) => (
+              <button
+                key={id}
+                type="button"
+                onClick={() => setFiltrPoi(id)}
+                className={`mapa-pill-warstwa text-[11px] ${
+                  filtrPoiEfektywny === id ? "mapa-pill-warstwa--on" : "mapa-pill-warstwa--off"
+                }`}
+              >
+                {label}
+              </button>
+            ))}
+          </div>
+
           {linkHubGminy ? (
             <p className="mt-2 text-xs">
               <Link href={linkHubGminy} className="font-medium text-green-900 underline">

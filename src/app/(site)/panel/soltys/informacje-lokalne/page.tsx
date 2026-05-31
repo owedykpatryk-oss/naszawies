@@ -5,6 +5,7 @@ import { pobierzVillageIdsRoliPaneluSoltysaDlaUzytkownikaCache } from "@/lib/pan
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
 import { normalizujKategorieLinku } from "@/lib/wies/linki-przydatne";
 import { sciezkaProfiluWsi } from "@/lib/wies/sciezka-publiczna";
+import { PanelStronaSoltysa } from "@/components/panel/panel-strona-soltysa";
 import { InformacjeLokalneKlient, type LinkDoEdycji, type WiesDoInformacji } from "./informacje-lokalne-klient";
 
 export const metadata: Metadata = {
@@ -13,24 +14,19 @@ export const metadata: Metadata = {
 
 export default async function InformacjeLokalnePage() {
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { data: { session } } = await supabase.auth.getSession();
+  const user = session?.user ?? null;
   if (!user) {
     redirect("/logowanie?next=/panel/soltys/informacje-lokalne");
   }
   const villageIds = await pobierzVillageIdsRoliPaneluSoltysaDlaUzytkownikaCache(user.id);
   if (villageIds.length === 0) {
     return (
-      <main>
-        <p className="mb-4 text-sm text-stone-500">
-          <Link href="/panel/soltys" className="text-green-800 underline">
-            ← Panel sołtysa
-          </Link>
-        </p>
-        <h1 className="tytul-sekcji-panelu">Informacje dla mieszkańców</h1>
-        <p className="mt-2 text-sm text-stone-600">Brak przypisanej wsi w roli sołtysa lub współadmina.</p>
-      </main>
+      <PanelStronaSoltysa
+        tytul="Informacje dla mieszkańców"
+        opis="Brak przypisanej wsi w roli sołtysa lub współadmina."
+        dzieci={null}
+      />
     );
   }
 
@@ -72,22 +68,19 @@ export default async function InformacjeLokalnePage() {
   }));
 
   return (
-    <main>
-      <p className="mb-4 text-sm text-stone-500">
-        <Link href="/panel/soltys" className="text-green-800 underline">
-          ← Panel sołtysa
-        </Link>
-      </p>
-      <h1 className="tytul-sekcji-panelu">Informacje dla mieszkańców</h1>
-      <p className="mt-2 max-w-2xl text-sm text-stone-600">
-        Dodaj linki do BIP gminy, urzędu, lokalnej gazety, radia i portali — oraz numery telefonów. Pojawią się na
-        profilu wsi w sekcji „Informacje dla mieszkańców”. Dłuższe opisy (śmieci, drogi) uzupełnij w{" "}
-        <Link href="/panel/soltys/samorzad" className="text-green-800 underline">
-          przewodniku samorządowym
-        </Link>
-        .
-      </p>
-      <InformacjeLokalneKlient wsie={wsie} linki={linki} />
-    </main>
+    <PanelStronaSoltysa
+      tytul="Informacje dla mieszkańców"
+      opis={
+        <>
+          Dodaj linki do BIP gminy, urzędu, lokalnej gazety, radia i portali — oraz numery telefonów. Pojawią się na
+          profilu wsi w sekcji „Informacje dla mieszkańców”. Dłuższe opisy (śmieci, drogi) uzupełnij w{" "}
+          <Link href="/panel/soltys/samorzad" className="font-medium text-green-800 underline">
+            przewodniku samorządowym
+          </Link>
+          .
+        </>
+      }
+      dzieci={<InformacjeLokalneKlient wsie={wsie} linki={linki} />}
+    />
   );
 }

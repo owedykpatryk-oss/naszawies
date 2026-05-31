@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { DokumentWynajmuWidok } from "@/components/swietlica/dokument-wynajmu-widok";
+import { PanelStronaMieszkaneca } from "@/components/panel/panel-strona-mieszkaneca";
 import { NawigacjaSali } from "@/components/swietlica/nawigacja-sali";
 import {
   pobierzDaneDokumentuWynajmu,
@@ -27,9 +28,8 @@ export default async function DokumentWynajmuMieszkaniecPage({ params, searchPar
   const bookingId = Array.isArray(rezerwacjaParam) ? rezerwacjaParam[0] : rezerwacjaParam;
 
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { data: { session } } = await supabase.auth.getSession();
+  const user = session?.user ?? null;
   if (!user) redirect(`/logowanie?next=/panel/mieszkaniec/swietlica/${hallId}/dokument`);
 
   if (bookingId && /^[0-9a-f-]{36}$/i.test(bookingId)) {
@@ -51,31 +51,31 @@ export default async function DokumentWynajmuMieszkaniecPage({ params, searchPar
   if (!dane) notFound();
 
   return (
-    <main className="pb-16">
-      <p className="mb-2 text-sm text-stone-500">
-        <Link href={`/panel/mieszkaniec/swietlica/${hallId}`} className="text-green-800 underline">
-          ← Wróć do sali
-        </Link>
-        {dane.rezerwacja ? (
-          <>
-            {" · "}
-            <Link href={`/panel/mieszkaniec/swietlica/${hallId}/dokument`} className="text-green-800 underline">
-              Dokument ogólny
-            </Link>
-          </>
-        ) : null}
-      </p>
-      <NawigacjaSali hallId={hallId} rola="mieszkaniec" pokazRzutParteruMieszkaniec={dane.rzutParteru != null} />
-      <h1 className="tytul-sekcji-panelu">
-        {dane.rezerwacja ? "Dokument Twojej rezerwacji" : "Dokument informacyjny"}
-      </h1>
-      <p className="mt-1 text-sm text-stone-600">
-        Regulamin (tekst i plik), kaucja, ceny, wyposażenie i schematy sali
-        {dane.rezerwacja ? " — dla wybranej rezerwacji." : "."}
-      </p>
-      <div className="mt-8">
-        <DokumentWynajmuWidok dane={dane} />
-      </div>
-    </main>
+    <PanelStronaMieszkaneca
+      tytul={dane.rezerwacja ? "Dokument Twojej rezerwacji" : "Dokument informacyjny"}
+      opis={
+        <>
+          Regulamin (tekst i plik), kaucja, ceny, wyposażenie i schematy sali
+          {dane.rezerwacja ? " — dla wybranej rezerwacji." : "."}
+          {dane.rezerwacja ? (
+            <>
+              {" "}
+              <Link href={`/panel/mieszkaniec/swietlica/${hallId}/dokument`} className="font-medium text-green-800 underline">
+                Dokument ogólny
+              </Link>
+            </>
+          ) : null}
+        </>
+      }
+      hrefPowrotu={`/panel/mieszkaniec/swietlica/${hallId}`}
+      etykietaPowrotu="← Wróć do sali"
+      szeroki
+      dzieci={
+        <>
+          <NawigacjaSali hallId={hallId} rola="mieszkaniec" pokazRzutParteruMieszkaniec={dane.rzutParteru != null} />
+          <DokumentWynajmuWidok dane={dane} />
+        </>
+      }
+    />
   );
 }

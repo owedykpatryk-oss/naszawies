@@ -3,6 +3,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { pobierzVillageIdsModeracjiTresciCache } from "@/lib/panel/rola-moderacji";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
+import { PanelStronaSoltysa } from "@/components/panel/panel-strona-soltysa";
 import {
   SoltysWiadomosciLokalneKlient,
   type WiadomoscDoModeracji,
@@ -15,29 +16,23 @@ export const metadata: Metadata = {
 
 export default async function SoltysWiadomosciLokalnePage() {
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { data: { session } } = await supabase.auth.getSession();
+  const user = session?.user ?? null;
   if (!user) {
     redirect("/logowanie?next=/panel/soltys/wiadomosci-lokalne");
   }
   const villageIds = await pobierzVillageIdsModeracjiTresciCache(user.id);
   if (villageIds.length === 0) {
     return (
-      <main>
-        <p className="mb-4 text-sm text-stone-500">
-          <Link href="/panel/soltys" className="text-green-800 underline">
-            ← Panel sołtysa
+      <PanelStronaSoltysa
+        tytul="Wiadomości lokalne"
+        opis="Moderacja wiadomości należy do rady sołeckiej lub współadmina — nie do sołtysa."
+        dzieci={
+          <Link href="/panel/rada" className="inline-block font-medium text-green-800 underline">
+            Panel rady sołeckiej →
           </Link>
-        </p>
-        <h1 className="tytul-sekcji-panelu">Wiadomości lokalne</h1>
-        <p className="mt-2 text-sm text-stone-600">
-          Moderacja wiadomości należy do rady sołeckiej lub współadmina — nie do sołtysa.
-        </p>
-        <Link href="/panel/rada" className="mt-3 inline-block text-green-800 underline">
-          Panel rady sołeckiej →
-        </Link>
-      </main>
+        }
+      />
     );
   }
 
@@ -54,21 +49,17 @@ export default async function SoltysWiadomosciLokalnePage() {
   const wpisy = (newsRows ?? []) as WiadomoscDoModeracji[];
 
   return (
-    <main>
-      <p className="mb-4 text-sm text-stone-500">
-        <Link href="/panel/soltys" className="text-green-800 underline">
-          ← Panel sołtysa
-        </Link>
-        {" · "}
-        <Link href="/panel/soltys/kanaly-rss" className="text-green-800 underline">
-          Kanały RSS
-        </Link>
-      </p>
-      <h1 className="tytul-sekcji-panelu">Wiadomości lokalne — do zatwierdzenia</h1>
-      <p className="mt-2 max-w-2xl text-sm text-stone-600">
-        Wpisy z RSS i od mieszkańców pojawiają się tutaj przed publikacją na publicznym profilu wsi.
-      </p>
-      <SoltysWiadomosciLokalneKlient wsie={wsie} wpisy={wpisy} />
-    </main>
+    <PanelStronaSoltysa
+      tytul="Wiadomości lokalne — do zatwierdzenia"
+      opis={
+        <>
+          Wpisy z RSS i od mieszkańców pojawiają się tutaj przed publikacją na publicznym profilu wsi.{" "}
+          <Link href="/panel/soltys/kanaly-rss" className="font-medium text-green-800 underline">
+            Kanały RSS
+          </Link>
+        </>
+      }
+      dzieci={<SoltysWiadomosciLokalneKlient wsie={wsie} wpisy={wpisy} />}
+    />
   );
 }

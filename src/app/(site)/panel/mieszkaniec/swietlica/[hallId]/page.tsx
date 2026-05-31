@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
+import { PanelStronaMieszkaneca } from "@/components/panel/panel-strona-mieszkaneca";
 import { NawigacjaSali } from "@/components/swietlica/nawigacja-sali";
 import { KartaBudynkuSwietlicy } from "@/components/swietlica/karta-budynku-swietlicy";
 import { PlanSaliRysunek } from "@/components/swietlica/plan-sali-rysunek";
@@ -47,9 +48,8 @@ export default async function MieszkaniecSwietlicaHallPage({ params }: Props) {
   }
 
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { data: { session } } = await supabase.auth.getSession();
+  const user = session?.user ?? null;
   if (!user) {
     redirect(`/logowanie?next=/panel/mieszkaniec/swietlica/${hallId}`);
   }
@@ -133,14 +133,14 @@ export default async function MieszkaniecSwietlicaHallPage({ params }: Props) {
   }
 
   return (
-    <main>
-      <p className="mb-4 text-sm text-stone-500">
-        <Link href="/panel/mieszkaniec/swietlica" className="text-green-800 underline">
-          ← Lista sal
-        </Link>
-      </p>
+    <PanelStronaMieszkaneca
+      tytul={sala.name}
+      hrefPowrotu="/panel/mieszkaniec/swietlica"
+      etykietaPowrotu="← Lista sal"
+      szeroki
+      dzieci={
+        <>
       <NawigacjaSali hallId={hallId} rola="mieszkaniec" pokazRzutParteruMieszkaniec={rzutParteru != null} />
-      <h1 className="tytul-sekcji-panelu">{sala.name}</h1>
 
       <div className="mt-4">
         <KartaBudynkuSwietlicy
@@ -346,6 +346,8 @@ export default async function MieszkaniecSwietlicaHallPage({ params }: Props) {
           </div>
         )}
       </section>
-    </main>
+        </>
+      }
+    />
   );
 }

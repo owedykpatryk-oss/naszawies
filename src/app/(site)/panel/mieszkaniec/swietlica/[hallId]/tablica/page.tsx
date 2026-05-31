@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { TablicaCyfrowaKlient } from "@/components/grafika/tablica-cyfrowa-klient";
 import { pobierzPublicznePlakatyWsi } from "@/app/(site)/panel/grafika/akcje";
+import { PanelStronaMieszkaneca } from "@/components/panel/panel-strona-mieszkaneca";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
 import { NawigacjaSali } from "@/components/swietlica/nawigacja-sali";
 import { pojedynczaWies } from "@/lib/supabase/wies-z-zapytania";
@@ -19,9 +19,8 @@ export default async function MieszkaniecTablicaCyfrowaPage({ params }: Props) {
   if (!uuidOk) notFound();
 
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { data: { session } } = await supabase.auth.getSession();
+  const user = session?.user ?? null;
   if (!user) {
     redirect(`/logowanie?next=/panel/mieszkaniec/swietlica/${hallId}/tablica`);
   }
@@ -38,25 +37,18 @@ export default async function MieszkaniecTablicaCyfrowaPage({ params }: Props) {
   const plakaty = await pobierzPublicznePlakatyWsi(sala.village_id);
 
   return (
-    <main>
-      <p className="mb-4 text-sm text-stone-500">
-        <Link href={`/panel/mieszkaniec/swietlica/${hallId}`} className="text-green-800 underline">
-          ← Sala
-        </Link>
-      </p>
-      <h1 className="tytul-sekcji-panelu">Tablica cyfrowa</h1>
-      <p className="mt-2 max-w-2xl text-sm text-stone-600">
-        Podgląd plakatów sołectwa na ekranie w sali. Sołtys włącza rotację w kreatorze grafiki.
-      </p>
-
-      <div className="mt-6">
-        <NawigacjaSali hallId={hallId} rola="mieszkaniec" />
-        <TablicaCyfrowaKlient
-          plakaty={plakaty}
-          nazwaSali={sala.name}
-          nazwaWsi={wies?.name ?? "Wieś"}
-        />
-      </div>
-    </main>
+    <PanelStronaMieszkaneca
+      tytul="Tablica cyfrowa"
+      opis="Podgląd plakatów sołectwa na ekranie w sali. Sołtys włącza rotację w kreatorze grafiki."
+      hrefPowrotu={`/panel/mieszkaniec/swietlica/${hallId}`}
+      etykietaPowrotu="← Sala"
+      szeroki
+      dzieci={
+        <>
+          <NawigacjaSali hallId={hallId} rola="mieszkaniec" />
+          <TablicaCyfrowaKlient plakaty={plakaty} nazwaSali={sala.name} nazwaWsi={wies?.name ?? "Wieś"} />
+        </>
+      }
+    />
   );
 }

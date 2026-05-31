@@ -28,6 +28,9 @@ type Props = {
   lon: number;
   komentarze: KomentarzPoiWiersz[];
   zalogowany: boolean;
+  zrodloTekst: string;
+  zrodloKlasy: string;
+  wymagaWeryfikacji: boolean;
 };
 
 export function MiejscePoiKlient({
@@ -45,6 +48,9 @@ export function MiejscePoiKlient({
   lon,
   komentarze: poczatkowe,
   zalogowany,
+  zrodloTekst,
+  zrodloKlasy,
+  wymagaWeryfikacji,
 }: Props) {
   const [komentarze, ustawKomentarze] = useState(poczatkowe);
   const [blad, ustawBlad] = useState("");
@@ -99,7 +105,18 @@ export function MiejscePoiKlient({
           </div>
         )}
         <div className="p-5 sm:p-6">
-          <p className="text-xs font-semibold uppercase tracking-wide text-amber-800">{etykietaKategoriiPoi(kategoria)}</p>
+          <div className="flex flex-wrap items-center gap-2">
+            <p className="text-xs font-semibold uppercase tracking-wide text-amber-800">{etykietaKategoriiPoi(kategoria)}</p>
+            <span className={`rounded-full border px-2 py-0.5 text-[10px] font-medium ${zrodloKlasy}`}>
+              {zrodloTekst}
+            </span>
+          </div>
+          {wymagaWeryfikacji ? (
+            <p className="mt-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-950">
+              Ten punkt pochodzi z automatycznego importu i czeka na weryfikację sołtysa. Lokalizacja może wymagać
+              korekty.
+            </p>
+          ) : null}
           {opis ? <p className="mt-2 text-sm leading-relaxed text-stone-700">{opis}</p> : null}
           {telefon ? (
             <p className="mt-2 text-sm">

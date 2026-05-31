@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { redirect } from "next/navigation";
 import { pobierzVillageIdsRoliPaneluSoltysaDlaUzytkownikaCache } from "@/lib/panel/rola-panelu-soltysa";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
@@ -12,24 +11,19 @@ export const metadata: Metadata = {
 
 export default async function SoltysSamorzadPage() {
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { data: { session } } = await supabase.auth.getSession();
+  const user = session?.user ?? null;
   if (!user) {
     redirect("/logowanie?next=/panel/soltys/samorzad");
   }
   const villageIds = await pobierzVillageIdsRoliPaneluSoltysaDlaUzytkownikaCache(user.id);
   if (villageIds.length === 0) {
     return (
-      <main>
-        <p className="mb-4 text-sm text-stone-500">
-          <Link href="/panel/soltys" className="text-green-800 underline">
-            ← Panel sołtysa
-          </Link>
-        </p>
-        <h1 className="tytul-sekcji-panelu">Przewodnik samorządowy</h1>
-        <p className="mt-2 text-sm text-stone-600">Brak przypisanej wsi w roli sołtysa lub współadmina.</p>
-      </main>
+      <PanelStronaSoltysa
+        tytul="Przewodnik samorządowy"
+        opis="Brak przypisanej wsi w roli sołtysa lub współadmina."
+        dzieci={null}
+      />
     );
   }
 

@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { pobierzPoiZOsmWokolPunktu, type SugerowanyPoiZOsm } from "@/lib/mapa/overpass-poi-dla-punktu";
+import { KATEGORIE_POI_BAZOWE } from "@/lib/mapa/kategorie-poi-bazowe";
 
 type VillageRow = {
   id: string;
@@ -20,21 +21,7 @@ type PoiRow = {
   is_local_override: boolean | null;
 };
 
-const KATEGORIE_BAZOWE = [
-  "swietlica",
-  "osp",
-  "sklep",
-  "kosciol",
-  "szkola",
-  "przedszkole",
-  "biblioteka",
-  "boisko",
-  "przystanek",
-  "stacja_kolejowa",
-  "cmentarz",
-  "skup_zboz",
-  "sklep_rolniczy",
-] as const;
+const KATEGORIE_BAZOWE = KATEGORIE_POI_BAZOWE;
 
 const LIMITY_KATEGORII: Record<string, number> = {
   szkola: 2,
@@ -45,6 +32,10 @@ const LIMITY_KATEGORII: Record<string, number> = {
   biblioteka: 2,
   boisko: 3,
   urzad: 2,
+  apteka: 2,
+  poczta: 2,
+  przychodnia: 2,
+  stacja_paliw: 2,
   cmentarz: 2,
   przystanek: 6,
   stacja_kolejowa: 3,
@@ -54,9 +45,9 @@ const LIMITY_KATEGORII: Record<string, number> = {
 };
 
 const LIMITY_DOMYSLNE = {
-  maxVillagesScanned: 30,
-  maxVillagesPerRun: 3,
-  minDaysBetweenSync: 7,
+  maxVillagesScanned: 50,
+  maxVillagesPerRun: 8,
+  minDaysBetweenSync: 3,
 };
 
 type SyncVillageStats = {

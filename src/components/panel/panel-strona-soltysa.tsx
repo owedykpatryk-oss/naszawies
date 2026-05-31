@@ -1,5 +1,5 @@
-import Link from "next/link";
 import type { ReactNode } from "react";
+import { NaglowekModuluSoltysa } from "@/components/pomoc/naglowek-modulu-panelu";
 
 type Props = {
   tytul: string;
@@ -10,6 +10,8 @@ type Props = {
   dzieci: ReactNode;
   /** Szerszy układ (generator, społeczność) */
   szeroki?: boolean;
+  etykieta?: string;
+  hrefPomocy?: string;
 };
 
 export function PanelStronaSoltysa({
@@ -20,24 +22,25 @@ export function PanelStronaSoltysa({
   akcje,
   dzieci,
   szeroki = false,
+  etykieta = "Sołtys",
+  hrefPomocy,
 }: Props) {
   return (
     <main className={szeroki ? "max-w-none" : undefined}>
-      <div className="no-print mb-4 flex flex-wrap items-start justify-between gap-3">
-        <p className="text-sm text-stone-500">
-          <Link href={powrotHref} className="link-panel">
-            {powrotEtykieta}
-          </Link>
-        </p>
-        {akcje ? <div className="flex flex-wrap gap-2">{akcje}</div> : null}
-      </div>
+      {akcje ? (
+        <div className="no-print mb-3 flex flex-wrap items-start justify-end gap-2">{akcje}</div>
+      ) : null}
 
-      <header className="panel-informacji-hero">
-        <h1 className="tytul-sekcji-panelu relative">{tytul}</h1>
-        {opis ? <div className="relative mt-2 max-w-4xl text-sm leading-relaxed text-stone-600">{opis}</div> : null}
-      </header>
+      <NaglowekModuluSoltysa
+        etykieta={etykieta}
+        tytul={tytul}
+        opis={opis}
+        hrefPowrotu={powrotHref}
+        etykietaPowrotu={powrotEtykieta}
+        hrefPomocy={hrefPomocy}
+      />
 
-      <div className={szeroki ? "mt-8" : "mt-8 max-w-7xl"}>{dzieci}</div>
+      <div className={`mt-6 ${szeroki ? "" : "max-w-7xl"}`}>{dzieci}</div>
     </main>
   );
 }

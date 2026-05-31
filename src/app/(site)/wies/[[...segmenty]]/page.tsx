@@ -4,8 +4,8 @@ import { notFound } from "next/navigation";
 import { z } from "zod";
 import { StudzienkiProjektSwietlicy } from "@/components/wies/studzienki-projekt-swietlicy";
 import { WiesPostPubliczny } from "@/components/wies/wies-post-publiczny";
-import { pobierzPublicznePlakatyWsi } from "@/app/(site)/panel/grafika/akcje";
 import { WiesProfilPubliczny } from "@/components/wies/wies-profil-publiczny";
+import { WiesJsonLd } from "@/components/wies/wies-json-ld";
 import type { PrzewodnikSamorzadowyZapis } from "@/components/wies/sekcja-przewodnik-samorzadowy";
 import { WiesSzukajTresci } from "@/components/wies/wies-szukaj-tresci";
 import { roleDlaUprawnienia } from "@/lib/panel/uprawnienia-wsi";
@@ -16,10 +16,12 @@ import {
   HubWojewodztwaStrona,
 } from "@/components/wies/hub-administracyjny-strona";
 import {
-  pobierzHubGminy,
-  pobierzHubPowiatu,
-  pobierzHubWojewodztwa,
+  pobierzHubGminyCached,
+  pobierzHubPowiatuCached,
+  pobierzHubWojewodztwaCached,
 } from "@/lib/wies/hub-administracyjny";
+import { pobierzDanePubliczneProfiluWsi } from "@/lib/wies/pobierz-dane-publiczne-profilu-wsi";
+import { maCiasteczkaSesjiSupabaseSerwer } from "@/lib/auth/ciasteczka-sesji";
 import { pobierzLinkiPrzydatneDlaWsiGminy } from "@/lib/wies/pobierz-linki-przydatne";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
 import { linkChroniony } from "@/lib/auth/sciezki-chronione";
@@ -28,9 +30,6 @@ import { znajdzWiesPoSciezce } from "@/lib/wies/znajdz-wies-po-sciezce";
 import { etykietaKategoriiDotacji } from "@/lib/wies/teksty-dotacji";
 import { czyWydarzenieKgw, czyWydarzenieLowieckie, czyWydarzenieOsp, czyWydarzenieParafialne, etykietaRodzajuWydarzenia } from "@/lib/wies/teksty-organizacji";
 import { normalizujKategorieLinku, type LinkPrzydatnyPubliczny } from "@/lib/wies/linki-przydatne";
-import { pobierzKonkursFotoDlaProfiluWsi } from "@/lib/konkurs-foto/pobierz-konkurs-publiczny";
-import { pobierzFotokronikePublicznaWsi } from "@/lib/fotokronika/pobierz-fotokronike-publiczna";
-import { pobierzAktywneOstrzezeniaLowieckie } from "@/lib/lowiectwo/pobierz-ostrzezenia-publiczne";
 import { pobierzPlanCmentarzaPubliczny } from "@/lib/cmentarz/pobierz-cmentarz-publiczny";
 import { CmentarzPublicznyKlient } from "@/components/cmentarz/cmentarz-publiczny-klient";
 import { pobierzDaneMapyWsi } from "@/lib/mapa/pobierz-dane-mapy-wsi";
@@ -110,7 +109,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
   if (supabase && s.length >= 1 && s.length <= 3) {
     if (s.length === 3) {
-      const hub = await pobierzHubGminy(supabase, s[0]!, s[1]!, s[2]!);
+      const hub = await pobierzHubGminyCached(s[0]!, s[1]!, s[2]!);
       if (hub) {
         return {
           title: `Wsie w gminie ${hub.gmina} — powiat ${hub.powiat}`,
@@ -119,7 +118,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       }
     }
     if (s.length === 2) {
-      const hub = await pobierzHubPowiatu(supabase, s[0]!, s[1]!);
+      const hub = await pobierzHubPowiatuCached(s[0]!, s[1]!);
       if (hub) {
         return {
           title: `Gminy i wsie — powiat ${hub.powiat}`,
@@ -128,7 +127,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       }
     }
     if (s.length === 1) {
-      const hub = await pobierzHubWojewodztwa(supabase, s[0]!);
+      const hub = await pobierzHubWojewodztwaCached(s[0]!);
       if (hub) {
         return {
           title: `Powiaty i wsie — ${hub.wojewodztwo}`,
@@ -142,7 +141,29 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     if (!supabase) return { title: "Profil wsi" };
     const wies = await znajdzWiesPoSciezce(supabase, s[0], s[1], s[2], s[3]);
     if (wies) {
-      return { title: `${wies.name} — profil wsi`, description: wies.description?.slice(0, 160) ?? undefined };
+      const { sciezkaProfiluWsi } = await import("@/lib/wies/sciezka-publiczna");
+      const sciezka = sciezkaProfiluWsi(wies);
+      const opis =
+        wies.description?.replace(/\s+/g, " ").trim().slice(0, 160) ||
+        `Profil wsi ${wies.name} — ogłoszenia, mapa, świetlica i społeczność lokalna na naszawies.pl. Dołącz za darmo.`;
+      return {
+        title: `${wies.name} — profil wsi`,
+        description: opis,
+        alternates: { canonical: sciezka },
+        openGraph: {
+          title: `${wies.name} na naszawies.pl`,
+          description: opis,
+          url: sciezka,
+          type: "website",
+          images: wies.cover_image_url ? [{ url: wies.cover_image_url, alt: wies.name }] : undefined,
+        },
+        twitter: {
+          card: wies.cover_image_url ? "summary_large_image" : "summary",
+          title: `${wies.name} — naszawies.pl`,
+          description: opis,
+          images: wies.cover_image_url ? [wies.cover_image_url] : undefined,
+        },
+      };
     }
   }
   if (s.length === 5 && s[4] === "cmentarz") {
@@ -263,7 +284,7 @@ export default async function WiesCatchAllPage({ params, searchParams }: Props) 
     }
 
     if (segmenty.length === 3) {
-      const hub = await pobierzHubGminy(supabase, segmenty[0]!, segmenty[1]!, segmenty[2]!);
+      const hub = await pobierzHubGminyCached(segmenty[0]!, segmenty[1]!, segmenty[2]!);
       if (hub) {
         const linkiPrzydatne = await pobierzLinkiPrzydatneDlaWsiGminy(
           supabase,
@@ -273,11 +294,11 @@ export default async function WiesCatchAllPage({ params, searchParams }: Props) 
       }
     }
     if (segmenty.length === 2) {
-      const hub = await pobierzHubPowiatu(supabase, segmenty[0]!, segmenty[1]!);
+      const hub = await pobierzHubPowiatuCached(segmenty[0]!, segmenty[1]!);
       if (hub) return <HubPowiatuStrona hub={hub} />;
     }
     if (segmenty.length === 1) {
-      const hub = await pobierzHubWojewodztwa(supabase, segmenty[0]!);
+      const hub = await pobierzHubWojewodztwaCached(segmenty[0]!);
       if (hub) return <HubWojewodztwaStrona hub={hub} />;
     }
 
@@ -316,169 +337,9 @@ export default async function WiesCatchAllPage({ params, searchParams }: Props) 
   }
 
   if (reszta.length === 0) {
-    const supabaseSerwer = utworzKlientaSupabaseSerwer();
-    const odWydarzen = new Date(Date.now() - 2 * 24 * 60 * 60 * 1000).toISOString();
+    const danePubliczne = await pobierzDanePubliczneProfiluWsi(wies.id, wies.is_active);
 
-    const [
-      { data: postyRaw },
-      plakatyPubliczne,
-      konkursFoto,
-      fotokronikaPubliczna,
-      ostrzezeniaLowieckie,
-      authRes,
-      { data: blogRaw },
-      { data: historiaRaw },
-      { data: rynekRaw },
-      { data: wiadomosciRaw },
-      { data: profileRaw },
-      { data: orgRaw },
-      { data: wydRaw },
-      { data: slotyRaw },
-      { data: dotacjeSkrotRaw },
-      { data: przewodnikRaw },
-      { data: linkiPrzydatneRaw },
-      { data: kontaktyUrzedoweRaw },
-      { data: kadencjeFunkcyjneRaw },
-      { data: pomocSasiedzkaRaw },
-      { data: zgloszeniaPubliczneRaw },
-      planCmentarzaRes,
-    ] = await Promise.all([
-      supabase
-        .from("posts")
-        .select("id, title, type, created_at, is_pinned, event_end_at")
-        .eq("village_id", wies.id)
-        .eq("status", "approved")
-        .order("is_pinned", { ascending: false })
-        .order("created_at", { ascending: false })
-        .limit(25),
-      wies.is_active ? pobierzPublicznePlakatyWsi(wies.id) : Promise.resolve([]),
-      wies.is_active ? pobierzKonkursFotoDlaProfiluWsi(supabaseSerwer, wies.id) : Promise.resolve(null),
-      wies.is_active ? pobierzFotokronikePublicznaWsi(supabase, wies.id) : Promise.resolve([]),
-      wies.is_active ? pobierzAktywneOstrzezeniaLowieckie(supabase, wies.id) : Promise.resolve([]),
-      supabaseSerwer.auth.getUser(),
-      supabase
-        .from("village_blog_posts")
-        .select("id, title, excerpt, created_at, published_at")
-        .eq("village_id", wies.id)
-        .eq("status", "approved")
-        .order("published_at", { ascending: false, nullsFirst: false })
-        .limit(6),
-      supabase
-        .from("village_history_entries")
-        .select("id, title, short_description, event_date, created_at")
-        .eq("village_id", wies.id)
-        .eq("status", "approved")
-        .order("event_date", { ascending: false, nullsFirst: false })
-        .limit(6),
-      supabase
-        .from("marketplace_listings")
-        .select(POLE_SELECT_RYNEK_LISTA)
-        .eq("village_id", wies.id)
-        .eq("status", "approved")
-        .order("published_at", { ascending: false, nullsFirst: false })
-        .limit(8),
-      supabase
-        .from("local_news_items")
-        .select("id, title, summary, category, source_name, published_at, created_at")
-        .eq("village_id", wies.id)
-        .eq("status", "approved")
-        .order("published_at", { ascending: false, nullsFirst: false })
-        .limit(6),
-      supabase
-        .from("marketplace_profiles")
-        .select("id, business_name, short_description, categories, phone, is_verified")
-        .eq("village_id", wies.id)
-        .eq("is_active", true)
-        .order("is_verified", { ascending: false })
-        .limit(6),
-      supabase
-        .from("village_community_groups")
-        .select(
-          "id, group_type, name, short_description, meeting_place, schedule_text, contact_phone, contact_email, profile_data",
-        )
-        .eq("village_id", wies.id)
-        .eq("is_active", true)
-        .order("name"),
-      supabase
-        .from("village_community_events")
-        .select(
-          "id, event_kind, title, description, location_text, starts_at, ends_at, group_id, village_community_groups(name)",
-        )
-        .eq("village_id", wies.id)
-        .eq("status", "approved")
-        .gte("starts_at", odWydarzen)
-        .order("starts_at", { ascending: true })
-        .limit(12),
-      supabase
-        .from("village_weekly_schedule_slots")
-        .select(
-          "id, day_of_week, time_start, time_end, title, description, village_community_groups(name)",
-        )
-        .eq("village_id", wies.id)
-        .order("day_of_week", { ascending: true })
-        .order("time_start", { ascending: true }),
-      supabase
-        .from("village_funding_sources")
-        .select("id, category, title, summary, application_deadline")
-        .eq("village_id", wies.id)
-        .eq("status", "approved")
-        .order("application_deadline", { ascending: true, nullsFirst: false })
-        .limit(6),
-      supabase
-        .from("village_civic_guides")
-        .select(
-          "commune_info, county_info, voivodeship_info, roads_info, waste_info, utilities_info, other_info",
-        )
-        .eq("village_id", wies.id)
-        .maybeSingle(),
-      supabase
-        .from("village_useful_links")
-        .select("id, category, title, url, phone, email, note, display_order")
-        .eq("village_id", wies.id)
-        .eq("is_active", true)
-        .order("display_order", { ascending: true })
-        .order("title", { ascending: true }),
-      supabase
-        .from("village_official_contacts")
-        .select(
-          "id, office_key, role_label, person_name, organization_name, contact_phone, contact_email, duty_hours_text, note, cta_label, cta_url, is_verified_by_soltys, updated_at",
-        )
-        .eq("village_id", wies.id)
-        .eq("is_active", true)
-        .order("display_order", { ascending: true })
-        .limit(20),
-      supabase
-        .from("village_official_terms")
-        .select("id, office_key, role_label, person_name, organization_name, term_start, term_end, note, is_current")
-        .eq("village_id", wies.id)
-        .order("term_start", { ascending: false })
-        .limit(24),
-      supabase
-        .from("neighbor_help_offers")
-        .select("id, kind, category, title, body, contact_hint, published_at, created_at")
-        .eq("village_id", wies.id)
-        .eq("status", "approved")
-        .order("published_at", { ascending: false, nullsFirst: false })
-        .limit(8),
-      supabase
-        .from("issues")
-        .select("id, title, category, resolution_note, resolved_at")
-        .eq("village_id", wies.id)
-        .eq("status", "rozwiazane")
-        .not("resolution_note", "is", null)
-        .order("resolved_at", { ascending: false, nullsFirst: false })
-        .limit(12),
-      wies.is_active
-        ? supabase
-            .from("village_cemetery_plans")
-            .select("id")
-            .eq("village_id", wies.id)
-            .eq("is_published", true)
-            .maybeSingle()
-        : Promise.resolve({ data: null }),
-    ]);
-
-    const posty = (postyRaw ?? []) as {
+    const posty = danePubliczne.postyRaw as {
       id: string;
       title: string;
       type: string;
@@ -487,10 +348,33 @@ export default async function WiesCatchAllPage({ params, searchParams }: Props) 
       event_end_at?: string | null;
     }[];
 
-    const userSesji = authRes.data.user;
+    const plakatyPubliczne = danePubliczne.plakatyPubliczne;
+    let konkursFoto = danePubliczne.konkursFoto
+      ? { ...danePubliczne.konkursFoto, mojGlosPhotoId: null as string | null }
+      : null;
+    const fotokronikaPubliczna = danePubliczne.fotokronikaPubliczna;
+    const ostrzezeniaLowieckie = danePubliczne.ostrzezeniaLowieckie;
+    const blogRaw = danePubliczne.blogRaw;
+    const historiaRaw = danePubliczne.historiaRaw;
+    const rynekRaw = danePubliczne.rynekRaw;
+    const wiadomosciRaw = danePubliczne.wiadomosciRaw;
+    const profileRaw = danePubliczne.profileRaw;
+    const orgRaw = danePubliczne.orgRaw;
+    const wydRaw = danePubliczne.wydRaw;
+    const slotyRaw = danePubliczne.slotyRaw;
+    const dotacjeSkrotRaw = danePubliczne.dotacjeSkrotRaw;
+    const przewodnikRaw = danePubliczne.przewodnikRaw;
+    const linkiPrzydatneRaw = danePubliczne.linkiPrzydatneRaw;
+    const kontaktyUrzedoweRaw = danePubliczne.kontaktyUrzedoweRaw;
+    const kadencjeFunkcyjneRaw = danePubliczne.kadencjeFunkcyjneRaw;
+    const pomocSasiedzkaRaw = danePubliczne.pomocSasiedzkaRaw;
+    const zgloszeniaPubliczneRaw = danePubliczne.zgloszeniaPubliczneRaw;
+    const maPlanCmentarza = !!danePubliczne.planCmentarzaId;
+    const liczbaMieszkancowAktywnych = danePubliczne.liczbaMieszkancowAktywnych;
+
+    let userSesji: { id: string } | null = null;
     let mapaZnacznik: ZnacznikWsi | null = null;
     let mapaPoi: ZnacznikPoi[] = [];
-    const maPlanCmentarza = !!planCmentarzaRes.data;
     let mozeEdytowacListeZakupow = false;
     let mozeZobaczycListeZakupow = false;
     const zapisaneTresci: Record<string, string> = {};
@@ -503,38 +387,56 @@ export default async function WiesCatchAllPage({ params, searchParams }: Props) 
       created_by: string | null;
     }[] = [];
 
-    if (userSesji) {
-      const [daneMapy, uvrResult, zapisaneResult] = await Promise.all([
-        pobierzDaneMapyWsi(supabase, wies),
-        supabaseSerwer
-          .from("user_village_roles")
-          .select("id")
-          .eq("user_id", userSesji.id)
-          .eq("village_id", wies.id)
-          .eq("status", "active")
-          .in("role", [...roleDlaUprawnienia("zarzadzanie_kgw")])
-          .maybeSingle(),
-        supabaseSerwer
-          .from("user_saved_content")
-          .select("id, content_type, content_id")
-          .eq("user_id", userSesji.id)
-          .eq("village_id", wies.id),
-      ]);
-      mapaZnacznik = daneMapy.znacznik;
-      mapaPoi = daneMapy.pois;
-      mozeZobaczycListeZakupow = !!uvrResult.data;
-      mozeEdytowacListeZakupow = !!uvrResult.data;
-      for (const row of zapisaneResult.data ?? []) {
-        zapisaneTresci[`${row.content_type}:${row.content_id}`] = row.id;
-      }
-      if (mozeZobaczycListeZakupow) {
-        const { data: zakupyRaw } = await supabaseSerwer
-          .from("village_shopping_list_items")
-          .select("id, title, note, quantity_text, is_done, created_by")
-          .eq("village_id", wies.id)
-          .order("is_done", { ascending: true })
-          .order("created_at", { ascending: true });
-        listaZakupow = (zakupyRaw ?? []) as typeof listaZakupow;
+    if (maCiasteczkaSesjiSupabaseSerwer()) {
+      const supabaseSerwer = utworzKlientaSupabaseSerwer();
+      const {
+        data: { session },
+      } = await supabaseSerwer.auth.getSession();
+      userSesji = session?.user ?? null;
+
+      if (userSesji) {
+        const [daneMapy, uvrResult, zapisaneResult] = await Promise.all([
+          pobierzDaneMapyWsi(supabase, wies),
+          supabaseSerwer
+            .from("user_village_roles")
+            .select("id")
+            .eq("user_id", userSesji.id)
+            .eq("village_id", wies.id)
+            .eq("status", "active")
+            .in("role", [...roleDlaUprawnienia("zarzadzanie_kgw")])
+            .maybeSingle(),
+          supabaseSerwer
+            .from("user_saved_content")
+            .select("id, content_type, content_id")
+            .eq("user_id", userSesji.id)
+            .eq("village_id", wies.id),
+        ]);
+        mapaZnacznik = daneMapy.znacznik;
+        mapaPoi = daneMapy.pois;
+        mozeZobaczycListeZakupow = !!uvrResult.data;
+        mozeEdytowacListeZakupow = !!uvrResult.data;
+        for (const row of zapisaneResult.data ?? []) {
+          zapisaneTresci[`${row.content_type}:${row.content_id}`] = row.id;
+        }
+        if (mozeZobaczycListeZakupow) {
+          const { data: zakupyRaw } = await supabaseSerwer
+            .from("village_shopping_list_items")
+            .select("id, title, note, quantity_text, is_done, created_by")
+            .eq("village_id", wies.id)
+            .order("is_done", { ascending: true })
+            .order("created_at", { ascending: true });
+          listaZakupow = (zakupyRaw ?? []) as typeof listaZakupow;
+        }
+
+        if (konkursFoto?.konkurs) {
+          const { data: glos } = await supabaseSerwer
+            .from("village_photo_votes")
+            .select("photo_id")
+            .eq("contest_id", konkursFoto.konkurs.id)
+            .eq("user_id", userSesji.id)
+            .maybeSingle();
+          konkursFoto = { ...konkursFoto, mojGlosPhotoId: (glos?.photo_id as string) ?? null };
+        }
       }
     }
 
@@ -611,16 +513,28 @@ export default async function WiesCatchAllPage({ params, searchParams }: Props) 
       application_deadline: string | null;
     }[];
     const przewodnikSamorzadowy = (przewodnikRaw as PrzewodnikSamorzadowyZapis | null) ?? null;
-    const linkiPrzydatne: LinkPrzydatnyPubliczny[] = (linkiPrzydatneRaw ?? []).map((r) => ({
-      id: r.id,
-      category: normalizujKategorieLinku(r.category),
-      title: r.title,
-      url: r.url,
-      phone: r.phone,
-      email: r.email,
-      note: r.note,
-      display_order: r.display_order,
-    }));
+    const linkiPrzydatne: LinkPrzydatnyPubliczny[] = (linkiPrzydatneRaw ?? []).map((row) => {
+      const r = row as {
+        id: string;
+        category: string;
+        title: string;
+        url: string;
+        phone: string | null;
+        email: string | null;
+        note: string | null;
+        display_order: number;
+      };
+      return {
+        id: r.id,
+        category: normalizujKategorieLinku(r.category),
+        title: r.title,
+        url: r.url,
+        phone: r.phone,
+        email: r.email,
+        note: r.note,
+        display_order: r.display_order,
+      };
+    });
     const kontaktyUrzedowe = (kontaktyUrzedoweRaw ?? []) as {
       id: string;
       office_key: string;
@@ -648,8 +562,11 @@ export default async function WiesCatchAllPage({ params, searchParams }: Props) 
       is_current: boolean;
     }[];
 
+    const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? "https://naszawies.pl").replace(/[\r\n]+/g, "").trim();
+
     return (
       <main className="mx-auto min-w-0 w-full max-w-7xl px-4 py-10 sm:px-6 sm:py-14 text-stone-800">
+        <WiesJsonLd wies={wies} siteUrl={siteUrl} />
         <p className="mb-6 text-sm text-stone-500">
           <Link href="/" className="text-green-800 underline">
             ← Strona główna
@@ -704,6 +621,7 @@ export default async function WiesCatchAllPage({ params, searchParams }: Props) 
           mapaPoi={mapaPoi}
           maPlanCmentarza={maPlanCmentarza}
           zapisaneTresci={zapisaneTresci}
+          liczbaMieszkancowAktywnych={liczbaMieszkancowAktywnych ?? 0}
         />
       </main>
     );
@@ -712,7 +630,10 @@ export default async function WiesCatchAllPage({ params, searchParams }: Props) 
   if (reszta.length === 1 && reszta[0] === "rynek") {
     const sciezka = sciezkaProfiluWsi(wies);
     const supabaseSerwer = utworzKlientaSupabaseSerwer();
-    const { data: authRes } = await supabaseSerwer.auth.getUser();
+    const {
+      data: { session: sesjaRynek },
+    } = await supabaseSerwer.auth.getSession();
+    const userRynek = sesjaRynek?.user ?? null;
 
     const [
       { data: rynekPelny },
@@ -758,11 +679,11 @@ export default async function WiesCatchAllPage({ params, searchParams }: Props) 
     ]);
 
     let subskrybowaneKategorie: (string | null)[] = [];
-    if (authRes.user) {
+    if (userRynek) {
       const { data: subs } = await supabaseSerwer
         .from("marketplace_category_subscriptions")
         .select("equipment_category")
-        .eq("user_id", authRes.user.id)
+        .eq("user_id", userRynek.id)
         .eq("village_id", wies.id);
       subskrybowaneKategorie = (subs ?? []).map((s) => s.equipment_category ?? null);
     }
@@ -832,7 +753,7 @@ export default async function WiesCatchAllPage({ params, searchParams }: Props) 
                 sciezkaWsi={sciezka}
                 villageId={wies.id}
                 nazwaWsi={wies.name}
-                zalogowany={!!authRes.user}
+                zalogowany={!!userRynek}
                 subskrybowaneKategorie={subskrybowaneKategorie}
                 kotwicaZasadSwietlicy={`${sciezka}#swietlica-regulamin`}
                 pokazLinkWszystkie={false}
@@ -918,7 +839,10 @@ export default async function WiesCatchAllPage({ params, searchParams }: Props) 
     if (!idOgl.success) notFound();
 
     const supabaseSerwer = utworzKlientaSupabaseSerwer();
-    const { data: authRes } = await supabaseSerwer.auth.getUser();
+    const {
+      data: { session: sesjaRynek },
+    } = await supabaseSerwer.auth.getSession();
+    const userRynek = sesjaRynek?.user ?? null;
 
     const { data: ogl } = await supabase
       .from("marketplace_listings")
@@ -936,11 +860,11 @@ export default async function WiesCatchAllPage({ params, searchParams }: Props) 
     let zapisaneId: string | null = null;
     let obserwujCene = false;
     let zaufanieSprzedawcy: import("@/lib/marketplace/zaufanie-sprzedawcy").ZaufanieSprzedawcy | null = null;
-    if (authRes.user) {
+    if (userRynek) {
       const { data: zapis } = await supabaseSerwer
         .from("user_saved_content")
         .select("id, watch_price")
-        .eq("user_id", authRes.user.id)
+        .eq("user_id", userRynek.id)
         .eq("content_type", "listing")
         .eq("content_id", ogl.id)
         .maybeSingle();
@@ -997,8 +921,8 @@ export default async function WiesCatchAllPage({ params, searchParams }: Props) 
           nazwaWsi={wies.name}
           wojewodztwo={wies.voivodeship}
           villageId={wies.id}
-          zalogowany={!!authRes.user}
-          toJa={authRes.user?.id === ogl.owner_user_id}
+          zalogowany={!!userRynek}
+          toJa={userRynek?.id === ogl.owner_user_id}
           zapisaneId={zapisaneId}
           obserwujCene={obserwujCene}
           zaufanieSprzedawcy={zaufanieSprzedawcy}

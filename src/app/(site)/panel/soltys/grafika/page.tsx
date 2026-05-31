@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { redirect } from "next/navigation";
+import { PanelStronaSoltysa } from "@/components/panel/panel-strona-soltysa";
 import { KreatorGrafikiKlient } from "@/components/grafika/kreator-grafiki-klient";
 import { SZABLONY_GRAFIKI } from "@/lib/grafika/szablony";
 import type { ProfilWsiGrafiki } from "@/lib/grafika/typy";
@@ -15,9 +15,8 @@ export const metadata: Metadata = {
 
 export default async function SoltysGrafikaPage() {
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { data: { session } } = await supabase.auth.getSession();
+  const user = session?.user ?? null;
   if (!user) {
     redirect("/logowanie?next=/panel/soltys/grafika");
   }
@@ -84,20 +83,17 @@ export default async function SoltysGrafikaPage() {
     : "";
 
   return (
-    <main>
-      <p className="mb-4 text-sm text-stone-500">
-        <Link href="/panel/soltys" className="text-green-800 underline">
-          ← Panel sołtysa
-        </Link>
-      </p>
-      <h1 className="tytul-sekcji-panelu">Kreator grafiki</h1>
-      <p className="mt-2 max-w-3xl text-sm text-stone-600">
-        Zaproszenia, plakaty i dyplomy w <strong>3 zakładkach</strong> (szablon → treść → pobierz). PDF, social,
-        publikacja na profilu wsi, ogłoszenia, kalendarz i tablica cyfrowa świetlicy. Łącznie{" "}
-        {SZABLONY_GRAFIKI.length} gotowych projektów.
-      </p>
-
-      <div className="mt-10">
+    <PanelStronaSoltysa
+      tytul="Kreator grafiki"
+      opis={
+        <>
+          Zaproszenia, plakaty i dyplomy w <strong>3 zakładkach</strong> (szablon → treść → pobierz). PDF, social,
+          publikacja na profilu wsi, ogłoszenia, kalendarz i tablica cyfrowa świetlicy. Łącznie{" "}
+          {SZABLONY_GRAFIKI.length} gotowych projektów.
+        </>
+      }
+      szeroki
+      dzieci={
         <KreatorGrafikiKlient
           kontekst={{
             wies: domyslnaWies,
@@ -114,7 +110,7 @@ export default async function SoltysGrafikaPage() {
           sciezkaWsi={sciezkaWsi}
           profilWsi={profilWsi}
         />
-      </div>
-    </main>
+      }
+    />
   );
 }

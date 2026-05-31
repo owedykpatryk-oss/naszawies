@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { NaglowekModuluPanelu } from "@/components/pomoc/naglowek-modulu-panelu";
 import { etykietaPresetu } from "@/lib/czat/grupy-preset";
 import { pobierzNieprzeczytanePoKonwersacji } from "@/lib/czat/pobierz-nieprzeczytane";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
@@ -11,9 +12,8 @@ export const metadata: Metadata = { title: "Wiadomości" };
 
 export default async function CzatPage() {
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { data: { session } } = await supabase.auth.getSession();
+  const user = session?.user ?? null;
   if (!user) redirect("/logowanie?next=/panel/czat");
 
   const { data: czlonkostwa } = await supabase
@@ -132,24 +132,20 @@ export default async function CzatPage() {
 
   return (
     <main className="mx-auto w-full max-w-7xl">
-      <p className="text-sm text-stone-500">
-        <Link href="/panel" className="text-green-800 underline">
-          ← Panel
-        </Link>
-      </p>
-      <div className="mt-2 flex flex-wrap items-end justify-between gap-3">
-        <div>
-          <h1 className="font-serif text-3xl text-green-950">Wiadomości</h1>
-          <p className="mt-2 max-w-xl text-sm text-stone-600">
-            Czat jak w komunikatorze — rozmowy przy ogłoszeniach na rynku, grupy mieszkańców, KGW, myśliwi, OSP.
-          </p>
-        </div>
-        {lacznieNieprzeczytane > 0 ? (
-          <span className="rounded-full bg-green-800 px-3 py-1 text-xs font-semibold text-white">
-            {lacznieNieprzeczytane} nieprzeczytanych
-          </span>
-        ) : null}
-      </div>
+      <NaglowekModuluPanelu
+        etykieta="Komunikacja"
+        tytul="Wiadomości"
+        hrefPowrotu="/panel"
+        etykietaPowrotu="← Panel"
+        opis="Czat jak w komunikatorze — rozmowy przy ogłoszeniach na rynku, grupy mieszkańców, KGW, myśliwi, OSP."
+        dzieci={
+          lacznieNieprzeczytane > 0 ? (
+            <span className="rounded-full bg-green-800 px-3 py-1 text-xs font-semibold text-white shadow-sm">
+              {lacznieNieprzeczytane} nieprzeczytanych
+            </span>
+          ) : null
+        }
+      />
 
       <CzatListaGrupKlient wsie={wsie} />
       <CzatListaKonwersacjiKlient konwersacje={konwersacje} />

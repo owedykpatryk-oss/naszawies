@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
+import { NaglowekModuluPanelu } from "@/components/pomoc/naglowek-modulu-panelu";
 import { ProfilFormularz } from "./profil-formularz";
 import { ProfilSekcjaRodo } from "./profil-sekcja-rodo";
 
@@ -12,9 +13,8 @@ export const metadata: Metadata = {
 
 export default async function PanelProfilPage() {
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { data: { session } } = await supabase.auth.getSession();
+  const user = session?.user ?? null;
 
   if (!user) {
     redirect("/logowanie?next=/panel/profil");
@@ -44,7 +44,7 @@ export default async function PanelProfilPage() {
   return (
     <main>
       {!nickStartuOk ? (
-        <div className="mb-6 rounded-xl border border-amber-300/80 bg-amber-50/90 px-4 py-3 text-sm text-amber-950 shadow-sm">
+        <div className="baner-wskazowka baner-wskazowka--zielony mb-6 border-amber-300/80 bg-amber-50/90 text-amber-950">
           <p className="font-medium text-amber-950">Uzupełnij nazwę wyświetlaną (min. 2 znaki)</p>
           <p className="mt-1 text-amber-900/95">
             To pierwszy krok przewodnika po zalogowaniu — inni użytkownicy zobaczą Cię pod tą nazwą w wiosce i w
@@ -56,10 +56,13 @@ export default async function PanelProfilPage() {
           </p>
         </div>
       ) : null}
-      <h1 className="mb-2 font-serif text-3xl text-green-950">Mój profil</h1>
-      <p className="mb-8 text-sm text-stone-600">
-        Te dane widać u innych użytkowników zgodnie z ustawieniami i polityką prywatności.
-      </p>
+      <NaglowekModuluPanelu
+        etykieta="Konto"
+        tytul="Mój profil"
+        hrefPowrotu="/panel"
+        etykietaPowrotu="← Panel"
+        opis="Te dane widać u innych użytkowników zgodnie z ustawieniami i polityką prywatności."
+      />
 
       {!profil ? (
         <div className="mb-8 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950">

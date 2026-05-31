@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { LogoNaszawiesWycentrowane } from "@/components/marka/logo-naszawies";
 import { pobierzPochodzeniePubliczne } from "@/lib/zadanie/pochodzenie-publiczne";
 import { ResetHaslaFormularz } from "./reset-hasla-formularz";
 
@@ -12,7 +13,8 @@ export default function ResetHaslaPage() {
   const pochodzenie = pobierzPochodzeniePubliczne();
 
   return (
-    <main className="mx-auto min-w-0 max-w-md py-16 text-stone-800">
+    <main className="mx-auto min-w-0 max-w-md py-12 text-stone-800 sm:py-16">
+      <LogoNaszawiesWycentrowane />
       <p className="mb-6 text-sm text-stone-500">
         <Link href="/logowanie" className="text-green-800 underline">
           ← Logowanie

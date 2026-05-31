@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { sciezkaKreatoraGrafikiDlaUzytkownika } from "@/lib/grafika/sciezka-kreatora";
+import { pobierzUzytkownikaSerwer } from "@/lib/auth/pobierz-uzytkownika-serwer";
 import { ponowJesliRedirect } from "@/lib/next/ponow-redirect";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
 
@@ -14,11 +15,9 @@ export default async function GrafikaPublicznaPage() {
   let docelowaSciezka = "/panel/mieszkaniec/grafika";
 
   try {
-    const supabase = utworzKlientaSupabaseSerwer();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const user = await pobierzUzytkownikaSerwer();
     if (user) {
+      const supabase = utworzKlientaSupabaseSerwer();
       docelowaSciezka = await sciezkaKreatoraGrafikiDlaUzytkownika(supabase, user.id);
       redirect(docelowaSciezka);
     }

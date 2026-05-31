@@ -21,7 +21,7 @@ const WARSTWA_INSTYTUCJA: Record<string, { category: string; domyslnaNazwa: stri
   U09_Regionalny_zarzad_gospodarki_wodnej_PGWWP: { category: "urzad", domyslnaNazwa: "RZGW" },
   U07_Regionalna_dyrekcja_lasow_panstwowych: { category: "inne", domyslnaNazwa: "RDLP" },
   S03_Sad_rejonowy: { category: "urzad", domyslnaNazwa: "Sąd rejonowy" },
-  S01_Poczta: { category: "inne", domyslnaNazwa: "Poczta" },
+  S01_Poczta: { category: "poczta", domyslnaNazwa: "Poczta" },
   Z02_Szkola_podstawowa: { category: "szkola", domyslnaNazwa: "Szkoła podstawowa (PRG)" },
   Z03_Przedszkole: { category: "przedszkole", domyslnaNazwa: "Przedszkole (PRG)" },
 };

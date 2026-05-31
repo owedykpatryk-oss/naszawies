@@ -6,7 +6,7 @@ import { SoltysNawigacja } from "./soltys-nawigacja";
 export default function SoltysLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-w-0">
-      <div className="no-print mb-4 flex flex-wrap items-center gap-x-3 gap-y-1 rounded-xl border border-emerald-200/80 bg-emerald-50/40 px-3 py-2.5 text-xs text-stone-700">
+      <div className="baner-wskazowka baner-wskazowka--zielony no-print mb-4 flex flex-wrap items-center gap-x-3 gap-y-1">
         <span className="font-semibold text-emerald-900">Szybki rytm:</span>{" "}
         <Link href="/panel/soltys/grafika" className="font-medium text-green-800 underline">
           plakat w 3 zakładkach

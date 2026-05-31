@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { PanelStronaMoje } from "@/components/panel/panel-strona-moje";
 import { MojeGminyObserwowaneLista } from "@/components/panel/moje/moje-gminy-obserwowane-lista";
 import { MojeZapisaneTresciLista } from "@/components/panel/moje/moje-zapisane-tresci-lista";
 import { MojeUlubioneLista } from "@/components/panel/moje/moje-ulubione-lista";
@@ -14,14 +15,13 @@ export default async function MojeUlubionePage() {
   }
 
   return (
-    <main>
-      <h1 className="font-serif text-2xl text-green-950">Ulubione</h1>
-      <p className="mt-2 text-sm text-stone-600">
-        Obserwowane miejscowości, zapisane ogłoszenia i wydarzenia oraz relacje transportowe — w jednym miejscu.
-      </p>
-
-      <section className="mt-8">
-        <h2 className="font-serif text-lg text-green-950">Zapisane ogłoszenia i wydarzenia</h2>
+    <PanelStronaMoje
+      tytul="Ulubione"
+      opis="Obserwowane miejscowości, zapisane ogłoszenia i wydarzenia oraz relacje transportowe — w jednym miejscu."
+      dzieci={
+        <>
+          <section className="mt-8">
+            <h2 className="font-serif text-lg text-green-950">Zapisane ogłoszenia i wydarzenia</h2>
         <div className="mt-4">
           <MojeZapisaneTresciLista tresci={dane.zapisaneTresci} />
         </div>
@@ -81,6 +81,8 @@ export default async function MojeUlubionePage() {
           Moje wsie → Dodaj miejscowość
         </Link>
       </p>
-    </main>
+        </>
+      }
+    />
   );
 }

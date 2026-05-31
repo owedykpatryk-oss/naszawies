@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { PanelStronaMoje } from "@/components/panel/panel-strona-moje";
 import {
   etykietaRodzajuWydarzenia,
   etykietaSekcjiOrganizacji,
@@ -21,14 +22,12 @@ export default async function MojeOrganizacjePage() {
   const maTresc = organizacje.length > 0 || wydarzenia.length > 0;
 
   return (
-    <main>
-      <h1 className="font-serif text-2xl text-green-950">Parafia, KGW, OSP</h1>
-      <p className="mt-2 max-w-prose text-sm text-stone-600">
-        Organizacje i zbliżające się wydarzenia ze wszystkich Twoich miejscowości — gdy sołtysi uzupełnią profile, ten
-        widok będzie coraz pełniejszy.
-      </p>
-
-      {!maTresc ? (
+    <PanelStronaMoje
+      tytul="Parafia, KGW, OSP"
+      opis="Organizacje i zbliżające się wydarzenia ze wszystkich Twoich miejscowości — gdy sołtysi uzupełnią profile, ten widok będzie coraz pełniejszy."
+      dzieci={
+        <>
+          {!maTresc ? (
         <section className="mt-8 rounded-2xl border border-dashed border-violet-300/80 bg-violet-50/30 px-5 py-8 text-center">
           <p className="font-medium text-violet-950">Jeszcze brak treści organizacji</p>
           <p className="mt-2 text-sm text-stone-600">
@@ -126,6 +125,8 @@ export default async function MojeOrganizacjePage() {
           ) : null}
         </>
       )}
-    </main>
+        </>
+      }
+    />
   );
 }

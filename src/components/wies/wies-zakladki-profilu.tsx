@@ -17,12 +17,13 @@ export function WiesZakladkiProfilu({ zakladki }: Props) {
   const obserwatorRef = useRef<IntersectionObserver | null>(null);
   const rafRef = useRef<number | null>(null);
   const widoczneRef = useRef<Map<string, number>>(new Map());
+  const ostatniaAktualizacjaRef = useRef(0);
 
   const przejdz = useCallback((e: React.MouseEvent<HTMLAnchorElement>, hash: string) => {
     e.preventDefault();
     const cel = document.querySelector(hash);
     if (cel) {
-      cel.scrollIntoView({ behavior: "smooth", block: "start" });
+      cel.scrollIntoView({ behavior: "auto", block: "start" });
       history.replaceState(null, "", hash);
       ustawAktywna(hash);
     }
@@ -51,6 +52,9 @@ export function WiesZakladkiProfilu({ zakladki }: Props) {
       if (rafRef.current != null) return;
       rafRef.current = requestAnimationFrame(() => {
         rafRef.current = null;
+        const teraz = performance.now();
+        if (teraz - ostatniaAktualizacjaRef.current < 120) return;
+        ostatniaAktualizacjaRef.current = teraz;
         ustawAktywnaZMapy();
       });
     }
@@ -69,7 +73,7 @@ export function WiesZakladkiProfilu({ zakladki }: Props) {
         }
         zaplanujAktualizacje();
       },
-      { rootMargin: "-18% 0px -58% 0px", threshold: [0, 0.25] },
+      { rootMargin: "-20% 0px -60% 0px", threshold: [0, 0.5] },
     );
 
     const obserwator = obserwatorRef.current;
@@ -110,7 +114,7 @@ export function WiesZakladkiProfilu({ zakladki }: Props) {
             key={tab.href}
             href={tab.href}
             onClick={(e) => przejdz(e, tab.href)}
-            className={`shrink-0 rounded-full border px-3 py-1.5 text-xs font-medium shadow-sm transition ${
+            className={`shrink-0 rounded-full border px-3 py-1.5 text-xs font-medium shadow-sm transition-colors ${
               aktywny
                 ? "border-green-700 bg-green-800 text-white"
                 : "border-stone-200 bg-white text-green-900 hover:border-green-300 hover:bg-emerald-50"

@@ -4,8 +4,8 @@ import { SpeedInsights } from "@vercel/speed-insights/next";
 import { Fraunces, Inter } from "next/font/google";
 import Script from "next/script";
 import { BanerCiasteczek } from "@/components/baner-ciasteczek";
+import { OdswiezSesjeKlient } from "@/components/auth/odswiez-sesje-klient";
 import { PwaServiceWorkerKlient } from "@/components/pwa/pwa-service-worker-klient";
-import "../styles/landing.css";
 import "./globals.css";
 
 const fraunces = Fraunces({
@@ -100,8 +100,6 @@ export default function RootLayout({
             <link rel="dns-prefetch" href={supabaseUrl} />
           </>
         ) : null}
-        <link rel="preconnect" href="https://tile.openstreetmap.org" crossOrigin="anonymous" />
-        <link rel="dns-prefetch" href="https://tile.openstreetmap.org" />
       </head>
       <body className={inter.className}>
         {domenaPlausible ? (
@@ -113,6 +111,7 @@ export default function RootLayout({
           />
         ) : null}
         {children}
+        <OdswiezSesjeKlient />
         <PwaServiceWorkerKlient />
         <BanerCiasteczek />
         <Analytics />

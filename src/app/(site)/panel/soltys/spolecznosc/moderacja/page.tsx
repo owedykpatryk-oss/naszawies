@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { PanelStronaSoltysa } from "@/components/panel/panel-strona-soltysa";
 import { pobierzVillageIdsModeracjiTresciCache } from "@/lib/panel/rola-moderacji";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
 import { SoltysModeracjaDyskusjiKlient, type RaportModeracji } from "./moderacja-klient";
@@ -12,9 +13,8 @@ export const metadata: Metadata = {
 
 export default async function SoltysModeracjaDyskusjiPage() {
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { data: { session } } = await supabase.auth.getSession();
+  const user = session?.user ?? null;
   if (!user) {
     redirect("/logowanie?next=/panel/soltys/spolecznosc/moderacja");
   }
@@ -22,16 +22,17 @@ export default async function SoltysModeracjaDyskusjiPage() {
   const villageIds = await pobierzVillageIdsModeracjiTresciCache(user.id);
   if (villageIds.length === 0) {
     return (
-      <main>
-        <h1 className="tytul-sekcji-panelu">Moderacja społeczności</h1>
-        <p className="mt-2 text-sm text-stone-600">
-          Nie masz uprawnień do moderacji treści w żadnej wsi. Sołtys nie moderuje dyskusji — to zadanie rady
-          sołeckiej lub współadmina.
-        </p>
-        <Link href="/panel/rada" className="mt-4 inline-block text-green-800 underline">
-          Panel rady sołeckiej →
-        </Link>
-      </main>
+      <PanelStronaSoltysa
+        tytul="Moderacja społeczności"
+        opis="Nie masz uprawnień do moderacji treści w żadnej wsi. Sołtys nie moderuje dyskusji — to zadanie rady sołeckiej lub współadmina."
+        powrotHref="/panel/soltys/spolecznosc"
+        powrotEtykieta="← Społeczność i rozwój"
+        dzieci={
+          <Link href="/panel/rada" className="font-medium text-green-800 underline">
+            Panel rady sołeckiej →
+          </Link>
+        }
+      />
     );
   }
 
@@ -49,20 +50,12 @@ export default async function SoltysModeracjaDyskusjiPage() {
   const wsie = (wsieRows ?? []).map((w) => ({ id: w.id, name: w.name }));
 
   return (
-    <main>
-      <p className="mb-4 text-sm text-stone-500">
-        <Link href="/panel/soltys/spolecznosc" className="text-green-800 underline">
-          ← Społeczność i rozwój
-        </Link>
-      </p>
-      <h1 className="tytul-sekcji-panelu">Moderacja społeczności</h1>
-      <p className="mt-2 text-sm text-stone-600">
-        Tu obsłużysz zgłoszenia mieszkańców dla dyskusji i bloga.
-      </p>
-
-      <div className="mt-6">
-        <SoltysModeracjaDyskusjiKlient wsie={wsie} raporty={(raportyRows ?? []) as RaportModeracji[]} />
-      </div>
-    </main>
+    <PanelStronaSoltysa
+      tytul="Moderacja społeczności"
+      opis="Tu obsłużysz zgłoszenia mieszkańców dla dyskusji i bloga."
+      powrotHref="/panel/soltys/spolecznosc"
+      powrotEtykieta="← Społeczność i rozwój"
+      dzieci={<SoltysModeracjaDyskusjiKlient wsie={wsie} raporty={(raportyRows ?? []) as RaportModeracji[]} />}
+    />
   );
 }

@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
 import { pojedynczaWies } from "@/lib/supabase/wies-z-zapytania";
+import { PanelStronaMieszkaneca } from "@/components/panel/panel-strona-mieszkaneca";
 import type { PoiOpcja } from "../../marketplace-formularz-rozszerzenia";
 import { MarketplaceFormularzMieszkanca, type MetaWsiFormularz } from "../../marketplace-formularz";
 import type { WartosciDzialkiRynek } from "@/components/marketplace/marketplace-formularz-dzialka";
@@ -14,9 +14,8 @@ type Props = { params: { id: string } };
 
 export default async function EdytujOgloszenieMarketplacePage({ params }: Props) {
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { data: { session } } = await supabase.auth.getSession();
+  const user = session?.user ?? null;
   if (!user) redirect(`/logowanie?next=/panel/mieszkaniec/marketplace/${params.id}/edytuj`);
 
   const { data: ogl } = await supabase
@@ -78,15 +77,15 @@ export default async function EdytujOgloszenieMarketplacePage({ params }: Props)
   };
 
   return (
-    <main>
-      <p className="text-sm text-stone-500">
-        <Link href="/panel/mieszkaniec/marketplace" className="text-green-800 underline">
-          ← Rynek lokalny
-        </Link>
-      </p>
-      <h1 className="mt-2 font-serif text-3xl text-green-950">Edytuj ogłoszenie</h1>
-      <p className="mt-2 text-sm text-stone-600">{ogl.title}</p>
-      <MarketplaceFormularzMieszkanca
+    <PanelStronaMieszkaneca
+      tytul="Edytuj ogłoszenie"
+      opis={ogl.title}
+      hrefPowrotu="/panel/mieszkaniec/marketplace"
+      etykietaPowrotu="← Rynek lokalny"
+      wariantNaglowka="rynek"
+      szeroki
+      dzieci={
+        <MarketplaceFormularzMieszkanca
         wsie={wsie}
         metaWsi={metaWsi}
         pois={pois}
@@ -117,7 +116,8 @@ export default async function EdytujOgloszenieMarketplacePage({ params }: Props)
           },
           dzialka,
         }}
-      />
-    </main>
+        />
+      }
+    />
   );
 }

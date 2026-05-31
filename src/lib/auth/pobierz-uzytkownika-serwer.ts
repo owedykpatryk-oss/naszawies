@@ -1,22 +1,9 @@
+import type { User } from "@supabase/supabase-js";
 import { cache } from "react";
-import type { Session, User } from "@supabase/supabase-js";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
 
-/** Jedno wywołanie getUser() na żądanie RSC (deduplikacja layout + strony). */
-export const pobierzUzytkownikaSerwer = cache(async (): Promise<User | null> => {
-  try {
-    const supabase = utworzKlientaSupabaseSerwer();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
-    return user;
-  } catch {
-    return null;
-  }
-});
-
-/** Szybsze niż getUser — tylko do nawigacji (nagłówek), nie do ochrony tras. */
-export const pobierzSesjeSerwer = cache(async (): Promise<Session | null> => {
+/** Sesja z ciasteczka — bez dodatkowego API (middleware waliduje chronione trasy). */
+export const pobierzSesjeSerwer = cache(async () => {
   try {
     const supabase = utworzKlientaSupabaseSerwer();
     const {
@@ -26,4 +13,9 @@ export const pobierzSesjeSerwer = cache(async (): Promise<Session | null> => {
   } catch {
     return null;
   }
+});
+
+/** Jedno odczytanie użytkownika na żądanie RSC (deduplikacja layout + strony). */
+export const pobierzUzytkownikaSerwer = cache(async (): Promise<User | null> => {
+  return (await pobierzSesjeSerwer())?.user ?? null;
 });

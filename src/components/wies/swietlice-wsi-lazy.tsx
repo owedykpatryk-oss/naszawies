@@ -14,7 +14,17 @@ type SwietliceDane = {
   kalendarz: WierszKalendarzaPublicznego[];
 };
 
-function SwietliceTresc({ nazwaWsi, villageId, isActive }: { nazwaWsi: string; villageId: string; isActive: boolean }) {
+function SwietliceTresc({
+  nazwaWsi,
+  villageId,
+  isActive,
+  zalogowany,
+}: {
+  nazwaWsi: string;
+  villageId: string;
+  isActive: boolean;
+  zalogowany: boolean;
+}) {
   const [dane, setDane] = useState<SwietliceDane | null>(null);
 
   useEffect(() => {
@@ -45,7 +55,9 @@ function SwietliceTresc({ nazwaWsi, villageId, isActive }: { nazwaWsi: string; v
   return (
     <>
       <KalendarzZajetosciWsiSekcja wies={{ name: nazwaWsi }} wiersze={dane.kalendarz} />
-      {dane.sale.length > 0 ? <SwietliceWsiPubliczneSekcja nazwaWsi={nazwaWsi} sale={dane.sale} /> : null}
+      {dane.sale.length > 0 ? (
+        <SwietliceWsiPubliczneSekcja nazwaWsi={nazwaWsi} sale={dane.sale} zalogowany={zalogowany} />
+      ) : null}
     </>
   );
 }
@@ -54,10 +66,12 @@ export function SwietliceWsiLazy({
   nazwaWsi,
   villageId,
   isActive,
+  zalogowany = false,
 }: {
   nazwaWsi: string;
   villageId: string;
   isActive: boolean;
+  zalogowany?: boolean;
 }) {
   if (!isActive) return null;
 
@@ -67,7 +81,12 @@ export function SwietliceWsiLazy({
         <section className="sekcja-poza-foldem mt-10 h-40 animate-pulse rounded-2xl bg-stone-100" aria-hidden />
       }
     >
-      <SwietliceTresc nazwaWsi={nazwaWsi} villageId={villageId} isActive={isActive} />
+      <SwietliceTresc
+        nazwaWsi={nazwaWsi}
+        villageId={villageId}
+        isActive={isActive}
+        zalogowany={zalogowany}
+      />
     </LazyWidoczny>
   );
 }

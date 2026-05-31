@@ -4,6 +4,7 @@ import { Suspense } from "react";
 import { redirect } from "next/navigation";
 import { pobierzVillageIdsRoliPaneluSoltysaDlaUzytkownikaCache } from "@/lib/panel/rola-panelu-soltysa";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
+import { PanelStronaSoltysa } from "@/components/panel/panel-strona-soltysa";
 import { SoltysSpolecznoscKlient, type WiesDoModeracjiSpolecznosci } from "./spolecznosc-klient";
 import { type TrybOrganizacji } from "./tryby-pracy";
 import type { OrganizacjaPelna } from "@/lib/wies/profil-organizacji";
@@ -18,24 +19,19 @@ export default async function SoltysSpolecznoscPage({
   searchParams?: { tryb?: string };
 }) {
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { data: { session } } = await supabase.auth.getSession();
+  const user = session?.user ?? null;
   if (!user) {
     redirect("/logowanie?next=/panel/soltys/spolecznosc");
   }
   const villageIds = await pobierzVillageIdsRoliPaneluSoltysaDlaUzytkownikaCache(user.id);
   if (villageIds.length === 0) {
     return (
-      <main>
-        <h1 className="tytul-sekcji-panelu">Społeczność i rozwój</h1>
-        <p className="mt-2 text-sm text-stone-600">Nie masz jeszcze przypisanej wsi w roli sołtysa lub współadmina.</p>
-        <p className="mt-4 text-sm text-stone-600">
-          <Link href="/panel/soltys" className="text-green-800 underline">
-            ← Przegląd panelu
-          </Link>
-        </p>
-      </main>
+      <PanelStronaSoltysa
+        tytul="Społeczność i rozwój"
+        opis="Nie masz jeszcze przypisanej wsi w roli sołtysa lub współadmina."
+        dzieci={null}
+      />
     );
   }
 
@@ -138,60 +134,65 @@ export default async function SoltysSpolecznoscPage({
       : "ogolny";
 
   return (
-    <main>
-      <h1 className="tytul-sekcji-panelu">Społeczność i rozwój</h1>
-      <p className="mt-2 text-sm text-stone-600">
-        Moduły WOW dla mieszkańców: blog lokalny, historia wsi, darmowy marketplace, lokalne wiadomości i automatyzacje.
-      </p>
-      <p className="mt-2 text-sm text-stone-600">
-        Potrzebujesz instrukcji? Zobacz{" "}
-        <Link href="/panel/soltys/pomoc" className="text-green-800 underline">
-          pomoc krok po kroku
-        </Link>
-        {" · "}
-        <Link href="/panel/rada" className="text-green-800 underline">
-          moderacja zgłoszeń (rada sołecka)
-        </Link>
-        .
-      </p>
-      <div className="mt-6 rounded-xl border border-teal-200/90 bg-teal-50/50 p-4 text-sm text-teal-950">
-        <p className="font-medium text-green-950">Checklista sołtysa (5 min.)</p>
-        <ol className="mt-2 list-decimal space-y-1 pl-5 text-xs leading-relaxed text-stone-700 sm:text-sm">
-          <li>Wybierz wieś w formularzu poniżej — treści zapisują się per sołectwo.</li>
-          <li>Uzupełnij blog lub historię, żeby strona wsi żyła i była widoczna w wyszukiwarkach.</li>
-          <li>Dodaj kilka ogłoszeń na marketplace (wszystkie darmowe) — mieszkańcy szybciej zaufażą modułowi.</li>
-          <li>
-            Zarejestruj KGW, klub sportowy lub zespół — potem uzupełniaj kalendarz (mecze, wyjazdy, próby) na publicznym
-            profilu wsi.
-          </li>
-          <li>
-            Uzupełnij tygodniowy plan stałych zajęć oraz listę zakupów (mieszkańcy mogą dopisywać i zaznaczać „kupione”).
-          </li>
-          <li>Dodaj skrócone informacje o dotacjach i programach — z linkiem do naboru (bez obietnic prawnych).</li>
-          <li>Wstaw krótką wiadomość lokalną (np. wyłączenie wody, zbiórka) — buduje nawyk zaglądania na profil.</li>
-          <li>
-            Raz na jakiś czas uruchom automatyzacje — archiwizuje m.in. wygasłe oferty marketplace i wiadomości, wpisy
-            kalendarza i naborów po terminie, zakończone wydarzenia na tablicy, bardzo stare oczekujące wpisy z RSS
-            (90 dni) oraz przeczytane powiadomienia sprzed pół roku.
-          </li>
-        </ol>
-      </div>
-      <Suspense
-        fallback={
-          <div className="mt-6 h-40 animate-pulse rounded-2xl border border-stone-200 bg-stone-100" aria-hidden />
-        }
-      >
-        <SoltysSpolecznoscKlient
-          wsie={wsie}
-          grupyOrganizacji={grupyOrganizacji}
-          organizacjePelne={organizacjePelne}
-          slotyHarmonogramu={slotyHarmonogramu}
-          zrodlaDotacji={zrodlaDotacji}
-          kontaktyUrzedowe={kontaktyUrzedowe}
-          kadencjeFunkcyjne={kadencjeFunkcyjne}
-          domyslnyTryb={trybZUrl}
-        />
-      </Suspense>
-    </main>
+    <PanelStronaSoltysa
+      tytul="Społeczność i rozwój"
+      opis={
+        <>
+          Moduły WOW dla mieszkańców: blog lokalny, historia wsi, darmowy marketplace, lokalne wiadomości i automatyzacje.
+          Potrzebujesz instrukcji?{" "}
+          <Link href="/panel/soltys/pomoc" className="font-medium text-green-800 underline">
+            pomoc krok po kroku
+          </Link>
+          {" · "}
+          <Link href="/panel/rada" className="font-medium text-green-800 underline">
+            moderacja zgłoszeń (rada)
+          </Link>
+          .
+        </>
+      }
+      szeroki
+      dzieci={
+        <>
+          <div className="baner-wskazowka border-teal-200/90 bg-teal-50/50 text-teal-950">
+            <p className="font-medium text-green-950">Checklista sołtysa (5 min.)</p>
+            <ol className="mt-2 list-decimal space-y-1 pl-5 text-xs leading-relaxed text-stone-700 sm:text-sm">
+              <li>Wybierz wieś w formularzu poniżej — treści zapisują się per sołectwo.</li>
+              <li>Uzupełnij blog lub historię, żeby strona wsi żyła i była widoczna w wyszukiwarkach.</li>
+              <li>Dodaj kilka ogłoszeń na marketplace (wszystkie darmowe) — mieszkańcy szybciej zaufają modułowi.</li>
+              <li>
+                Zarejestruj KGW, klub sportowy lub zespół — potem uzupełniaj kalendarz (mecze, wyjazdy, próby) na publicznym
+                profilu wsi.
+              </li>
+              <li>
+                Uzupełnij tygodniowy plan stałych zajęć oraz listę zakupów (mieszkańcy mogą dopisywać i zaznaczać „kupione”).
+              </li>
+              <li>Dodaj skrócone informacje o dotacjach i programach — z linkiem do naboru (bez obietnic prawnych).</li>
+              <li>Wstaw krótką wiadomość lokalną (np. wyłączenie wody, zbiórka) — buduje nawyk zaglądania na profil.</li>
+              <li>
+                Raz na jakiś czas uruchom automatyzacje — archiwizuje m.in. wygasłe oferty marketplace i wiadomości, wpisy
+                kalendarza i naborów po terminie, zakończone wydarzenia na tablicy, bardzo stare oczekujące wpisy z RSS
+                (90 dni) oraz przeczytane powiadomienia sprzed pół roku.
+              </li>
+            </ol>
+          </div>
+          <Suspense
+            fallback={
+              <div className="mt-6 h-40 animate-pulse rounded-2xl border border-stone-200 bg-stone-100" aria-hidden />
+            }
+          >
+            <SoltysSpolecznoscKlient
+              wsie={wsie}
+              grupyOrganizacji={grupyOrganizacji}
+              organizacjePelne={organizacjePelne}
+              slotyHarmonogramu={slotyHarmonogramu}
+              zrodlaDotacji={zrodlaDotacji}
+              kontaktyUrzedowe={kontaktyUrzedowe}
+              kadencjeFunkcyjne={kadencjeFunkcyjne}
+              domyslnyTryb={trybZUrl}
+            />
+          </Suspense>
+        </>
+      }
+    />
   );
 }

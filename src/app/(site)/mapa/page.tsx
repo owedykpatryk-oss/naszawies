@@ -18,7 +18,6 @@ import type {
 } from "@/components/mapa/mapa-wsi-leaflet";
 import { centroidObszaruPolowania } from "@/lib/lowiectwo/geojson-obszar";
 import { pobierzPubliczneDaneMapy } from "@/lib/mapa/pobierz-publiczne-dane-mapy";
-import { pobierzUzytkownikaSerwer } from "@/lib/auth/pobierz-uzytkownika-serwer";
 import { createPublicSupabaseClient } from "@/lib/supabase/public-client";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
 import { wymagajLogowaniaStrona } from "@/lib/auth/wymagaj-logowania-strona";
@@ -44,7 +43,7 @@ function etykietaLiczbyWsi(n: number): string {
 }
 
 export default async function MapaPage() {
-  await wymagajLogowaniaStrona("/mapa");
+  const user = await wymagajLogowaniaStrona("/mapa");
 
   const { znaczniki, punktyPoi, punktyRynek, punktyRynekDzialki, obrysyCmentarzy, bladZapytania } =
     await pobierzPubliczneDaneMapy();
@@ -56,8 +55,7 @@ export default async function MapaPage() {
   const punktyPolowania: ZnacznikPolowanie[] = [];
 
   try {
-    const user = await pobierzUzytkownikaSerwer();
-    if (user && znaczniki.length > 0) {
+    if (znaczniki.length > 0) {
       const sbAuth = utworzKlientaSupabaseSerwer();
       const { data: roleRows } = await sbAuth
         .from("user_village_roles")

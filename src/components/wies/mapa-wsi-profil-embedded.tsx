@@ -4,6 +4,7 @@ import dynamic from "next/dynamic";
 import Link from "next/link";
 import { linkChroniony } from "@/lib/auth/sciezki-chronione";
 import type { ZnacznikPoi, ZnacznikWsi } from "@/components/mapa/mapa-wsi-leaflet";
+import { PropozycjaPoiFormularz } from "@/components/wies/propozycja-poi-formularz";
 import { OslonaSekcjiWies } from "@/components/wies/oslona-sekcji-wies";
 import { TytulSekcjiWies } from "@/components/wies/tytul-sekcji-wies";
 
@@ -56,6 +57,7 @@ export function MapaWsiProfilEmbedded({ nazwaWsi, villageId, zalogowany, znaczni
       <OslonaSekcjiWies id="sekcja-mapa">
         <TytulSekcjiWies tytul="Mapa miejscowości" opis="Punkty POI pojawią się, gdy sołectwo uzupełni mapę." />
         <p className="mt-3 text-sm text-stone-500">Brak współrzędnych i punktów na mapie dla {nazwaWsi}.</p>
+        <PropozycjaPoiFormularz villageId={villageId} nazwaWsi={nazwaWsi} />
       </OslonaSekcjiWies>
     );
   }
@@ -79,6 +81,12 @@ export function MapaWsiProfilEmbedded({ nazwaWsi, villageId, zalogowany, znaczni
           <span className="text-xs text-stone-500">{pois.length} punktów na mapie tej wsi</span>
         ) : null}
       </p>
+      <PropozycjaPoiFormularz
+        villageId={villageId}
+        nazwaWsi={nazwaWsi}
+        domyslnaLat={znacznik?.lat ?? null}
+        domyslnaLng={znacznik?.lon ?? null}
+      />
     </OslonaSekcjiWies>
   );
 }

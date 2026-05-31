@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { TablicaCyfrowaKlient } from "@/components/grafika/tablica-cyfrowa-klient";
 import { pobierzPlakatyTablicyCyfrowejWsi } from "@/app/(site)/panel/grafika/akcje";
+import { PanelStronaSoltysa } from "@/components/panel/panel-strona-soltysa";
 import { czyUzytkownikJestSoltysemDlaSali } from "@/lib/panel/rola-panelu-soltysa";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
 import { NawigacjaSali } from "@/components/swietlica/nawigacja-sali";
@@ -20,9 +20,8 @@ export default async function SoltysTablicaCyfrowaPage({ params }: Props) {
   if (!uuidOk) notFound();
 
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { data: { session } } = await supabase.auth.getSession();
+  const user = session?.user ?? null;
   if (!user) {
     redirect(`/logowanie?next=/panel/soltys/swietlica/${hallId}/tablica`);
   }
@@ -42,26 +41,18 @@ export default async function SoltysTablicaCyfrowaPage({ params }: Props) {
   const plakaty = await pobierzPlakatyTablicyCyfrowejWsi(sala.village_id);
 
   return (
-    <main>
-      <p className="mb-4 text-sm text-stone-500">
-        <Link href={`/panel/soltys/swietlica/${hallId}`} className="text-green-800 underline">
-          ← Sala
-        </Link>
-      </p>
-      <h1 className="tytul-sekcji-panelu">Tablica cyfrowa</h1>
-      <p className="mt-2 max-w-2xl text-sm text-stone-600">
-        Tryb pełnoekranowy na telewizorze w świetlicy — rotacja opublikowanych plakatów. Włącz plakat w kreatorze
-        grafiki („Pokaż na tablicy świetlicy”).
-      </p>
-
-      <div className="mt-6">
-        <NawigacjaSali hallId={hallId} rola="soltys" />
-        <TablicaCyfrowaKlient
-          plakaty={plakaty}
-          nazwaSali={sala.name}
-          nazwaWsi={wies?.name ?? "Wieś"}
-        />
-      </div>
-    </main>
+    <PanelStronaSoltysa
+      tytul="Tablica cyfrowa"
+      opis="Tryb pełnoekranowy na telewizorze w świetlicy — rotacja opublikowanych plakatów. Włącz plakat w kreatorze grafiki („Pokaż na tablicy świetlicy”)."
+      powrotHref={`/panel/soltys/swietlica/${hallId}`}
+      powrotEtykieta="← Sala"
+      szeroki
+      dzieci={
+        <>
+          <NawigacjaSali hallId={hallId} rola="soltys" />
+          <TablicaCyfrowaKlient plakaty={plakaty} nazwaSali={sala.name} nazwaWsi={wies?.name ?? "Wieś"} />
+        </>
+      }
+    />
   );
 }

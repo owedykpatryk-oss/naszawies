@@ -1,4 +1,5 @@
 import { MojeObserwujGminePrzycisk } from "@/components/panel/moje/moje-obserwuj-gmine-przycisk";
+import { pobierzUzytkownikaSerwer } from "@/lib/auth/pobierz-uzytkownika-serwer";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
 import { sciezkaGminy } from "@/lib/wies/sciezka-publiczna";
 
@@ -9,11 +10,8 @@ type Props = {
 };
 
 export async function MojeObserwujGminePasek({ wojewodztwo, powiat, gmina }: Props) {
+  const user = await pobierzUzytkownikaSerwer();
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
   let followId: string | null = null;
   if (user) {
     const { data } = await supabase

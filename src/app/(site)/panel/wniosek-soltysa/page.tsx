@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { redirect } from "next/navigation";
+import { PanelStronaModulu } from "@/components/panel/panel-strona-modulu";
 import { pobierzVillageIdsRoliPaneluSoltysaDlaUzytkownikaCache } from "@/lib/panel/rola-panelu-soltysa";
 import { utworzWniosekSoltysaZRejestracji } from "@/lib/soltys/wniosek-soltysa";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
@@ -12,9 +12,8 @@ export const metadata: Metadata = {
 
 export default async function WniosekSoltysaPage() {
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { data: { session } } = await supabase.auth.getSession();
+  const user = session?.user ?? null;
   if (!user) redirect("/logowanie?next=/panel/wniosek-soltysa");
 
   await utworzWniosekSoltysaZRejestracji();
@@ -29,20 +28,18 @@ export default async function WniosekSoltysaPage() {
     .limit(20);
 
   return (
-    <main className="mx-auto w-full max-w-4xl">
-      <p className="text-sm text-stone-500">
-        <Link href="/panel" className="text-green-800 underline">
-          ← Start panelu
-        </Link>
-      </p>
-      <h1 className="tytul-sekcji-panelu mt-2">Wniosek o rolę sołtysa</h1>
-      <p className="mt-2 max-w-3xl text-sm leading-relaxed text-stone-600">
-        Portal zakłada <strong>jednego aktywnego sołtysa na sołectwo</strong>. Po zatwierdzeniu przez administratora
-        platformy otrzymasz dostęp do panelu sołtysa i publicznego profilu wsi.
-      </p>
-      <div className="mt-8">
-        <WniosekSoltysaKlient wnioski={wnioski ?? []} maRoleSoltysa={villageIds.length > 0} />
-      </div>
-    </main>
+    <PanelStronaModulu
+      etykieta="Panel"
+      tytul="Wniosek o rolę sołtysa"
+      hrefPowrotu="/panel"
+      etykietaPowrotu="← Start panelu"
+      opis={
+        <>
+          Portal zakłada <strong>jednego aktywnego sołtysa na sołectwo</strong>. Po zatwierdzeniu przez administratora
+          platformy otrzymasz dostęp do panelu sołtysa i publicznego profilu wsi.
+        </>
+      }
+      dzieci={<WniosekSoltysaKlient wnioski={wnioski ?? []} maRoleSoltysa={villageIds.length > 0} />}
+    />
   );
 }

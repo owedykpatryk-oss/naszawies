@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { KreatorGrafikiKlient } from "@/components/grafika/kreator-grafiki-klient";
+import { NaglowekModuluMieszkaniec } from "@/components/pomoc/naglowek-modulu-panelu";
 import {
   parsujParametryPrefillRezerwacji,
   zbudujPrefillZRezerwacji,
@@ -20,9 +21,8 @@ type Props = {
 
 export default async function MieszkaniecGrafikaPage({ searchParams }: Props) {
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { data: { session } } = await supabase.auth.getSession();
+  const user = session?.user ?? null;
   if (!user) {
     redirect("/logowanie?next=/panel/mieszkaniec/grafika");
   }
@@ -76,35 +76,32 @@ export default async function MieszkaniecGrafikaPage({ searchParams }: Props) {
 
   return (
     <main>
-      <p className="mb-4 text-sm text-stone-500">
-        <Link href="/panel/mieszkaniec" className="text-green-800 underline">
-          ← Panel mieszkańca
-        </Link>
-      </p>
-      <h1 className="tytul-sekcji-panelu">Kreator grafiki</h1>
-      <p className="mt-2 max-w-3xl text-sm text-stone-600">
-        Stwórz zaproszenie na urodziny, wesele w świetlicy, plakat akcji albo dyplom dla dziecka.
-        Kreator ma <strong>3 zakładki</strong> — zacznij od trybu „Zaproszenie lub plakat”.
-        {zapisDoBazy ? (
+      <NaglowekModuluMieszkaniec
+        tytul="Kreator grafiki"
+        hrefPomocy="/panel/mieszkaniec/pomoc"
+        opis={
           <>
-            {" "}
-            <strong className="text-green-900">Projekty zapisują się w chmurze</strong> dla wybranej wsi.
+            Stwórz zaproszenie na urodziny, wesele w świetlicy, plakat akcji albo dyplom dla dziecka. Kreator ma{" "}
+            <strong>3 zakładki</strong> — zacznij od trybu „Zaproszenie lub plakat”.
+            {zapisDoBazy ? (
+              <>
+                {" "}
+                <strong className="text-green-900">Projekty zapisują się w chmurze</strong> dla wybranej wsi.
+              </>
+            ) : (
+              <> Wybierz wieś poniżej, aby włączyć zapis w chmurze.</>
+            )}
+            {prefill ? (
+              <>
+                {" "}
+                <strong className="text-green-900">
+                  Wczytano dane rezerwacji sali — sprawdź datę i miejsce w podglądzie.
+                </strong>
+              </>
+            ) : null}
           </>
-        ) : (
-          <>
-            {" "}
-            Wybierz wieś poniżej, aby włączyć zapis w chmurze.
-          </>
-        )}
-        {prefill ? (
-          <>
-            {" "}
-            <strong className="text-green-900">
-              Wczytano dane rezerwacji sali — sprawdź datę i miejsce w podglądzie.
-            </strong>
-          </>
-        ) : null}
-      </p>
+        }
+      />
 
       {villageIds.length > 1 ? (
         <div className="mt-6 flex flex-wrap gap-2">

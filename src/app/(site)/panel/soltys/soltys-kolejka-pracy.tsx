@@ -3,7 +3,7 @@ import type { LicznikiOczekujacychSoltysa } from "@/lib/panel/liczniki-oczekujac
 
 export type PozycjaKolejki = {
   id: string;
-  typ: "wniosek" | "post" | "rynek" | "pomoc" | "zgloszenie" | "zdjecie";
+  typ: "wniosek" | "post" | "rynek" | "pomoc" | "zgloszenie" | "zdjecie" | "poi_propozycja" | "poi_weryfikacja";
   tytul: string;
   wies: string;
   data: string;
@@ -33,6 +33,22 @@ export function SoltysKolejkaPracy({
         {liczniki.zgloszenia > 0 ? (
           <Link href="/panel/soltys/zgloszenia" className="rounded-full bg-red-100 px-2 py-0.5 font-medium text-red-900">
             Zgłoszenia: {liczniki.zgloszenia}
+          </Link>
+        ) : null}
+        {liczniki.poiWeryfikacja > 0 ? (
+          <Link
+            href="/panel/soltys/moja-wies"
+            className="rounded-full bg-sky-100 px-2 py-0.5 font-medium text-sky-900"
+          >
+            Mapa — weryfikacja: {liczniki.poiWeryfikacja}
+          </Link>
+        ) : null}
+        {liczniki.propozycjePoi > 0 ? (
+          <Link
+            href="/panel/soltys/moja-wies"
+            className="rounded-full bg-teal-100 px-2 py-0.5 font-medium text-teal-900"
+          >
+            Propozycje mapy: {liczniki.propozycjePoi}
           </Link>
         ) : null}
         {pokazModeracje && liczniki.zdjecia > 0 ? (
@@ -73,7 +89,11 @@ export function SoltysKolejkaPracy({
                           ? "Pomoc sąsiedzka"
                           : p.typ === "zgloszenie"
                             ? "Zgłoszenie"
-                            : "Zdjęcie"}
+                            : p.typ === "poi_propozycja"
+                              ? "Propozycja mapy"
+                              : p.typ === "poi_weryfikacja"
+                                ? "Weryfikacja mapy"
+                                : "Zdjęcie"}
                   {p.pilne ? " · pilne" : ""}
                 </span>
                 <p className="truncate font-medium text-stone-900">{p.tytul}</p>

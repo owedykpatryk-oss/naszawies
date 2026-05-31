@@ -143,3 +143,35 @@ export async function szukajWsiDlaRejestracji(fraza: string): Promise<
     })),
   };
 }
+
+/** Pobiera miejscowość po UUID (prefill rejestracji z linku zaproszenia). */
+export async function pobierzWiesPoIdDlaRejestracji(villageId: string) {
+  const id = z.string().uuid().safeParse(villageId);
+  if (!id.success) return null;
+
+  const supabase = createPublicSupabaseClient();
+  if (!supabase) return null;
+
+  const { data: w } = await supabase
+    .from("villages")
+    .select("id, name, slug, voivodeship, county, commune, teryt_id")
+    .eq("id", id.data)
+    .maybeSingle();
+
+  if (!w) return null;
+
+  return {
+    id: w.id,
+    nazwa: w.name,
+    gmina: w.commune,
+    powiat: w.county,
+    wojewodztwo: w.voivodeship,
+    terytId: w.teryt_id,
+    sciezka: sciezkaProfiluWsi({
+      voivodeship: w.voivodeship,
+      county: w.county,
+      commune: w.commune,
+      slug: w.slug,
+    }),
+  };
+}

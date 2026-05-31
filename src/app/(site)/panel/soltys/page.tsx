@@ -36,9 +36,8 @@ export const metadata: Metadata = {
 
 export default async function SoltysPage() {
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { data: { session } } = await supabase.auth.getSession();
+  const user = session?.user ?? null;
   if (!user) {
     redirect("/logowanie?next=/panel/soltys");
   }
@@ -249,6 +248,8 @@ export default async function SoltysPage() {
     zgloszenia: 0,
     zdjecia: 0,
     raportySpolecznosci: 0,
+    poiWeryfikacja: 0,
+    propozycjePoi: 0,
   };
   let licznikiPerWies: Awaited<ReturnType<typeof pobierzLicznikiPerWiesSoltysa>> = [];
   let kolejkaPracy: PozycjaKolejki[] = [];
@@ -266,7 +267,7 @@ export default async function SoltysPage() {
     liczniki = await pobierzLicznikiOczekujacychSoltysa(supabase, villageIds);
     licznikiPerWies = await pobierzLicznikiPerWiesSoltysa(supabase, villageIds);
 
-    const [{ data: zgloszeniaKolejka }, zdjeciaRes] = await Promise.all([
+    const [{ data: zgloszeniaKolejka }, zdjeciaRes, propozycjeMapyRes, poiWeryfRes] = await Promise.all([
       supabase
         .from("issues")
         .select("id, title, village_id, created_at, is_urgent, status")
@@ -284,6 +285,22 @@ export default async function SoltysPage() {
             .order("created_at", { ascending: false })
             .limit(5)
         : Promise.resolve({ data: [] as { id: string; caption: string | null; village_id: string; created_at: string }[] }),
+      supabase
+        .from("poi_proposals")
+        .select("id, name, village_id, created_at")
+        .in("village_id", villageIds)
+        .eq("status", "pending")
+        .order("created_at", { ascending: false })
+        .limit(5),
+      supabase
+        .from("pois")
+        .select("id, name, village_id, created_at")
+        .in("village_id", villageIds)
+        .in("source", ["osm_auto", "geoportal"])
+        .is("verified_at", null)
+        .eq("is_local_override", false)
+        .order("created_at", { ascending: false })
+        .limit(5),
     ]);
     const zdjeciaKolejka = zdjeciaRes.data;
 
@@ -332,6 +349,32 @@ export default async function SoltysPage() {
         data: z.created_at,
         href: "/panel/soltys/zgloszenia",
         pilne: z.is_urgent,
+      })),
+      ...((propozycjeMapyRes.data ?? []) as {
+        id: string;
+        name: string;
+        village_id: string;
+        created_at: string;
+      }[]).map((p) => ({
+        id: p.id,
+        typ: "poi_propozycja" as const,
+        tytul: p.name,
+        wies: nazwyWsi[p.village_id] ?? "—",
+        data: p.created_at,
+        href: "/panel/soltys/moja-wies",
+      })),
+      ...((poiWeryfRes.data ?? []) as {
+        id: string;
+        name: string;
+        village_id: string;
+        created_at: string;
+      }[]).map((p) => ({
+        id: p.id,
+        typ: "poi_weryfikacja" as const,
+        tytul: p.name,
+        wies: nazwyWsi[p.village_id] ?? "—",
+        data: p.created_at,
+        href: `/mapa/miejsce/${p.id}`,
       })),
       ...((zdjeciaKolejka ?? []) as {
         id: string;

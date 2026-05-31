@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { PanelStronaMoje } from "@/components/panel/panel-strona-moje";
 import { MojeDodajWiesKlient } from "@/components/panel/moje/moje-dodaj-wies-klient";
 import { MojeKartaWsi } from "@/components/panel/moje/moje-karta-wsi";
 import { pobierzMojePowiazania } from "@/lib/panel/pobierz-moje-powiazania";
@@ -17,17 +18,14 @@ export default async function MojeWiesPage() {
   const wnioskiWToku = dane.wies.filter((w) => w.rola && w.statusRoli === "pending");
 
   return (
-    <main>
-      <h1 className="font-serif text-2xl text-green-950">Moje wsie</h1>
-      <p className="mt-2 text-sm text-stone-600">
-        Gdzie jesteś członkiem, co obserwujesz bez członkostwa oraz wnioski oczekujące na zatwierdzenie sołtysa.
-      </p>
+    <PanelStronaMoje
+      tytul="Moje wsie"
+      opis="Gdzie jesteś członkiem, co obserwujesz bez członkostwa oraz wnioski oczekujące na zatwierdzenie sołtysa."
+      dzieci={
+        <>
+          <MojeDodajWiesKlient />
 
-      <div className="mt-8">
-        <MojeDodajWiesKlient />
-      </div>
-
-      {mieszkam.length > 0 ? (
+          {mieszkam.length > 0 ? (
         <section className="mt-10">
           <h2 className="font-serif text-lg text-green-950">Mieszkam / jestem członkiem</h2>
           <p className="mt-1 text-xs text-stone-600">Aktywne role — skróty do ogłoszeń, świetlicy i profilu wsi.</p>
@@ -78,6 +76,8 @@ export default async function MojeWiesPage() {
       {dane.wies.length === 0 ? (
         <p className="mt-10 text-sm text-stone-500">Po dodaniu pierwszej miejscowości pojawi się ona na liście powyżej.</p>
       ) : null}
-    </main>
+        </>
+      }
+    />
   );
 }

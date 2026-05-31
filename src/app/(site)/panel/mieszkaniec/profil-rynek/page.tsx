@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { redirect } from "next/navigation";
+import { PanelStronaMieszkaneca } from "@/components/panel/panel-strona-mieszkaneca";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
 import { pojedynczaWies } from "@/lib/supabase/wies-z-zapytania";
 import { ProfilRynekFormularz } from "./profil-rynek-formularz";
@@ -9,9 +9,8 @@ export const metadata: Metadata = { title: "Profil usługodawcy — rynek" };
 
 export default async function ProfilRynekMieszkaniecPage() {
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { data: { session } } = await supabase.auth.getSession();
+  const user = session?.user ?? null;
   if (!user) redirect("/logowanie?next=/panel/mieszkaniec/profil-rynek");
 
   const { data: roleRows } = await supabase
@@ -56,17 +55,13 @@ export default async function ProfilRynekMieszkaniecPage() {
     : null;
 
   return (
-    <main>
-      <p className="text-sm text-stone-500">
-        <Link href="/panel/mieszkaniec/marketplace" className="text-green-800 underline">
-          ← Rynek lokalny
-        </Link>
-      </p>
-      <h1 className="mt-2 font-serif text-3xl text-green-950">Profil usługodawcy</h1>
-      <p className="mt-2 text-sm text-stone-600">
-        Stała wizytówka na profilu wsi (obok pojedynczych ogłoszeń). Weryfikację może nadać sołtys.
-      </p>
-      <ProfilRynekFormularz wsie={wsie} profil={profil} />
-    </main>
+    <PanelStronaMieszkaneca
+      tytul="Profil usługodawcy"
+      opis="Stała wizytówka na profilu wsi (obok pojedynczych ogłoszeń). Weryfikację może nadać sołtys."
+      hrefPowrotu="/panel/mieszkaniec/marketplace"
+      etykietaPowrotu="← Rynek lokalny"
+      wariantNaglowka="rynek"
+      dzieci={<ProfilRynekFormularz wsie={wsie} profil={profil} />}
+    />
   );
 }

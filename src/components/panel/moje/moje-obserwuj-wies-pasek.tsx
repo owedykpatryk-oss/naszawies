@@ -1,4 +1,5 @@
 import { MojeObserwujWiesPrzycisk } from "@/components/panel/moje/moje-obserwuj-wies-przycisk";
+import { pobierzUzytkownikaSerwer } from "@/lib/auth/pobierz-uzytkownika-serwer";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
 import { sciezkaProfiluWsi } from "@/lib/wies/sciezka-publiczna";
 
@@ -8,11 +9,8 @@ type Props = {
 };
 
 export async function MojeObserwujWiesPasek({ villageId, wies }: Props) {
+  const user = await pobierzUzytkownikaSerwer();
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-
   let followId: string | null = null;
   if (user) {
     const { data } = await supabase

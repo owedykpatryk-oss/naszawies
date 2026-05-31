@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { NaglowekModuluMieszkaniec } from "@/components/pomoc/naglowek-modulu-panelu";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
 import { pojedynczaWies } from "@/lib/supabase/wies-z-zapytania";
 import { pobierzOtwarteKonkursyDlaWsi } from "@/lib/konkurs-foto/pobierz-konkurs-publiczny";
@@ -21,9 +22,8 @@ const ETYKIETA_STATUSU: Record<string, string> = {
 
 export default async function MieszkaniecFotokronikaPage() {
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { data: { session } } = await supabase.auth.getSession();
+  const user = session?.user ?? null;
   if (!user) {
     redirect("/logowanie?next=/panel/mieszkaniec/fotokronika");
   }
@@ -76,19 +76,19 @@ export default async function MieszkaniecFotokronikaPage() {
 
   return (
     <main>
-      <p className="mb-4 text-sm text-stone-500">
-        <Link href="/panel/mieszkaniec" className="text-green-800 underline">
-          ← Panel mieszkańca
-        </Link>
-      </p>
-      <h1 className="tytul-sekcji-panelu">Fotokronika</h1>
-      <p className="mt-2 max-w-2xl text-sm text-stone-600">
-        Wyślij zdjęcia do wsi (JPEG, PNG, WebP, do 5 MB). Trafiają do moderacji u sołtysa. Publiczna fotokronika:{" "}
-        <Link href="/panel/soltys/fotokronika" className="text-green-800 underline">
-          panel sołtysa → Fotokronika
-        </Link>
-        .
-      </p>
+      <NaglowekModuluMieszkaniec
+        tytul="Fotokronika"
+        hrefPomocy="/panel/mieszkaniec/pomoc"
+        opis={
+          <>
+            Wyślij zdjęcia do wsi (JPEG, PNG, WebP, do 5 MB). Trafiają do moderacji u sołtysa. Publiczna fotokronika:{" "}
+            <Link href="/panel/soltys/fotokronika" className="text-green-800 underline">
+              panel sołtysa → Fotokronika
+            </Link>
+            .
+          </>
+        }
+      />
 
       <FotokronikaDodajKlient
         wies={wies}

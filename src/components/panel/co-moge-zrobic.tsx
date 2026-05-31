@@ -99,34 +99,30 @@ export function CoMogeZrobic({ jestSoltysem = false }: Props) {
 
   return (
     <section className="mb-10" aria-labelledby="co-moge-zrobic-naglowek">
-      <div className="mb-4 flex flex-wrap items-end justify-between gap-2">
+      <div className="mb-5 flex flex-wrap items-end justify-between gap-2">
         <div>
-          <p className="text-[11px] font-bold uppercase tracking-[0.18em] text-emerald-800/80">Szybki start</p>
-          <h2 id="co-moge-zrobic-naglowek" className="font-serif text-xl text-green-950">
+          <p className="etykieta-modulu">Szybki start</p>
+          <h2 id="co-moge-zrobic-naglowek" className="font-serif text-xl text-green-950 sm:text-2xl">
             Co mogę zrobić?
           </h2>
         </div>
-        <Link href="/pomoc" className="text-sm font-medium text-green-800 underline">
+        <Link href="/pomoc" className="text-sm font-medium text-green-800 underline decoration-emerald-600/40 underline-offset-2 hover:decoration-emerald-800">
           Mapa pomocy →
         </Link>
       </div>
       <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
-        {akcje.map((a) => (
-          <li key={a.href}>
+        {akcje.map((a, i) => (
+          <li key={a.href} className="animate-wow-fade-up" style={{ animationDelay: `${i * 50}ms` }}>
             <Link
               href={a.href}
-              className={`group flex h-full flex-col rounded-2xl border p-4 shadow-sm transition hover:-translate-y-0.5 hover:shadow-md motion-reduce:transition-none motion-reduce:hover:translate-y-0 ${
-                a.highlight
-                  ? "border-emerald-300/80 bg-gradient-to-br from-emerald-50/80 to-white ring-1 ring-emerald-600/10"
-                  : "border-stone-200/80 bg-white hover:border-emerald-200"
-              }`}
+              className={`group karta-akcji motion-reduce:transition-none ${a.highlight ? "karta-akcji--highlight" : ""}`}
             >
-              <span className="text-2xl" aria-hidden>
+              <span className="flex h-10 w-10 items-center justify-center rounded-xl bg-emerald-50 text-xl ring-1 ring-emerald-800/10" aria-hidden>
                 {a.ikona}
               </span>
-              <span className="mt-2 font-semibold text-green-950 group-hover:text-green-900">{a.tytul}</span>
-              <span className="mt-1 flex-1 text-sm text-stone-600">{a.opis}</span>
-              <span className="mt-2 text-xs font-medium text-emerald-800 opacity-80 group-hover:opacity-100">
+              <span className="mt-3 font-semibold text-green-950 group-hover:text-green-900">{a.tytul}</span>
+              <span className="mt-1 flex-1 text-sm leading-relaxed text-stone-600">{a.opis}</span>
+              <span className="mt-3 text-xs font-semibold text-emerald-800 opacity-80 group-hover:opacity-100">
                 Przejdź →
               </span>
             </Link>

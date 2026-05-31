@@ -1,12 +1,16 @@
+import { headers } from "next/headers";
+import { DolnaNawigacjaWarunkowa } from "@/components/marka/dolna-nawigacja-warunkowa";
 import { NaglowekWarunkowy } from "@/components/marka/naglowek-warunkowy";
 import { TrybSeniorProvider } from "@/components/ui/tryb-senior-provider";
+import { maCiasteczkaSesjiSupabaseSerwer } from "@/lib/auth/ciasteczka-sesji";
+import { czyStronaBezNaglowkaWitryny } from "@/lib/auth/sciezki-strony-auth";
 import { pobierzSesjeSerwer } from "@/lib/auth/pobierz-uzytkownika-serwer";
 import { sciezkaKreatoraGrafikiDlaUzytkownika } from "@/lib/grafika/sciezka-kreatora";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
 
 const LINKI_PUBLICZNE = [
   { href: "/rynek", label: "Rynek lokalny" },
-  { href: "/logowanie?next=/szukaj", label: "Szukaj wsi" },
+  { href: "/szukaj", label: "Szukaj wsi" },
   { href: "/pomoc", label: "Pomoc" },
   { href: "/kontakt", label: "Kontakt" },
 ] as const;
@@ -23,7 +27,14 @@ function linkiPoZalogowaniu(sciezkaKreatora: string) {
   ] as const;
 }
 
+function pomijaNaglowekWitryny(pathname: string): boolean {
+  return czyStronaBezNaglowkaWitryny(pathname);
+}
+
 export default async function LayoutWitryny({ children }: { children: React.ReactNode }) {
+  const pathname = headers().get("x-pathname") ?? "";
+  const bezNaglowka = pomijaNaglowekWitryny(pathname);
+
   let linkiGlowne: { href: string; label: string }[] = [...LINKI_PUBLICZNE];
   let linkiAkcje: { href: string; label: string }[] = [
     { href: "/o-nas", label: "O nas" },
@@ -31,30 +42,41 @@ export default async function LayoutWitryny({ children }: { children: React.Reac
     { href: "/rejestracja", label: "Rejestracja" },
   ];
   let logoHref = "/";
+  let zalogowany = false;
 
-  try {
-    const sesja = await pobierzSesjeSerwer();
-    const user = sesja?.user;
-    if (user) {
-      const supabase = utworzKlientaSupabaseSerwer();
-      const sciezkaKreatora = await sciezkaKreatoraGrafikiDlaUzytkownika(supabase, user.id);
-      linkiGlowne = [...linkiPoZalogowaniu(sciezkaKreatora)];
-      linkiAkcje = [
-        { href: "/panel/profil", label: "Profil" },
-        { href: "/panel/powiadomienia", label: "Powiadomienia" },
-        { href: "/wyloguj", label: "Wyloguj" },
-      ];
-      logoHref = "/panel";
+  if (maCiasteczkaSesjiSupabaseSerwer()) {
+    try {
+      const sesja = await pobierzSesjeSerwer();
+      const user = sesja?.user;
+      if (user) {
+        zalogowany = true;
+        if (!bezNaglowka) {
+          const supabase = utworzKlientaSupabaseSerwer();
+          const sciezkaKreatora = await sciezkaKreatoraGrafikiDlaUzytkownika(supabase, user.id);
+          linkiGlowne = [...linkiPoZalogowaniu(sciezkaKreatora)];
+          linkiAkcje = [
+            { href: "/panel/profil", label: "Profil" },
+            { href: "/panel/powiadomienia", label: "Powiadomienia" },
+            { href: "/wyloguj", label: "Wyloguj" },
+          ];
+          logoHref = "/panel";
+        }
+      }
+    } catch {
+      // brak env — nagłówek z domyślnymi linkami
     }
-  } catch {
-    // brak env — nagłówek z domyślnymi linkami
   }
 
   return (
     <TrybSeniorProvider>
-      <div className="min-h-[100dvh] min-w-0 overflow-x-hidden bg-stone-50 text-stone-900 [padding-left:max(1rem,env(safe-area-inset-left))] [padding-right:max(1rem,env(safe-area-inset-right))] [padding-bottom:max(0.25rem,env(safe-area-inset-bottom))]">
-        <NaglowekWarunkowy linkiGlowne={linkiGlowne} linkiAkcje={linkiAkcje} logoHref={logoHref} />
-      <div className="pb-8 sm:pb-10 [padding-bottom:calc(2rem+var(--app-bottom-bar-offset,0px))] sm:[padding-bottom:calc(2.5rem+var(--app-bottom-bar-offset,0px))]">{children}</div>
+      <div className="site-tlo-aplikacji min-h-[100dvh] min-w-0 overflow-x-hidden text-stone-900 [padding-left:max(1rem,env(safe-area-inset-left))] [padding-right:max(1rem,env(safe-area-inset-right))]">
+        {!bezNaglowka ? (
+          <NaglowekWarunkowy linkiGlowne={linkiGlowne} linkiAkcje={linkiAkcje} logoHref={logoHref} />
+        ) : null}
+        <div className="pb-8 sm:pb-10 [padding-bottom:calc(2rem+var(--app-bottom-bar-offset,0px)+var(--dolna-naw-offset,0px))] sm:[padding-bottom:calc(2.5rem+var(--dolna-naw-offset,0px))]">
+          {children}
+        </div>
+        <DolnaNawigacjaWarunkowa zalogowany={zalogowany} />
       </div>
     </TrybSeniorProvider>
   );

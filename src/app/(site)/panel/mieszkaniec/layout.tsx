@@ -41,7 +41,7 @@ const GRUPY: GrupaNawigacjiPanelu[] = [
 export default function MieszkaniecLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-w-0">
-      <div className="no-print mb-4 rounded-xl border border-sky-200/80 bg-sky-50/40 px-3 py-2 text-xs text-stone-700">
+      <div className="baner-wskazowka baner-wskazowka--niebieski mb-4">
         <span className="font-semibold text-sky-900">Podpowiedź:</span>{" "}
         <Link href="/panel/mieszkaniec/marketplace" className="font-medium text-green-800 underline">
           rynek lokalny

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { PanelStronaMieszkaneca } from "@/components/panel/panel-strona-mieszkaneca";
 import { pojedynczaWies } from "@/lib/supabase/wies-z-zapytania";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
 import {
@@ -17,9 +18,8 @@ export const metadata: Metadata = {
 
 export default async function MieszkaniecSpolecznoscPage() {
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { data: { session } } = await supabase.auth.getSession();
+  const user = session?.user ?? null;
 
   if (!user) {
     redirect("/logowanie?next=/panel/mieszkaniec/spolecznosc");
@@ -52,17 +52,15 @@ export default async function MieszkaniecSpolecznoscPage() {
 
   if (wsie.length === 0) {
     return (
-      <main>
-        <h1 className="tytul-sekcji-panelu">Społeczność mieszkańców</h1>
-        <p className="mt-2 text-sm text-stone-600">
-          Ten moduł działa dla aktywnych ról lub obserwowanych wsi. Najpierw dołącz do miejscowości.
-        </p>
-        <p className="mt-4 text-sm">
-          <Link href="/panel/mieszkaniec#dolacz-mieszkaniec" className="text-green-800 underline">
+      <PanelStronaMieszkaneca
+        tytul="Społeczność mieszkańców"
+        opis="Ten moduł działa dla aktywnych ról lub obserwowanych wsi. Najpierw dołącz do miejscowości."
+        dzieci={
+          <Link href="/panel/mieszkaniec#dolacz-mieszkaniec" className="font-medium text-green-800 underline">
             Przejdź do „Dołącz do wsi”
           </Link>
-        </p>
-      </main>
+        }
+      />
     );
   }
 
@@ -88,24 +86,18 @@ export default async function MieszkaniecSpolecznoscPage() {
   ]);
 
   return (
-    <main>
-      <div className="mb-4">
-        <Link href="/panel/mieszkaniec" className="text-sm text-green-800 underline">
-          ← Panel mieszkańca
-        </Link>
-      </div>
-      <h1 className="tytul-sekcji-panelu">Społeczność mieszkańców</h1>
-      <p className="mt-2 text-sm text-stone-600">
-        Zakładaj wątki, komentuj i zgłaszaj treści do moderacji. Blog mieszkańca trafia do akceptacji sołtysa.
-      </p>
-      <div className="mt-6">
+    <PanelStronaMieszkaneca
+      tytul="Społeczność mieszkańców"
+      opis="Zakładaj wątki, komentuj i zgłaszaj treści do moderacji. Blog mieszkańca trafia do akceptacji sołtysa."
+      szeroki
+      dzieci={
         <MieszkaniecSpolecznoscKlient
           wsie={wsie}
           watki={(watkiRows ?? []) as Watek[]}
           komentarze={(komentarzeRows ?? []) as Komentarz[]}
           mojeGlosy={(glosyRows ?? []) as GlosMoj[]}
         />
-      </div>
-    </main>
+      }
+    />
   );
 }

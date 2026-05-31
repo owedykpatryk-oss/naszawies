@@ -17,7 +17,7 @@ Autoryzacja: nagłówek `Authorization: Bearer <CRON_SECRET>`.
 ### Bez kluczy API (domyślnie włączone w cronie)
 
 - **Obrys wsi** — `boundary_geojson` z WFS PRG (Geoportal).
-- **Punkty POI** — szkoła, kościół, sklep, **przystanek**, **stacja kolejowa**, OSP itd. z OpenStreetMap (Overpass), limity `POI_AUTO_SYNC_*`.
+- **Punkty POI** — szkoła, kościół, sklep, apteka, poczta, przychodnia, stacja paliw, **przystanek**, **stacja kolejowa**, OSP, urząd itd. z OpenStreetMap (Overpass), limity `POI_AUTO_SYNC_*`.
 - **Adresy** — punkty adresowe PRG (`address_points`).
 - **Kontekst Geoportal** — warstwy pomocnicze (nie zawsze widoczne jako pinezki).
 - **Alerty jakości** — np. brak POI / brak adresów.
@@ -47,10 +47,11 @@ PKP: potrzebna pinezka `stacja_kolejowa` (OSM lub ręcznie) + opcjonalnie mapowa
 
 ## Sugestywny panel sołtysa
 
-Na **Profil wsi** (`/panel/soltys/moja-wies`) blok **„Sugestie mapy”**:
+Na **Profil wsi** (`/panel/soltys/moja-wies`) bloki **„Sugestie mapy”** i **„Do weryfikacji”**:
 
-- brak obrysu / przystanków / stacji,
+- brak obrysu / przystanków / stacji / apteki / poczty,
 - przycisk **Uzupełnij z OSM**,
+- **zatwierdzanie pinezek** z crona (OSM / Geoportal),
 - **Odśwież PKP i autobusy**,
 - link do panelu transportu.
 
@@ -62,7 +63,9 @@ Szczegóły: **[ZRODLA_OTWARTE.md](./ZRODLA_OTWARTE.md)** — co jest wdrożone 
 
 ## Co można dodać później (pomysły)
 
-- Propozycje mieszkańców → kolejka POI do zatwierdzenia przez sołtysa.
+- Propozycje mieszkańców → **wdrożone** (`poi_proposals` + formularz na stronie wsi).
+- Weryfikacja importu OSM/Geoportal → **wdrożone** (kolejka na Moja wieś).
+- Pasek kompletności mapy (18 kategorii + GPS + obrys PRG).
 - Warstwy mapy (włącz/wyłącz przystanki, polowania, ładne miejsca).
 - PKS rozkład z innych GTFS regionalnych (osobne URL per województwo).
 - Powiadomienia push przy opóźnieniu PKP (częściowo jest w sync transportu).

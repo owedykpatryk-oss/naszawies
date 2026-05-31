@@ -78,8 +78,12 @@ export function EdytorKontaktuPoiSoltys({
               <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
                 <p className="font-medium text-green-950">{p.name}</p>
                 <span className="text-xs text-stone-500">{kat}</span>
-                {p.source === "osm" ? (
+                {p.source === "osm_auto" || p.source === "osm_manual" ? (
                   <span className="rounded-full bg-sky-50 px-2 py-0.5 text-[10px] font-medium text-sky-900">OSM</span>
+                ) : p.source === "geoportal" ? (
+                  <span className="rounded-full bg-violet-50 px-2 py-0.5 text-[10px] font-medium text-violet-900">
+                    Geoportal
+                  </span>
                 ) : null}
                 {okId === p.id ? (
                   <span className="text-xs font-medium text-emerald-800">Zapisano ✓</span>

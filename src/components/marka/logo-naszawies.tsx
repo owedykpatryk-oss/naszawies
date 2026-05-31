@@ -88,17 +88,21 @@ export function LogoNaszawies({
   );
 }
 
-/** Logo wyśrodkowane na stronach logowania / rejestracji (pełna ikona z napisem). */
+/** Logo wyśrodkowane na stronach logowania / rejestracji — jeden plik PNG z pełnym znakiem. */
 export function LogoNaszawiesWycentrowane({ className = "" }: { className?: string }) {
   return (
-    <div className={`flex flex-col items-center pb-6 ${className}`}>
-      <Link href="/" className="block no-underline outline-none" aria-label="naszawies.pl — strona główna">
+    <div className={`flex justify-center pb-6 ${className}`}>
+      <Link
+        href="/"
+        className="inline-block outline-none ring-green-800 ring-offset-2 ring-offset-stone-50 focus-visible:ring-2"
+        aria-label="naszawies.pl — strona główna"
+      >
         <Image
           src={LOGO_PELNE_SRC}
           alt="naszawies.pl"
-          width={220}
-          height={220}
-          className="h-auto w-[min(220px,52vw)]"
+          width={682}
+          height={1024}
+          className="h-auto w-40 max-w-full sm:w-44"
           priority
         />
       </Link>

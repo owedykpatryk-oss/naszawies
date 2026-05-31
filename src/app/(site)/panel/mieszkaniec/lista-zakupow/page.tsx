@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { ListaZakupowWsiKlient } from "@/components/wies/lista-zakupow-wsi-klient";
+import { PanelStronaMieszkaneca } from "@/components/panel/panel-strona-mieszkaneca";
 import { roleDlaUprawnienia } from "@/lib/panel/uprawnienia-wsi";
 import { pojedynczaWies } from "@/lib/supabase/wies-z-zapytania";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
@@ -16,9 +17,8 @@ export default async function MieszkaniecListaZakupowPage({
   searchParams: { village?: string };
 }) {
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { data: { session } } = await supabase.auth.getSession();
+  const user = session?.user ?? null;
   if (!user) {
     redirect("/logowanie?next=/panel/mieszkaniec/lista-zakupow");
   }
@@ -40,17 +40,11 @@ export default async function MieszkaniecListaZakupowPage({
 
   if (wsie.length === 0) {
     return (
-      <main>
-        <h1 className="tytul-sekcji-panelu">Lista zakupów wsi</h1>
-        <p className="mt-2 text-sm text-stone-600">
-          Ta sekcja jest dostępna tylko dla osób zapisanych do KGW oraz sołtysa.
-        </p>
-        <p className="mt-4 text-sm">
-          <Link href="/panel/mieszkaniec" className="text-green-800 underline">
-            ← Panel mieszkańca
-          </Link>
-        </p>
-      </main>
+      <PanelStronaMieszkaneca
+        tytul="Lista zakupów wsi"
+        opis="Ta sekcja jest dostępna tylko dla osób zapisanych do KGW oraz sołtysa."
+        dzieci={null}
+      />
     );
   }
 
@@ -77,42 +71,39 @@ export default async function MieszkaniecListaZakupowPage({
   const nazwaWybranejWsi = wsie.find((w) => w.id === villageId)?.name ?? "";
 
   return (
-    <main>
-      <h1 className="tytul-sekcji-panelu">Lista zakupów wsi</h1>
-      <p className="mt-2 text-sm text-stone-600">
-        Wspólna lista KGW do planowania zakupów. Dostęp mają osoby z rolą KGW oraz sołtys/współadmin.
-      </p>
-      <div className="mt-6 flex flex-wrap gap-2">
-        {wsie.map((w) => (
-          <Link
-            key={w.id}
-            href={`/panel/mieszkaniec/lista-zakupow?village=${w.id}`}
-            className={`rounded-full border px-3 py-1.5 text-sm ${
-              w.id === villageId
-                ? "border-amber-700 bg-amber-100 font-medium text-amber-950"
-                : "border-stone-200 bg-white text-stone-700 hover:border-amber-400"
-            }`}
-          >
-            {w.name}
-            {!w.is_active ? " (profil w przygotowaniu)" : ""}
-          </Link>
-        ))}
-      </div>
-      <div className="mt-8 rounded-2xl border border-amber-200/80 bg-gradient-to-br from-amber-50/40 to-white p-5 shadow-sm">
-        <ListaZakupowWsiKlient
-          villageId={villageId}
-          pozycje={pozycje}
-          edytowalna
-          pokazSzablony
-          pokazDruk={pozycje.length > 0}
-          nazwaWsi={nazwaWybranejWsi}
-        />
-      </div>
-      <p className="mt-6 text-sm">
-        <Link href="/panel/mieszkaniec" className="text-green-800 underline">
-          ← Panel mieszkańca
-        </Link>
-      </p>
-    </main>
+    <PanelStronaMieszkaneca
+      tytul="Lista zakupów wsi"
+      opis="Wspólna lista KGW do planowania zakupów. Dostęp mają osoby z rolą KGW oraz sołtys/współadmin."
+      dzieci={
+        <>
+          <div className="flex flex-wrap gap-2">
+            {wsie.map((w) => (
+              <Link
+                key={w.id}
+                href={`/panel/mieszkaniec/lista-zakupow?village=${w.id}`}
+                className={`rounded-full border px-3 py-1.5 text-sm ${
+                  w.id === villageId
+                    ? "border-amber-700 bg-amber-100 font-medium text-amber-950"
+                    : "border-stone-200 bg-white text-stone-700 hover:border-amber-400"
+                }`}
+              >
+                {w.name}
+                {!w.is_active ? " (profil w przygotowaniu)" : ""}
+              </Link>
+            ))}
+          </div>
+          <div className="mt-6 rounded-2xl border border-amber-200/80 bg-gradient-to-br from-amber-50/40 to-white p-5 shadow-sm">
+            <ListaZakupowWsiKlient
+              villageId={villageId}
+              pozycje={pozycje}
+              edytowalna
+              pokazSzablony
+              pokazDruk={pozycje.length > 0}
+              nazwaWsi={nazwaWybranejWsi}
+            />
+          </div>
+        </>
+      }
+    />
   );
 }

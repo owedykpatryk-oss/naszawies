@@ -1,4 +1,8 @@
+import { createRequire } from "module";
 import { withSentryConfig } from "@sentry/nextjs";
+
+const require = createRequire(import.meta.url);
+const { budujCspProdukcji } = require("./src/lib/bezpieczenstwo/csp-produkcji.ts");
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
@@ -20,6 +24,8 @@ const nextConfig = {
   },
   images: {
     formats: ["image/avif", "image/webp"],
+    deviceSizes: [640, 750, 828, 1080, 1200, 1920],
+    imageSizes: [16, 32, 48, 64, 96, 128, 256, 384],
     minimumCacheTTL: 60 * 60 * 24 * 7,
     remotePatterns: (() => {
       const wzorce = [
@@ -39,50 +45,7 @@ const nextConfig = {
   },
   async headers() {
     const prod = process.env.NODE_ENV === "production";
-    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL?.replace(/\/$/, "") ?? "";
-    const r2Base = process.env.NEXT_PUBLIC_R2_PUBLIC_BASE_URL?.replace(/\/$/, "") ?? "";
-
-    const connectSrc = [
-      "'self'",
-      supabaseUrl,
-      supabaseUrl ? supabaseUrl.replace("https://", "wss://") : "",
-      "https://challenges.cloudflare.com",
-      "https://plausible.io",
-      "https://*.tile.openstreetmap.org",
-      "https://nominatim.openstreetmap.org",
-      "https://api.mapbox.com",
-      "https://*.geoportal.gov.pl",
-    ]
-      .filter(Boolean)
-      .join(" ");
-
-    const imgSrc = [
-      "'self'",
-      "data:",
-      "blob:",
-      "https://*.supabase.co",
-      "https://tile.openstreetmap.org",
-      "https://*.tile.openstreetmap.org",
-      r2Base,
-      "https://cdn.naszawies.pl",
-    ]
-      .filter(Boolean)
-      .join(" ");
-
-    const cspProd = [
-      "default-src 'self'",
-      "base-uri 'self'",
-      "form-action 'self'",
-      "object-src 'none'",
-      "frame-ancestors 'self' https://vercel.com",
-      "script-src 'self' 'unsafe-inline' https://challenges.cloudflare.com https://plausible.io",
-      "style-src 'self' 'unsafe-inline'",
-      `img-src ${imgSrc}`,
-      `connect-src ${connectSrc}`,
-      "font-src 'self' data:",
-      "frame-src https://challenges.cloudflare.com",
-      "worker-src 'self' blob:",
-    ].join("; ");
+    const cspProd = budujCspProdukcji();
 
     const security = [
       { key: "X-DNS-Prefetch-Control", value: "on" },

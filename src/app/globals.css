@@ -10,6 +10,7 @@
   --site-header-offset: 7.25rem;
   --panel-header-offset: 6.75rem;
   --sticky-nav-offset: var(--site-header-offset);
+  --dolna-naw-offset: 0px;
 }
 
 @media (min-width: 640px) {
@@ -175,6 +176,167 @@ html.tryb-senior textarea {
   }
   .panel-karta:hover {
     @apply border-emerald-200/70 ring-emerald-800/[0.06];
+    transform: translateY(-1px);
+    box-shadow:
+      0 8px 24px rgba(45, 90, 45, 0.07),
+      0 2px 8px rgba(0, 0, 0, 0.04);
+  }
+
+  .etykieta-modulu {
+    @apply text-[11px] font-bold uppercase tracking-[0.18em] text-emerald-800/80;
+  }
+
+  .site-tlo-aplikacji {
+    background-color: #faf9f7;
+    background-image:
+      radial-gradient(ellipse 70% 45% at 0% 0%, rgba(90, 156, 62, 0.07), transparent 55%),
+      radial-gradient(ellipse 50% 35% at 100% 0%, rgba(45, 90, 45, 0.05), transparent 50%),
+      linear-gradient(180deg, #faf9f7 0%, #f5f4f2 100%);
+  }
+
+  .hero-publiczny {
+    @apply wow-wejscie relative overflow-hidden rounded-2xl border p-6 sm:p-8;
+    box-shadow:
+      0 1px 0 rgba(255, 255, 255, 0.9) inset,
+      0 16px 48px rgba(45, 90, 45, 0.08);
+  }
+
+  .hero-publiczny--szukaj {
+    @apply border-emerald-300/40;
+    background: linear-gradient(135deg, #f0fdf4 0%, #ecfdf5 40%, #faf9f7 100%);
+  }
+
+  .hero-publiczny--szukaj::before {
+    content: "";
+    position: absolute;
+    top: -3rem;
+    right: -1rem;
+    width: 12rem;
+    height: 12rem;
+    border-radius: 9999px;
+    background: radial-gradient(circle, rgba(34, 197, 94, 0.18), transparent 68%);
+    pointer-events: none;
+  }
+
+  .hero-publiczny--szukaj::after {
+    content: "";
+    position: absolute;
+    bottom: -2rem;
+    left: -1.5rem;
+    width: 9rem;
+    height: 9rem;
+    border-radius: 9999px;
+    background: radial-gradient(circle, rgba(45, 90, 45, 0.08), transparent 70%);
+    pointer-events: none;
+  }
+
+  .karta-akcji {
+    @apply flex h-full flex-col rounded-2xl border border-stone-200/80 bg-white p-4 shadow-sm transition duration-200;
+  }
+
+  .karta-akcji:hover {
+    @apply border-emerald-200/80;
+    transform: translateY(-2px);
+    box-shadow:
+      0 12px 32px rgba(45, 90, 45, 0.1),
+      0 4px 12px rgba(0, 0, 0, 0.04);
+  }
+
+  .karta-akcji--highlight {
+    @apply border-emerald-300/80 bg-gradient-to-br from-emerald-50/90 via-white to-white ring-1 ring-emerald-600/10;
+  }
+
+  .karta-skrot-modulu {
+    @apply block rounded-xl border border-stone-200/90 bg-white/95 p-4 text-sm shadow-sm transition duration-200;
+  }
+
+  .karta-skrot-modulu:hover {
+    @apply border-emerald-300/60 bg-white;
+    transform: translateY(-1px);
+    box-shadow: 0 8px 24px rgba(45, 90, 45, 0.08);
+  }
+
+  .modul-naglowek-wrap {
+    @apply panel-informacji-hero mb-6;
+  }
+
+  .baner-wskazowka {
+    @apply rounded-xl border px-3 py-2.5 text-xs leading-relaxed text-stone-700 sm:text-sm;
+  }
+
+  .baner-wskazowka--niebieski {
+    @apply border-sky-200/80 bg-gradient-to-r from-sky-50/70 via-white/80 to-emerald-50/40;
+  }
+
+  .baner-wskazowka--zielony {
+    @apply border-emerald-200/80 bg-gradient-to-r from-emerald-50/60 via-white/80 to-emerald-50/30;
+  }
+
+  .dolna-naw-mobilna {
+    @apply fixed bottom-0 left-0 right-0 z-50 border-t border-green-900/10 bg-[#f5f1e8]/95 backdrop-blur-lg lg:hidden;
+    padding-bottom: max(0.35rem, env(safe-area-inset-bottom));
+    box-shadow: 0 -8px 32px rgba(45, 90, 45, 0.08);
+  }
+
+  .dolna-naw-link {
+    @apply flex min-h-[52px] flex-1 flex-col items-center justify-center gap-0.5 rounded-lg px-1 py-1.5 text-[10px] font-semibold text-stone-600 transition;
+  }
+
+  .dolna-naw-link--aktywny {
+    @apply bg-green-800/10 text-green-950;
+  }
+
+  .dolna-naw-link:not(.dolna-naw-link--aktywny):hover {
+    @apply bg-white/60 text-green-900;
+  }
+
+  .site-naw-pill {
+    @apply shrink-0 whitespace-nowrap rounded-lg px-2.5 py-1.5 text-xs font-semibold transition sm:px-3 sm:text-sm;
+  }
+
+  .site-naw-pill--aktywny {
+    @apply bg-gradient-to-b from-green-800 to-green-900 text-white shadow-sm ring-1 ring-green-950/15;
+  }
+
+  .site-naw-pill:not(.site-naw-pill--aktywny) {
+    @apply text-green-900 hover:bg-green-50 hover:text-green-950;
+  }
+
+  .kpi-kafel {
+    @apply rounded-2xl border border-stone-200/90 bg-white px-4 py-3.5 shadow-sm transition duration-200;
+  }
+
+  .kpi-kafel:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 8px 24px rgba(45, 90, 45, 0.08);
+  }
+
+  .kpi-kafel--emerald {
+    @apply border-emerald-200/90 bg-gradient-to-br from-emerald-50/90 to-white;
+  }
+
+  .kpi-kafel--sky {
+    @apply border-sky-200/80 bg-gradient-to-br from-sky-50/50 to-white;
+  }
+
+  .kpi-kafel--violet {
+    @apply border-violet-200/80 bg-gradient-to-br from-violet-50/40 to-white;
+  }
+
+  .kpi-kafel--amber {
+    @apply border-amber-200/80 bg-gradient-to-br from-amber-50/50 to-white;
+  }
+
+  .lista-wierszy-panelu {
+    @apply panel-karta divide-y divide-stone-100 overflow-hidden p-0;
+  }
+
+  .lista-wierszy-panelu > li {
+    @apply px-5 py-3.5 transition hover:bg-emerald-50/30;
+  }
+
+  .pusty-stan-panelu {
+    @apply panel-karta border-amber-200/80 bg-amber-50/40 text-sm text-amber-950;
   }
   .panel-tlo {
     @apply relative isolate min-h-screen overflow-x-hidden;
@@ -350,11 +512,16 @@ html.tryb-senior textarea {
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .wow-wejscie {
+  .wow-wejscie,
+  .animate-wow-fade-up {
     animation: none;
   }
 
-  .karta-wow:hover {
+  .karta-wow:hover,
+  .panel-karta:hover,
+  .karta-akcji:hover,
+  .karta-skrot-modulu:hover,
+  .kpi-kafel:hover {
     transform: none;
   }
 }

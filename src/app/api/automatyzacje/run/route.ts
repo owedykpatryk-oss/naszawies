@@ -199,9 +199,9 @@ async function runAutomation(request: Request) {
   } else {
     try {
       const summary = await synchronizujPoiOsmAutomatycznie(supabase, {
-        maxVillagesPerRun: Number.parseInt(process.env.POI_AUTO_SYNC_VILLAGES_PER_RUN ?? "", 10) || 3,
-        maxVillagesScanned: Number.parseInt(process.env.POI_AUTO_SYNC_VILLAGES_SCANNED ?? "", 10) || 30,
-        minDaysBetweenSync: Number.parseInt(process.env.POI_AUTO_SYNC_MIN_DAYS ?? "", 10) || 7,
+        maxVillagesPerRun: Number.parseInt(process.env.POI_AUTO_SYNC_VILLAGES_PER_RUN ?? "", 10) || 8,
+        maxVillagesScanned: Number.parseInt(process.env.POI_AUTO_SYNC_VILLAGES_SCANNED ?? "", 10) || 50,
+        minDaysBetweenSync: Number.parseInt(process.env.POI_AUTO_SYNC_MIN_DAYS ?? "", 10) || 3,
       });
       poiAuto = {
         ok: true,

@@ -1,4 +1,5 @@
 import { etykietaRoliWsi } from "@/lib/panel/role-definicje";
+import { pobierzUzytkownikaSerwer } from "@/lib/auth/pobierz-uzytkownika-serwer";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
 import { pojedynczaWies } from "@/lib/supabase/wies-z-zapytania";
 import {
@@ -142,12 +143,10 @@ function zWierszaWsi(
 
 /** Agreguje wsie użytkownika (role + obserwacje) oraz jednostki samorządowe. */
 export async function pobierzMojePowiazania(): Promise<MojePowiazania | null> {
-  const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await pobierzUzytkownikaSerwer();
   if (!user) return null;
 
+  const supabase = utworzKlientaSupabaseSerwer();
   const { data: roleRows } = await supabase
     .from("user_village_roles")
     .select("id, role, status, village_id, villages (id, name, slug, voivodeship, county, commune)")

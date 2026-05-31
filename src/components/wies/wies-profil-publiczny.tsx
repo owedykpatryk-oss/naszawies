@@ -1,9 +1,6 @@
 import dynamic from "next/dynamic";
 import Link from "next/link";
-import {
-  MarketplaceListaKlient,
-  type RynekOfertaPubliczna,
-} from "@/components/wies/marketplace-lista-klient";
+import type { RynekOfertaPubliczna } from "@/components/wies/marketplace-lista-klient";
 import { KartaProfiluRynku } from "@/components/wies/karta-profilu-rynku";
 import type { WierszKalendarzaPublicznego } from "@/components/swietlica/kalendarz-zajetosci-publiczny";
 import type { SalaPublicznaWsi } from "@/lib/swietlica/pobierz-sale-publiczne-wsi";
@@ -36,12 +33,16 @@ import { PanelInformacjiMieszkancow } from "@/components/wies/panel-informacji-m
 import type { ZnacznikPoi, ZnacznikWsi } from "@/components/mapa/mapa-wsi-leaflet";
 import type { LinkPrzydatnyPubliczny } from "@/lib/wies/linki-przydatne";
 import { MojeObserwujWiesPasek } from "@/components/panel/moje/moje-obserwuj-wies-pasek";
+import { BanerDolaczDoWsi } from "@/components/wies/baner-dolacz-do-wsi";
+import { SpolecznyDowodWsi } from "@/components/wies/spoleczny-dowod-wsi";
+import { RynekUdostepnijPrzycisk } from "@/components/wies/rynek-udostepnij-przycisk";
 import { ZapiszTrescPrzycisk } from "@/components/panel/moje/zapisz-tresc-przycisk";
 import { KARTA_LISTY_WIES, OslonaSekcjiWies } from "@/components/wies/oslona-sekcji-wies";
 import { TytulSekcjiWies } from "@/components/wies/tytul-sekcji-wies";
 import { SekcjaDaneGeoWsiLazy } from "@/components/wies/sekcja-dane-geo-wsi-lazy";
 import { WiesTransportLazy } from "@/components/wies/wies-transport-lazy";
 import { WiesRolnictwoLazy } from "@/components/wies/wies-rolnictwo-lazy";
+import { linkChroniony } from "@/lib/auth/sciezki-chronione";
 import { SwietliceWsiLazy } from "@/components/wies/swietlice-wsi-lazy";
 import type { KonkursFotoPubliczny, ZdjecieKonkursu } from "@/lib/konkurs-foto/fazy-konkursu";
 import type { OstrzezenieLowieckie } from "@/lib/lowiectwo/pobierz-ostrzezenia-publiczne";
@@ -53,6 +54,13 @@ const GaleriaPlakatowWsi = dynamic(
     loading: () => (
       <section className="sekcja-poza-foldem mt-12 h-48 animate-pulse rounded-2xl bg-stone-100" aria-hidden />
     ),
+  },
+);
+
+const MarketplaceListaKlient = dynamic(
+  () => import("@/components/wies/marketplace-lista-klient").then((m) => ({ default: m.MarketplaceListaKlient })),
+  {
+    loading: () => <section className="mt-8 h-40 animate-pulse rounded-2xl bg-stone-100" aria-hidden />,
   },
 );
 
@@ -128,6 +136,7 @@ export function WiesProfilPubliczny({
   mapaZnacznik = null,
   mapaPoi = [],
   maPlanCmentarza = false,
+  liczbaMieszkancowAktywnych = 0,
 }: {
   wies: WiesPubliczna;
   posty: WpisPostu[];
@@ -250,6 +259,8 @@ export function WiesProfilPubliczny({
   mapaPoi?: ZnacznikPoi[];
   /** Opublikowany plan cmentarza (kwatery / rzędy / groby). */
   maPlanCmentarza?: boolean;
+  /** Aktywni mieszkańcy zatwierdzeni w serwisie (social proof). */
+  liczbaMieszkancowAktywnych?: number;
 }) {
   const sciezka = sciezkaProfiluWsi(wies);
   const parafie = organizacje.filter((o) => o.group_type === "parafia");
@@ -398,7 +409,18 @@ export function WiesProfilPubliczny({
               Aktywny profil
             </span>
           ) : null}
+          <RynekUdostepnijPrzycisk
+            url={sciezka}
+            tytul={`${wies.name} — naszawies.pl`}
+            tekst={`Zobacz profil wsi ${wies.name} na naszawies.pl — ogłoszenia, mapa i społeczność lokalna.`}
+          />
         </div>
+        <SpolecznyDowodWsi
+          liczbaMieszkancow={liczbaMieszkancowAktywnych}
+          liczbaOgloszen={rynek.length}
+          liczbaAktualnosci={laczonyFeed.length}
+          aktywnyProfil={wies.is_active}
+        />
         {wies.population != null && wies.population > 0 ? (
           <p className="mt-2 text-sm text-stone-600">
             Szacunkowa liczba mieszkańców:{" "}
@@ -467,6 +489,7 @@ export function WiesProfilPubliczny({
             commune: wies.commune,
           }}
         />
+        <BanerDolaczDoWsi nazwaWsi={wies.name} villageId={wies.id} zalogowany={zalogowany} />
         <WiesZakladkiProfilu zakladki={zakladkiProfilu} />
         <div className="mt-4 flex flex-wrap items-center gap-3">
           <PrzelacznikTrybuSeniora />
@@ -1086,7 +1109,12 @@ export function WiesProfilPubliczny({
         </OslonaSekcjiWies>
       ) : null}
 
-      <SwietliceWsiLazy nazwaWsi={wies.name} villageId={wies.id} isActive={wies.is_active} />
+      <SwietliceWsiLazy
+        nazwaWsi={wies.name}
+        villageId={wies.id}
+        isActive={wies.is_active}
+        zalogowany={zalogowany}
+      />
 
       <SekcjaDaneGeoWsiLazy villageId={wies.id} />
 
@@ -1094,7 +1122,7 @@ export function WiesProfilPubliczny({
         <TytulSekcjiWies etykieta="Regulamin" tytul="Świetlica i rezerwacje" />
         <p className="mt-3 text-sm text-stone-700">
           Rezerwacja sali odbywa się w{" "}
-          <Link href="/logowanie?next=/panel/mieszkaniec/swietlica" className="text-green-800 underline">
+          <Link href={linkChroniony("/panel/mieszkaniec/swietlica", zalogowany)} className="text-green-800 underline">
             panelu mieszkańca
           </Link>{" "}
           (po akceptacji roli we wsi). Kto zajął salę w danym terminie — tylko sołtys w panelu obiegu; powyżej widać

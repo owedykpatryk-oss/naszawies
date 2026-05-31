@@ -8,9 +8,19 @@ const config: Config = {
   ],
   theme: {
     extend: {
+      fontFamily: {
+        sans: ["var(--font-inter)", "ui-sans-serif", "system-ui", "sans-serif"],
+        serif: ["var(--font-fraunces)", "ui-serif", "Georgia", "serif"],
+      },
       colors: {
         background: "var(--background)",
         foreground: "var(--foreground)",
+        nasza: {
+          zielen: "#2d5a2d",
+          "zielen-jasna": "#5a9c3e",
+          krem: "#f4f0e6",
+          miod: "#c2410c",
+        },
       },
       keyframes: {
         mapaReveal: {
@@ -66,6 +76,14 @@ const config: Config = {
           "0%": { backgroundPosition: "0% 50%" },
           "100%": { backgroundPosition: "200% 50%" },
         },
+        wowFadeUp: {
+          "0%": { opacity: "0", transform: "translateY(12px)" },
+          "100%": { opacity: "1", transform: "translateY(0)" },
+        },
+        navGlow: {
+          "0%, 100%": { boxShadow: "0 0 0 0 rgba(45, 90, 45, 0)" },
+          "50%": { boxShadow: "0 4px 20px -4px rgba(45, 90, 45, 0.25)" },
+        },
       },
       animation: {
         "mapa-reveal": "mapaReveal 0.8s cubic-bezier(0.22, 1, 0.36, 1) both",
@@ -79,6 +97,8 @@ const config: Config = {
         "studz-rzut-enter": "studzRzutEnter 0.9s cubic-bezier(0.22, 1, 0.36, 1) both",
         "studz-rzut-glow": "studzRzutGlow 4.5s ease-in-out infinite",
         "studz-rzut-shimmer": "studzRzutShimmer 3.5s ease-in-out infinite",
+        "wow-fade-up": "wowFadeUp 0.55s cubic-bezier(0.22, 1, 0.36, 1) both",
+        "nav-glow": "navGlow 3s ease-in-out infinite",
       },
     },
   },

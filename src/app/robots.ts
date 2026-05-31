@@ -11,7 +11,6 @@ export default function robots(): MetadataRoute.Robots {
           "/auth/",
           "/mapa",
           "/mapa/",
-          "/szukaj",
           "/wybierz-wies",
           "/transport",
           "/transport/",

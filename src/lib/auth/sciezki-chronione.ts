@@ -5,7 +5,6 @@
 const PREFIXY_STRON = [
   "/panel",
   "/mapa",
-  "/szukaj",
   "/wybierz-wies",
   "/grafika",
   "/transport",
@@ -14,7 +13,6 @@ const PREFIXY_STRON = [
 /** API wies/mapa — wyjątek: rejestracja (server actions). */
 export const PREFIXY_API_CHRONIONE = [
   "/api/wies/katalog",
-  "/api/wies/szukaj",
   "/api/wies/mapa-znaczniki",
 ] as const;
 
@@ -23,25 +21,11 @@ export function sciezkaWymagaLogowania(pathname: string): boolean {
     return true;
   }
 
-  const czesci = pathname.split("/").filter(Boolean);
-  if (czesci[0] === "wies") {
-    const glebokosc = czesci.length - 1;
-    if (glebokosc >= 1 && glebokosc <= 3) {
-      return true;
-    }
-  }
-
   return false;
 }
 
 export function sciezkaApiWymagaLogowania(pathname: string): boolean {
   return PREFIXY_API_CHRONIONE.some((p) => pathname === p || pathname.startsWith(`${p}/`));
-}
-
-/** Middleware: tylko te ścieżki potrzebują odpytywania Supabase Auth. */
-export function sciezkaWymagaSprawdzeniaSesji(pathname: string): boolean {
-  if (pathname === "/") return true;
-  return sciezkaWymagaLogowania(pathname) || sciezkaApiWymagaLogowania(pathname);
 }
 
 export function urlLogowaniaZPowrotem(sciezka: string, search = ""): string {

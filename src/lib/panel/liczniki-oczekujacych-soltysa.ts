@@ -10,6 +10,10 @@ export type LicznikiOczekujacychSoltysa = {
   zgloszenia: number;
   zdjecia: number;
   raportySpolecznosci: number;
+  /** POI z importu OSM/Geoportal bez zatwierdzenia sołtysa. */
+  poiWeryfikacja: number;
+  /** Propozycje punktów od mieszkańców. */
+  propozycjePoi: number;
 };
 
 export type LicznikiPerWies = LicznikiOczekujacychSoltysa & { villageId: string };
@@ -24,6 +28,8 @@ const PUSTE: LicznikiOczekujacychSoltysa = {
   zgloszenia: 0,
   zdjecia: 0,
   raportySpolecznosci: 0,
+  poiWeryfikacja: 0,
+  propozycjePoi: 0,
 };
 
 function sumaLicznika(a: LicznikiOczekujacychSoltysa): number {
@@ -36,7 +42,9 @@ function sumaLicznika(a: LicznikiOczekujacychSoltysa): number {
     a.pomoc +
     a.zgloszenia +
     a.zdjecia +
-    a.raportySpolecznosci
+    a.raportySpolecznosci +
+    a.poiWeryfikacja +
+    a.propozycjePoi
   );
 }
 
@@ -44,9 +52,9 @@ export function lacznaLiczbaOczekujacych(l: LicznikiOczekujacychSoltysa): number
   return sumaLicznika(l);
 }
 
-/** Tylko zadania sołtysa (bez moderacji treści — to rola rady / współadmina). */
+/** Zadania sołtysa wymagające decyzji (w tym mapa). */
 export function lacznaLiczbaZadanSoltysa(l: LicznikiOczekujacychSoltysa): number {
-  return l.wnioski + l.rezerwacje + l.zgloszenia;
+  return l.wnioski + l.rezerwacje + l.zgloszenia + l.poiWeryfikacja + l.propozycjePoi;
 }
 
 /** Liczniki kolejek moderacji / decyzji dla wsi sołtysa (do KPI i badge w menu). */
@@ -69,6 +77,8 @@ export async function pobierzLicznikiOczekujacychSoltysa(
     zdjeciaRes,
     raportyRes,
     rezerwacjeRes,
+    poiWeryfRes,
+    propozycjePoiRes,
   ] = await Promise.all([
     supabase
       .from("user_village_roles")
@@ -118,6 +128,18 @@ export async function pobierzLicznikiOczekujacychSoltysa(
           .in("hall_id", hallIds)
           .eq("status", "pending")
       : Promise.resolve({ count: 0 }),
+    supabase
+      .from("pois")
+      .select("id", { count: "exact", head: true })
+      .in("village_id", villageIds)
+      .in("source", ["osm_auto", "geoportal"])
+      .is("verified_at", null)
+      .eq("is_local_override", false),
+    supabase
+      .from("poi_proposals")
+      .select("id", { count: "exact", head: true })
+      .in("village_id", villageIds)
+      .eq("status", "pending"),
   ]);
 
   return {
@@ -130,6 +152,8 @@ export async function pobierzLicznikiOczekujacychSoltysa(
     zdjecia: zdjeciaRes.count ?? 0,
     raportySpolecznosci: raportyRes.count ?? 0,
     rezerwacje: rezerwacjeRes.count ?? 0,
+    poiWeryfikacja: poiWeryfRes.count ?? 0,
+    propozycjePoi: propozycjePoiRes.count ?? 0,
   };
 }
 

@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { pobierzVillageIdsRoliPaneluSoltysaDlaUzytkownikaCache } from "@/lib/panel/rola-panelu-soltysa";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
 import { pojedynczaWies } from "@/lib/supabase/wies-z-zapytania";
+import { PanelStronaSoltysa } from "@/components/panel/panel-strona-soltysa";
 import { FotokronikaSoltysKlient } from "./fotokronika-soltys-klient";
 
 export const metadata: Metadata = {
@@ -22,9 +23,8 @@ type AlbumWiersz = {
 
 export default async function SoltysFotokronikaPage() {
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { data: { session } } = await supabase.auth.getSession();
+  const user = session?.user ?? null;
   if (!user) {
     redirect("/logowanie?next=/panel/soltys/fotokronika");
   }
@@ -118,32 +118,26 @@ export default async function SoltysFotokronikaPage() {
   }
 
   return (
-    <main>
-      <p className="mb-4 text-sm text-stone-500">
-        <Link href="/panel/soltys" className="text-green-800 underline">
-          ← Panel sołtysa
-        </Link>
-      </p>
-      <h1 className="tytul-sekcji-panelu">Fotokronika wsi</h1>
-      <p className="mt-2 max-w-2xl text-sm text-stone-600">
-        Twórz albumy, zatwierdzaj lub odrzucaj zdjęcia od mieszkańców. Oni wysyłają pliki w{" "}
-        <Link href="/panel/mieszkaniec/fotokronika" className="text-green-800 underline">
-          panelu mieszkańca
-        </Link>
-        .
-      </p>
-      {villageIds.length === 0 ? (
-        <p className="mt-6 rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-950">
-          Brak przypisanej wsi w roli sołtysa (lub współadmina). Po aktywacji roli wróć tutaj.
-        </p>
-      ) : (
-        <FotokronikaSoltysKlient
-          wies={wies}
-          oczekujace={oczekujace}
-          albumy={albumy}
-          okladki={okladki}
-        />
-      )}
-    </main>
+    <PanelStronaSoltysa
+      tytul="Fotokronika wsi"
+      opis={
+        <>
+          Twórz albumy, zatwierdzaj lub odrzucaj zdjęcia od mieszkańców. Oni wysyłają pliki w{" "}
+          <Link href="/panel/mieszkaniec/fotokronika" className="font-medium text-green-800 underline">
+            panelu mieszkańca
+          </Link>
+          .
+        </>
+      }
+      dzieci={
+        villageIds.length === 0 ? (
+          <p className="rounded-lg border border-amber-200 bg-amber-50 p-4 text-sm text-amber-950">
+            Brak przypisanej wsi w roli sołtysa (lub współadmina). Po aktywacji roli wróć tutaj.
+          </p>
+        ) : (
+          <FotokronikaSoltysKlient wies={wies} oczekujace={oczekujace} albumy={albumy} okladki={okladki} />
+        )
+      }
+    />
   );
 }

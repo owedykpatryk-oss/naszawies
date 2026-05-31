@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { NaglowekModuluMieszkaniec } from "@/components/pomoc/naglowek-modulu-panelu";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
 import { pojedynczaWies } from "@/lib/supabase/wies-z-zapytania";
 import { sciezkaProfiluWsi } from "@/lib/wies/sciezka-publiczna";
@@ -14,9 +15,8 @@ export const metadata: Metadata = { title: "Rynek lokalny — dodaj ogłoszenie"
 
 export default async function MarketplaceMieszkaniecPage() {
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { data: { session } } = await supabase.auth.getSession();
+  const user = session?.user ?? null;
   if (!user) redirect("/logowanie?next=/panel/mieszkaniec/marketplace");
 
   const { data: roleRows } = await supabase
@@ -107,19 +107,12 @@ export default async function MarketplaceMieszkaniecPage() {
 
   return (
     <main>
-      <p className="text-sm text-stone-500">
-        <Link href="/panel/mieszkaniec" className="text-green-800 underline">
-          ← Panel mieszkańca
-        </Link>
-      </p>
-      <header className="rynek-hero-wow relative mt-4 !p-4 sm:!p-6">
-        <div className="relative z-[1]">
-          <p className="inline-flex items-center gap-1.5 rounded-full bg-orange-200/60 px-2.5 py-0.5 text-[11px] font-bold uppercase tracking-wider text-orange-950">
-            <span aria-hidden>🏷️</span>
-            Rynek lokalny
-          </p>
-          <h1 className="mt-2 font-serif text-2xl text-green-950 sm:text-3xl">Dodaj ogłoszenie</h1>
-          <p className="mt-2 max-w-2xl text-sm leading-relaxed text-stone-700">
+      <NaglowekModuluMieszkaniec
+        wariant="rynek"
+        etykieta="Rynek lokalny"
+        tytul="Dodaj ogłoszenie"
+        opis={
+          <>
             Darmowe ogłoszenia — produkty z gospodarstwa, maszyny, konie oraz{" "}
             <strong>działki i domy z mapą z Geoportalu</strong> (do 5 zdjęć). Zainteresowani piszą przez{" "}
             <Link href="/panel/czat" className="font-medium text-green-800 underline">
@@ -129,9 +122,9 @@ export default async function MarketplaceMieszkaniecPage() {
             <Link href="/panel/mieszkaniec/profil-rynek" className="font-medium text-green-800 underline">
               Profil usługodawcy
             </Link>
-          </p>
-        </div>
-      </header>
+          </>
+        }
+      />
       <MarketplaceSubskrypcjeKlient wsie={wsie} subskrypcje={subskrypcje} />
       <MarketplaceSzablonKgwKlient wsie={wsie} />
       <MarketplaceMojeLista ogloszenia={mojeOgloszenia} />

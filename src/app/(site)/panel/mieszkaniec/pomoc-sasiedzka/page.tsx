@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { redirect } from "next/navigation";
+import { PanelStronaMieszkaneca } from "@/components/panel/panel-strona-mieszkaneca";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
 import { pojedynczaWies } from "@/lib/supabase/wies-z-zapytania";
 import { PomocSasiedzkaFormularz } from "./pomoc-sasiedzka-formularz";
@@ -9,9 +9,8 @@ export const metadata: Metadata = { title: "Pomoc sąsiedzka" };
 
 export default async function PomocSasiedzkaPage() {
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { data: { session } } = await supabase.auth.getSession();
+  const user = session?.user ?? null;
   if (!user) redirect("/logowanie?next=/panel/mieszkaniec/pomoc-sasiedzka");
 
   const { data: roleRows } = await supabase
@@ -40,30 +39,27 @@ export default async function PomocSasiedzkaPage() {
       : { data: [] };
 
   return (
-    <main>
-      <p className="text-sm text-stone-500">
-        <Link href="/panel/mieszkaniec" className="text-green-800 underline">
-          ← Panel mieszkańca
-        </Link>
-      </p>
-      <h1 className="mt-2 font-serif text-3xl text-green-950">Pomoc sąsiedzka</h1>
-      <p className="mt-2 text-sm text-stone-600">
-        Transport, zakupy, opieka — oferty widoczne na profilu wsi po zatwierdzeniu przez sołtysa.
-      </p>
-      <PomocSasiedzkaFormularz wsie={wsie} />
-      {(moje ?? []).length > 0 ? (
-        <section className="mt-8">
-          <h2 className="font-serif text-xl text-green-950">Twoje ogłoszenia</h2>
-          <ul className="mt-3 divide-y divide-stone-100 rounded-xl border border-stone-200 bg-white">
-            {(moje ?? []).map((o) => (
-              <li key={o.id} className="px-4 py-3 text-sm">
-                <span className="font-medium">{o.title}</span>
-                <span className="ml-2 text-stone-500">· {o.status}</span>
-              </li>
-            ))}
-          </ul>
-        </section>
-      ) : null}
-    </main>
+    <PanelStronaMieszkaneca
+      tytul="Pomoc sąsiedzka"
+      opis="Transport, zakupy, opieka — oferty widoczne na profilu wsi po zatwierdzeniu przez sołtysa."
+      dzieci={
+        <>
+          <PomocSasiedzkaFormularz wsie={wsie} />
+          {(moje ?? []).length > 0 ? (
+            <section className="mt-8">
+              <h2 className="font-serif text-xl text-green-950">Twoje ogłoszenia</h2>
+              <ul className="lista-wierszy-panelu mt-3">
+                {(moje ?? []).map((o) => (
+                  <li key={o.id} className="text-sm">
+                    <span className="font-medium">{o.title}</span>
+                    <span className="ml-2 text-stone-500">· {o.status}</span>
+                  </li>
+                ))}
+              </ul>
+            </section>
+          ) : null}
+        </>
+      }
+    />
   );
 }

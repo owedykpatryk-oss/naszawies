@@ -3,6 +3,7 @@ import {
   NawigacjaPaneluGrupowana,
   type GrupaNawigacjiPanelu,
 } from "@/components/panel/nawigacja-panelu-grupowana";
+import { pobierzUzytkownikaSerwer } from "@/lib/auth/pobierz-uzytkownika-serwer";
 import { pobierzLicznikiOczekujacychSoltysa, lacznaLiczbaZadanSoltysa } from "@/lib/panel/liczniki-oczekujacych-soltysa";
 import { pobierzVillageIdsRoliPaneluSoltysaDlaUzytkownikaCache } from "@/lib/panel/rola-panelu-soltysa";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
@@ -21,7 +22,7 @@ function grupyZLiczbami(
       id: "promocja",
       tytul: "Wieś i promocja",
       linki: [
-        { href: "/panel/soltys/moja-wies", label: "Profil wsi" },
+        { href: "/panel/soltys/moja-wies", label: "Profil wsi", badge: (l.poiWeryfikacja + l.propozycjePoi) || undefined },
         { href: "/panel/soltys/grafika", label: "Kreator grafiki", highlight: true },
         { href: "/panel/soltys/konkursy", label: "Konkursy zdjęć" },
         { href: "/panel/soltys/transport", label: "Transport PKP" },
@@ -63,12 +64,10 @@ function grupyZLiczbami(
 }
 
 export async function SoltysNawigacja() {
-  const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await pobierzUzytkownikaSerwer();
   if (!user) redirect("/logowanie?next=/panel/soltys");
 
+  const supabase = utworzKlientaSupabaseSerwer();
   const villageIds = await pobierzVillageIdsRoliPaneluSoltysaDlaUzytkownikaCache(user.id);
   const liczniki =
     villageIds.length > 0 ? await pobierzLicznikiOczekujacychSoltysa(supabase, villageIds) : null;
@@ -85,6 +84,8 @@ export async function SoltysNawigacja() {
         zgloszenia: 0,
         zdjecia: 0,
         raportySpolecznosci: 0,
+        poiWeryfikacja: 0,
+        propozycjePoi: 0,
       })}
       ariaLabel="Panel sołtysa"
     />

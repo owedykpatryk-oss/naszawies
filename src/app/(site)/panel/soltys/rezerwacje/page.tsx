@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { PanelStronaSoltysa } from "@/components/panel/panel-strona-soltysa";
 import { DokumentacjaZniszczenRezerwacji } from "@/components/swietlica/dokumentacja-zniszczen-rezerwacji";
 import {
   ProtokolOdbioruSaliKlient,
@@ -18,9 +19,8 @@ export const metadata: Metadata = {
 
 export default async function SoltysRezerwacjePage() {
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { data: { session } } = await supabase.auth.getSession();
+  const user = session?.user ?? null;
   if (!user) {
     redirect("/logowanie?next=/panel/soltys/rezerwacje");
   }
@@ -366,90 +366,96 @@ export default async function SoltysRezerwacjePage() {
   const wymagaOdbioru = archiwum.filter((r) => czyWymagaOdbioru(r.status, r.end_at, r.checkout_inspection));
 
   return (
-    <main>
-      <h1 className="tytul-sekcji-panelu">Rezerwacje świetlic</h1>
-      <p className="mt-2 text-sm text-stone-600">
-        Wnioski oczekujące na zatwierdzenie w Twoich sołectwach. Po zatwierdzeniu mieszkaniec zobaczy status przy
-        swojej sali. Na publicznym kalendarzu i w panelu innych użytkowników widać tylko, że termin jest zajęty;{" "}
-        <strong>imię, telefon i tytuł wydarzenia widać wyłącznie w tym panelu (sołtys).</strong>
-      </p>
-
-      {villageIds.length === 0 ? (
-        <p className="mt-8 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-950">
-          Nie masz aktywnej roli sołtysa ani współadministratora.
-        </p>
-      ) : (
+    <PanelStronaSoltysa
+      tytul="Rezerwacje świetlic"
+      opis={
         <>
-          {wymagaOdbioru.length > 0 ? (
-            <div className="mt-6 rounded-xl border border-amber-300 bg-amber-50 p-4">
-              <p className="font-medium text-amber-950">
-                {wymagaOdbioru.length === 1
-                  ? "1 rezerwacja czeka na odbiór sali"
-                  : `${wymagaOdbioru.length} rezerwacji czeka na odbiór sali`}
-              </p>
-              <p className="mt-1 text-sm text-amber-900/90">
-                Termin minął — uzupełnij protokół odbioru z weryfikacją asortymentu w sekcji poniżej.
-              </p>
-            </div>
-          ) : null}
-          <SoltysRezerwacjeKlient wiersze={wiersze} />
-          <SoltysRezerwacjeKalendarzEksport kalendarz={wierszeKalendarz} eksport={wierszeEksport} />
-          <section className="mt-14">
-            <h2 className="font-serif text-xl text-green-950">Zatwierdzone i zakończone — dokumentacja po wydarzeniu</h2>
-            <p className="mt-2 text-sm text-stone-600">
-              Możesz uzupełniać zdjęcia i uwagi tak jak wynajmujący; wpisy widoczne są w załączniku informacyjnym do
-              wynajmu danej sali.
-            </p>
-            {archiwum.length === 0 ? (
-              <p className="mt-4 text-sm text-stone-600">Brak zakończonych lub zatwierdzonych rezerwacji w Twoich salach.</p>
-            ) : (
-              <ul className="mt-6 space-y-6">
-                {archiwum.map((r) => {
-                  const urls = Array.isArray(r.damage_documentation_urls) ? r.damage_documentation_urls : [];
-                  const statusPl =
-                    r.status === "approved" ? "Zatwierdzona" : r.status === "completed" ? "Zakończona" : r.status;
-                  return (
-                    <li key={r.id} className="rounded-xl border border-stone-200 bg-white p-4 shadow-sm">
-                      <p className="font-medium text-stone-900">{nazwaSali[r.hall_id] ?? "Sala"}</p>
-                      <p className="text-xs text-stone-500">
-                        {r.booked_by ? mapaArch[r.booked_by] ?? r.booked_by.slice(0, 8) : "—"} · {statusPl}
-                      </p>
-                      <p className="mt-2 text-sm text-stone-800">
-                        {new Date(r.start_at).toLocaleString("pl-PL", { dateStyle: "short", timeStyle: "short" })} —{" "}
-                        {new Date(r.end_at).toLocaleString("pl-PL", { dateStyle: "short", timeStyle: "short" })}
-                      </p>
-                      <p className="text-sm text-stone-600">
-                        {r.event_type}
-                        {r.event_title ? ` — ${r.event_title}` : ""} · {r.expected_guests} os.
-                      </p>
-                      <ProtokolOdbioruSaliKlient
-                        bookingId={r.id}
-                        hallId={r.hall_id}
-                        status={r.status}
-                        endAtIso={r.end_at}
-                        pozycjePoczatkowe={pozycjeDoOdbioru(r)}
-                        checkoutInspectionRaw={r.checkout_inspection}
-                      />
-                      <DokumentacjaZniszczenRezerwacji
-                        bookingId={r.id}
-                        urlsPoczatkowe={urls}
-                        completionNotesPoczatkowe={r.completion_notes}
-                        wasDamagedPoczatkowe={r.was_damaged}
-                      />
-                    </li>
-                  );
-                })}
-              </ul>
-            )}
-          </section>
+          Wnioski oczekujące na zatwierdzenie w Twoich sołectwach. Po zatwierdzeniu mieszkaniec zobaczy status przy
+          swojej sali. Na publicznym kalendarzu i w panelu innych użytkowników widać tylko, że termin jest zajęty;{" "}
+          <strong>imię, telefon i tytuł wydarzenia widać wyłącznie w tym panelu (sołtys).</strong>
         </>
-      )}
+      }
+      szeroki
+      dzieci={
+        <>
+          {villageIds.length === 0 ? (
+            <p className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-950">
+              Nie masz aktywnej roli sołtysa ani współadministratora.
+            </p>
+          ) : (
+            <>
+              {wymagaOdbioru.length > 0 ? (
+                <div className="baner-wskazowka border-amber-300 bg-amber-50">
+                  <p className="font-medium text-amber-950">
+                    {wymagaOdbioru.length === 1
+                      ? "1 rezerwacja czeka na odbiór sali"
+                      : `${wymagaOdbioru.length} rezerwacji czeka na odbiór sali`}
+                  </p>
+                  <p className="mt-1 text-sm text-amber-900/90">
+                    Termin minął — uzupełnij protokół odbioru z weryfikacją asortymentu w sekcji poniżej.
+                  </p>
+                </div>
+              ) : null}
+              <SoltysRezerwacjeKlient wiersze={wiersze} />
+              <SoltysRezerwacjeKalendarzEksport kalendarz={wierszeKalendarz} eksport={wierszeEksport} />
+              <section className="mt-14">
+                <h2 className="font-serif text-xl text-green-950">Zatwierdzone i zakończone — dokumentacja po wydarzeniu</h2>
+                <p className="mt-2 text-sm text-stone-600">
+                  Możesz uzupełniać zdjęcia i uwagi tak jak wynajmujący; wpisy widoczne są w załączniku informacyjnym do
+                  wynajmu danej sali.
+                </p>
+                {archiwum.length === 0 ? (
+                  <p className="mt-4 text-sm text-stone-600">Brak zakończonych lub zatwierdzonych rezerwacji w Twoich salach.</p>
+                ) : (
+                  <ul className="mt-6 space-y-6">
+                    {archiwum.map((r) => {
+                      const urls = Array.isArray(r.damage_documentation_urls) ? r.damage_documentation_urls : [];
+                      const statusPl =
+                        r.status === "approved" ? "Zatwierdzona" : r.status === "completed" ? "Zakończona" : r.status;
+                      return (
+                        <li key={r.id} className="rounded-xl border border-stone-200 bg-white p-4 shadow-sm">
+                          <p className="font-medium text-stone-900">{nazwaSali[r.hall_id] ?? "Sala"}</p>
+                          <p className="text-xs text-stone-500">
+                            {r.booked_by ? mapaArch[r.booked_by] ?? r.booked_by.slice(0, 8) : "—"} · {statusPl}
+                          </p>
+                          <p className="mt-2 text-sm text-stone-800">
+                            {new Date(r.start_at).toLocaleString("pl-PL", { dateStyle: "short", timeStyle: "short" })} —{" "}
+                            {new Date(r.end_at).toLocaleString("pl-PL", { dateStyle: "short", timeStyle: "short" })}
+                          </p>
+                          <p className="text-sm text-stone-600">
+                            {r.event_type}
+                            {r.event_title ? ` — ${r.event_title}` : ""} · {r.expected_guests} os.
+                          </p>
+                          <ProtokolOdbioruSaliKlient
+                            bookingId={r.id}
+                            hallId={r.hall_id}
+                            status={r.status}
+                            endAtIso={r.end_at}
+                            pozycjePoczatkowe={pozycjeDoOdbioru(r)}
+                            checkoutInspectionRaw={r.checkout_inspection}
+                          />
+                          <DokumentacjaZniszczenRezerwacji
+                            bookingId={r.id}
+                            urlsPoczatkowe={urls}
+                            completionNotesPoczatkowe={r.completion_notes}
+                            wasDamagedPoczatkowe={r.was_damaged}
+                          />
+                        </li>
+                      );
+                    })}
+                  </ul>
+                )}
+              </section>
+            </>
+          )}
 
-      <p className="mt-10 text-sm text-stone-500">
-        <Link href="/panel/soltys/swietlica" className="text-green-800 underline">
-          Wyposażenie sal
-        </Link>
-      </p>
-    </main>
+          <p className="mt-10 text-sm text-stone-500">
+            <Link href="/panel/soltys/swietlica" className="text-green-800 underline">
+              Wyposażenie sal
+            </Link>
+          </p>
+        </>
+      }
+    />
   );
 }

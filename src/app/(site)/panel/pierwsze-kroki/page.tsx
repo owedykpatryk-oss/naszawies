@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { NaglowekModuluPanelu } from "@/components/pomoc/naglowek-modulu-panelu";
 
 export const metadata: Metadata = {
   title: "Pierwsze kroki w panelu",
@@ -17,23 +18,25 @@ const linkToc = [
 export default function PanelPierwszeKrokiPage() {
   return (
     <main className="mx-auto w-full max-w-7xl">
-      <p className="mb-4 text-sm text-stone-500">
-        <Link href="/panel" className="text-green-800 underline">
-          ← Start panelu
-        </Link>
-      </p>
-      <h1 className="tytul-sekcji-panelu">Pierwsze kroki po rejestracji</h1>
-      <p className="mt-3 text-sm text-stone-600">
-        Poniżej kolejność działań dla typowego użytkownika. Na stronie głównej panelu (
-        <Link href="/panel" className="text-green-800 underline">
-          Start
-        </Link>
-        ) ten sam schemat jest skrócony do listy z linkami i paskiem postępu.
-      </p>
+      <NaglowekModuluPanelu
+        etykieta="Przewodnik"
+        tytul="Pierwsze kroki po rejestracji"
+        hrefPowrotu="/panel"
+        etykietaPowrotu="← Start panelu"
+        opis={
+          <>
+            Poniżej kolejność działań dla typowego użytkownika. Na stronie głównej panelu (
+            <Link href="/panel" className="text-green-800 underline">
+              Start
+            </Link>
+            ) ten sam schemat jest skrócony do listy z linkami i paskiem postępu.
+          </>
+        }
+      />
 
       <nav
         aria-label="Spis treści przewodnika"
-        className="mt-6 rounded-xl border border-stone-200 bg-stone-50/80 p-4 sm:sticky [top:var(--sticky-nav-offset)]"
+        className="panel-nawigacja-szklo mt-6 p-4 sm:sticky [top:var(--sticky-nav-offset)]"
       >
         <p className="text-xs font-semibold uppercase tracking-wide text-stone-500">Na tej stronie</p>
         <ul className="mt-2 flex flex-wrap gap-2 text-sm">
@@ -50,7 +53,7 @@ export default function PanelPierwszeKrokiPage() {
         </ul>
       </nav>
 
-      <section id="krok-profil" className="scroll-mt-24 mt-8 rounded-2xl border border-stone-200 bg-white p-5 shadow-sm">
+      <section id="krok-profil" className="panel-karta scroll-mt-24 mt-8">
         <h2 className="font-serif text-lg text-green-950">1. Profil konta</h2>
         <p className="mt-2 text-sm text-stone-700">
           Wejdź w <Link href="/panel/profil" className="font-medium text-green-800 underline">Mój profil</Link> i ustaw
@@ -60,7 +63,7 @@ export default function PanelPierwszeKrokiPage() {
         </p>
       </section>
 
-      <section id="krok-wies" className="scroll-mt-24 mt-6 rounded-2xl border border-stone-200 bg-white p-5 shadow-sm">
+      <section id="krok-wies" className="panel-karta scroll-mt-24 mt-6">
         <h2 className="font-serif text-lg text-green-950">2. Wybór miejscowości i gminy</h2>
         <p className="mt-2 text-sm text-stone-700">
           Portal jest powiązany z konkretnymi miejscowościami z urzędowego wykazu (TERYT). Otwórz{" "}
@@ -88,7 +91,7 @@ export default function PanelPierwszeKrokiPage() {
         </ul>
       </section>
 
-      <section id="krok-soltys" className="scroll-mt-24 mt-6 rounded-2xl border border-emerald-200/80 bg-emerald-50/30 p-5 shadow-sm">
+      <section id="krok-soltys" className="panel-karta scroll-mt-24 mt-6 border-emerald-200/80 bg-gradient-to-br from-emerald-50/40 to-white">
         <h2 className="font-serif text-lg text-green-950">3. Jeśli jesteś sołtysem lub współadminem</h2>
         <p className="mt-2 text-sm text-stone-700">
           Przejście do <Link href="/panel/soltys" className="font-medium text-green-800 underline">panelu Sołtys</Link>{" "}
@@ -128,7 +131,7 @@ export default function PanelPierwszeKrokiPage() {
 
       <section
         id="krok-powiadomienia"
-        className="scroll-mt-24 mt-6 rounded-2xl border border-stone-200 bg-white p-5 shadow-sm"
+        className="panel-karta scroll-mt-24 mt-6"
       >
         <h2 className="font-serif text-lg text-green-950">4. Powiadomienia i telefon</h2>
         <p className="mt-2 text-sm text-stone-700">
@@ -138,7 +141,7 @@ export default function PanelPierwszeKrokiPage() {
         </p>
       </section>
 
-      <section id="faq" className="scroll-mt-24 mt-8 space-y-3 rounded-2xl border border-violet-200/70 bg-violet-50/40 p-5">
+      <section id="faq" className="panel-karta scroll-mt-24 mt-8 space-y-3 border-violet-200/70 bg-gradient-to-br from-violet-50/40 to-white">
         <h2 className="font-serif text-lg text-green-950">Częste pytania</h2>
         <details className="rounded-lg border border-stone-200 bg-white p-3 text-sm shadow-sm open:shadow-md">
           <summary className="cursor-pointer font-medium text-stone-900">Dlaczego znika baner na stronie Start?</summary>

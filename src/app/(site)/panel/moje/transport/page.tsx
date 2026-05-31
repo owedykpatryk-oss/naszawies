@@ -1,5 +1,5 @@
-import Link from "next/link";
 import { redirect } from "next/navigation";
+import { PanelStronaMoje } from "@/components/panel/panel-strona-moje";
 import { MojeTransportUstawieniaKlient } from "@/components/panel/moje/moje-transport-ustawienia-klient";
 import { uzupelnijRelacjeTransportoweUzytkownika } from "@/lib/transport/uzupelnij-relacje-transportowe";
 import { sciezkaProfiluWsi } from "@/lib/wies/sciezka-publiczna";
@@ -9,9 +9,8 @@ export const metadata = { title: "Transport — Moje" };
 
 export default async function MojeTransportPage() {
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { data: { session } } = await supabase.auth.getSession();
+  const user = session?.user ?? null;
   if (!user) redirect("/logowanie?next=/panel/moje/transport");
 
   await uzupelnijRelacjeTransportoweUzytkownika(supabase, user.id);
@@ -53,19 +52,10 @@ export default async function MojeTransportPage() {
   });
 
   return (
-    <main>
-      <p className="mb-4 text-sm text-stone-500">
-        <Link href="/panel/moje" className="text-green-800 underline">
-          ← Moje
-        </Link>
-      </p>
-      <h1 className="font-serif text-2xl text-green-950">Ustawienia transportu</h1>
-      <p className="mt-2 text-sm text-stone-600">
-        Powiadomienia o kolei oraz relacje do miasta powiatowego i wojewódzkiego.
-      </p>
-      <div className="mt-8">
-        <MojeTransportUstawieniaKlient relacje={relacje} />
-      </div>
-    </main>
+    <PanelStronaMoje
+      tytul="Ustawienia transportu"
+      opis="Powiadomienia o kolei oraz relacje do miasta powiatowego i wojewódzkiego."
+      dzieci={<MojeTransportUstawieniaKlient relacje={relacje} />}
+    />
   );
 }

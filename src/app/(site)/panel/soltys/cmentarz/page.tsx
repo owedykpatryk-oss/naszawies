@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { PanelStronaSoltysa } from "@/components/panel/panel-strona-soltysa";
 import { PlanCmentarzaEdytor } from "@/components/cmentarz/plan-cmentarza-edytor";
 import { parsujPlanCmentarza, szablonPlanuCmentarzaStartowy } from "@/lib/cmentarz/plan-cmentarza";
 import { centroidPolygon } from "@/lib/cmentarz/overpass-cmentarz-obrys";
@@ -14,9 +15,8 @@ export const metadata: Metadata = {
 
 export default async function SoltysCmentarzPage() {
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { data: { session } } = await supabase.auth.getSession();
+  const user = session?.user ?? null;
   if (!user) {
     redirect("/logowanie?next=/panel/soltys/cmentarz");
   }
@@ -101,64 +101,70 @@ export default async function SoltysCmentarzPage() {
   }
 
   return (
-    <main>
-      <h1 className="tytul-sekcji-panelu">Plan cmentarza</h1>
-      <p className="mt-2 text-sm text-stone-600">
-        Układ <strong>kwater, rzędów i grobów</strong> (jak plan sali świetlicy), import obrysu z OpenStreetMap,
-        podkład ortofoto, wyszukiwarka dla rodzin, link QR przy bramie i wirtualne znicze.
-      </p>
+    <PanelStronaSoltysa
+      tytul="Plan cmentarza"
+      opis={
+        <>
+          Układ <strong>kwater, rzędów i grobów</strong> (jak plan sali świetlicy), import obrysu z OpenStreetMap,
+          podkład ortofoto, wyszukiwarka dla rodzin, link QR przy bramie i wirtualne znicze.
+        </>
+      }
+      szeroki
+      dzieci={
+        <>
+          {villageIds.length === 0 ? (
+            <p className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-950">
+              Nie masz aktywnej roli sołtysa. Skontaktuj się z zespołem naszawies.pl w sprawie przypisania.
+            </p>
+          ) : null}
 
-      {villageIds.length === 0 ? (
-        <p className="mt-8 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-950">
-          Nie masz aktywnej roli sołtysa. Skontaktuj się z zespołem naszawies.pl w sprawie przypisania.
-        </p>
-      ) : null}
-
-      <div className="mt-8 space-y-8">
-        {wies.map((w) => {
-          const plan = plany[w.id];
-          if (!plan) return null;
-          const sciezka = sciezkaProfiluWsi(w);
-          let centroidLat: number | null = w.latitude != null ? Number(w.latitude) : null;
-          let centroidLng: number | null = w.longitude != null ? Number(w.longitude) : null;
-          if (plan.boundary_geojson) {
-            try {
-              const c = centroidPolygon(plan.boundary_geojson as GeoJSON.Polygon | GeoJSON.MultiPolygon);
-              if (c.lat && c.lon) {
-                centroidLat = c.lat;
-                centroidLng = c.lon;
+          <div className="space-y-8">
+            {wies.map((w) => {
+              const plan = plany[w.id];
+              if (!plan) return null;
+              const sciezka = sciezkaProfiluWsi(w);
+              let centroidLat: number | null = w.latitude != null ? Number(w.latitude) : null;
+              let centroidLng: number | null = w.longitude != null ? Number(w.longitude) : null;
+              if (plan.boundary_geojson) {
+                try {
+                  const c = centroidPolygon(plan.boundary_geojson as GeoJSON.Polygon | GeoJSON.MultiPolygon);
+                  if (c.lat && c.lon) {
+                    centroidLat = c.lat;
+                    centroidLng = c.lon;
+                  }
+                } catch {
+                  /* zostaw GPS wsi */
+                }
               }
-            } catch {
-              /* zostaw GPS wsi */
-            }
-          }
 
-          return (
-            <div key={w.id}>
-              <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-stone-500">{w.name}</p>
-              <PlanCmentarzaEdytor
-                planId={plan.id}
-                nazwaPoczatkowa={plan.name}
-                poczatkowyPlan={plan.plan_data}
-                opublikowany={plan.is_published}
-                zniczeWlaczone={plan.virtual_candles_enabled}
-                ortofotoWlaczone={plan.orthophoto_enabled}
-                maObrys={!!plan.boundary_geojson}
-                centroidLat={centroidLat}
-                centroidLng={centroidLng}
-                sciezkaPubliczna={sciezka}
-                oczekujaceCsv={plan.oczekujaceCsv}
-              />
-            </div>
-          );
-        })}
-      </div>
+              return (
+                <div key={w.id}>
+                  <p className="mb-3 text-xs font-semibold uppercase tracking-wide text-stone-500">{w.name}</p>
+                  <PlanCmentarzaEdytor
+                    planId={plan.id}
+                    nazwaPoczatkowa={plan.name}
+                    poczatkowyPlan={plan.plan_data}
+                    opublikowany={plan.is_published}
+                    zniczeWlaczone={plan.virtual_candles_enabled}
+                    ortofotoWlaczone={plan.orthophoto_enabled}
+                    maObrys={!!plan.boundary_geojson}
+                    centroidLat={centroidLat}
+                    centroidLng={centroidLng}
+                    sciezkaPubliczna={sciezka}
+                    oczekujaceCsv={plan.oczekujaceCsv}
+                  />
+                </div>
+              );
+            })}
+          </div>
 
-      <p className="mt-10 text-sm text-stone-500">
-        <Link href="/panel/soltys/moja-wies" className="text-green-800 underline">
-          ← Profil wsi (pinezka cmentarza na mapie)
-        </Link>
-      </p>
-    </main>
+          <p className="mt-10 text-sm text-stone-500">
+            <Link href="/panel/soltys/moja-wies" className="text-green-800 underline">
+              Profil wsi (pinezka cmentarza na mapie)
+            </Link>
+          </p>
+        </>
+      }
+    />
   );
 }

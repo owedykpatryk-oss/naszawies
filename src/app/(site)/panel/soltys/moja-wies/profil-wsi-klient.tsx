@@ -14,7 +14,13 @@ import {
 } from "@/components/panel/edytor-kontaktu-poi-soltys";
 import { QrProfilWsiPanel } from "@/components/panel/qr-profil-wsi-panel";
 import { SugestieAutomatyzacjiMapy } from "@/components/panel/sugestie-automatyzacji-mapy";
+import { KolejkaWeryfikacjiPoi } from "@/components/panel/kolejka-weryfikacji-poi";
+import { KolejkaPropozycjiPoi } from "@/components/panel/kolejka-propozycji-poi";
+import { PasekKompletnosciMapy } from "@/components/panel/pasek-kompletnosci-mapy";
 import type { SugestiaAutomatyzacjiMapy } from "@/lib/mapa/pobierz-sugestie-automatyzacji-wsi";
+import type { PoiDoWeryfikacji } from "@/lib/mapa/pobierz-poi-do-weryfikacji-wsi";
+import type { PropozycjaPoiDoReview } from "@/lib/mapa/pobierz-propozycje-poi-wsi";
+import type { KompletnoscMapyWsi } from "@/lib/mapa/oblicz-kompletnosc-mapy-wsi";
 
 export type WiesDoEdycji = {
   id: string;
@@ -37,11 +43,17 @@ export function ProfilWsiSoltysKlient({
   sugestieMapy = {},
   poisByVillage = {},
   saleByVillage = {},
+  poiDoWeryfikacji = {},
+  propozycjePoi = {},
+  kompletnoscMapy = {},
 }: {
   wies: WiesDoEdycji[];
   sugestieMapy?: Record<string, SugestiaAutomatyzacjiMapy[]>;
   poisByVillage?: Record<string, PoiDoEdycjiKontaktu[]>;
   saleByVillage?: Record<string, SalaOpcja[]>;
+  poiDoWeryfikacji?: Record<string, PoiDoWeryfikacji[]>;
+  propozycjePoi?: Record<string, PropozycjaPoiDoReview[]>;
+  kompletnoscMapy?: Record<string, KompletnoscMapyWsi>;
 }) {
   const [czek, startT] = useTransition();
   const [czekOsm, startOsm] = useTransition();
@@ -169,12 +181,17 @@ export function ProfilWsiSoltysKlient({
                 Kod QR dla tablicy
               </a>
             </p>
-            <QrProfilWsiPanel nazwaWsi={w.name} sciezkaPubliczna={sciezka} />
+            <QrProfilWsiPanel nazwaWsi={w.name} sciezkaPubliczna={sciezka} villageId={w.id} />
             <SugestieAutomatyzacjiMapy
               villageId={w.id}
               nazwaWsi={w.name}
               sugestie={sugestieMapy[w.id] ?? []}
             />
+            {kompletnoscMapy[w.id] ? (
+              <PasekKompletnosciMapy nazwaWsi={w.name} kompletnosc={kompletnoscMapy[w.id]} />
+            ) : null}
+            <KolejkaWeryfikacjiPoi villageId={w.id} poczatkowe={poiDoWeryfikacji[w.id] ?? []} />
+            <KolejkaPropozycjiPoi poczatkowe={propozycjePoi[w.id] ?? []} />
             {ok[w.id] ? (
               <p className="mt-2 text-sm text-green-800" role="status">
                 Zapisano.
@@ -291,8 +308,8 @@ export function ProfilWsiSoltysKlient({
                 oraz osobne punkty z tabeli <code className="rounded bg-stone-100 px-1">pois</code>. Przykładowe
                 „sztuczne” punkty z instalacji demo można zastąpić: możesz{" "}
                 <strong>dopisać brakujące obiekty z OpenStreetMap</strong> w promieniu ok. 2,8 km od tego punktu (szkoła,
-                przedszkole, boisko, urząd, kult, świetlica, OSP, biblioteka, sklep, cmentarz). Cron co kilka godzin
-                też uzupełnia braki — zawsze sprawdź lokalnie, OSM bywa
+                przedszkole, boisko, urząd, apteka, poczta, przychodnia, stacja paliw, kult, świetlica, OSP, biblioteka,
+                sklep, cmentarz, przystanki). Cron co kilka godzin też uzupełnia braki — zawsze sprawdź lokalnie, OSM bywa
                 niepełny.
               </p>
               {!maGps ? (

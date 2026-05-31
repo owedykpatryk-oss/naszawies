@@ -53,23 +53,21 @@ export default async function PanelPage() {
   return (
     <main>
       <PanelPrzewodnikStartu stan={stanStartu} />
-      <header className="wow-wejscie relative mb-10 overflow-hidden rounded-2xl border border-stone-200/80 bg-gradient-to-br from-white via-white to-emerald-50/40 p-6 shadow-sm ring-1 ring-stone-900/[0.04] sm:p-7">
-        <div
-          className="pointer-events-none absolute -right-12 -top-12 h-40 w-40 rounded-full bg-emerald-400/15 blur-3xl"
-          aria-hidden
-        />
-        <p className="text-[11px] font-bold uppercase tracking-[0.2em] text-emerald-800/80">Konto</p>
-        <h1 className="mt-1 font-serif text-3xl tracking-tight text-green-950 sm:text-[2rem]">Witaj w panelu</h1>
-        <p className="mt-2 text-sm leading-relaxed text-stone-600">
-          Zalogowano: <span className="font-medium text-stone-800">{user.email}</span>
-          {profil?.display_name ? (
-            <>
-              {" "}
-              <span className="text-stone-400">·</span>{" "}
-              <span className="text-stone-800">{profil.display_name}</span>
-            </>
-          ) : null}
-        </p>
+      <header className="panel-informacji-hero mb-10">
+        <div className="relative z-[1]">
+          <p className="etykieta-modulu">Konto</p>
+          <h1 className="mt-1 font-serif text-3xl tracking-tight text-green-950 sm:text-[2rem]">Witaj w panelu</h1>
+          <p className="mt-2 text-sm leading-relaxed text-stone-600">
+            Zalogowano: <span className="font-medium text-stone-800">{user.email}</span>
+            {profil?.display_name ? (
+              <>
+                {" "}
+                <span className="text-stone-400">·</span>{" "}
+                <span className="text-stone-800">{profil.display_name}</span>
+              </>
+            ) : null}
+          </p>
+        </div>
       </header>
 
       <CoMogeZrobic jestSoltysem={stanStartu.jestSoltysem} />

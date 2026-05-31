@@ -142,6 +142,36 @@ export async function pobierzSugestieAutomatyzacjiWsi(
     });
   }
 
+  if ((licznik.get("apteka") ?? 0) === 0) {
+    sugestie.push({
+      klucz: "apteka",
+      waga: 58,
+      tytul: "Brak apteki na mapie",
+      opis: "Import z OSM (amenity=pharmacy) — często w sąsiedniej miejscowości w promieniu wsi.",
+      akcja: "osm",
+    });
+  }
+
+  if ((licznik.get("poczta") ?? 0) === 0) {
+    sugestie.push({
+      klucz: "poczta",
+      waga: 56,
+      tytul: "Brak poczty na mapie",
+      opis: "Import z OSM lub Geoportal PRG (warstwa poczty).",
+      akcja: "osm",
+    });
+  }
+
+  if ((licznik.get("przychodnia") ?? 0) === 0) {
+    sugestie.push({
+      klucz: "przychodnia",
+      waga: 54,
+      tytul: "Brak przychodni / POZ",
+      opis: "Import z OSM (clinic, doctors, hospital w promieniu wsi).",
+      akcja: "osm",
+    });
+  }
+
   if ((licznik.get("boisko") ?? 0) === 0) {
     sugestie.push({
       klucz: "boisko",

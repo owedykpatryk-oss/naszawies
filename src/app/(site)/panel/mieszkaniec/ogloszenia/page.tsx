@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { NaglowekModuluMieszkaniec } from "@/components/pomoc/naglowek-modulu-panelu";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
 import { pojedynczaWies } from "@/lib/supabase/wies-z-zapytania";
 import { sciezkaProfiluWsi } from "@/lib/wies/sciezka-publiczna";
@@ -12,8 +13,9 @@ export const metadata: Metadata = {
 export default async function MieszkaniecOgloszeniaPage() {
   const supabase = utworzKlientaSupabaseSerwer();
   const {
-    data: { user },
-  } = await supabase.auth.getUser();
+    data: { session },
+  } = await supabase.auth.getSession();
+  const user = session?.user ?? null;
   if (!user) {
     redirect("/logowanie?next=/panel/mieszkaniec/ogloszenia");
   }
@@ -30,7 +32,7 @@ export default async function MieszkaniecOgloszeniaPage() {
     (aktywne ?? []).map((r) => {
       const v = pojedynczaWies<{ name: string }>(r.villages);
       return [r.village_id, v?.name ?? "Wieś"];
-    })
+    }),
   );
 
   type WpisPostu = {
@@ -55,13 +57,18 @@ export default async function MieszkaniecOgloszeniaPage() {
 
   return (
     <main>
-      <h1 className="tytul-sekcji-panelu">Ogłoszenia</h1>
-      <p className="mt-2 text-sm text-stone-600">
-        Posty z wiosek, w których masz <strong>aktywną</strong> rolę mieszkańca.
-      </p>
+      <NaglowekModuluMieszkaniec
+        tytul="Ogłoszenia"
+        opis={
+          <>
+            Posty z wiosek, w których masz <strong>aktywną</strong> rolę mieszkańca.
+          </>
+        }
+        hrefPomocy="/panel/mieszkaniec/pomoc"
+      />
 
       {ids.length === 0 ? (
-        <p className="mt-8 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-950">
+        <p className="pusty-stan-panelu mt-8">
           Nie masz jeszcze aktywnej roli mieszkańca.{" "}
           <Link href="/panel/mieszkaniec" className="font-medium underline">
             Złóż wniosek
@@ -71,10 +78,12 @@ export default async function MieszkaniecOgloszeniaPage() {
       ) : null}
 
       {ids.length > 0 && posty.length === 0 ? (
-        <p className="mt-8 text-sm text-stone-600">Brak widocznych postów — dodadzą je sołtysi lub mieszkańcy po moderacji.</p>
+        <p className="mt-8 text-sm text-stone-600">
+          Brak widocznych postów — dodadzą je sołtysi lub mieszkańcy po moderacji.
+        </p>
       ) : null}
 
-      <ul className="mt-8 space-y-3">
+      <ul className="lista-wierszy-panelu mt-8">
         {posty.map((p) => {
           const v = pojedynczaWies<{
             slug: string;
@@ -82,15 +91,9 @@ export default async function MieszkaniecOgloszeniaPage() {
             county: string;
             commune: string;
           }>(p.villages);
-          const hrefPubliczny =
-            v != null
-              ? `${sciezkaProfiluWsi(v)}/ogloszenie/${p.id}`
-              : null;
+          const hrefPubliczny = v != null ? `${sciezkaProfiluWsi(v)}/ogloszenie/${p.id}` : null;
           return (
-            <li
-              key={p.id}
-              className="rounded-xl border border-stone-200 bg-white px-4 py-3 shadow-sm"
-            >
+            <li key={p.id}>
               {hrefPubliczny ? (
                 <Link href={hrefPubliczny} className="font-medium text-green-900 underline hover:text-green-950">
                   {p.title}

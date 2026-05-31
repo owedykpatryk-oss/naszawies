@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { PanelStronaMoje } from "@/components/panel/panel-strona-moje";
 import { MojeDodajGmineKlient } from "@/components/panel/moje/moje-dodaj-gmine-klient";
 import { MojeGminyObserwowaneLista } from "@/components/panel/moje/moje-gminy-obserwowane-lista";
 import { pobierzMojePowiazania } from "@/lib/panel/pobierz-moje-powiazania";
@@ -20,14 +21,13 @@ export default async function MojeSamorzadPage() {
   }));
 
   return (
-    <main>
-      <h1 className="font-serif text-2xl text-green-950">Gmina i powiat</h1>
-      <p className="mt-2 text-sm text-stone-600">
-        Obserwuj całą gminę bez przypisywania wsi albo przejdź do hubów wynikających z Twoich miejscowości.
-      </p>
-
-      <section className="mt-8">
-        <h2 className="font-serif text-lg text-green-950">Obserwowane gminy (bez przypisanej wsi)</h2>
+    <PanelStronaMoje
+      tytul="Gmina i powiat"
+      opis="Obserwuj całą gminę bez przypisywania wsi albo przejdź do hubów wynikających z Twoich miejscowości."
+      dzieci={
+        <>
+          <section className="mt-8">
+            <h2 className="font-serif text-lg text-green-950">Obserwowane gminy (bez przypisanej wsi)</h2>
         <div className="mt-4">
           <MojeGminyObserwowaneLista gminy={dane.gminyObserwowane} />
         </div>
@@ -133,6 +133,8 @@ export default async function MojeSamorzadPage() {
           ) : null}
         </>
       )}
-    </main>
+        </>
+      }
+    />
   );
 }

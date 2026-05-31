@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { KartaBudynkuSwietlicy } from "@/components/swietlica/karta-budynku-swietlicy";
+import { linkChroniony } from "@/lib/auth/sciezki-chronione";
 import type { SalaPublicznaWsi } from "@/lib/swietlica/pobierz-sale-publiczne-wsi";
 import { KARTA_LISTY_WIES, OslonaSekcjiWies } from "@/components/wies/oslona-sekcji-wies";
 import { TytulSekcjiWies } from "@/components/wies/tytul-sekcji-wies";
@@ -7,9 +8,10 @@ import { TytulSekcjiWies } from "@/components/wies/tytul-sekcji-wies";
 type Props = {
   nazwaWsi: string;
   sale: SalaPublicznaWsi[];
+  zalogowany?: boolean;
 };
 
-export function SwietliceWsiPubliczneSekcja({ nazwaWsi, sale }: Props) {
+export function SwietliceWsiPubliczneSekcja({ nazwaWsi, sale, zalogowany = false }: Props) {
   if (sale.length === 0) return null;
 
   return (
@@ -32,13 +34,13 @@ export function SwietliceWsiPubliczneSekcja({ nazwaWsi, sale }: Props) {
             />
             <div className="mt-4 flex flex-wrap gap-2">
               <Link
-                href={`/logowanie?next=${encodeURIComponent(`/panel/mieszkaniec/swietlica/${s.id}`)}`}
+                href={linkChroniony(`/panel/mieszkaniec/swietlica/${s.id}`, zalogowany)}
                 className="inline-flex min-h-[44px] items-center rounded-lg border border-green-800/40 bg-white px-4 py-2 text-sm font-medium text-green-900 hover:bg-emerald-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-green-800"
               >
                 Kalendarz sali (podgląd)
               </Link>
               <Link
-                href={`/logowanie?next=${encodeURIComponent(`/panel/mieszkaniec/swietlica/${s.id}/dokument`)}`}
+                href={linkChroniony(`/panel/mieszkaniec/swietlica/${s.id}/dokument`, zalogowany)}
                 className="inline-flex min-h-[44px] items-center rounded-lg border border-stone-300 bg-white px-4 py-2 text-sm text-stone-800 hover:bg-stone-50 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-green-800"
               >
                 Dokument informacyjny

@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { redirect } from "next/navigation";
+import { PanelStronaMieszkaneca } from "@/components/panel/panel-strona-mieszkaneca";
 import { roleDlaUprawnienia } from "@/lib/panel/uprawnienia-wsi";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
 import { FormularzCenRolniczych } from "./formularz-cen-rolniczych";
@@ -10,9 +11,8 @@ export const metadata: Metadata = {
 
 export default async function RolnictwoCenyPage() {
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { data: { session } } = await supabase.auth.getSession();
+  const user = session?.user ?? null;
   if (!user) redirect("/logowanie?next=/panel/mieszkaniec/rolnictwo-ceny");
 
   const { data: roleRows } = await supabase
@@ -31,10 +31,11 @@ export default async function RolnictwoCenyPage() {
 
   if (wioski.length === 0) {
     return (
-      <main className="mx-auto max-w-2xl px-4 py-8">
-        <h1 className="text-2xl font-semibold text-stone-900">Ceny skupu</h1>
-        <p className="mt-3 text-stone-600">Do zgłaszania cen potrzebujesz roli mieszkańca we wsi.</p>
-      </main>
+      <PanelStronaMieszkaneca
+        tytul="Ceny skupu"
+        opis="Do zgłaszania cen potrzebujesz roli mieszkańca we wsi."
+        dzieci={null}
+      />
     );
   }
 
@@ -49,14 +50,10 @@ export default async function RolnictwoCenyPage() {
   const doPotwierdzenia = (raporty ?? []).filter((r) => r.reported_by !== user.id);
 
   return (
-    <main className="mx-auto max-w-2xl px-4 py-8">
-      <h1 className="text-2xl font-semibold text-stone-900">Ceny skupu — społeczność</h1>
-      <p className="mt-2 text-sm text-stone-600">
-        Zgłoś cenę z własnej transakcji. Inni mieszkańcy mogą ją potwierdzić — bez udziału sołtysa.
-      </p>
-      <div className="mt-6">
-        <FormularzCenRolniczych wioski={wioski} raporty={doPotwierdzenia} userId={user.id} />
-      </div>
-    </main>
+    <PanelStronaMieszkaneca
+      tytul="Ceny skupu — społeczność"
+      opis="Zgłoś cenę z własnej transakcji. Inni mieszkańcy mogą ją potwierdzić — bez udziału sołtysa."
+      dzieci={<FormularzCenRolniczych wioski={wioski} raporty={doPotwierdzenia} userId={user.id} />}
+    />
   );
 }

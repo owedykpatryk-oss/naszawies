@@ -56,7 +56,7 @@ export function NaglowekMarkiDokumentu({
     <header className="mb-6 flex flex-col gap-4 border-b-2 border-green-900/85 pb-6 sm:flex-row sm:items-start sm:justify-between">
       <div className="flex min-w-0 items-start gap-3 sm:gap-4">
         <Image
-          src={MARKA_SCIEZKI.logoPelne}
+          src={MARKA_SCIEZKI.emblem192}
           alt="naszawies.pl"
           width={120}
           height={120}

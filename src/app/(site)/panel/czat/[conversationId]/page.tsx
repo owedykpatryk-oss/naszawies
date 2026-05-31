@@ -36,9 +36,8 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function CzatKonwersacjaPage({ params }: Props) {
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { data: { session } } = await supabase.auth.getSession();
+  const user = session?.user ?? null;
   if (!user) redirect(`/logowanie?next=/panel/czat/${params.conversationId}`);
 
   const [{ data: profilJa }, { data: conv }] = await Promise.all([

@@ -3,6 +3,7 @@ import Link from "next/link";
 import { redirect } from "next/navigation";
 import { pobierzVillageIdsRoliPaneluSoltysaDlaUzytkownikaCache } from "@/lib/panel/rola-panelu-soltysa";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
+import { PanelStronaSoltysa } from "@/components/panel/panel-strona-soltysa";
 import { SoltysKanalyRssKlient, type KanalRssWiersz, type WiesDoRss } from "./kanaly-rss-klient";
 
 export const metadata: Metadata = {
@@ -11,24 +12,19 @@ export const metadata: Metadata = {
 
 export default async function SoltysKanalyRssPage() {
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { data: { session } } = await supabase.auth.getSession();
+  const user = session?.user ?? null;
   if (!user) {
     redirect("/logowanie?next=/panel/soltys/kanaly-rss");
   }
   const villageIds = await pobierzVillageIdsRoliPaneluSoltysaDlaUzytkownikaCache(user.id);
   if (villageIds.length === 0) {
     return (
-      <main>
-        <p className="mb-4 text-sm text-stone-500">
-          <Link href="/panel/soltys" className="text-green-800 underline">
-            ← Panel sołtysa
-          </Link>
-        </p>
-        <h1 className="tytul-sekcji-panelu">Kanały RSS</h1>
-        <p className="mt-2 text-sm text-stone-600">Brak przypisanej wsi w roli sołtysa lub współadmina.</p>
-      </main>
+      <PanelStronaSoltysa
+        tytul="Kanały RSS"
+        opis="Brak przypisanej wsi w roli sołtysa lub współadmina."
+        dzieci={null}
+      />
     );
   }
 
@@ -44,22 +40,18 @@ export default async function SoltysKanalyRssPage() {
   const kanaly = (feedRows ?? []) as KanalRssWiersz[];
 
   return (
-    <main>
-      <p className="mb-4 text-sm text-stone-500">
-        <Link href="/panel/soltys" className="text-green-800 underline">
-          ← Panel sołtysa
-        </Link>
-        {" · "}
-        <Link href="/panel/soltys/wiadomosci-lokalne" className="text-green-800 underline">
-          Wiadomości lokalne
-        </Link>
-      </p>
-      <h1 className="tytul-sekcji-panelu">Kanały RSS dla wsi</h1>
-      <p className="mt-2 max-w-2xl text-sm text-stone-600">
-        Podłącz oficjalne kanały informacyjne — system doda skróty jako wpisy do zatwierdzenia (bez duplikatów po
-        identyfikatorze GUID z kanału).
-      </p>
-      <SoltysKanalyRssKlient wsie={wsie} kanaly={kanaly} />
-    </main>
+    <PanelStronaSoltysa
+      tytul="Kanały RSS dla wsi"
+      opis={
+        <>
+          Podłącz oficjalne kanały informacyjne — system doda skróty jako wpisy do zatwierdzenia (bez duplikatów po
+          identyfikatorze GUID z kanału).{" "}
+          <Link href="/panel/soltys/wiadomosci-lokalne" className="font-medium text-green-800 underline">
+            Wiadomości lokalne
+          </Link>
+        </>
+      }
+      dzieci={<SoltysKanalyRssKlient wsie={wsie} kanaly={kanaly} />}
+    />
   );
 }

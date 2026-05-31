@@ -18,7 +18,7 @@ export function MojeNawigacjaZakladek() {
   return (
     <nav
       aria-label="Moje — zakładki"
-      className="mb-8 min-w-0 rounded-2xl border border-emerald-900/10 bg-gradient-to-br from-[#f5f9f0]/80 via-white to-white p-1.5 shadow-sm ring-1 ring-stone-900/[0.02]"
+      className="panel-nawigacja-szklo mb-8 min-w-0"
     >
       <div className="-mx-0.5 flex flex-nowrap gap-1 overflow-x-auto px-0.5 pb-0.5 text-xs [-webkit-overflow-scrolling:touch] sm:flex-wrap sm:gap-1.5 sm:text-sm">
         {ZAKLADKI.map(({ href, label, dokladnie }) => {

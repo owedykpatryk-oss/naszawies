@@ -13,9 +13,8 @@ export const metadata: Metadata = {
 
 export default async function SoltysZgloszeniaPage() {
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { data: { session } } = await supabase.auth.getSession();
+  const user = session?.user ?? null;
   if (!user) {
     redirect("/logowanie?next=/panel/soltys/zgloszenia");
   }
@@ -23,17 +22,14 @@ export default async function SoltysZgloszeniaPage() {
   const villageIds = await pobierzVillageIdsRoliPaneluSoltysaDlaUzytkownikaCache(user.id);
   if (villageIds.length === 0) {
     return (
-      <main>
-        <p className="mb-4 text-sm text-stone-500">
-          <Link href="/panel/soltys" className="text-green-800 underline">
-            ← Panel sołtysa
-          </Link>
-        </p>
-        <h1 className="tytul-sekcji-panelu">Zgłoszenia i usterki</h1>
-        <p className="mt-4 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-950">
-          Nie masz uprawnień do żadnej wsi w tej roli.
-        </p>
-      </main>
+      <PanelStronaSoltysa
+        tytul="Zgłoszenia i usterki"
+        dzieci={
+          <p className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-950">
+            Nie masz uprawnień do żadnej wsi w tej roli.
+          </p>
+        }
+      />
     );
   }
 

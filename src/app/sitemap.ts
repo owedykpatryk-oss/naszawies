@@ -22,6 +22,12 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       priority: 0.85,
     },
     {
+      url: `${baza}/szukaj`,
+      lastModified: teraz,
+      changeFrequency: "weekly",
+      priority: 0.9,
+    },
+    {
       url: `${baza}/o-nas`,
       lastModified: teraz,
       changeFrequency: "monthly",

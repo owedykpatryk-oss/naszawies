@@ -2,13 +2,24 @@
 /**
  * Service worker: PWA + Web Push + cache offline (shell + alerty).
  */
-const CACHE_SHELL = "naszawies-shell-v2";
+const CACHE_SHELL = "naszawies-shell-v3";
 const CACHE_ALERTY = "naszawies-alerty-v1";
-const SHELL_URLS = ["/", "/manifest.webmanifest", "/icon", "/apple-icon"];
+/** Bez "/" — middleware przekierowuje zalogowanych na /panel (addAll wymaga statusu 200). */
+const SHELL_URLS = ["/manifest.webmanifest", "/icon", "/apple-icon", "/api/pwa/icon/192"];
+
+async function zapiszShellDoCache(cache) {
+  await Promise.all(
+    SHELL_URLS.map((url) =>
+      cache.add(url).catch(() => {
+        /* pojedynczy zasób może chwilowo niedostępny — nie blokuj instalacji SW */
+      }),
+    ),
+  );
+}
 
 self.addEventListener("install", (event) => {
   event.waitUntil(
-    caches.open(CACHE_SHELL).then((c) => c.addAll(SHELL_URLS)).then(() => self.skipWaiting()),
+    caches.open(CACHE_SHELL).then((cache) => zapiszShellDoCache(cache)).then(() => self.skipWaiting()),
   );
 });
 

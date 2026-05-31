@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { NaglowekModuluPanelu } from "@/components/pomoc/naglowek-modulu-panelu";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
 import { PowiadomieniaPushKlient } from "@/components/pwa/powiadomienia-push-klient";
 import { IosPushOnboarding } from "@/components/pwa/ios-push-onboarding";
@@ -12,9 +13,8 @@ export const metadata: Metadata = {
 
 export default async function PowiadomieniaPage() {
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { data: { session } } = await supabase.auth.getSession();
+  const user = session?.user ?? null;
   if (!user) {
     redirect("/logowanie?next=/panel/powiadomienia");
   }
@@ -31,26 +31,24 @@ export default async function PowiadomieniaPage() {
 
   return (
     <main>
-      <p className="mb-4 text-sm text-stone-500">
-        <Link href="/panel" className="text-green-800 underline">
-          ← Panel
-        </Link>
-      </p>
-      <h1 className="font-serif text-3xl text-green-950">Powiadomienia</h1>
-      <p className="mt-2 text-sm text-stone-600">
-        Tutaj zbiera się skrzynka wiadomości z portalu — użyj filtrów (wnioski, zgłoszenia, pozostałe), żeby szybciej
-        znaleźć wpis. Możesz też włączyć powiadomienia w przeglądarce na telefonie — sekcja niżej. Przy niektórych
-        zdarzeniach możesz dodatkowo dostać e-mail, jeśli masz go ustawiony w koncie.
-        {nieprzeczytane > 0 ? (
+      <NaglowekModuluPanelu
+        etykieta="Konto"
+        tytul="Powiadomienia"
+        hrefPowrotu="/panel"
+        etykietaPowrotu="← Panel"
+        opis={
           <>
-            {" "}
-            <span className="font-medium text-green-900">
-              Nieprzeczytane: {nieprzeczytane}
-            </span>
-            .
+            Tutaj zbiera się skrzynka wiadomości z portalu — użyj filtrów (wnioski, zgłoszenia, pozostałe), żeby szybciej
+            znaleźć wpis. Możesz też włączyć powiadomienia w przeglądarce na telefonie — sekcja niżej.
+            {nieprzeczytane > 0 ? (
+              <>
+                {" "}
+                <span className="font-medium text-green-900">Nieprzeczytane: {nieprzeczytane}</span>.
+              </>
+            ) : null}
           </>
-        ) : null}
-      </p>
+        }
+      />
       <IosPushOnboarding />
       <PowiadomieniaPushKlient />
       <div className="mt-8">

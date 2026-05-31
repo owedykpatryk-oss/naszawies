@@ -66,6 +66,10 @@ export function kategoriaPoiZOsmTagow(tags: Record<string, string>): string | nu
   if (lu === "cemetery") return "cmentarz";
   if (a === "townhall") return "urzad";
   if (tags.office === "government") return "urzad";
+  if (a === "pharmacy") return "apteka";
+  if (a === "post_office") return "poczta";
+  if (a === "fuel") return "stacja_paliw";
+  if (a === "clinic" || a === "doctors" || a === "hospital") return "przychodnia";
   const leisure = tags.leisure?.trim();
   if (leisure === "pitch" || leisure === "sports_centre" || leisure === "stadium" || leisure === "track") {
     return "boisko";
@@ -100,6 +104,14 @@ function etykietaDomyslna(kategoria: string): string {
       return "Biblioteka (OpenStreetMap, brak nazwy)";
     case "sklep":
       return "Sklep (OpenStreetMap, brak nazwy)";
+    case "apteka":
+      return "Apteka (OpenStreetMap, brak nazwy)";
+    case "poczta":
+      return "Poczta (OpenStreetMap, brak nazwy)";
+    case "stacja_paliw":
+      return "Stacja paliw (OpenStreetMap, brak nazwy)";
+    case "przychodnia":
+      return "Przychodnia / placówka zdrowia (OpenStreetMap, brak nazwy)";
     case "przystanek":
       return "Przystanek autobusowy (OpenStreetMap, brak nazwy)";
     case "stacja_kolejowa":
@@ -162,6 +174,12 @@ function zbudujZapytanieOverpass(lat: number, lon: number, promienM: number): st
   nwr["landuse"="cemetery"](around:${r},${lat},${lon});
   nwr["amenity"="townhall"](around:${r},${lat},${lon});
   nwr["office"="government"](around:${r},${lat},${lon});
+  nwr["amenity"="pharmacy"](around:${r},${lat},${lon});
+  nwr["amenity"="post_office"](around:${r},${lat},${lon});
+  nwr["amenity"="fuel"](around:${r},${lat},${lon});
+  nwr["amenity"="clinic"](around:${r},${lat},${lon});
+  nwr["amenity"="doctors"](around:${r},${lat},${lon});
+  nwr["amenity"="hospital"](around:${r},${lat},${lon});
   nwr["leisure"="pitch"](around:${r},${lat},${lon});
   nwr["leisure"="sports_centre"](around:${r},${lat},${lon});
   nwr["leisure"="stadium"](around:${r},${lat},${lon});

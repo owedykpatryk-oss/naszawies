@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { NaglowekModuluMieszkaniec } from "@/components/pomoc/naglowek-modulu-panelu";
 import { roleDlaUprawnienia } from "@/lib/panel/uprawnienia-wsi";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
 import { pojedynczaWies } from "@/lib/supabase/wies-z-zapytania";
@@ -17,9 +18,8 @@ export default async function MieszkaniecZgloszeniaPage({
   searchParams?: { [key: string]: string | string[] | undefined };
 }) {
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { data: { session } } = await supabase.auth.getSession();
+  const user = session?.user ?? null;
   if (!user) {
     redirect("/logowanie?next=/panel/mieszkaniec/zgloszenia");
   }
@@ -78,17 +78,17 @@ export default async function MieszkaniecZgloszeniaPage({
 
   return (
     <main>
-      <p className="mb-4 text-sm text-stone-500">
-        <Link href="/panel/mieszkaniec" className="text-green-800 underline">
-          ← Panel mieszkańca
-        </Link>
-      </p>
-      <h1 className="tytul-sekcji-panelu">Zgłoszenia problemów</h1>
-      <p className="mt-3 max-w-2xl text-sm leading-relaxed text-stone-600">
-        Opisz usterkę, dodaj szybkie zaznaczenia, opcjonalnie <strong>datę i godzinę zauważenia</strong> oraz do sześciu
-        zdjęć. Sołtys widzi zgłoszenie w swoim panelu; Ty widzisz tylko status — szczegóły rozpatrywania po stronie
-        władz sołectwa.
-      </p>
+      <NaglowekModuluMieszkaniec
+        tytul="Zgłoszenia problemów"
+        hrefPomocy="/panel/mieszkaniec/pomoc"
+        opis={
+          <>
+            Opisz usterkę, dodaj szybkie zaznaczenia, opcjonalnie <strong>datę i godzinę zauważenia</strong> oraz do
+            sześciu zdjęć. Sołtys widzi zgłoszenie w swoim panelu; Ty widzisz tylko status — szczegóły rozpatrywania
+            po stronie władz sołectwa.
+          </>
+        }
+      />
 
       <ZgloszeniaFormularzKlient
         wiesOpcje={wiesOpcje}

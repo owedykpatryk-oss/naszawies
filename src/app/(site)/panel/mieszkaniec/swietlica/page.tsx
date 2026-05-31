@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { KartaBudynkuSwietlicy } from "@/components/swietlica/karta-budynku-swietlicy";
+import { NaglowekModuluMieszkaniec } from "@/components/pomoc/naglowek-modulu-panelu";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
 import { pojedynczaWies } from "@/lib/supabase/wies-z-zapytania";
 
@@ -11,9 +12,8 @@ export const metadata: Metadata = {
 
 export default async function MieszkaniecSwietlicaPage() {
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const { data: { session } } = await supabase.auth.getSession();
+  const user = session?.user ?? null;
   if (!user) {
     redirect("/logowanie?next=/panel/mieszkaniec/swietlica");
   }
@@ -56,13 +56,14 @@ export default async function MieszkaniecSwietlicaPage() {
 
   return (
     <main>
-      <h1 className="tytul-sekcji-panelu">Świetlica</h1>
-      <p className="mt-2 text-sm text-stone-600">
-        Sale w Twoich wsiach — adres, parking, rezerwacja i dokument wynajmu po wejściu w salę.
-      </p>
+      <NaglowekModuluMieszkaniec
+        tytul="Świetlica"
+        opis="Sale w Twoich wsiach — adres, parking, rezerwacja i dokument wynajmu po wejściu w salę."
+        hrefPomocy="/panel/mieszkaniec/pomoc"
+      />
 
       {ids.length === 0 ? (
-        <p className="mt-8 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-950">
+        <p className="pusty-stan-panelu mt-8">
           Potrzebujesz aktywnej roli mieszkańca.{" "}
           <Link href="/panel/mieszkaniec" className="font-medium underline">
             Wniosek

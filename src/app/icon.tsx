@@ -1,0 +1,9 @@
+import { generujIkoneMarki } from "@/lib/pwa/generuj-ikone-marki";
+
+export const runtime = "edge";
+export const size = { width: 32, height: 32 };
+export const contentType = "image/png";
+
+export default function Icon() {
+  return generujIkoneMarki(32);
+}

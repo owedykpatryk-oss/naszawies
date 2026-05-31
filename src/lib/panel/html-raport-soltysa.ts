@@ -26,6 +26,8 @@ export function zbudujHtmlRaportuSoltysa(opts: {
     ["Pomoc sąsiedzka", l.pomoc],
     ["Zdjęcia (fotokronika)", l.zdjecia],
     ["Raporty treści", l.raportySpolecznosci],
+    ["Mapa — do weryfikacji", l.poiWeryfikacja],
+    ["Propozycje mapy", l.propozycjePoi],
   ];
 
   const tabelaKpi = wierszeKpi

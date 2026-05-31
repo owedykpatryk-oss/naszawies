@@ -496,3 +496,166 @@ export async function dodajPunktCzerpaniaWodyOsp(
   revalidatePath("/panel/mieszkaniec/zgloszenia");
   return { ok: true };
 }
+
+const schemaWeryfikacjaPoi = z.object({
+  poiId: z.string().uuid(),
+  name: z.string().trim().min(2).max(200).optional(),
+});
+
+export type WynikWeryfikacjiPoi = { ok: true } | { blad: string };
+
+async function wymagajUprawnienDoPoi(poiId: string) {
+  const supabase = utworzKlientaSupabaseSerwer();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { ok: false as const, blad: "Zaloguj się." };
+
+  const { data: poi, error } = await supabase
+    .from("pois")
+    .select("id, village_id, source, verified_at, is_local_override")
+    .eq("id", poiId)
+    .maybeSingle();
+  if (error || !poi) return { ok: false as const, blad: "Nie znaleziono punktu na mapie." };
+
+  const vids = await pobierzVillageIdsRoliPaneluSoltysa(supabase, user.id);
+  if (!vids.includes(poi.village_id)) {
+    return { ok: false as const, blad: "Nie możesz zarządzać mapą tej wsi." };
+  }
+
+  const { data: village } = await supabase
+    .from("villages")
+    .select("voivodeship, county, commune, slug")
+    .eq("id", poi.village_id)
+    .maybeSingle();
+
+  return { ok: true as const, supabase, poi, village };
+}
+
+/** Sołtys zatwierdza automatycznie dodany punkt (OSM / Geoportal). */
+export async function zatwierdzPoiAutomatyczny(niesprawdzone: unknown): Promise<WynikWeryfikacjiPoi> {
+  const p = schemaWeryfikacjaPoi.safeParse(niesprawdzone);
+  if (!p.success) return { blad: "Niepoprawne dane." };
+
+  const auth = await wymagajUprawnienDoPoi(p.data.poiId);
+  if (!auth.ok) return { blad: auth.blad };
+
+  const src = auth.poi.source ?? "";
+  if (src !== "osm_auto" && src !== "geoportal") {
+    return { blad: "Ten punkt nie wymaga zatwierdzenia automatycznego." };
+  }
+
+  const aktualizacja: Record<string, unknown> = {
+    verified_at: new Date().toISOString(),
+    is_local_override: true,
+    confidence: 0.92,
+    source: "local_corrected",
+  };
+  if (p.data.name) aktualizacja.name = p.data.name;
+
+  const { error } = await auth.supabase.from("pois").update(aktualizacja).eq("id", p.data.poiId);
+  if (error) {
+    console.error("[zatwierdzPoiAutomatyczny]", error.message);
+    return { blad: "Nie udało się zatwierdzić punktu." };
+  }
+
+  revalidatePath("/mapa");
+  revalidatePath("/panel/soltys/moja-wies");
+  if (auth.village) revalidatePath(sciezkaProfiluWsi(auth.village));
+  return { ok: true };
+}
+
+/** Sołtys odrzuca błędny punkt z automatycznego importu. */
+export async function odrzucPoiAutomatyczny(poiId: string): Promise<WynikWeryfikacjiPoi> {
+  const id = z.string().uuid().safeParse(poiId);
+  if (!id.success) return { blad: "Niepoprawny identyfikator." };
+
+  const auth = await wymagajUprawnienDoPoi(id.data);
+  if (!auth.ok) return { blad: auth.blad };
+
+  const src = auth.poi.source ?? "";
+  if (src !== "osm_auto" && src !== "geoportal") {
+    return { blad: "Można usunąć tylko niezweryfikowane punkty z importu automatycznego." };
+  }
+  if (auth.poi.verified_at || auth.poi.is_local_override) {
+    return { blad: "Ten punkt został już zatwierdzony — edytuj go ręcznie zamiast usuwać." };
+  }
+
+  const { error } = await auth.supabase.from("pois").delete().eq("id", id.data);
+  if (error) {
+    console.error("[odrzucPoiAutomatyczny]", error.message);
+    return { blad: "Nie udało się usunąć punktu." };
+  }
+
+  revalidatePath("/mapa");
+  revalidatePath("/panel/soltys/moja-wies");
+  if (auth.village) revalidatePath(sciezkaProfiluWsi(auth.village));
+  return { ok: true };
+}
+
+const schemaVillageId = z.object({ villageId: z.string().uuid() });
+
+export type WynikBatchWeryfikacjiPoi =
+  | { ok: true; zatwierdzono: number }
+  | { blad: string };
+
+/** Zatwierdza do 50 niezweryfikowanych punktów OSM/Geoportal w jednej wsi. */
+export async function zatwierdzWszystkiePoiAutomatyczne(villageId: string): Promise<WynikBatchWeryfikacjiPoi> {
+  const p = schemaVillageId.safeParse({ villageId });
+  if (!p.success) return { blad: "Niepoprawna wieś." };
+
+  const supabase = utworzKlientaSupabaseSerwer();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { blad: "Zaloguj się." };
+
+  const vids = await pobierzVillageIdsRoliPaneluSoltysa(supabase, user.id);
+  if (!vids.includes(p.data.villageId)) {
+    return { blad: "Nie możesz zarządzać mapą tej wsi." };
+  }
+
+  const { data: doZatwierdzenia, error: errList } = await supabase
+    .from("pois")
+    .select("id")
+    .eq("village_id", p.data.villageId)
+    .in("source", ["osm_auto", "geoportal"])
+    .is("verified_at", null)
+    .eq("is_local_override", false)
+    .limit(50);
+
+  if (errList) {
+    console.error("[zatwierdzWszystkiePoiAutomatyczne]", errList.message);
+    return { blad: "Nie udało się odczytać listy punktów." };
+  }
+
+  const ids = (doZatwierdzenia ?? []).map((r) => r.id).filter(Boolean) as string[];
+  if (ids.length === 0) return { ok: true, zatwierdzono: 0 };
+
+  const teraz = new Date().toISOString();
+  const { error } = await supabase
+    .from("pois")
+    .update({
+      verified_at: teraz,
+      is_local_override: true,
+      confidence: 0.92,
+      source: "local_corrected",
+    })
+    .in("id", ids);
+
+  if (error) {
+    console.error("[zatwierdzWszystkiePoiAutomatyczne] update", error.message);
+    return { blad: "Nie udało się zatwierdzić punktów." };
+  }
+
+  const { data: village } = await supabase
+    .from("villages")
+    .select("voivodeship, county, commune, slug")
+    .eq("id", p.data.villageId)
+    .maybeSingle();
+
+  revalidatePath("/mapa");
+  revalidatePath("/panel/soltys/moja-wies");
+  if (village) revalidatePath(sciezkaProfiluWsi(village));
+  return { ok: true, zatwierdzono: ids.length };
+}

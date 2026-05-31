@@ -1,4 +1,5 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { unstable_cache } from "next/cache";
 import {
   sciezkaGminy,
   sciezkaPowiatu,
@@ -6,6 +7,7 @@ import {
   sciezkaWojewodztwa,
 } from "@/lib/wies/sciezka-publiczna";
 import { slugCzesciAdministracyjnej } from "@/lib/wies/slug-administracyjny";
+import { createPublicSupabaseClient } from "@/lib/supabase/public-client";
 
 export type WiesNaHubie = {
   id: string;
@@ -201,4 +203,53 @@ export function sciezkaHubuWgPoziomu(hub: HubGminy | HubPowiatu | HubWojewodztwa
     return sciezkaPowiatu({ voivodeship: hub.wojewodztwo, county: hub.powiat });
   }
   return sciezkaWojewodztwa(hub.wojewodztwo);
+}
+
+function hubGminyCached(wojSeg: string, powSeg: string, gminaSeg: string) {
+  return unstable_cache(
+    async () => {
+      const supabase = createPublicSupabaseClient();
+      if (!supabase) return null;
+      return pobierzHubGminy(supabase, wojSeg, powSeg, gminaSeg);
+    },
+    ["hub-gmina", wojSeg, powSeg, gminaSeg],
+    { revalidate: 3600 },
+  )();
+}
+
+function hubPowiatuCached(wojSeg: string, powSeg: string) {
+  return unstable_cache(
+    async () => {
+      const supabase = createPublicSupabaseClient();
+      if (!supabase) return null;
+      return pobierzHubPowiatu(supabase, wojSeg, powSeg);
+    },
+    ["hub-powiat", wojSeg, powSeg],
+    { revalidate: 3600 },
+  )();
+}
+
+function hubWojewodztwaCached(wojSeg: string) {
+  return unstable_cache(
+    async () => {
+      const supabase = createPublicSupabaseClient();
+      if (!supabase) return null;
+      return pobierzHubWojewodztwa(supabase, wojSeg);
+    },
+    ["hub-woj", wojSeg],
+    { revalidate: 3600 },
+  )();
+}
+
+/** Hub gminy z cache (SEO / katalog — dane rzadko się zmieniają). */
+export async function pobierzHubGminyCached(wojSeg: string, powSeg: string, gminaSeg: string) {
+  return hubGminyCached(wojSeg, powSeg, gminaSeg);
+}
+
+export async function pobierzHubPowiatuCached(wojSeg: string, powSeg: string) {
+  return hubPowiatuCached(wojSeg, powSeg);
+}
+
+export async function pobierzHubWojewodztwaCached(wojSeg: string) {
+  return hubWojewodztwaCached(wojSeg);
 }

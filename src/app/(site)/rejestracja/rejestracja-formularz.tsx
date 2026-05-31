@@ -11,13 +11,20 @@ type Props = {
   /** Publiczny adres strony (np. https://naszawies.pl) używany w linku z e-maila potwierdzającego. */
   pochodzeniePubliczne: string;
   nastepnaSciezka?: string;
+  domyslnaIntencja?: "mieszkaniec" | "soltys";
+  domyslnaWies?: WpisWsi | null;
 };
 
-export function RejestracjaFormularz({ pochodzeniePubliczne, nastepnaSciezka = "/panel" }: Props) {
+export function RejestracjaFormularz({
+  pochodzeniePubliczne,
+  nastepnaSciezka = "/panel",
+  domyslnaIntencja,
+  domyslnaWies = null,
+}: Props) {
   const [laduje, ustawLaduje] = useState(false);
   const [blad, ustawBlad] = useState("");
   const [sukces, ustawSukces] = useState(false);
-  const [wybranaWies, ustawWybranaWies] = useState<WpisWsi | null>(null);
+  const [wybranaWies, ustawWybranaWies] = useState<WpisWsi | null>(domyslnaWies);
 
   async function onSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -166,11 +173,23 @@ export function RejestracjaFormularz({ pochodzeniePubliczne, nastepnaSciezka = "
         </p>
         <div className="space-y-2 text-sm text-stone-800">
           <label className="flex cursor-pointer items-start gap-2">
-            <input type="radio" name="intencja_rejestracji" value="mieszkaniec" className="mt-1" />
+            <input
+              type="radio"
+              name="intencja_rejestracji"
+              value="mieszkaniec"
+              className="mt-1"
+              defaultChecked={domyslnaIntencja === "mieszkaniec" || (!domyslnaIntencja && !!domyslnaWies)}
+            />
             <span>Chcę dołączyć do wsi jako mieszkaniec (wniosek po zalogowaniu)</span>
           </label>
           <label className="flex cursor-pointer items-start gap-2">
-            <input type="radio" name="intencja_rejestracji" value="soltys" className="mt-1" />
+            <input
+              type="radio"
+              name="intencja_rejestracji"
+              value="soltys"
+              className="mt-1"
+              defaultChecked={domyslnaIntencja === "soltys"}
+            />
             <span>
               Jestem / będę sołtysem — po potwierdzeniu e-maila złożysz wniosek w{" "}
               <strong>panelu → Wniosek o rolę sołtysa</strong> (weryfikacja przez administratora platformy)
