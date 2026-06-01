@@ -12,6 +12,8 @@ type Props = {
   nastepnaSciezka: string;
   domyslnaNazwa: string;
   email: string;
+  domyslnaIntencja?: IntencjaOnboardingu;
+  domyslnaWies?: WpisWsi | null;
 };
 
 const OPCJE: { id: IntencjaOnboardingu; tytul: string; opis: string }[] = [
@@ -32,10 +34,16 @@ const OPCJE: { id: IntencjaOnboardingu; tytul: string; opis: string }[] = [
   },
 ];
 
-export function OnboardingKlient({ nastepnaSciezka, domyslnaNazwa, email }: Props) {
+export function OnboardingKlient({
+  nastepnaSciezka,
+  domyslnaNazwa,
+  email,
+  domyslnaIntencja,
+  domyslnaWies = null,
+}: Props) {
   const router = useRouter();
-  const [intencja, ustawIntencje] = useState<IntencjaOnboardingu>("mieszkaniec");
-  const [wybranaWies, ustawWybranaWies] = useState<WpisWsi | null>(null);
+  const [intencja, ustawIntencje] = useState<IntencjaOnboardingu>(domyslnaIntencja ?? "mieszkaniec");
+  const [wybranaWies, ustawWybranaWies] = useState<WpisWsi | null>(domyslnaWies);
   const [nazwa, ustawNazwe] = useState(domyslnaNazwa);
   const [blad, ustawBlad] = useState("");
   const [czek, startT] = useTransition();

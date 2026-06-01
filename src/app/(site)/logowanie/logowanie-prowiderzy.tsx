@@ -50,8 +50,8 @@ export function LogowanieProwiderzy({ pochodzeniePubliczne, nastepnaSciezka }: P
   return (
     <div className="space-y-3">
       <p className="rounded-lg border border-sky-100 bg-sky-50/80 px-3 py-2.5 text-xs leading-relaxed text-sky-950">
-        Po zalogowaniu przez Google wybierzesz <strong>swoją miejscowość i rolę</strong> — konto nie jest automatycznie
-        przypisane do żadnej konkretnej wsi.
+        Po zalogowaniu przez Google zaakceptujesz <strong>regulamin i politykę prywatności</strong>, potem wybierzesz
+        miejscowość i rolę — konto nie jest automatycznie przypisane do żadnej wsi.
       </p>
       {blad ? (
         <p className="rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-900 ring-1 ring-amber-200/80" role="alert">

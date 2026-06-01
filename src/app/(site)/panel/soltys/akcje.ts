@@ -10,6 +10,9 @@ import { pobierzVillageIdsRoliPaneluSoltysa, czyUzytkownikJestSoltysemDlaSali } 
 import { czyUzytkownikMozeModerowacTresc } from "@/lib/panel/rola-moderacji";
 import { walidujDostepnoscAsortymentuWTerminie } from "@/lib/swietlica/dostepnosc-asortymentu-w-terminie";
 import {
+  dodajWpisHistoriiWsi as dodajWpisHistoriiWsiZLib,
+} from "@/lib/historia/akcje-historia";
+import {
   schemaProtokolOdbioru,
   type ProtokolOdbioruSali,
   ETYKIETY_DECYZJI_KAUCJI,
@@ -22,8 +25,15 @@ import { createAdminSupabaseClient } from "@/lib/supabase/admin-client";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
 import { powiadomOWygasajacychOgloszeniachMarketplace } from "@/lib/marketplace/powiadom-wygasajace-ogloszenia";
 import { dataWygasnieciaOgloszeniaRynek, DNI_WAZNOSCI_OGLOSZENIA_RYNEK } from "@/lib/marketplace/waznosc-ogloszenia";
-import { schemaProfilParafii, schemaProfilKgw, schemaProfilLowiecki } from "@/lib/wies/profil-organizacji";
+import {
+  schemaProfilParafii,
+  schemaProfilKgw,
+  schemaProfilLowiecki,
+  schemaProfilSzkoly,
+} from "@/lib/wies/profil-organizacji";
 import { sciezkaProfiluWsi } from "@/lib/wies/sciezka-publiczna";
+import { powiadomObserwujacychOWydarzeniuSportowym } from "@/lib/wies/powiadomienia-sportu";
+import { czyOrganizacjaSport, nazwyKlubowSportowych } from "@/lib/wies/sport";
 import {
   KLUCZE_SEKCJI_WSI,
   schemaUstawieniaWsiJson,
@@ -1907,6 +1917,25 @@ const schemaWygladWsi = z.object({
     .optional(),
   domyslny_tryb_seniora: z.boolean().optional(),
   konfiguracja_ukonczona: z.boolean().optional(),
+  cover_image_url: z.string().max(2048).optional().nullable(),
+  zakladki: z
+    .record(
+      z.enum(KLUCZE_SEKCJI_WSI),
+      z.object({
+        emoji: z.string().max(8).optional().nullable(),
+        label: z.string().max(24).optional().nullable(),
+      }),
+    )
+    .optional(),
+  pasek_nawigacji: z
+    .object({
+      sticky_zakladki: z.boolean().optional(),
+      pokaz_skroty: z.boolean().optional(),
+      pokaz_hero_cta: z.boolean().optional(),
+      pokaz_breadcrumb: z.boolean().optional(),
+      max_zakladek_widocznych: z.number().int().min(0).max(20).optional(),
+    })
+    .optional(),
 });
 
 export async function zapiszUstawieniaWygladuWsi(dane: z.infer<typeof schemaWygladWsi>): Promise<WynikProsty> {
@@ -1924,6 +1953,9 @@ export async function zapiszUstawieniaWygladuWsi(dane: z.infer<typeof schemaWygl
 
   const logo = czyPustyLubUrlHttp(p.data.logo_url);
   if (!logo.ok) return { blad: logo.blad };
+
+  const cover = czyPustyLubUrlHttp(p.data.cover_image_url);
+  if (!cover.ok) return { blad: cover.blad };
 
   const moduly = { ...domyslneModulyWsi(), ...(p.data.moduly ?? {}) };
   let kolejnosc = p.data.kolejnosc_sekcji?.length ? [...p.data.kolejnosc_sekcji] : domyslnaKolejnoscSekcji();
@@ -1999,7 +2031,17 @@ export async function zapiszUstawieniaWygladuWsi(dane: z.infer<typeof schemaWygl
     })),
     domyslny_tryb_seniora: p.data.domyslny_tryb_seniora === true,
     konfiguracja_ukonczona: p.data.konfiguracja_ukonczona === true,
+    zakladki: p.data.zakladki,
+    pasek_nawigacji: p.data.pasek_nawigacji,
   });
+
+  const { error: errVillage } = await supabase
+    .from("villages")
+    .update({ cover_image_url: cover.val, updated_at: new Date().toISOString() })
+    .eq("id", p.data.villageId);
+  if (errVillage) {
+    console.error("[zapiszUstawieniaWygladuWsi cover]", errVillage.message);
+  }
 
   const { error } = await supabase.from("village_settings").upsert(
     {
@@ -2238,59 +2280,10 @@ export async function dodajWpisBlogaWsi(dane: z.infer<typeof schemaBlogWpis>): P
   return { ok: true };
 }
 
-const schemaHistoriaWpis = z.object({
-  villageId: z.string().uuid(),
-  title: z.string().trim().min(5).max(180),
-  short_description: z.string().trim().max(500).nullable().optional(),
-  body: z.string().trim().min(20).max(60000),
-  event_date: z.string().trim().max(20).nullable().optional(),
-  era_label: z.string().trim().max(120).nullable().optional(),
-  source_links_csv: z.string().trim().max(1000).optional().default(""),
-});
-
-export async function dodajWpisHistoriiWsi(dane: z.infer<typeof schemaHistoriaWpis>): Promise<WynikProsty> {
-  const parsed = schemaHistoriaWpis.safeParse(dane);
-  if (!parsed.success) {
-    return { blad: "Sprawdź dane wpisu historii." };
-  }
-  const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) return { blad: "Zaloguj się." };
-  if (!(await czyUzytkownikMozeZarzadzacWsia(supabase, user.id, parsed.data.villageId))) {
-    return { blad: "Brak uprawnień do tej wsi." };
-  }
-
-  const links = parsed.data.source_links_csv
-    .split(",")
-    .map((s) => s.trim())
-    .filter(Boolean)
-    .slice(0, 20);
-  const eventDate = parsed.data.event_date?.trim() ? parsed.data.event_date.trim() : null;
-  const teraz = new Date().toISOString();
-
-  const { error } = await supabase.from("village_history_entries").insert({
-    village_id: parsed.data.villageId,
-    author_id: user.id,
-    title: parsed.data.title,
-    short_description: parsed.data.short_description?.trim() || null,
-    body: parsed.data.body,
-    event_date: eventDate,
-    era_label: parsed.data.era_label?.trim() || null,
-    source_links: links,
-    status: "approved",
-    published_at: teraz,
-    moderated_by: user.id,
-    moderated_at: teraz,
-  });
-  if (error) {
-    console.error("[dodajWpisHistoriiWsi]", error.message);
-    return { blad: "Nie udało się dodać wpisu historii." };
-  }
-  revalidatePath("/panel/soltys/spolecznosc");
-  revalidatePath("/mapa");
-  return { ok: true };
+export async function dodajWpisHistoriiWsi(
+  dane: Parameters<typeof dodajWpisHistoriiWsiZLib>[0],
+) {
+  return dodajWpisHistoriiWsiZLib(dane);
 }
 
 const schemaMarketplaceProfil = z.object({
@@ -2527,6 +2520,7 @@ const schemaOrganizacjaWsi = z.object({
     "muzyka",
     "kolo",
     "lowiectwo",
+    "szkola",
     "inne",
   ]),
   name: z.string().trim().min(2).max(160),
@@ -2551,6 +2545,10 @@ function mapProfileData(groupType: string, raw: unknown): Record<string, unknown
     const w = schemaProfilLowiecki.safeParse(raw);
     if (w.success) return w.data as unknown as Record<string, unknown>;
   }
+  if (groupType === "szkola" && raw != null) {
+    const w = schemaProfilSzkoly.safeParse(raw);
+    if (w.success) return w.data as unknown as Record<string, unknown>;
+  }
   if (raw != null && typeof raw === "object") return raw as Record<string, unknown>;
   return {};
 }
@@ -2571,6 +2569,10 @@ function daneSpotkaniaOrganizacji(
     groupType === "lowiectwo" && typeof profil.siedziba_kola === "string" ? profil.siedziba_kola.trim() : "";
   const zebraniaLow =
     groupType === "lowiectwo" && typeof profil.zebrania === "string" ? profil.zebrania.trim() : "";
+  const adresSzkoly =
+    groupType === "szkola" && typeof profil.adres_szkoly === "string" ? profil.adres_szkoly.trim() : "";
+  const godzinySzkoly =
+    groupType === "szkola" && typeof profil.godziny_przyjec === "string" ? profil.godziny_przyjec.trim() : "";
   const kancelariaParafii =
     groupType === "parafia" && typeof profil.kancelaria === "string" ? profil.kancelaria.trim() : "";
 
@@ -2578,12 +2580,14 @@ function daneSpotkaniaOrganizacji(
     meetingPlaceInput?.trim() ||
     (miejsceParafii.length ? miejsceParafii : null) ||
     (miejsceKgw.length ? miejsceKgw : null) ||
-    (siedzibaLow.length ? siedzibaLow : null);
+    (siedzibaLow.length ? siedzibaLow : null) ||
+    (adresSzkoly.length ? adresSzkoly : null);
   const scheduleText =
     scheduleTextInput?.trim() ||
     (kancelariaParafii.length ? kancelariaParafii : null) ||
     (zebraniaKgw.length ? zebraniaKgw : null) ||
-    (zebraniaLow.length ? zebraniaLow : null);
+    (zebraniaLow.length ? zebraniaLow : null) ||
+    (godzinySzkoly.length ? godzinySzkoly : null);
 
   return { meetingPlace, scheduleText };
 }
@@ -2931,26 +2935,72 @@ export async function dodajWydarzenieSpolecznosciWsi(
   const expiresAt = new Date(teraz.getTime() + parsed.data.expires_in_days * 24 * 60 * 60 * 1000).toISOString();
   const terazIso = teraz.toISOString();
 
-  const { error } = await supabase.from("village_community_events").insert({
-    village_id: parsed.data.villageId,
-    group_id: groupId,
-    event_kind: parsed.data.event_kind,
-    title: parsed.data.title,
-    description: parsed.data.description?.trim() || null,
-    location_text: parsed.data.location_text?.trim() || null,
-    starts_at: start.toISOString(),
-    ends_at: end ? end.toISOString() : null,
-    status: "approved",
-    published_at: terazIso,
-    expires_at: expiresAt,
-    moderated_by: user.id,
-    moderated_at: terazIso,
-    created_by: user.id,
-  });
+  const { data: inserted, error } = await supabase
+    .from("village_community_events")
+    .insert({
+      village_id: parsed.data.villageId,
+      group_id: groupId,
+      event_kind: parsed.data.event_kind,
+      title: parsed.data.title,
+      description: parsed.data.description?.trim() || null,
+      location_text: parsed.data.location_text?.trim() || null,
+      starts_at: start.toISOString(),
+      ends_at: end ? end.toISOString() : null,
+      status: "approved",
+      published_at: terazIso,
+      expires_at: expiresAt,
+      moderated_by: user.id,
+      moderated_at: terazIso,
+      created_by: user.id,
+    })
+    .select("id")
+    .single();
   if (error) {
     console.error("[dodajWydarzenieSpolecznosciWsi]", error.message);
     return { blad: "Nie udało się dodać wydarzenia." };
   }
+
+  if (inserted?.id) {
+    const [{ data: wies }, { data: grupyRaw }] = await Promise.all([
+      supabase
+        .from("villages")
+        .select("name, voivodeship, county, commune, slug")
+        .eq("id", parsed.data.villageId)
+        .maybeSingle(),
+      supabase
+        .from("village_community_groups")
+        .select("id, name, group_type")
+        .eq("village_id", parsed.data.villageId)
+        .eq("is_active", true),
+    ]);
+    let nazwaGrupy: string | null = null;
+    if (groupId) {
+      const { data: g } = await supabase.from("village_community_groups").select("name").eq("id", groupId).maybeSingle();
+      nazwaGrupy = (g?.name as string | undefined) ?? null;
+    }
+    const nazwyKlubow = nazwyKlubowSportowych(
+      (grupyRaw ?? []).filter((g) => czyOrganizacjaSport(String(g.group_type), String(g.name))),
+    );
+    if (wies?.slug) {
+      void powiadomObserwujacychOWydarzeniuSportowym({
+        eventId: inserted.id,
+        villageId: parsed.data.villageId,
+        tytul: parsed.data.title,
+        eventKind: parsed.data.event_kind,
+        nazwaGrupy,
+        nazwyKlubow,
+        wies: {
+          name: wies.name,
+          voivodeship: wies.voivodeship,
+          county: wies.county,
+          commune: wies.commune,
+          slug: wies.slug,
+        },
+        authorId: user.id,
+      });
+    }
+  }
+
   await revalidateProfilWsiDlaWioski(supabase, parsed.data.villageId);
   return { ok: true };
 }
@@ -3592,6 +3642,17 @@ export async function zatwierdzMarketplaceOferteMieszkanca(listingId: string): P
   }
   const teraz = new Date().toISOString();
   const expiresAt = dataWygasnieciaOgloszeniaRynek(new Date()).toISOString();
+  let profileId: string | null = null;
+  if (row.owner_user_id) {
+    const { data: profil } = await supabase
+      .from("marketplace_profiles")
+      .select("id")
+      .eq("village_id", row.village_id)
+      .eq("owner_user_id", row.owner_user_id)
+      .eq("is_active", true)
+      .maybeSingle();
+    profileId = profil?.id ?? null;
+  }
   const { error } = await supabase
     .from("marketplace_listings")
     .update({
@@ -3602,6 +3663,7 @@ export async function zatwierdzMarketplaceOferteMieszkanca(listingId: string): P
       expires_at: expiresAt,
       moderation_note: null,
       seller_verified: true,
+      ...(profileId ? { profile_id: profileId } : {}),
     })
     .eq("id", id.data);
   if (error) return { blad: "Nie udało się zatwierdzić." };
@@ -3645,6 +3707,18 @@ export async function zatwierdzMarketplaceOferteMieszkanca(listingId: string): P
       imageUrl: pelny?.image_urls?.[0] ?? null,
       wies,
     });
+
+    const { powiadomObserwujacychPoPublikacjiOgloszenia } = await import(
+      "@/lib/marketplace/powiadom-obserwujacych-po-publikacji"
+    );
+    if (row.owner_user_id) {
+      await powiadomObserwujacychPoPublikacjiOgloszenia(supabase, {
+        listingId: row.id,
+        villageId: row.village_id,
+        title: row.title,
+        ownerUserId: row.owner_user_id,
+      });
+    }
 
     const { powiadomObserwujacychZmianeCenyOgloszenia } = await import(
       "@/lib/powiadomienia/powiadom-o-zmianie-ceny-rynku"

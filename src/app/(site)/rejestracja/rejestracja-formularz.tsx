@@ -5,6 +5,8 @@ import { FormEvent, useState } from "react";
 import type { WpisWsi } from "@/components/wies/wyszukiwarka-wsi";
 import { czyPelneImieINazwisko } from "@/lib/rejestracja/validate-imie-soltysa";
 import { utworzKlientaSupabasePrzegladarka } from "@/lib/supabase/przegladarka";
+import { PolaZgodyRejestracji, czyZaznaczoneZgodyRejestracji } from "@/components/rodo/pola-zgody-rejestracji";
+import { AKTUALNY_BUNDLE_WERSJI_PRAWNYCH } from "@/lib/rodo/wersje-dokumentow";
 import { RejestracjaWyborWsi } from "./rejestracja-wybor-wsi";
 
 type Props = {
@@ -25,6 +27,15 @@ export function RejestracjaFormularz({
   const [blad, ustawBlad] = useState("");
   const [sukces, ustawSukces] = useState(false);
   const [wybranaWies, ustawWybranaWies] = useState<WpisWsi | null>(domyslnaWies);
+  const [intencja, ustawIntencje] = useState<"mieszkaniec" | "soltys" | "inne" | "">(() => {
+    if (domyslnaIntencja === "mieszkaniec" || domyslnaIntencja === "soltys") return domyslnaIntencja;
+    if (domyslnaWies) return "mieszkaniec";
+    return "";
+  });
+  const [podsumowanieSukcesu, ustawPodsumowanieSukcesu] = useState<{
+    intencja: string;
+    nazwaWsi: string | null;
+  } | null>(null);
 
   async function onSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -34,7 +45,6 @@ export function RejestracjaFormularz({
     const haslo = String(fd.get("haslo") || "");
     const haslo2 = String(fd.get("haslo2") || "");
     const wyswietlanaNazwa = String(fd.get("wyswietlana_nazwa") || "").trim();
-    const intencja = String(fd.get("intencja_rejestracji") || "").trim();
     const intencjaDoMetadanych =
       intencja === "mieszkaniec" || intencja === "soltys" || intencja === "inne" ? intencja : "nie_podano";
 
@@ -57,7 +67,12 @@ export function RejestracjaFormularz({
       ustawBlad("Dla wybranej roli wskaż miejscowość z katalogu (sekcja „Która miejscowość?”).");
       return;
     }
+    if (!czyZaznaczoneZgodyRejestracji(fd)) {
+      ustawBlad("Zaakceptuj regulamin, politykę prywatności i potwierdź wiek (16 lat).");
+      return;
+    }
 
+    const legalAt = new Date().toISOString();
     ustawLaduje(true);
     try {
       const supabase = utworzKlientaSupabasePrzegladarka();
@@ -78,6 +93,8 @@ export function RejestracjaFormularz({
               ? `${wybranaWies.nazwa} · ${wybranaWies.gmina}, ${wybranaWies.powiat}, ${wybranaWies.wojewodztwo}`
               : "",
             signup_village_teryt: wybranaWies?.terytId ?? "",
+            legal_accepted_at: legalAt,
+            legal_bundle_version: AKTUALNY_BUNDLE_WERSJI_PRAWNYCH,
           },
         },
       });
@@ -89,8 +106,13 @@ export function RejestracjaFormularz({
         );
         return;
       }
+      ustawPodsumowanieSukcesu({
+        intencja: intencjaDoMetadanych,
+        nazwaWsi: wybranaWies?.nazwa ?? null,
+      });
       ustawSukces(true);
       ustawWybranaWies(null);
+      ustawIntencje("");
       form.reset();
     } catch {
       ustawBlad("Nie udało się połączyć z serwerem.");
@@ -114,13 +136,26 @@ export function RejestracjaFormularz({
           </Link>{" "}
           tym samym hasłem.
         </p>
-        <p className="mt-2 text-xs leading-relaxed text-green-900/80">
-          Rolę mieszkańca ustalisz w panelu po zalogowaniu. Sołtys: po potwierdzeniu konta wejdź w{" "}
-          <Link href="/panel/wniosek-soltysa" className="font-medium underline">
-            Wniosek o rolę sołtysa
-          </Link>
-          .
-        </p>
+        {podsumowanieSukcesu?.intencja === "mieszkaniec" && podsumowanieSukcesu.nazwaWsi ? (
+          <p className="mt-2 text-xs leading-relaxed text-green-900/80">
+            Po kliknięciu w link potwierdzający wniosek o mieszkańca wsi{" "}
+            <strong>{podsumowanieSukcesu.nazwaWsi}</strong> złożymy automatycznie — sołtys zobaczy go w panelu
+            wsi.
+          </p>
+        ) : podsumowanieSukcesu?.intencja === "soltys" && podsumowanieSukcesu.nazwaWsi ? (
+          <p className="mt-2 text-xs leading-relaxed text-green-900/80">
+            Po potwierdzeniu e-maila wniosek o rolę sołtysa dla <strong>{podsumowanieSukcesu.nazwaWsi}</strong>{" "}
+            utworzy się w{" "}
+            <Link href="/panel/wniosek-soltysa" className="font-medium underline">
+              panelu → Wniosek sołtysa
+            </Link>
+            .
+          </p>
+        ) : (
+          <p className="mt-2 text-xs leading-relaxed text-green-900/80">
+            Po potwierdzeniu e-maila wybierzesz miejscowość w krótkim kreatorze panelu (lub w profilu konta).
+          </p>
+        )}
         <p className="mt-4 text-sm">
           <Link href="/logowanie" className="text-green-800 underline">
             Wróć do logowania
@@ -178,9 +213,10 @@ export function RejestracjaFormularz({
               name="intencja_rejestracji"
               value="mieszkaniec"
               className="mt-1"
-              defaultChecked={domyslnaIntencja === "mieszkaniec" || (!domyslnaIntencja && !!domyslnaWies)}
+              checked={intencja === "mieszkaniec"}
+              onChange={() => ustawIntencje("mieszkaniec")}
             />
-            <span>Chcę dołączyć do wsi jako mieszkaniec (wniosek po zalogowaniu)</span>
+            <span>Chcę dołączyć do wsi jako mieszkaniec (wniosek po potwierdzeniu e-maila)</span>
           </label>
           <label className="flex cursor-pointer items-start gap-2">
             <input
@@ -188,7 +224,8 @@ export function RejestracjaFormularz({
               name="intencja_rejestracji"
               value="soltys"
               className="mt-1"
-              defaultChecked={domyslnaIntencja === "soltys"}
+              checked={intencja === "soltys"}
+              onChange={() => ustawIntencje("soltys")}
             />
             <span>
               Jestem / będę sołtysem — po potwierdzeniu e-maila złożysz wniosek w{" "}
@@ -196,11 +233,25 @@ export function RejestracjaFormularz({
             </span>
           </label>
           <label className="flex cursor-pointer items-start gap-2">
-            <input type="radio" name="intencja_rejestracji" value="inne" className="mt-1" />
+            <input
+              type="radio"
+              name="intencja_rejestracji"
+              value="inne"
+              className="mt-1"
+              checked={intencja === "inne"}
+              onChange={() => ustawIntencje("inne")}
+            />
             <span>Inna sytuacja (np. organizacja, gość)</span>
           </label>
           <label className="flex cursor-pointer items-start gap-2">
-            <input type="radio" name="intencja_rejestracji" value="" defaultChecked className="mt-1" />
+            <input
+              type="radio"
+              name="intencja_rejestracji"
+              value=""
+              className="mt-1"
+              checked={intencja === ""}
+              onChange={() => ustawIntencje("")}
+            />
             <span className="text-stone-600">Wolę nie zaznaczać</span>
           </label>
         </div>
@@ -233,6 +284,7 @@ export function RejestracjaFormularz({
           className="w-full rounded-lg border border-stone-300 px-3 py-2 text-stone-900 outline-none ring-green-800 focus:ring-2"
         />
       </div>
+      <PolaZgodyRejestracji idPrefix="reg" />
       <div>
         <label htmlFor="reg-haslo2" className="mb-1 block text-sm font-medium text-stone-700">
           Powtórz hasło
@@ -254,6 +306,13 @@ export function RejestracjaFormularz({
       >
         {laduje ? "Wysyłanie…" : "Zarejestruj się"}
       </button>
+      <p className="text-center text-xs text-stone-500">
+        Dane przetwarzamy zgodnie z{" "}
+        <Link href="/polityka-prywatnosci" className="underline">
+          polityką prywatności
+        </Link>
+        . Nie wysyłamy spamu marketingowego.
+      </p>
       <p className="text-center text-sm text-stone-600">
         Masz już konto?{" "}
         <Link href="/logowanie" className="text-green-800 underline">

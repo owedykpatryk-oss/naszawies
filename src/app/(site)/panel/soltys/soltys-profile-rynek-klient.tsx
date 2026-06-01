@@ -20,7 +20,7 @@ export function SoltysProfileRynekKlient({ profile }: { profile: Profil[] }) {
 
   return (
     <section className="mt-8 rounded-xl border border-emerald-200 bg-emerald-50/30 p-4">
-      <h2 className="font-serif text-lg text-green-950">Profile usługodawców (rynek)</h2>
+      <h2 className="font-serif text-lg text-green-950">Firmy i sklepy (rynek)</h2>
       <p className="mt-1 text-xs text-stone-600">
         Zweryfikowany profil ma badge na profilu wsi. Mieszkańcy edytują wizytówkę w panelu.
       </p>

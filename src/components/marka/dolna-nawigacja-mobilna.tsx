@@ -2,28 +2,12 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { useEffect } from "react";
-
-type Tab = {
-  href: string;
-  label: string;
-  ikona: string;
-};
-
-const TABS_ZALOGOWANY: Tab[] = [
-  { href: "/panel", label: "Panel", ikona: "🏠" },
-  { href: "/rynek", label: "Rynek", ikona: "🛒" },
-  { href: "/mapa", label: "Mapa", ikona: "🗺️" },
-  { href: "/szukaj", label: "Szukaj", ikona: "🔍" },
-  { href: "/panel/moje", label: "Moje", ikona: "★" },
-];
-
-const TABS_PUBLICZNY: Tab[] = [
-  { href: "/rynek", label: "Rynek", ikona: "🛒" },
-  { href: "/szukaj", label: "Szukaj", ikona: "🔍" },
-  { href: "/pomoc", label: "Pomoc", ikona: "💡" },
-  { href: "/logowanie", label: "Login", ikona: "👤" },
-];
+import { useEffect, useState } from "react";
+import {
+  dolnaNawigacjaZKluczy,
+  wczytajPreferencjeUiZLocalStorage,
+  type KluczDolnejNawigacji,
+} from "@/lib/uzytkownik/preferencje-ui";
 
 function czyAktywny(href: string, pathname: string): boolean {
   if (href === "/panel") return pathname === "/panel" || pathname.startsWith("/panel/");
@@ -33,16 +17,51 @@ function czyAktywny(href: string, pathname: string): boolean {
 
 type Props = {
   zalogowany?: boolean;
+  /** Klucze z serwera (metadane konta). */
+  kluczePoczatkowe?: KluczDolnejNawigacji[];
 };
 
-/** Dolny pasek nawigacji na mobile — szybkie przełączanie modułów. */
-export function DolnaNawigacjaMobilna({ zalogowany = false }: Props) {
+/** Dolny pasek nawigacji na mobile — konfigurowalny w profilu. */
+export function DolnaNawigacjaMobilna({ zalogowany = false, kluczePoczatkowe }: Props) {
   const pathname = usePathname() ?? "";
-  const tabs = zalogowany ? TABS_ZALOGOWANY : TABS_PUBLICZNY;
+  const [klucze, ustawKlucze] = useState<KluczDolnejNawigacji[] | undefined>(kluczePoczatkowe);
 
   useEffect(() => {
-    document.documentElement.style.setProperty("--dolna-naw-offset", "3.75rem");
+    const ls = wczytajPreferencjeUiZLocalStorage();
+    if (ls?.dolna_nawigacja?.length) {
+      ustawKlucze(ls.dolna_nawigacja);
+    } else if (kluczePoczatkowe?.length) {
+      ustawKlucze(kluczePoczatkowe);
+    }
+  }, [kluczePoczatkowe]);
+
+  useEffect(() => {
+    function odswiez() {
+      const ls = wczytajPreferencjeUiZLocalStorage();
+      if (ls?.dolna_nawigacja?.length) ustawKlucze(ls.dolna_nawigacja);
+    }
+    window.addEventListener("naszawies-ui-prefs-changed", odswiez);
+    return () => window.removeEventListener("naszawies-ui-prefs-changed", odswiez);
+  }, []);
+
+  const tabs = dolnaNawigacjaZKluczy(klucze, zalogowany);
+
+  useEffect(() => {
+    const nav = document.querySelector(".dolna-naw-mobilna");
+    if (!nav) return;
+
+    function sync() {
+      const h = nav instanceof HTMLElement ? nav.offsetHeight : 0;
+      document.documentElement.style.setProperty("--dolna-naw-offset", h > 0 ? `${h}px` : "0px");
+    }
+
+    sync();
+    const ro = typeof ResizeObserver !== "undefined" ? new ResizeObserver(sync) : null;
+    ro?.observe(nav);
+    window.addEventListener("resize", sync);
     return () => {
+      ro?.disconnect();
+      window.removeEventListener("resize", sync);
       document.documentElement.style.setProperty("--dolna-naw-offset", "0px");
     };
   }, []);

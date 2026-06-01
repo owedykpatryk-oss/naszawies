@@ -1,7 +1,9 @@
 import { z } from "zod";
+import { RODZAJE_PROFILU_RYNKU } from "@/lib/marketplace/rodzaj-profilu-rynku";
 
 export const schemaMarketplaceProfil = z.object({
   villageId: z.string().uuid(),
+  profile_kind: z.enum(RODZAJE_PROFILU_RYNKU).optional().default("firma"),
   business_name: z.string().trim().min(2).max(160),
   short_description: z.string().trim().max(600).nullable().optional(),
   details: z.string().trim().max(5000).nullable().optional(),

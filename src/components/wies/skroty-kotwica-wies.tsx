@@ -9,7 +9,9 @@ const IKONY_SKROTOW: Record<string, string> = {
   "#sekcja-aktualnosci-laczone": "A",
   "#sekcja-transport": "T",
   "#sekcja-rynek-lokalny": "R",
-  "#sekcja-blog-historia": "B",
+  "#sekcja-blog": "B",
+  "#sekcja-historia": "H",
+  "#sekcja-sport": "S",
   "#sekcja-organizacje": "O",
   "#sekcja-pomoc-sasiedzka": "P",
 };

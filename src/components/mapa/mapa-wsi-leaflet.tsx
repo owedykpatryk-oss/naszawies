@@ -789,7 +789,13 @@ function htmlPopupPoi(z: ZnacznikPoi): string {
   };
   const typZrodla = z.ospWaterSourceType ? (typZrodlaMap[z.ospWaterSourceType] ?? z.ospWaterSourceType) : null;
   const zglosAktualizacjeLink = `/panel/mieszkaniec/zgloszenia?category=woda&villageId=${encodeURIComponent(z.villageId)}&title=${encodeURIComponent(`Aktualizacja punktu OSP: ${z.name}`)}&location=${encodeURIComponent(`${z.villageName}: ${z.name}`)}`;
-  const stronaMiejsca = `/mapa/miejsce/${encodeURIComponent(z.id)}`;
+  const czyHistoria = katNorm === "historia_wydarzenie";
+  const historiaId = czyHistoria && z.id.startsWith("hist-") ? z.id.slice(5) : null;
+  const linkHistorii =
+    czyHistoria && historiaId
+      ? `${z.sciezkaWsi.replace(/"/g, "")}/historia/${encodeURIComponent(historiaId)}`
+      : null;
+  const stronaMiejsca = czyHistoria ? (linkHistorii ?? z.sciezkaWsi) : `/mapa/miejsce/${encodeURIComponent(z.id)}`;
   const miniatura = z.photoUrl
     ? `<p class="mapa-wsi-popup-foto"><img src="${escapeHtml(z.photoUrl)}" alt="" width="220" height="124" style="width:100%;max-width:220px;height:auto;border-radius:8px;object-fit:cover" loading="lazy" /></p>`
     : "";
@@ -820,9 +826,13 @@ function htmlPopupPoi(z: ZnacznikPoi): string {
           : ""
       }
       <p class="mapa-wsi-popup-foot">
-        <a href="${stronaMiejsca}">Zdjęcie i komentarze →</a>
-        <span aria-hidden="true"> · </span>
+        ${
+          czyHistoria && linkHistorii
+            ? `<a href="${linkHistorii}">Czytaj kronikę →</a><span aria-hidden="true"> · </span>`
+            : `<a href="${stronaMiejsca}">Zdjęcie i komentarze →</a><span aria-hidden="true"> · </span>`
+        }
         <a href="${z.sciezkaWsi.replace(/"/g, "")}">Strona wsi</a>
+        ${katNorm === "szkola" || katNorm === "przedszkole" ? `<span aria-hidden="true"> · </span><a href="${z.sciezkaWsi.replace(/"/g, "")}#sekcja-szkola">Tablica szkoły</a>` : ""}
         <span aria-hidden="true"> · </span>
         <a href="/mapa?poi=${encodeURIComponent(z.id)}">Na mapie</a>
         <span aria-hidden="true"> · </span>

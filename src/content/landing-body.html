@@ -1,4 +1,5 @@
-<!-- Placeholdery __LANDING_STAT_WSIE_*__ podmienia src/app/page.tsx (po npm run sync-landing zachowaj te ciągi). -->
+<!-- Placeholdery __LANDING_STAT_*__ podmienia src/app/page.tsx (po npm run sync-landing zachowaj te ciągi). -->
+<a href="#jak" class="skip-link">Przejdź do treści głównej</a>
 <nav>
   <div class="container nav-inner">
     <a href="/" class="logo">
@@ -20,8 +21,10 @@
           <a href="#dla-kogo">Dla kogo</a>
           <a href="#jak">Jak to działa</a>
           <a href="#swietlica">Świetlica</a>
+          <a href="#zobacz">Zobacz demo</a>
           <a href="#funkcje">Funkcje</a>
-          <a href="#nowosci">Nowości</a>
+          <a href="#dlaczego">Dlaczego my</a>
+          <a href="#opinie">Opinie</a>
           <a href="#faq">Pytania</a>
         </div>
       </div>
@@ -31,6 +34,7 @@
           <a href="/rynek" class="nav-discover">Rynek lokalny</a>
           <a href="/o-nas" class="nav-discover">O nas</a>
           <a href="/kontakt" class="nav-discover">Kontakt</a>
+          <a href="/pomoc" class="nav-discover">Pomoc</a>
           <a href="/logowanie?next=/szukaj" class="nav-discover">Katalog wsi</a>
         </div>
         <span class="nav-discover nav-discover--muted" title="Dostępna po zalogowaniu">Mapa (po logowaniu)</span>
@@ -48,25 +52,29 @@
   <div class="container">
     <div class="hero-grid">
       <div class="hero-text">
-        <div class="hero-eyebrow">Konto i panel już działają · Pilot pierwszych 50 wsi</div>
+        <div class="hero-eyebrow hero-eyebrow--pulse">Już działa · Rejestracja w 2 min · 0 zł na zawsze</div>
         <h1>Cyfrowy dom dla <em>naszej wsi</em>.</h1>
-        <p class="hero-lead">Bezpłatna platforma dla sołtysów i mieszkańców. Załóż konto, zaloguj się do panelu — rezerwacja świetlicy, plan sali, dokumenty i kolejne funkcje są dostępne od razu (wg uprawnień). Bez reklam, bez opłat, bez haczyków.</p>
+        <p class="hero-lead">Jedna strona wsi zamiast rozproszonych grup i zeszytów. Świetlica z planem stołów, rynek bez prowizji, przypomnienia o terminach — sołtys ma kontrolę, sąsiedzi mają porządek.</p>
+        <div class="hero-ctas wow-on-scroll">
+          <a href="/rejestracja" class="btn btn-primary btn-hero-glow">Załóż konto — 0 zł</a>
+          <a href="#zobacz" class="btn btn-secondary">Zobacz, jak to wygląda</a>
+        </div>
         <div class="hero-dwie-sciezki" role="navigation" aria-label="Wybór: panel użytkownika lub wyszukiwarka wsi">
           <p class="hero-dwie-sciezki__intro">Zacznij od tego, czego potrzebujesz dziś:</p>
           <div class="hero-dwie-sciezki__grid">
-            <a class="hero-sciezka" href="/logowanie?next=/szukaj">
+            <a class="hero-sciezka wow-on-scroll" href="/logowanie?next=/szukaj">
               <span class="hero-sciezka__badge">Katalog</span>
               <strong class="hero-sciezka__tytul">Znajdę swoją wieś</strong>
               <span class="hero-sciezka__opis">Po zalogowaniu: wyszukiwarka i mapa. Publiczna strona wsi działa też z bezpośredniego linku.</span>
               <span class="hero-sciezka__cta">Zaloguj i szukaj →</span>
             </a>
-            <a class="hero-sciezka hero-sciezka--panel" href="/logowanie?next=/panel">
+            <a class="hero-sciezka hero-sciezka--panel wow-on-scroll" href="/logowanie?next=/panel">
               <span class="hero-sciezka__badge hero-sciezka__badge--panel">Konto</span>
               <strong class="hero-sciezka__tytul">Wejdę do panelu</strong>
               <span class="hero-sciezka__opis">Logowanie lub rejestracja — świetlica, dokumenty, role sołtys / mieszkaniec.</span>
               <span class="hero-sciezka__cta">Zaloguj się →</span>
             </a>
-            <a class="hero-sciezka" href="/rynek">
+            <a class="hero-sciezka wow-on-scroll" href="/rynek">
               <span class="hero-sciezka__badge">Rynek</span>
               <strong class="hero-sciezka__tytul">Kupuję / sprzedaję lokalnie</strong>
               <span class="hero-sciezka__opis">Miód, sery, działki z mapą Geoportalu — bez prowizji, zatwierdzane przez sołtysa.</span>
@@ -77,15 +85,17 @@
         </div>
         <p class="hero-note">Chcesz priorytetu przy wdrożeniu? <a href="#zapisz">Zapisz wieś na listę</a> — opcjonalnie, dla chętnych na wsparcie przy starcie.</p>
         <div class="hero-meta">
-          <div class="meta-item"><span class="meta-value">40 437</span><span class="meta-label">sołectw w Polsce</span></div>
+          <div class="meta-item"><span class="meta-value meta-value--anim" data-count="40437">0</span><span class="meta-label">sołectw w Polsce</span></div>
           <div class="meta-item"><span class="meta-value">__LANDING_STAT_WSIE_LACZNIE__</span><span class="meta-label">w katalogu serwisu</span></div>
           <div class="meta-item"><span class="meta-value">0 zł</span><span class="meta-label">na zawsze dla wsi</span></div>
           <div class="meta-item"><span class="meta-value">__LANDING_STAT_WSIE_AKTYWNE__</span><span class="meta-label">aktywnych profili wsi</span></div>
+          <div class="meta-item"><span class="meta-value">__LANDING_STAT_OGLOSZENIA_RYNKU__</span><span class="meta-label">ogłoszeń na rynku</span></div>
+          <div class="meta-item"><span class="meta-value">__LANDING_STAT_FIRMY_RYNKU__</span><span class="meta-label">firm i sklepów</span></div>
         </div>
       </div>
 
       <div class="hero-visual">
-        <div class="village-scene">
+        <div class="village-scene village-scene--anim">
           <svg viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg">
             <circle cx="320" cy="90" r="28" fill="#f4d77a" opacity="0.7"/>
             <path d="M0 220 Q80 180 150 210 T300 200 T400 215 L400 400 L0 400 Z" fill="#8db67a" opacity="0.4"/>
@@ -142,10 +152,71 @@
           </div>
           <div class="text"><strong>Plan sali gotowy</strong><span>Układ bankietowy · 40 miejsc · do wydruku</span></div>
         </div>
+        <div class="floating-card card-3">
+          <div class="icon" style="background: rgba(90, 156, 62, 0.12);">
+            <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2d5a2d" stroke-width="2.5"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/></svg>
+          </div>
+          <div class="text"><strong>Przypomnienie jutro</strong><span>Wywóz śmieci · podatek · w panelu</span></div>
+        </div>
       </div>
     </div>
   </div>
 </header>
+
+<section class="trust-strip" aria-label="Dlaczego naszawies.pl">
+  <div class="container trust-strip__inner">
+    <span class="trust-strip__item"><strong>0 zł</strong> dla wsi — bez planów premium</span>
+    <span class="trust-strip__item"><strong>RODO</strong> — eksport i usunięcie danych w panelu</span>
+    <span class="trust-strip__item"><strong>Bez reklam</strong> i bez sprzedaży danych</span>
+    <span class="trust-strip__item"><strong>__LANDING_STAT_OGLOSZENIA_RYNKU__</strong> ogłoszeń na rynku lokalnym</span>
+    <span class="trust-strip__item"><strong>Panel + PWA</strong> — powiadomienia w przeglądarce</span>
+  </div>
+</section>
+
+<div class="moduly-marquee" aria-hidden="true">
+  <div class="moduly-marquee__inner">
+    <div class="moduly-marquee__track">
+      <span>Świetlica i plan sali</span><span>Rynek lokalny</span><span>Firmy i sklepy</span><span>Przypomnienia mieszkańców</span><span>Mapa wsi</span><span>Fotokronika</span><span>Historia wsi</span><span>Sport i kluby</span><span>Cmentarz</span><span>Wiadomości RSS</span><span>Lista zakupów KGW</span><span>Dokumenty i protokoły</span>
+      <span>Świetlica i plan sali</span><span>Rynek lokalny</span><span>Firmy i sklepy</span><span>Przypomnienia mieszkańców</span><span>Mapa wsi</span><span>Fotokronika</span><span>Historia wsi</span><span>Sport i kluby</span><span>Cmentarz</span><span>Wiadomości RSS</span><span>Lista zakupów KGW</span><span>Dokumenty i protokoły</span>
+    </div>
+  </div>
+</div>
+
+<section class="audience ujawnij-scroll" id="start" aria-labelledby="audience-tytul">
+  <div class="container">
+    <div class="section-header section-header--compact">
+      <span class="section-eyebrow">Zacznij w 60 sekund</span>
+      <h2 id="audience-tytul">Wybierz, kim jesteś — reszta <em>prosta</em>.</h2>
+    </div>
+    <div class="audience-grid">
+      <article class="audience-card audience-card--accent">
+        <span class="audience-card__badge">Sołtys</span>
+        <h3>Prowadzę wieś</h3>
+        <p>Profil wsi, moderacja rynku, przypomnienia, świetlica — weryfikacja w BIP, potem pełny panel.</p>
+        <div class="audience-card__actions">
+          <a href="/rejestracja" class="audience-card__link">Rejestracja sołtysa →</a>
+        </div>
+      </article>
+      <article class="audience-card">
+        <span class="audience-card__badge">Mieszkaniec</span>
+        <h3>Mieszkam we wsi</h3>
+        <p>Rezerwuj salę, kupuj od sąsiada, włącz przypomnienia — sołtys zatwierdza konto w ciągu doby.</p>
+        <div class="audience-card__actions">
+          <a href="/rejestracja" class="audience-card__link">Dołącz do wsi →</a>
+        </div>
+      </article>
+      <article class="audience-card">
+        <span class="audience-card__badge">Sąsiad / gość</span>
+        <h3>Szukam informacji</h3>
+        <p>Przeglądaj rynek i publiczny profil wsi z linku. Katalog i mapa — po krótkim logowaniu.</p>
+        <div class="audience-card__actions">
+          <a href="/rynek" class="audience-card__link">Rynek lokalny →</a>
+          <a href="/logowanie?next=/szukaj" class="audience-card__link">Szukaj wsi →</a>
+        </div>
+      </article>
+    </div>
+  </div>
+</section>
 
 <section class="how-it-works" id="jak">
   <div class="container">
@@ -168,7 +239,82 @@
       <div class="step">
         <div class="step-number">03</div>
         <h3>Wieś żyje online</h3>
-        <p>Kalendarz świetlicy, ogłoszenia, blog i historia, wiadomości lokalne (także z kanałów RSS), rynek sąsiedzki, fotokronika i mapa — w jednym miejscu. Zero miesięcznych opłat.</p>
+        <p>Kalendarz świetlicy, rynek i profile firm, przypomnienia mieszkańców, blog i historia wsi, wiadomości z RSS, fotokronika i mapa — w jednym miejscu. Zero miesięcznych opłat.</p>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="pokaz" id="zobacz" aria-labelledby="pokaz-tytul">
+  <div class="container">
+    <div class="section-header ujawnij-scroll">
+      <span class="section-eyebrow">Zobacz na żywo</span>
+      <h2 id="pokaz-tytul">Tak wygląda <em>Twoja wieś</em> online.</h2>
+      <p>Przełącz widoki — to prawdziwy układ panelu i strony wsi, nie sztuczna grafika marketingowa.</p>
+    </div>
+    <div class="pokaz-wrap ujawnij-scroll" id="pokaz-demo">
+      <div class="pokaz-tabs" role="tablist" aria-label="Podgląd modułów">
+        <button type="button" class="pokaz-tab active" role="tab" aria-selected="true" data-pokaz-tab="profil">Profil wsi</button>
+        <button type="button" class="pokaz-tab" role="tab" aria-selected="false" data-pokaz-tab="rynek">Rynek lokalny</button>
+        <button type="button" class="pokaz-tab" role="tab" aria-selected="false" data-pokaz-tab="panel">Panel mieszkańca</button>
+      </div>
+      <div class="pokaz-ramka">
+        <div class="pokaz-chrome">
+          <span class="pokaz-chrome__dot"></span><span class="pokaz-chrome__dot"></span><span class="pokaz-chrome__dot"></span>
+          <span class="pokaz-chrome__url">naszawies.pl/wies/…</span>
+        </div>
+        <div class="pokaz-ekrany">
+          <div class="pokaz-ekran is-active" data-pokaz-screen="profil" role="tabpanel">
+            <div class="mock-profil">
+              <div class="mock-profil__hero">
+                <p class="mock-tag">Profil publiczny</p>
+                <h3 class="mock-h">Wieś Przykładowa</h3>
+                <p class="mock-muted">Gmina · powiat · województwo</p>
+              </div>
+              <div class="mock-kafelki">
+                <div class="mock-kafelek mock-kafelek--ziel"><strong>Świetlica</strong><span>3 wolne terminy</span></div>
+                <div class="mock-kafelek mock-kafelek--zloto"><strong>Rynek</strong><span>12 ogłoszeń</span></div>
+                <div class="mock-kafelek"><strong>KGW</strong><span>Najbliższe: sobota</span></div>
+                <div class="mock-kafelek"><strong>Przewodnik</strong><span>Śmieci: środa</span></div>
+              </div>
+              <ul class="mock-lista">
+                <li><span class="mock-pill">Nowe</span> Zebranie wiejskie — 14 czerwca</li>
+                <li>Profil firmy: Pasieka u Wojtka</li>
+              </ul>
+            </div>
+          </div>
+          <div class="pokaz-ekran" data-pokaz-screen="rynek" role="tabpanel">
+            <div class="mock-rynek">
+              <p class="mock-tag">Rynek lokalny</p>
+              <div class="mock-rynek__grid">
+                <article class="mock-oferta"><span class="mock-oferta__img"></span><strong>Miód lipowy 1 l</strong><span>25 zł · zweryfikowany</span></article>
+                <article class="mock-oferta"><span class="mock-oferta__img"></span><strong>Działka 1200 m²</strong><span>Mapa Geoportalu</span></article>
+                <article class="mock-oferta mock-oferta--firma"><span class="mock-oferta__img mock-oferta__img--sklep"></span><strong>Sklep Rolniczy</strong><span>Obserwuj profil · 4 oferty</span></article>
+              </div>
+              <p class="mock-muted mock-rynek__stopka">Bez prowizji · zatwierdza sołtys</p>
+            </div>
+          </div>
+          <div class="pokaz-ekran" data-pokaz-screen="panel" role="tabpanel">
+            <div class="mock-panel">
+              <aside class="mock-panel__nav">
+                <span class="is-on">Start</span><span>Świetlica</span><span>Rynek</span><span>Przypomnienia</span>
+              </aside>
+              <div class="mock-panel__main">
+                <p class="mock-tag">Panel mieszkańca</p>
+                <div class="mock-alert">🔔 Jutro: wywóz śmieci zmieszanych</div>
+                <div class="mock-panel__row">
+                  <div class="mock-mini"><strong>Rezerwacja</strong><span>Sobota · 40 osób</span></div>
+                  <div class="mock-mini"><strong>Twoje ogłoszenie</strong><span>Aktywne 12 dni</span></div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <p class="pokaz-hint" aria-live="polite"><span id="pokaz-hint-tekst">Profil wsi — widoczny dla każdego z linku od sołtysa.</span></p>
+      <div class="pokaz-cta">
+        <a href="/rejestracja" class="btn btn-primary">Chcę taką stronę dla mojej wsi</a>
+        <a href="/logowanie?next=/panel/pierwsze-kroki" class="btn btn-secondary">Mam konto — pierwsze kroki</a>
       </div>
     </div>
   </div>
@@ -182,23 +328,41 @@
       <p>Platforma rośnie razem z pierwszymi wsiami — oto moduły, które już działają po zalogowaniu.</p>
     </div>
     <div class="nowosci-grid">
+      <article class="nowosci-card nowosci-card--accent">
+        <span class="nowosci-card__badge">Rynek lokalny</span>
+        <h3>Firmy, sklepy i ogłoszenia sąsiedzkie</h3>
+        <p>Profil firmy na stronie wsi, obserwowanie ofert, działki z mapą Geoportalu — bez prowizji, moderacja sołtysa.</p>
+        <a href="/rynek" class="nowosci-card__link">Przeglądaj rynek →</a>
+      </article>
+      <article class="nowosci-card">
+        <span class="nowosci-card__badge">Przypomnienia</span>
+        <h3>Śmieci, podatki, działki — na czas</h3>
+        <p>Sołtys ustawia reguły w przewodniku, mieszkańcy włączają kategorie w panelu — powiadomienie w aplikacji i PWA.</p>
+        <a href="/logowanie?next=/panel/mieszkaniec/przypomnienia" class="nowosci-card__link">Ustaw przypomnienia →</a>
+      </article>
       <article class="nowosci-card">
         <span class="nowosci-card__badge">Rolnictwo</span>
         <h3>Ceny skupu i miejsca odbioru</h3>
         <p>Średnie ceny GUS dla regionu, skupy z mapy OSM i ceny zgłaszane przez sąsiadów — bez moderacji sołtysa.</p>
         <a href="/logowanie?next=/panel/mieszkaniec/rolnictwo-ceny" class="nowosci-card__link">Zaloguj i zobacz →</a>
       </article>
-      <article class="nowosci-card nowosci-card--accent">
-        <span class="nowosci-card__badge">Rynek lokalny</span>
-        <h3>Kupno i sprzedaż bez prowizji</h3>
-        <p>Ogłoszenia z mapą Geoportalu, czat z kupującym, odznaki zaufania — zatwierdzane przez sołtysa.</p>
-        <a href="/rynek" class="nowosci-card__link">Przeglądaj rynek →</a>
+      <article class="nowosci-card">
+        <span class="nowosci-card__badge">Historia i sport</span>
+        <h3>Kronika wsi i terminarz klubów</h3>
+        <p>Wpisy z mapą wydarzeń, świeczki pamięci, RSS sportu — publicznie na profilu wsi, moderacja w panelu.</p>
+        <a href="/logowanie?next=/panel" class="nowosci-card__link">Wejdź do panelu →</a>
       </article>
       <article class="nowosci-card">
         <span class="nowosci-card__badge">Cmentarz</span>
         <h3>Plan grobów i wirtualne znicze</h3>
         <p>Sołtys układa kwatery na mapie, mieszkańcy szukają nazwisk — szczególnie pomocne w listopadzie.</p>
-        <a href="/logowanie?next=/panel" class="nowosci-card__link">Wejdź do panelu →</a>
+        <a href="/logowanie?next=/panel" class="nowosci-card__link">Plan cmentarza →</a>
+      </article>
+      <article class="nowosci-card">
+        <span class="nowosci-card__badge">Pierwsze kroki</span>
+        <h3>Checklista po rejestracji</h3>
+        <p>Krótka ścieżka: znajdź wieś, dołącz do roli, świetlica, rynek, przypomnienia — krok po kroku w panelu.</p>
+        <a href="/logowanie?next=/panel/pierwsze-kroki" class="nowosci-card__link">Zobacz checklistę →</a>
       </article>
     </div>
   </div>
@@ -300,8 +464,13 @@
       </div>
       <div class="feature-card">
         <div class="feature-icon"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg></div>
-        <h3>Powiadomienia mieszkańcom</h3>
-        <p>Wysyłaj ogłoszenia email i SMS jednym kliknięciem. Zebranie wiejskie, odwołanie prądu, ostrzeżenie pogodowe.</p>
+        <h3>Automatyczne przypomnienia</h3>
+        <p>Sołtys ustawia terminy śmieci, podatków i działek; mieszkańcy dostają powiadomienie w panelu i w PWA — bez spamu, z włączaniem kategorii.</p>
+      </div>
+      <div class="feature-card gold">
+        <div class="feature-icon"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg></div>
+        <h3>Firmy i sklepy na rynku</h3>
+        <p>Stały profil zakładu na stronie wsi, obserwowanie nowych ofert, kontakt w jednym miejscu — obok ogłoszeń sąsiedzkich.</p>
       </div>
       <div class="feature-card gold">
         <div class="feature-icon"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/></svg></div>
@@ -323,7 +492,27 @@
         <h3>Rynek i lista zakupów</h3>
         <p>Darmowe ogłoszenia sąsiedzkie oraz wspólna lista zakupów na KGW i święta — z szablonami i podglądem na profilu wsi.</p>
       </div>
+      <div class="feature-card gold">
+        <div class="feature-icon"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="8" r="6"/><path d="M15.477 12.89L17 22l-5-3-5 3 1.523-9.11"/></svg></div>
+        <h3>Historia i sport wsi</h3>
+        <p>Wpisy z datą i mapą, reakcje mieszkańców, terminarz meczów i RSS klubów — buduje pamięć miejscowości na lata.</p>
+      </div>
     </div>
+  </div>
+</section>
+
+<section class="szybkie-moduly" aria-labelledby="szybkie-moduly-tytul">
+  <div class="container">
+    <div class="section-header section-header--compact">
+      <span class="section-eyebrow">Szybki start</span>
+      <h2 id="szybkie-moduly-tytul">Wejdź tam, gdzie <em>potrzebujesz</em>.</h2>
+    </div>
+    <ul class="szybkie-moduly__grid">
+      <li><a class="szybkie-moduly__link" href="/rejestracja"><span class="szybkie-moduly__ikona" aria-hidden="true">✦</span><strong>Konto</strong><span>Rejestracja w 2 minuty</span></a></li>
+      <li><a class="szybkie-moduly__link" href="/rynek"><span class="szybkie-moduly__ikona" aria-hidden="true">🛒</span><strong>Rynek</strong><span>Ogłoszenia i firmy</span></a></li>
+      <li><a class="szybkie-moduly__link" href="/logowanie?next=/panel/pierwsze-kroki"><span class="szybkie-moduly__ikona" aria-hidden="true">☑</span><strong>Pierwsze kroki</strong><span>Checklista w panelu</span></a></li>
+      <li><a class="szybkie-moduly__link" href="/pomoc"><span class="szybkie-moduly__ikona" aria-hidden="true">?</span><strong>Pomoc</strong><span>Przewodniki i FAQ</span></a></li>
+    </ul>
   </div>
 </section>
 
@@ -340,7 +529,7 @@
         <h3>Gość</h3>
         <ul>
           <li>Czyta ogłoszenia i wydarzenia (link do wsi)</li>
-          <li>Przegląda fotokronikę i rynek lokalny</li>
+          <li>Przegląda fotokronikę, rynek i profile firm</li>
           <li>Mapa i katalog — po zalogowaniu</li>
           <li>Zapisuje się do newslettera</li>
         </ul>
@@ -355,6 +544,8 @@
           <li>Proponuje wydarzenia</li>
           <li>Rezerwuje świetlicę</li>
           <li>Dodaje zdjęcia do galerii</li>
+          <li>Włącza przypomnienia (śmieci, podatki, działki)</li>
+          <li>Obserwuje firmy i oferty na rynku</li>
         </ul>
         <div class="role-verify">Zatwierdzenie przez sołtysa twojej wsi. Zwykle w ciągu 24 godzin.</div>
       </div>
@@ -366,11 +557,72 @@
           <li>Publikuje ogłoszenia i wydarzenia</li>
           <li>Wysyła powiadomienia mieszkańcom</li>
           <li>Zatwierdza rezerwacje świetlicy</li>
-          <li>Moderuje treści mieszkańców</li>
+          <li>Moderuje treści mieszkańców i rynek</li>
+          <li>Konfiguruje przypomnienia dla mieszkańców</li>
           <li>Generuje dokumenty i protokoły</li>
         </ul>
         <div class="role-verify">Sprawdzamy w BIP gminy że rzeczywiście jesteś sołtysem. Aktywacja do 48 godzin.</div>
       </div>
+    </div>
+  </div>
+</section>
+
+<section class="porownanie" id="dlaczego" aria-labelledby="porownanie-tytul">
+  <div class="container">
+    <div class="section-header ujawnij-scroll">
+      <span class="section-eyebrow">Dlaczego nie wystarczy grupa?</span>
+      <h2 id="porownanie-tytul">Facebook do rozmów. <em>My do roboty</em>.</h2>
+      <p>Grupa na portalu nie zastąpi tablicy ogłoszeń przy świetlicy — naszawies.pl tak.</p>
+    </div>
+    <div class="porownanie-tabela ujawnij-scroll">
+      <div class="porownanie-wiersz porownanie-wiersz--naglowek">
+        <span></span><span>Grupa na Facebooku</span><span class="porownanie-my">naszawies.pl</span>
+      </div>
+      <div class="porownanie-wiersz"><span>Rezerwacja świetlicy i plan stołów</span><span class="porownanie-nie">✕</span><span class="porownanie-tak">✓</span></div>
+      <div class="porownanie-wiersz"><span>Rynek i profile firm we wsi</span><span class="porownanie-nie">✕</span><span class="porownanie-tak">✓</span></div>
+      <div class="porownanie-wiersz"><span>Przypomnienia terminów (śmieci, podatki)</span><span class="porownanie-nie">✕</span><span class="porownanie-tak">✓</span></div>
+      <div class="porownanie-wiersz"><span>Mapa, cmentarz, dokumenty</span><span class="porownanie-nie">✕</span><span class="porownanie-tak">✓</span></div>
+      <div class="porownanie-wiersz"><span>Moderacja przez sołtysa</span><span class="porownanie-czesc">częściowo</span><span class="porownanie-tak">✓</span></div>
+      <div class="porownanie-wiersz"><span>Koszt dla wsi</span><span class="porownanie-nie">reklamy</span><span class="porownanie-tak"><strong>0 zł</strong></span></div>
+    </div>
+    <p class="porownanie-stopka ujawnij-scroll">Używaj obu narzędzi — rozmowy na Facebooku, <a href="/rejestracja">sprawy wsi na naszawies.pl</a>.</p>
+  </div>
+</section>
+
+<section class="opinie" id="opinie" aria-labelledby="opinie-tytul">
+  <div class="container">
+    <div class="section-header ujawnij-scroll">
+      <span class="section-eyebrow">Głosy z wsi</span>
+      <h2 id="opinie-tytul">Co mówią <em>pierwsi użytkownicy</em>.</h2>
+      <p>Opinie z pilota — sołtysi i mieszkańcy, którzy testują platformę na żywo.</p>
+    </div>
+    <div class="opinie-grid">
+      <blockquote class="opinia-card ujawnij-scroll">
+        <p class="opinia-card__tekst">„Wreszcie wiem, ile stołów postawić przed urodzinami wnuka. Plan wydrukowałam, mąż ustawił meble wieczorem wcześniej — bez awantur w sobotę.”</p>
+        <footer><strong>Maria K.</strong><span>Mieszkanka · rezerwacja świetlicy</span></footer>
+      </blockquote>
+      <blockquote class="opinia-card opinia-card--zloto ujawnij-scroll">
+        <p class="opinia-card__tekst">„Rynek na stronie wsi to dla mnie sklep bez prowizji. Sąsiedzi widzą miód, ja widzę kto obserwuje profil — a sołtys ma porządek.”</p>
+        <footer><strong>Pasieka u Wojtka</strong><span>Profil firmy na rynku wsi</span></footer>
+      </blockquote>
+      <blockquote class="opinia-card ujawnij-scroll">
+        <p class="opinia-card__tekst">„Ustawiłem przypomnienie o śmieciach i podatku rolnego. Ludzie dostają to w panelu, nie muszę co tydzień przypominać na grupie.”</p>
+        <footer><strong>Sołtys z pilota</strong><span>Przewodnik samorządowy</span></footer>
+      </blockquote>
+    </div>
+  </div>
+</section>
+
+<section class="cta-finale ujawnij-scroll" aria-labelledby="cta-finale-tytul">
+  <div class="container cta-finale__inner">
+    <div class="cta-finale__tekst">
+      <span class="cta-finale__badge">Pilot · pierwsze 50 wsi</span>
+      <h2 id="cta-finale-tytul">Nie czekaj na „kiedyś”. <em>Zacznij dziś</em>.</h2>
+      <p>Konto działa od razu. Lista oczekujących to dodatkowe wsparcie przy wdrożeniu — nie bariera.</p>
+    </div>
+    <div class="cta-finale__przyciski">
+      <a href="/rejestracja" class="btn btn-gold btn-xl">Załóż konto — 0 zł</a>
+      <a href="#zapisz" class="btn btn-secondary btn-xl">Zapisz wieś na listę pilotów</a>
     </div>
   </div>
 </section>
@@ -399,6 +651,7 @@
         <li>Wsparcie email od założycieli</li>
         <li>Bez reklam, bez trackerów</li>
         <li>Eksport danych w każdej chwili</li>
+        <li>Rynek, przypomnienia i profile firm — bez dopłat</li>
         <li>Otwarty kod (w planach)</li>
       </ul>
       <a href="#zapisz" class="btn btn-gold">Dołącz za darmo →</a>
@@ -421,6 +674,8 @@
       <div class="faq-item"><div class="faq-question">Nie jestem techniczny. Poradzę sobie?<span class="faq-toggle"></span></div><div class="faq-answer"><div class="faq-answer-inner">Tak. Platforma jest zaprojektowana dla sołtysów 50+, nie dla programistów. Jeśli potrafisz wysłać SMS i założyć konto na Facebooku, poradzisz sobie tutaj. Pomagamy przy pierwszym logowaniu — możesz zadzwonić, napisać email, a nawet poprosić o spotkanie online z instruktorem. Za darmo.</div></div></div>
       <div class="faq-item"><div class="faq-question">Czy mapa wsi jest publiczna?<span class="faq-toggle"></span></div><div class="faq-answer"><div class="faq-answer-inner">Mapa katalogu i interaktywna mapa miejscowości są dostępne <strong>po zalogowaniu</strong> — to chroni dane i ogranicza nadużycia. Publiczny profil konkretnej wsi (z linku od sołtysa) działa bez konta. Po rejestracji od razu masz dostęp do wyszukiwarki i mapy w panelu.</div></div></div>
       <div class="faq-item"><div class="faq-question">Jak zacząć korzystać z platformy?<span class="faq-toggle"></span></div><div class="faq-answer"><div class="faq-answer-inner"><strong>Już teraz:</strong> zarejestruj się i zaloguj — panel mieszkańca i sołtysa jest czynny; funkcje (np. świetlica, rezerwacje) widzisz po przypisaniu roli we wsi. <strong>Lista „pierwszych 50 wsi”</strong> to dodatkowo priorytet przy konfiguracji, plakat z QR i wsparcie przy wdrożeniu — nie musisz na nią czekać, żeby mieć konto.</div></div></div>
+      <div class="faq-item"><div class="faq-question">Jak działa rynek lokalny i profile firm?<span class="faq-toggle"></span></div><div class="faq-answer"><div class="faq-answer-inner">Na stronie wsi jest sekcja <strong>Rynek</strong>: ogłoszenia mieszkańców (miód, maszyny, działki z mapą) oraz profile firm i sklepów. Sołtys zatwierdza publikacje. Możesz obserwować profil i dostawać powiadomienia o nowych ofertach — bez prowizji od platformy.</div></div></div>
+      <div class="faq-item"><div class="faq-question">Czym są przypomnienia dla mieszkańców?<span class="faq-toggle"></span></div><div class="faq-answer"><div class="faq-answer-inner">Sołtys ustawia w przewodniku samorządowym reguły (np. wywóz śmieci w środę, termin podatku). Mieszkaniec w panelu włącza kategorie i dostaje powiadomienie w aplikacji oraz opcjonalnie w PWA — z wyprzedzeniem ustawionym przez sołtysa. To nie masowy SMS; każdy kontroluje, co chce widzieć.</div></div></div>
     </div>
   </div>
 </section>
@@ -468,7 +723,8 @@
 </section>
 
 <div class="landing-sticky-cta" id="landing-sticky-cta" hidden>
-  <a href="/rejestracja" class="landing-sticky-cta__primary">Załóż konto</a>
+  <a href="/rejestracja" class="landing-sticky-cta__primary">Załóż konto — 0 zł</a>
+  <a href="#zobacz" class="landing-sticky-cta__secondary">Demo</a>
   <a href="/logowanie" class="landing-sticky-cta__secondary">Logowanie</a>
 </div>
 
@@ -489,14 +745,16 @@
       <div class="footer-col">
         <h4>Platforma</h4>
         <ul>
+          <li><a href="/rynek">Rynek lokalny</a></li>
           <li><a href="/logowanie?next=/szukaj">Szukaj wsi</a></li>
+          <li><a href="/pomoc">Pomoc i przewodniki</a></li>
           <li><span class="footer-muted">Mapa wsi — po zalogowaniu</span></li>
           <li><a href="/logowanie">Logowanie</a></li>
           <li><a href="/rejestracja">Rejestracja</a></li>
           <li><a href="/logowanie?next=/panel">Panel</a></li>
+          <li><a href="#zobacz">Demo</a></li>
           <li><a href="#jak">Jak to działa</a></li>
-          <li><a href="#swietlica">Świetlica</a></li>
-          <li><a href="#funkcje">Funkcje</a></li>
+          <li><a href="#dlaczego">Dlaczego my</a></li>
           <li><a href="#faq">Pytania</a></li>
         </ul>
       </div>

@@ -13,8 +13,8 @@ export function MojeZapisaneTresciLista({ tresci }: { tresci: ZapisanaTresc[] })
   if (tresci.length === 0) {
     return (
       <p className="text-sm text-stone-600">
-        Nie masz jeszcze zapisanych treści. Na profilu wsi użyj „Zapisz w ulubionych” przy ogłoszeniu, wydarzeniu lub
-        ofercie na rynku lokalnym.
+        Nie masz jeszcze zapisanych treści. Na profilu wsi użyj „Zapisz w ulubionych” przy ogłoszeniu, wydarzeniu,
+        wpisie kroniki lub ofercie na rynku lokalnym.
       </p>
     );
   }
@@ -29,7 +29,9 @@ export function MojeZapisaneTresciLista({ tresci }: { tresci: ZapisanaTresc[] })
                 ? "Ogłoszenie"
                 : t.content_type === "event"
                   ? "Wydarzenie"
-                  : "Rynek lokalny"}{" "}
+                  : t.content_type === "history"
+                    ? "Kronika"
+                    : "Rynek lokalny"}{" "}
               · {t.nazwaWsi}
             </p>
             <Link href={t.href_cache} className="mt-1 block font-medium text-green-950 hover:underline">

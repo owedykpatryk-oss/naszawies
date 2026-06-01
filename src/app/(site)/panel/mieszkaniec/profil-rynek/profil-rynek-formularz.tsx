@@ -2,10 +2,12 @@
 
 import { FormEvent, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
+import { ETYKIETY_RODZAJU_PROFILU, RODZAJE_PROFILU_RYNKU, type RodzajProfiluRynku } from "@/lib/marketplace/rodzaj-profilu-rynku";
 import { zapiszProfilUslugodawcyMieszkanca } from "./akcje";
 
 type ProfilPoczatek = {
   villageId: string;
+  profile_kind: RodzajProfiluRynku;
   business_name: string;
   short_description: string;
   details: string;
@@ -35,6 +37,7 @@ export function ProfilRynekFormularz({
     startT(async () => {
       const w = await zapiszProfilUslugodawcyMieszkanca({
         villageId: String(fd.get("village_id")),
+        profile_kind: String(fd.get("profile_kind")) as RodzajProfiluRynku,
         business_name: String(fd.get("business_name")),
         short_description: String(fd.get("short_description") || "") || null,
         details: String(fd.get("details") || "") || null,
@@ -66,6 +69,21 @@ export function ProfilRynekFormularz({
           {wsie.map((w) => (
             <option key={w.id} value={w.id}>
               {w.name}
+            </option>
+          ))}
+        </select>
+      </label>
+      <label className="block text-sm">
+        Rodzaj profilu
+        <select
+          name="profile_kind"
+          required
+          defaultValue={profil?.profile_kind ?? "firma"}
+          className="mt-1 block w-full"
+        >
+          {RODZAJE_PROFILU_RYNKU.map((k) => (
+            <option key={k} value={k}>
+              {ETYKIETY_RODZAJU_PROFILU[k]}
             </option>
           ))}
         </select>
@@ -109,7 +127,7 @@ export function ProfilRynekFormularz({
         disabled={czek}
         className="rounded-xl bg-green-800 px-4 py-2.5 text-sm font-semibold text-white hover:bg-green-900 disabled:opacity-50"
       >
-        {czek ? "Zapisywanie…" : "Zapisz profil usługodawcy"}
+        {czek ? "Zapisywanie…" : "Zapisz profil firmy"}
       </button>
     </form>
   );

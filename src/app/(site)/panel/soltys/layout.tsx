@@ -1,41 +1,11 @@
-import Link from "next/link";
 import { Suspense } from "react";
+import { PanelSciezkaKontekstu } from "@/components/panel/panel-sciezka-kontekstu";
 import { PrzewodnikModuluLeniwy } from "@/components/pomoc/przewodnik-modulu-leniwy";
 import { SoltysNawigacja } from "./soltys-nawigacja";
 
 export default function SoltysLayout({ children }: { children: React.ReactNode }) {
   return (
     <div className="min-w-0">
-      <div className="baner-wskazowka baner-wskazowka--zielony no-print mb-4 flex flex-wrap items-center gap-x-3 gap-y-1">
-        <span className="font-semibold text-emerald-900">Szybki rytm:</span>{" "}
-        <Link href="/panel/soltys/grafika" className="font-medium text-green-800 underline">
-          plakat w 3 zakładkach
-        </Link>
-        , potem{" "}
-        <Link href="/panel/soltys/wiadomosci-lokalne" className="text-green-800 underline">
-          wiadomości
-        </Link>
-        ,{" "}
-        <Link href="/panel/soltys/rezerwacje" className="text-green-800 underline">
-          rezerwacje
-        </Link>
-        . Tryb społeczności:{" "}
-        <Link href="/panel/soltys/spolecznosc?tryb=ogolny" className="text-green-800 underline">
-          ogólny
-        </Link>
-        {" / "}
-        <Link href="/panel/soltys/spolecznosc?tryb=kgw" className="text-green-800 underline">
-          KGW
-        </Link>
-        {" / "}
-        <Link href="/panel/soltys/spolecznosc?tryb=osp" className="text-green-800 underline">
-          OSP
-        </Link>
-        {" · "}
-        <Link href="/panel/soltys#kolejka-pracy" className="font-medium text-green-800 underline">
-          kolejka pracy
-        </Link>
-      </div>
       <Suspense
         fallback={
           <div className="no-print mb-8 h-24 animate-pulse rounded-2xl border border-stone-200/60 bg-stone-100/50" />
@@ -43,6 +13,7 @@ export default function SoltysLayout({ children }: { children: React.ReactNode }
       >
         <SoltysNawigacja />
       </Suspense>
+      <PanelSciezkaKontekstu />
       <Suspense fallback={null}>
         <PrzewodnikModuluLeniwy />
       </Suspense>

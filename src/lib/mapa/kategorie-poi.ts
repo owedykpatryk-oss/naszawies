@@ -29,6 +29,7 @@ export const ETYKIETA_KATEGORII_POI: Record<string, string> = {
   sprzedaz_z_gospodarstwa: "Sprzedaż z gospodarstwa",
   spoldzielnia_rolna: "Spółdzielnia rolnicza",
   inne: "Miejsce",
+  historia_wydarzenie: "Historia wsi (wydarzenie)",
 };
 
 const EMOJI_KATEGORII: Record<string, string> = {
@@ -57,6 +58,7 @@ const EMOJI_KATEGORII: Record<string, string> = {
   sprzedaz_z_gospodarstwa: "🚜",
   spoldzielnia_rolna: "🏭",
   inne: "📍",
+  historia_wydarzenie: "📜",
 };
 
 const KOLOR_OBRAMOWANIA: Record<string, string> = {

@@ -5,7 +5,7 @@ import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
 import { pojedynczaWies } from "@/lib/supabase/wies-z-zapytania";
 import { ProfilRynekFormularz } from "./profil-rynek-formularz";
 
-export const metadata: Metadata = { title: "Profil usługodawcy — rynek" };
+export const metadata: Metadata = { title: "Profil firmy / sklepu — rynek" };
 
 export default async function ProfilRynekMieszkaniecPage() {
   const supabase = utworzKlientaSupabaseSerwer();
@@ -32,7 +32,7 @@ export default async function ProfilRynekMieszkaniecPage() {
       ? await supabase
           .from("marketplace_profiles")
           .select(
-            "village_id, business_name, short_description, details, phone, email, website, categories, service_area, is_verified",
+            "village_id, profile_kind, business_name, short_description, details, phone, email, website, categories, service_area, is_verified",
           )
           .eq("owner_user_id", user.id)
           .in("village_id", villageIds)
@@ -42,6 +42,12 @@ export default async function ProfilRynekMieszkaniecPage() {
   const profil = profilRaw
     ? {
         villageId: profilRaw.village_id,
+        profile_kind:
+          profilRaw.profile_kind === "sklep" ||
+          profilRaw.profile_kind === "gospodarstwo" ||
+          profilRaw.profile_kind === "uslugi"
+            ? profilRaw.profile_kind
+            : "firma",
         business_name: profilRaw.business_name,
         short_description: profilRaw.short_description ?? "",
         details: profilRaw.details ?? "",
@@ -56,8 +62,8 @@ export default async function ProfilRynekMieszkaniecPage() {
 
   return (
     <PanelStronaMieszkaneca
-      tytul="Profil usługodawcy"
-      opis="Stała wizytówka na profilu wsi (obok pojedynczych ogłoszeń). Weryfikację może nadać sołtys."
+      tytul="Twój sklep / firma na rynku"
+      opis="Stała strona firmy z ofertami — mieszkańcy mogą ją obserwować i dostawać powiadomienia o nowych produktach. Weryfikację nadaje sołtys."
       hrefPowrotu="/panel/mieszkaniec/marketplace"
       etykietaPowrotu="← Rynek lokalny"
       wariantNaglowka="rynek"

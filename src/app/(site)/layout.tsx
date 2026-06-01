@@ -6,6 +6,7 @@ import { maCiasteczkaSesjiSupabaseSerwer } from "@/lib/auth/ciasteczka-sesji";
 import { czyStronaBezNaglowkaWitryny } from "@/lib/auth/sciezki-strony-auth";
 import { pobierzSesjeSerwer } from "@/lib/auth/pobierz-uzytkownika-serwer";
 import { sciezkaKreatoraGrafikiDlaUzytkownika } from "@/lib/grafika/sciezka-kreatora";
+import { pobierzKluczeDolnejNawigacjiZMeta, type KluczDolnejNawigacji } from "@/lib/uzytkownik/preferencje-ui";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
 
 const LINKI_PUBLICZNE = [
@@ -47,6 +48,7 @@ export default async function LayoutWitryny({ children }: { children: React.Reac
   ];
   let logoHref = "/";
   let zalogowany = false;
+  let kluczeDolnejNawigacji: KluczDolnejNawigacji[] | undefined;
 
   if (maCiasteczkaSesjiSupabaseSerwer()) {
     try {
@@ -54,6 +56,10 @@ export default async function LayoutWitryny({ children }: { children: React.Reac
       const user = sesja?.user;
       if (user) {
         zalogowany = true;
+        kluczeDolnejNawigacji = pobierzKluczeDolnejNawigacjiZMeta(
+          user.user_metadata as Record<string, unknown>,
+          true,
+        );
         if (!bezNaglowka) {
           const supabase = utworzKlientaSupabaseSerwer();
           const sciezkaKreatora = await sciezkaKreatoraGrafikiDlaUzytkownika(supabase, user.id);
@@ -80,7 +86,7 @@ export default async function LayoutWitryny({ children }: { children: React.Reac
         <div className="pb-8 sm:pb-10 [padding-bottom:calc(2rem+var(--app-bottom-bar-offset,0px)+var(--dolna-naw-offset,0px))] sm:[padding-bottom:calc(2.5rem+var(--dolna-naw-offset,0px))]">
           {children}
         </div>
-        <DolnaNawigacjaWarunkowa zalogowany={zalogowany} />
+        <DolnaNawigacjaWarunkowa zalogowany={zalogowany} kluczeDolnejNawigacji={kluczeDolnejNawigacji} />
       </div>
     </TrybSeniorProvider>
   );

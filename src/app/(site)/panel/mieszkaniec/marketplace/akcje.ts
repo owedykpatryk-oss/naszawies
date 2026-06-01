@@ -51,6 +51,21 @@ const schemaPakietKgw = z.object({
 
 export type WynikMarketplace = { blad: string } | { ok: true; id?: string; dodano?: number };
 
+async function idProfiluRynkuWlasciciela(
+  supabase: ReturnType<typeof utworzKlientaSupabaseSerwer>,
+  villageId: string,
+  userId: string,
+): Promise<string | null> {
+  const { data } = await supabase
+    .from("marketplace_profiles")
+    .select("id")
+    .eq("village_id", villageId)
+    .eq("owner_user_id", userId)
+    .eq("is_active", true)
+    .maybeSingle();
+  return data?.id ?? null;
+}
+
 async function wspolrzedneDlaOgloszenia(
   supabase: ReturnType<typeof utworzKlientaSupabaseSerwer>,
   villageId: string,
@@ -101,6 +116,7 @@ export async function dodajOgloszenieMarketplaceMieszkanca(
   const expires = dataWygasnieciaOgloszeniaRynek();
 
   const gps = await wspolrzedneDlaOgloszenia(supabase, p.data.villageId, p.data.locationText, p.data, p.data);
+  const profileId = await idProfiluRynkuWlasciciela(supabase, p.data.villageId, user.id);
   const polaRozszerzone = {
     ...mapujPolaRozszerzoneDoWiersza(p.data),
     ...mapujPolaDzialkiDoWiersza(p.data),
@@ -113,6 +129,7 @@ export async function dodajOgloszenieMarketplaceMieszkanca(
     .insert({
       village_id: p.data.villageId,
       owner_user_id: user.id,
+      profile_id: profileId,
       listing_type: p.data.listingType,
       title: p.data.title,
       description: p.data.description,
@@ -311,6 +328,17 @@ export async function aktywujPonownieOgloszenieMarketplace(listingId: string): P
 
   if (error) return { blad: "Nie udało się aktywować ogłoszenia." };
 
+  const { data: tytul } = await supabase.from("marketplace_listings").select("title").eq("id", id.data).maybeSingle();
+  const { powiadomObserwujacychPoPublikacjiOgloszenia } = await import(
+    "@/lib/marketplace/powiadom-obserwujacych-po-publikacji"
+  );
+  await powiadomObserwujacychPoPublikacjiOgloszenia(supabase, {
+    listingId: id.data,
+    villageId: row.village_id,
+    title: tytul?.title ?? "Oferta",
+    ownerUserId: user.id,
+  });
+
   revalidatePath("/panel/mieszkaniec/marketplace");
   revalidatePath("/panel/soltys");
   await revalidateRynekDlaWsi(supabase, row.village_id, id.data);
@@ -328,10 +356,12 @@ export async function dodajPakietOgloszenKgw(body: z.infer<typeof schemaPakietKg
   if (!user) return { blad: "Zaloguj się." };
 
   const expires = dataWygasnieciaOgloszeniaRynek();
+  const profileId = await idProfiluRynkuWlasciciela(supabase, p.data.villageId, user.id);
 
   const wstaw = p.data.pozycje.map((poz) => ({
     village_id: p.data.villageId,
     owner_user_id: user.id,
+    profile_id: profileId,
     listing_type: poz.listingType,
     title: poz.title,
     description: `${poz.title} — oferta z szablonu KGW / gospodarstwa. Uzupełnij szczegóły po zatwierdzeniu w edycji ogłoszenia.`,

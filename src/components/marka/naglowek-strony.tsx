@@ -33,7 +33,7 @@ export function NaglowekStrony({
       className={`sticky top-0 z-50 border-b border-green-900/10 bg-[#f5f1e8]/95 shadow-[0_4px_24px_rgba(45,90,45,0.06)] backdrop-blur-md supports-[backdrop-filter]:bg-[#f5f1e8]/90 ${className}`}
     >
       <NaglowekMobilnySync />
-      <div className="page-shell flex min-w-0 items-center justify-between gap-2 px-4 py-2 sm:gap-4 sm:px-6 sm:py-2.5">
+      <div className="page-shell flex min-w-0 items-center justify-between gap-2 py-2 pl-[max(1rem,env(safe-area-inset-left))] pr-[max(1rem,env(safe-area-inset-right))] sm:gap-4 sm:px-6 sm:py-2.5">
         <div className="shrink-0">
           <LogoNaszawies kompakt href={logoHref} />
         </div>

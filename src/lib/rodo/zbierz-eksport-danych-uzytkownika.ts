@@ -36,6 +36,9 @@ export type PakietEksportuRodo = {
   village_blog_posts: unknown[] | null;
   village_history_entries: unknown[] | null;
   marketplace_profiles: unknown[] | null;
+  marketplace_profile_follows: unknown[] | null;
+  user_resident_reminder_prefs: unknown[] | null;
+  resident_reminder_deliveries: unknown[] | null;
   marketplace_listings: unknown[] | null;
   local_news_items: unknown[] | null;
   village_shopping_list_items: unknown[] | null;
@@ -47,6 +50,7 @@ export type PakietEksportuRodo = {
   village_official_terms: unknown[] | null;
   village_civic_guides: unknown[] | null;
   entities_zatwierdzone_przez_uzytkownika: unknown[] | null;
+  user_consents: unknown[] | null;
 };
 
 async function pobierz<T>(
@@ -133,6 +137,9 @@ export async function zbierzPakietEksportuRodo(
     village_blog_posts,
     village_history_entries,
     marketplace_profiles,
+    marketplace_profile_follows,
+    user_resident_reminder_prefs,
+    resident_reminder_deliveries,
     marketplace_listings,
     local_news_items,
     village_shopping_list_items,
@@ -144,6 +151,7 @@ export async function zbierzPakietEksportuRodo(
     village_official_terms,
     village_civic_guides,
     entities_zatwierdzone_przez_uzytkownika,
+    user_consents,
   ] = await Promise.all([
     pobierz(uwagi, "users", admin.from("users").select("*").eq("id", uid)),
     pobierz(uwagi, "user_village_roles", admin.from("user_village_roles").select("*").eq("user_id", uid)),
@@ -168,6 +176,9 @@ export async function zbierzPakietEksportuRodo(
     pobierz(uwagi, "village_blog_posts", admin.from("village_blog_posts").select("*").eq("author_id", uid)),
     pobierz(uwagi, "village_history_entries", admin.from("village_history_entries").select("*").eq("author_id", uid)),
     pobierz(uwagi, "marketplace_profiles", admin.from("marketplace_profiles").select("*").eq("owner_user_id", uid)),
+    pobierz(uwagi, "marketplace_profile_follows", admin.from("marketplace_profile_follows").select("*").eq("user_id", uid)),
+    pobierz(uwagi, "user_resident_reminder_prefs", admin.from("user_resident_reminder_prefs").select("*").eq("user_id", uid)),
+    pobierz(uwagi, "resident_reminder_deliveries", admin.from("resident_reminder_deliveries").select("*").eq("user_id", uid)),
     pobierz(uwagi, "marketplace_listings", admin.from("marketplace_listings").select("*").eq("owner_user_id", uid)),
     pobierz(uwagi, "local_news_items", admin.from("local_news_items").select("*").eq("created_by", uid)),
     pobierz(uwagi, "village_shopping_list_items", admin.from("village_shopping_list_items").select("*").eq("created_by", uid)),
@@ -183,6 +194,7 @@ export async function zbierzPakietEksportuRodo(
     pobierz(uwagi, "village_official_terms", admin.from("village_official_terms").select("*").eq("created_by", uid)),
     pobierz(uwagi, "village_civic_guides", admin.from("village_civic_guides").select("*").eq("updated_by", uid)),
     pobierz(uwagi, "entities", admin.from("entities").select("*").eq("approved_by", uid)),
+    pobierz(uwagi, "user_consents", admin.from("user_consents").select("*").eq("user_id", uid)),
   ]);
 
   meta.uwagi_eksportu = uwagi;
@@ -209,6 +221,9 @@ export async function zbierzPakietEksportuRodo(
     village_blog_posts,
     village_history_entries,
     marketplace_profiles,
+    marketplace_profile_follows,
+    user_resident_reminder_prefs,
+    resident_reminder_deliveries,
     marketplace_listings,
     local_news_items,
     village_shopping_list_items,
@@ -220,5 +235,6 @@ export async function zbierzPakietEksportuRodo(
     village_official_terms,
     village_civic_guides,
     entities_zatwierdzone_przez_uzytkownika,
+    user_consents,
   };
 }

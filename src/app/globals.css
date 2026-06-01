@@ -26,6 +26,12 @@
   }
 }
 
+@media (max-width: 639px) {
+  .panel-tlo {
+    --panel-header-offset: 5.25rem;
+  }
+}
+
 html {
   -webkit-text-size-adjust: 100%;
 }
@@ -36,9 +42,19 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
-body.site-nav-open,
-body.landing-nav-open {
-  overflow: hidden;
+/* Menu mobilne: dropdown bez blokady przewijania strony */
+
+.profil-wies-motyw .wies-zakladki-sticky {
+  position: sticky;
+  top: calc(var(--sticky-nav-offset, 4rem) + 0.25rem);
+  z-index: 25;
+  margin-bottom: 0.5rem;
+  padding-left: max(0px, env(safe-area-inset-left));
+  padding-right: max(0px, env(safe-area-inset-right));
+}
+
+.profil-wies-motyw .wies-zakladki-nav {
+  scroll-margin-top: calc(var(--sticky-nav-offset, 4rem) + 3rem);
 }
 
 .profil-wies-motyw .wies-naglowek-tytul {
@@ -57,6 +73,132 @@ body.landing-nav-open {
     color-mix(in srgb, var(--wies-tlo, #f0fdf4) 85%, white) 0%,
     white 100%
   );
+}
+
+.profil-wies-motyw .wies-okladka-hero::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(
+    to top,
+    color-mix(in srgb, var(--wies-tekst, #14532d) 38%, transparent),
+    transparent 52%
+  );
+}
+
+.profil-wies-motyw .wies-zakladka {
+  border-color: color-mix(in srgb, var(--wies-ramka, #86efac) 45%, #e7e5e4);
+  color: var(--wies-tekst, #14532d);
+  background: color-mix(in srgb, white 92%, var(--wies-tlo, #f0fdf4));
+}
+
+.profil-wies-motyw .wies-zakladka:hover {
+  border-color: color-mix(in srgb, var(--wies-akcent, #166534) 35%, #e7e5e4);
+  background: color-mix(in srgb, var(--wies-tlo, #f0fdf4) 55%, white);
+}
+
+.profil-wies-motyw .wies-zakladka--aktywna {
+  border-color: var(--wies-akcent, #166534);
+  background: var(--wies-akcent, #166534);
+  color: #fff;
+  box-shadow: 0 2px 10px color-mix(in srgb, var(--wies-akcent, #166534) 35%, transparent);
+}
+
+.profil-wies-motyw .wies-zakladki-nav {
+  border-color: color-mix(in srgb, var(--wies-ramka, #86efac) 40%, #e7e5e4);
+  background: color-mix(in srgb, white 88%, var(--wies-tlo, #f0fdf4));
+}
+
+.profil-wies-motyw .wies-skrot-kafelek {
+  border-color: color-mix(in srgb, var(--wies-ramka, #86efac) 38%, #e7e5e4);
+  background: color-mix(in srgb, white 90%, var(--wies-tlo, #f0fdf4));
+  color: var(--wies-tekst, #14532d);
+  box-shadow: 0 1px 0 rgba(255, 255, 255, 0.9) inset;
+}
+
+.profil-wies-motyw .wies-skrot-kafelek:hover {
+  border-color: color-mix(in srgb, var(--wies-akcent, #166534) 40%, #e7e5e4);
+  background: color-mix(in srgb, var(--wies-tlo, #f0fdf4) 70%, white);
+  transform: translateY(-1px);
+}
+
+.profil-wies-motyw .wies-tytul-sekcji-etykieta {
+  color: color-mix(in srgb, var(--wies-akcent, #166534) 88%, #14532d);
+}
+
+.profil-wies-motyw .wies-tytul-sekcji-tytul {
+  color: var(--wies-tekst, #14532d);
+}
+
+.profil-wies-motyw .wies-tytul-sekcji-linia {
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, var(--wies-akcent, #166534) 55%, transparent),
+    transparent
+  );
+}
+
+.profil-wies-motyw .wies-sekcja-obudowa {
+  border-color: color-mix(in srgb, var(--wies-ramka, #86efac) 28%, #e7e5e4);
+  background: linear-gradient(
+    145deg,
+    color-mix(in srgb, var(--wies-tlo, #f0fdf4) 55%, white) 0%,
+    white 42%,
+    color-mix(in srgb, var(--wies-tlo, #f0fdf4) 18%, white) 100%
+  );
+}
+
+.profil-wies-motyw .wies-zakladki-sticky {
+  padding-left: max(0px, env(safe-area-inset-left));
+  padding-right: max(0px, env(safe-area-inset-right));
+}
+
+@media (max-width: 1023px) {
+  .profil-wies-motyw .wies-zakladki-nav {
+    scroll-padding-inline: 0.5rem;
+  }
+}
+
+.profil-wies-motyw .wies-sekcja-szkola {
+  border-color: color-mix(in srgb, #0ea5e9 22%, var(--wies-ramka, #86efac));
+  background: linear-gradient(
+    145deg,
+    color-mix(in srgb, #e0f2fe 65%, var(--wies-tlo, #f0fdf4)) 0%,
+    white 50%,
+    color-mix(in srgb, #f0f9ff 40%, white) 100%
+  );
+}
+
+.profil-wies-motyw .wies-sekcja-historia {
+  border-color: color-mix(in srgb, #d97706 22%, var(--wies-ramka, #86efac));
+  background: linear-gradient(
+    145deg,
+    color-mix(in srgb, #fffbeb 70%, var(--wies-tlo, #f0fdf4)) 0%,
+    white 48%,
+    color-mix(in srgb, #fef3c7 35%, white) 100%
+  );
+}
+
+.profil-wies-motyw .wies-sekcja-sport {
+  border-color: color-mix(in srgb, #059669 22%, var(--wies-ramka, #86efac));
+  background: linear-gradient(
+    145deg,
+    color-mix(in srgb, #ecfdf5 70%, var(--wies-tlo, #f0fdf4)) 0%,
+    white 48%,
+    color-mix(in srgb, #d1fae5 35%, white) 100%
+  );
+}
+
+.historia-linia-czasu::before {
+  content: "";
+  position: absolute;
+  left: 0.6rem;
+  top: 0.5rem;
+  bottom: 0.5rem;
+  width: 2px;
+  background: linear-gradient(to bottom, #fbbf24, #d97706 60%, transparent);
+  border-radius: 2px;
 }
 
 /* Tryb uproszczony (senior) — większa czcionka i wyraźniejsze przyciski */
@@ -320,6 +462,52 @@ html.tryb-senior textarea {
     @apply bg-white/60 text-green-900;
   }
 
+  .profil-wies-strona {
+    padding-bottom: calc(0.5rem + var(--dolna-naw-offset, 0px));
+  }
+
+  .skok-sekcji-fab {
+    @apply fixed z-[48] flex min-h-[44px] items-center gap-1.5 rounded-full border border-green-800/20 bg-green-800 px-3.5 py-2.5 text-sm font-semibold text-white shadow-lg ring-2 ring-white/90 transition active:scale-[0.98];
+    left: max(0.75rem, env(safe-area-inset-left));
+    bottom: calc(0.75rem + var(--dolna-naw-offset, 0px) + env(safe-area-inset-bottom));
+  }
+
+  .skok-sekcji-backdrop {
+    @apply fixed inset-0 z-[47] border-0 bg-green-950/25 backdrop-blur-[1px];
+  }
+
+  .skok-sekcji-sheet {
+    @apply fixed inset-x-0 bottom-0 z-[49] max-h-[min(70vh,24rem)] overflow-y-auto overscroll-contain rounded-t-2xl border border-b-0 border-stone-200/90 bg-[#fcfbf7] px-3 pb-[calc(0.75rem+env(safe-area-inset-bottom))] pt-2 shadow-[0_-12px_40px_rgba(45,90,45,0.14)];
+  }
+
+  .skok-sekcji-sheet__uchwyt {
+    @apply mx-auto mb-2 h-1 w-10 rounded-full bg-stone-300;
+  }
+
+  .skok-sekcji-sheet__tytul {
+    @apply px-1 text-xs font-bold uppercase tracking-wide text-stone-500;
+  }
+
+  .skok-sekcji-sheet__lista {
+    @apply mt-2 space-y-1;
+  }
+
+  .skok-sekcji-sheet__link {
+    @apply flex min-h-[44px] w-full items-center gap-2 rounded-xl px-3 py-2.5 text-left text-sm font-medium text-green-950 transition active:bg-green-50;
+  }
+
+  body.skok-sekcji-otwarte {
+    overflow: hidden;
+  }
+
+  html.tryb-senior .skok-sekcji-fab {
+    bottom: calc(4.5rem + var(--dolna-naw-offset, 0px) + env(safe-area-inset-bottom));
+  }
+
+  html.tryb-senior .kontakt-szybki-pasek {
+    bottom: calc(0.75rem + var(--dolna-naw-offset, 0px) + env(safe-area-inset-bottom));
+  }
+
   .site-naw-pill {
     @apply shrink-0 whitespace-nowrap rounded-lg px-2.5 py-1.5 text-xs font-semibold transition sm:px-3 sm:text-sm;
   }
@@ -493,6 +681,60 @@ html.tryb-senior textarea {
     @apply border-orange-300/70;
   }
 
+  .tablica-szkoly-pasek {
+    @apply rounded-xl border border-sky-200/70 bg-gradient-to-br from-sky-50/90 via-white to-white p-3 shadow-sm sm:p-4;
+  }
+
+  .tablica-szkoly-naglowek {
+    @apply flex flex-wrap items-center gap-2 border-b border-sky-100/90 pb-3;
+  }
+
+  .tablica-ogloszenie-karta {
+    @apply relative overflow-hidden rounded-xl border bg-white p-4 shadow-sm transition-[border-color,box-shadow] duration-200;
+  }
+
+  .tablica-ogloszenie-karta::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 3px;
+    background: linear-gradient(180deg, #38bdf8, #0ea5e9);
+    opacity: 0.85;
+  }
+
+  .tablica-ogloszenie-karta--przypieta {
+    @apply border-amber-300/75 bg-gradient-to-br from-amber-50/80 via-white to-amber-50/30;
+  }
+
+  .tablica-ogloszenie-karta--przypieta::before {
+    background: linear-gradient(180deg, #fbbf24, #f59e0b);
+  }
+
+  .tablica-szkoly-akcje {
+    @apply flex flex-col gap-2 rounded-xl border border-sky-100/90 bg-sky-50/40 p-3 sm:flex-row sm:flex-wrap sm:items-center;
+  }
+
+  .wies-karta-szkoly {
+    @apply relative overflow-hidden rounded-2xl border border-sky-200/70 bg-gradient-to-br from-sky-50/90 via-white to-blue-50/30 p-5 shadow-sm sm:p-6;
+    box-shadow:
+      0 1px 0 rgba(255, 255, 255, 0.92) inset,
+      0 10px 28px rgba(14, 165, 233, 0.08);
+  }
+
+  .wies-karta-szkoly::after {
+    content: "";
+    position: absolute;
+    top: -2rem;
+    right: -1.5rem;
+    width: 9rem;
+    height: 9rem;
+    border-radius: 9999px;
+    background: radial-gradient(circle, rgba(56, 189, 248, 0.14), transparent 68%);
+    pointer-events: none;
+  }
+
   .mapa-pill-warstwa {
     @apply inline-flex items-center gap-1.5 rounded-full border px-2.5 py-1 text-[11px] font-semibold transition-all duration-200;
   }
@@ -541,7 +783,72 @@ html.tryb-senior textarea {
   }
 }
 
+.ujawnij-scroll {
+  opacity: 0;
+  transform: translateY(12px);
+  transition:
+    opacity 0.5s cubic-bezier(0.22, 1, 0.36, 1),
+    transform 0.5s cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+.ujawnij-scroll--widoczny {
+  opacity: 1;
+  transform: translateY(0);
+}
+
+.profil-wies-motyw .powitanie-profilu-wies {
+  animation: wow-wejscie 0.65s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.spolecznosc-puls {
+  display: inline-block;
+  width: 0.45rem;
+  height: 0.45rem;
+  margin-right: 0.35rem;
+  border-radius: 50%;
+  background: #22c55e;
+  box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.5);
+  animation: spolecznosc-puls 2s ease-in-out infinite;
+  vertical-align: middle;
+}
+
+@keyframes spolecznosc-puls {
+  0%,
+  100% {
+    box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.45);
+  }
+  50% {
+    box-shadow: 0 0 0 6px rgba(34, 197, 94, 0);
+  }
+}
+
+@media (max-width: 639px) {
+  .form-control,
+  .form-control--textarea,
+  .forms-premium :is(input:not([type="checkbox"]), select, textarea) {
+    font-size: 1rem;
+    line-height: 1.4;
+  }
+
+  .panel-karta:hover,
+  .karta-akcji:hover,
+  .karta-skrot-modulu:hover {
+    transform: none;
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
+  .ujawnij-scroll {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+
+  .spolecznosc-puls {
+    animation: none;
+    box-shadow: none;
+  }
+
   .wow-wejscie,
   .animate-wow-fade-up {
     animation: none;

@@ -165,8 +165,8 @@ export function KonfiguracjaWiesWizardKlient({ wsie }: { wsie: WiesWizardDoEdycj
         {krok === 0 ? (
           <div className="space-y-3">
             <p className="text-sm text-stone-700">Wybierz punkt startowy — potem możesz wszystko doprecyzować w ustawieniach wyglądu.</p>
-            <div className="grid gap-2 sm:grid-cols-3">
-              {(["standard", "parafia_osp", "turystyczna"] as PresetWygladuWsi[]).map((p) => (
+            <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
+              {(["standard", "parafia_osp", "turystyczna", "szkola"] as PresetWygladuWsi[]).map((p) => (
                 <button
                   key={p}
                   type="button"
@@ -175,7 +175,13 @@ export function KonfiguracjaWiesWizardKlient({ wsie }: { wsie: WiesWizardDoEdycj
                     preset === p ? "border-green-700 ring-2 ring-green-700/30" : "border-stone-200 hover:border-green-300"
                   }`}
                 >
-                  {p === "standard" ? "Standardowa wieś" : p === "parafia_osp" ? "Parafia + OSP" : "Turystyczna"}
+                  {p === "standard"
+                    ? "Standardowa wieś"
+                    : p === "parafia_osp"
+                      ? "Parafia + OSP"
+                      : p === "szkola"
+                        ? "Szkoła / przedszkole"
+                        : "Turystyczna"}
                 </button>
               ))}
             </div>
@@ -231,6 +237,14 @@ export function KonfiguracjaWiesWizardKlient({ wsie }: { wsie: WiesWizardDoEdycj
         ) : null}
 
         {krok === 3 ? (
+          <>
+          <p className="mb-3 text-xs text-stone-600">
+            Włącz „Szkoła i przedszkole”, jeśli chcesz tablicę ogłoszeń i sekcję #sekcja-szkola. Ikony zakładek i pasek nawigacji ustawisz później w{" "}
+            <Link href="/panel/soltys/moja-wies" className="font-medium text-green-800 underline">
+              wyglądzie profilu
+            </Link>
+            .
+          </p>
           <ul className="grid gap-2 sm:grid-cols-2">
             {KLUCZE_SEKCJI_WSI.map((klucz) => (
               <li key={klucz}>
@@ -241,6 +255,7 @@ export function KonfiguracjaWiesWizardKlient({ wsie }: { wsie: WiesWizardDoEdycj
               </li>
             ))}
           </ul>
+          </>
         ) : null}
 
         {krok === 4 ? (
@@ -250,7 +265,7 @@ export function KonfiguracjaWiesWizardKlient({ wsie }: { wsie: WiesWizardDoEdycj
               <Link href={sciezka} className="font-medium text-green-800 underline" target="_blank">
                 {wies.name}
               </Link>{" "}
-              jest gotowa. Możesz osadzić kalendarz świetlicy lub rynek na stronie gminy (iframe):
+              jest gotowa. Możesz osadzić kalendarz, rynek lub tablicę szkoły na stronie gminy (iframe):
             </p>
             <KodyEmbedWsiKlient villageId={wies.id} />
           </div>

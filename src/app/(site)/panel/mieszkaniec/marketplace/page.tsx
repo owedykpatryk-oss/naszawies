@@ -120,7 +120,7 @@ export default async function MarketplaceMieszkaniecPage() {
             </Link>
             .{" "}
             <Link href="/panel/mieszkaniec/profil-rynek" className="font-medium text-green-800 underline">
-              Profil usługodawcy
+              Twój sklep / firma
             </Link>
           </>
         }

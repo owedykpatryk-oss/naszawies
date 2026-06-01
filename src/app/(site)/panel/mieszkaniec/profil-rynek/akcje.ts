@@ -40,6 +40,7 @@ export async function zapiszProfilUslugodawcyMieszkanca(
     {
       village_id: parsed.data.villageId,
       owner_user_id: user.id,
+      profile_kind: parsed.data.profile_kind ?? "firma",
       business_name: parsed.data.business_name,
       short_description: parsed.data.short_description?.trim() || null,
       details: parsed.data.details?.trim() || null,

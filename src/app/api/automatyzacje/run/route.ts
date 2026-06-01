@@ -12,6 +12,7 @@ import { synchronizujAutobusyAutomatycznie } from "@/lib/transport/synchronizuj-
 import { synchronizujTransportAutomatycznie } from "@/lib/transport/synchronizuj-transport-automatycznie";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin-client";
 import { powiadomOWygasajacychOgloszeniachMarketplace } from "@/lib/marketplace/powiadom-wygasajace-ogloszenia";
+import { powiadomMieszkancowOPrzypomnieniachWsi } from "@/lib/przypomnienia/powiadom-mieszkancow";
 
 type AutomationRunRow = {
   action: string;
@@ -359,6 +360,15 @@ async function runAutomation(request: Request) {
       const msg = e instanceof Error ? e.message : String(e);
       console.error("[api/automatyzacje/run] marketplace expiring reminders", msg);
       rows.push({ action: "marketplace_listing_expiring_reminders_failed", affected_rows: 0 });
+    }
+
+    try {
+      const przypomnienia = await powiadomMieszkancowOPrzypomnieniachWsi();
+      rows.push({ action: "resident_reminder_notifications", affected_rows: przypomnienia });
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      console.error("[api/automatyzacje/run] resident reminders", msg);
+      rows.push({ action: "resident_reminder_notifications_failed", affected_rows: 0 });
     }
 
     try {

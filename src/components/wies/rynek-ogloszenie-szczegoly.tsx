@@ -353,7 +353,7 @@ export function RynekOgloszenieSzczegoly({
             <div className="mt-4 rounded-2xl border border-stone-200 bg-white p-4 shadow-sm">
               <p className="text-xs uppercase tracking-wide text-stone-500">Sprzedawca</p>
               <Link
-                href={`${sciezkaWsi}/rynek/uslugi/${profilSprzedawcy.id}`}
+                href={`${sciezkaWsi}/rynek/firmy/${profilSprzedawcy.id}`}
                 className="mt-1 block font-medium text-green-900 hover:underline"
               >
                 {profilSprzedawcy.business_name}

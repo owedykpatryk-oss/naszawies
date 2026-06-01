@@ -438,7 +438,7 @@ export function NaglowekStronyRynku({
             ) : null}
             {liczbaProfili != null && liczbaProfili > 0 ? (
               <div className="rounded-xl border border-white/80 bg-white/70 px-4 py-2.5 shadow-sm backdrop-blur-sm">
-                <dt className="text-[10px] font-bold uppercase tracking-wider text-stone-500">Profile usług</dt>
+                <dt className="text-[10px] font-bold uppercase tracking-wider text-stone-500">Firmy i sklepy</dt>
                 <dd className="mt-0.5 text-xl font-bold tabular-nums text-green-950">{liczbaProfili}</dd>
               </div>
             ) : null}

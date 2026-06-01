@@ -5,6 +5,11 @@ import { FormEvent, useEffect, useMemo, useState, useTransition } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ZakladkiTrybuSpolecznosci } from "@/components/panel/zakladki-trybu-spolecznosci";
 import {
+  NawigacjaSekcjiGrupowana,
+  type GrupaSekcjiNawigacji,
+} from "@/components/panel/nawigacja-sekcji-grupowana";
+import { SkrotyTrybuSpolecznosci } from "@/components/panel/skroty-trybu-spolecznosci";
+import {
   dodajKadencjeFunkcyjnaWsi,
   dodajKontaktUrzedowyWsi,
   dodajMarketplaceOferte,
@@ -35,6 +40,8 @@ import {
 import { ProfilKgwKlient } from "@/components/panel/soltys/profil-kgw-klient";
 import { ProfilOspKlient } from "@/components/panel/soltys/profil-osp-klient";
 import { ProfilMysliwiKlient } from "@/components/panel/soltys/profil-mysliwi-klient";
+import { ProfilSzkolyKlient } from "@/components/panel/soltys/profil-szkoly-klient";
+import { ProfilKlubuSportowegoKlient } from "@/components/panel/soltys/profil-klubu-sportowego-klient";
 import type { OrganizacjaPelna } from "@/lib/wies/profil-organizacji";
 
 export type WiesDoModeracjiSpolecznosci = {
@@ -105,6 +112,14 @@ type SekcjaPracy =
   | "wiadomosci"
   | "automatyzacje";
 
+const GRUPY_SEKCJI_SPOLECZNOSCI: GrupaSekcjiNawigacji[] = [
+  { id: "baza", tytul: "Baza", ids: ["kontakt_urzedowy", "organizacje"] },
+  { id: "plan", tytul: "Plan", ids: ["wydarzenia", "harmonogram", "dotacje"] },
+  { id: "publikacje", tytul: "Publikacje", ids: ["bloger", "blog", "historia", "wiadomosci"] },
+  { id: "gospodarka", tytul: "Rynek", ids: ["profil_uslug", "marketplace"] },
+  { id: "system", tytul: "Narzędzia", ids: ["automatyzacje"] },
+];
+
 export function SoltysSpolecznoscKlient({
   wsie,
   grupyOrganizacji = [],
@@ -128,7 +143,16 @@ export function SoltysSpolecznoscKlient({
   const searchParams = useSearchParams();
   const trybZUrl = useMemo((): TrybOrganizacji => {
     const t = searchParams?.get("tryb");
-    if (t === "kgw" || t === "osp" || t === "parafia" || t === "mysliwi" || t === "ogolny") return t;
+    if (
+      t === "kgw" ||
+      t === "osp" ||
+      t === "parafia" ||
+      t === "mysliwi" ||
+      t === "szkola" ||
+      t === "sport" ||
+      t === "ogolny"
+    )
+      return t;
     return domyslnyTryb;
   }, [searchParams, domyslnyTryb]);
   const [villageId, setVillageId] = useState(wsie[0]?.id ?? "");
@@ -238,7 +262,11 @@ export function SoltysSpolecznoscKlient({
           ? "Zebrania i przewodnicząca trafiają na sekcję #kgw — mieszkańcy łatwo znajdą kontakt."
           : tryb === "mysliwi"
             ? "Profil koła i ostrzeżenia polowań — sekcja #mysliwi i baner bezpieczeństwa na profilu wsi."
-            : "Parafię, KGW i myśliwych najlepiej uzupełnić w dedykowanych trybach pracy.",
+            : tryb === "szkola"
+              ? "Profil placówki i tablica ogłoszeń — sekcja #sekcja-szkola na profilu wsi."
+              : tryb === "sport"
+                ? "Klub, plan treningów i mecze — zakładka #sekcja-sport oraz strona /sport na profilu wsi."
+                : "Parafię, KGW, szkołę i myśliwych najlepiej uzupełnić w dedykowanych trybach pracy.",
     ],
     wydarzenia: [
       "W tytule użyj formatu: co + kiedy (np. Trening OSP — wtorek 18:00).",
@@ -342,7 +370,11 @@ export function SoltysSpolecznoscKlient({
           body: String(fd.get("body") ?? ""),
           event_date: String(fd.get("event_date") ?? "") || null,
           era_label: String(fd.get("era_label") ?? "") || null,
+          location_label: String(fd.get("location_label") ?? "") || null,
+          latitude: String(fd.get("latitude") ?? ""),
+          longitude: String(fd.get("longitude") ?? ""),
           source_links_csv: String(fd.get("source_links_csv") ?? ""),
+          media_urls_csv: "",
         }),
       "Dodano wpis historii i opublikowano."
     );
@@ -412,6 +444,7 @@ export function SoltysSpolecznoscKlient({
             | "taniec"
             | "muzyka"
             | "kolo"
+            | "szkola"
             | "inne",
           name: String(fd.get("name") ?? ""),
           short_description: String(fd.get("short_description") ?? "") || null,
@@ -618,93 +651,27 @@ export function SoltysSpolecznoscKlient({
         ))}
       </section>
 
-      <nav className="sekcja-form-nav flex items-center gap-2" aria-label="Taby sekcji formularzy">
-        {sekcjePracy.map((sekcja) => (
-          <button
-            key={sekcja.id}
-            type="button"
-            onClick={() => setSekcjaAktywna(sekcja.id)}
-            className={`sekcja-form-nav-link flex items-center gap-1.5 ${
-              sekcjaAktywna === sekcja.id
-                ? "border-green-700 bg-green-50 text-green-950"
-                : ""
-            }`}
-          >
-            <span>{sekcja.label}</span>
-            {sekcja.badge != null ? (
-              <span className="rounded-full bg-stone-200 px-1.5 py-0.5 text-[10px] text-stone-700">
-                {sekcja.badge}
-              </span>
-            ) : null}
-          </button>
-        ))}
-      </nav>
-      <div className="rounded-lg border border-stone-200 bg-white px-3 py-2 text-xs text-stone-700">
-        <strong className="text-stone-900">Aktywna sekcja:</strong> {sekcjePracy.find((s) => s.id === sekcjaAktywna)?.label} —{" "}
-        {sekcjaHint[sekcjaAktywna]}
-      </div>
-      <aside className="rounded-xl border border-sky-200/80 bg-sky-50/50 p-3 text-xs text-stone-700">
-        <p className="font-semibold text-sky-900">Jak zrobić to najlepiej</p>
-        <ul className="mt-1 list-disc space-y-1 pl-4">
-          {sekcjaTipy[sekcjaAktywna].map((tip) => (
-            <li key={tip}>{tip}</li>
-          ))}
-        </ul>
-      </aside>
-      <div className="flex flex-wrap gap-2 text-xs">
-        {tryb === "parafia" ? (
-          <>
-            <button type="button" onClick={() => setSekcjaAktywna("organizacje")} className="sekcja-form-nav-link">
-              Start parafii: profil
-            </button>
-            <button type="button" onClick={() => setSekcjaAktywna("wydarzenia")} className="sekcja-form-nav-link">
-              Wydarzenia liturgiczne
-            </button>
-            <button type="button" onClick={() => setSekcjaAktywna("harmonogram")} className="sekcja-form-nav-link">
-              Grupy tygodniowe
-            </button>
-          </>
-        ) : null}
-        {tryb === "mysliwi" ? (
-          <>
-            <button type="button" onClick={() => setSekcjaAktywna("organizacje")} className="sekcja-form-nav-link">
-              Start: profil koła
-            </button>
-            <Link href="/panel/soltys/lowiectwo" className="sekcja-form-nav-link">
-              Ostrzeżenia polowań
-            </Link>
-            <button type="button" onClick={() => setSekcjaAktywna("wydarzenia")} className="sekcja-form-nav-link">
-              Hubertus / zebrania
-            </button>
-          </>
-        ) : null}
-        {tryb === "kgw" ? (
-          <>
-            <button type="button" onClick={() => setSekcjaAktywna("organizacje")} className="sekcja-form-nav-link">
-              Start KGW: Organizacje
-            </button>
-            <button type="button" onClick={() => setSekcjaAktywna("harmonogram")} className="sekcja-form-nav-link">
-              Plan spotkań
-            </button>
-            <button type="button" onClick={() => setSekcjaAktywna("dotacje")} className="sekcja-form-nav-link">
-              Dotacje KGW
-            </button>
-          </>
-        ) : null}
-        {tryb === "osp" ? (
-          <>
-            <button type="button" onClick={() => setSekcjaAktywna("organizacje")} className="sekcja-form-nav-link">
-              Start OSP: Organizacje
-            </button>
-            <button type="button" onClick={() => setSekcjaAktywna("wydarzenia")} className="sekcja-form-nav-link">
-              Ćwiczenia / mecze
-            </button>
-            <button type="button" onClick={() => setSekcjaAktywna("wiadomosci")} className="sekcja-form-nav-link">
-              Komunikat bezpieczeństwa
-            </button>
-          </>
-        ) : null}
-      </div>
+      <NawigacjaSekcjiGrupowana
+        grupy={GRUPY_SEKCJI_SPOLECZNOSCI}
+        sekcje={sekcjePracy}
+        aktywna={sekcjaAktywna}
+        onZmiana={(id) => setSekcjaAktywna(id as SekcjaPracy)}
+        ariaLabel="Sekcje modułu społeczności"
+      />
+      <SkrotyTrybuSpolecznosci tryb={tryb} onSekcja={(id) => setSekcjaAktywna(id as SekcjaPracy)} />
+      <details className="rounded-xl border border-stone-200/90 bg-white/80 text-xs text-stone-700 open:shadow-sm">
+        <summary className="cursor-pointer px-3 py-2.5 font-medium text-stone-800">
+          Podpowiedź: {sekcjePracy.find((s) => s.id === sekcjaAktywna)?.label}
+        </summary>
+        <div className="border-t border-stone-100 px-3 py-2">
+          <p>{sekcjaHint[sekcjaAktywna]}</p>
+          <ul className="mt-2 list-disc space-y-1 pl-4 text-stone-600">
+            {sekcjaTipy[sekcjaAktywna].map((tip) => (
+              <li key={tip}>{tip}</li>
+            ))}
+          </ul>
+        </div>
+      </details>
 
       {sekcjaAktywna === "kontakt_urzedowy" ? (
       <section className="scroll-mt-[10.5rem] rounded-2xl border border-sky-200/80 bg-gradient-to-br from-sky-50/40 to-white p-5 shadow-sm space-y-6">
@@ -830,6 +797,15 @@ export function SoltysSpolecznoscKlient({
         />
       ) : null}
 
+      {sekcjaAktywna === "organizacje" && tryb === "szkola" ? (
+        <ProfilSzkolyKlient
+          villageId={villageId}
+          villageName={villageName}
+          organizacje={organizacjePelne ?? []}
+          sciezkaProfilu={sciezkaProfilu}
+        />
+      ) : null}
+
       {sekcjaAktywna === "organizacje" && tryb === "mysliwi" ? (
         <ProfilMysliwiKlient
           villageId={villageId}
@@ -839,7 +815,22 @@ export function SoltysSpolecznoscKlient({
         />
       ) : null}
 
-      {sekcjaAktywna === "organizacje" && tryb !== "parafia" && tryb !== "kgw" && tryb !== "osp" && tryb !== "mysliwi" ? (
+      {sekcjaAktywna === "organizacje" && tryb === "sport" ? (
+        <ProfilKlubuSportowegoKlient
+          villageId={villageId}
+          villageName={villageName}
+          organizacje={organizacjePelne}
+          sciezkaProfilu={sciezkaProfilu}
+        />
+      ) : null}
+
+      {sekcjaAktywna === "organizacje" &&
+      tryb !== "parafia" &&
+      tryb !== "kgw" &&
+      tryb !== "osp" &&
+      tryb !== "mysliwi" &&
+      tryb !== "szkola" &&
+      tryb !== "sport" ? (
       <form
         id="sekcja-organizacje"
         onSubmit={onDodajOrganizacje}
@@ -861,6 +852,7 @@ export function SoltysSpolecznoscKlient({
             <option value="kgw">Koło Gospodyń Wiejskich</option>
             <option value="osp">OSP / straż pożarna</option>
             <option value="parafia">Parafia / ksiądz</option>
+            <option value="szkola">Szkoła / przedszkole</option>
             <option value="rada_solecka">Rada sołecka</option>
             <option value="seniorzy">Klub seniora</option>
             <option value="mlodziez">Młodzież</option>
@@ -1142,6 +1134,13 @@ export function SoltysSpolecznoscKlient({
       {sekcjaAktywna === "historia" ? (
       <form onSubmit={onDodajHistorie} className="rounded-2xl border border-stone-200 bg-white p-5 shadow-sm">
         <h2 className="font-serif text-xl text-green-950">Nowy wpis historii wsi</h2>
+        <p className="mt-2 text-sm text-stone-600">
+          Zdjęcia, pinezki na mapie i edycja wpisów — w{" "}
+          <Link href="/panel/soltys/spolecznosc/historia" className="font-medium text-green-800 underline">
+            kronice wsi (zakładka Historia na profilu)
+          </Link>
+          .
+        </p>
         <div className="mt-4 grid gap-3">
           <input name="title" placeholder="Tytuł wpisu historycznego" required className="rounded border border-stone-300 px-3 py-2 text-sm" />
           <div className="grid gap-3 md:grid-cols-2">

@@ -156,13 +156,13 @@ export default async function MieszkaniecPage() {
 
   return (
     <main>
-      <div className="baner-wskazowka baner-wskazowka--zielony mb-6">
-        <strong className="text-emerald-900">Nowość:</strong> Twoje wsie, gminy i ulubione są w{" "}
-        <Link href="/panel/moje" className="font-semibold text-green-800 underline">
-          Moje
+      <p className="mb-6 text-sm text-stone-600">
+        Obserwowane miejscowości i gminy:{" "}
+        <Link href="/panel/moje" className="font-medium text-green-800 underline">
+          Obserwowane
         </Link>
-        . Tutaj zostają moduły do działania (ogłoszenia, świetlica).
-      </div>
+        . Poniżej skróty do działań we wsi — pełne menu jest u góry strony.
+      </p>
 
       <NaglowekModuluPanelu
         etykieta="Panel mieszkańca"
@@ -201,6 +201,15 @@ export default async function MieszkaniecPage() {
             <span className="mt-1 block text-xs text-stone-600">Rezerwacje sali, układ miejsc i prośby o asortyment.</span>
           </Link>
           <Link
+            href="/panel/mieszkaniec/przypomnienia"
+            className="karta-skrot-modulu group border-teal-200/80 bg-teal-50/30"
+          >
+            <span className="font-semibold text-teal-950">Przypomnienia</span>
+            <span className="mt-1 block text-xs text-stone-600">
+              Śmieci, podatki, działka — automatyczne powiadomienia z wyprzedzeniem.
+            </span>
+          </Link>
+          <Link
             href="/panel/mieszkaniec/zgloszenia"
             className="karta-skrot-modulu group"
           >
@@ -223,6 +232,26 @@ export default async function MieszkaniecPage() {
               Wątki dyskusji, komentarze i blog mieszkańca z moderacją.
             </span>
           </Link>
+          <Link
+            href="/panel/mieszkaniec/historia"
+            className="karta-skrot-modulu group border-amber-200/80 bg-amber-50/30"
+          >
+            <span className="font-semibold text-amber-950">Historia i wspomnienia</span>
+            <span className="mt-1 block text-xs text-stone-600">
+              Czytaj kronikę na profilu wsi lub zgłoś wspomnienie do akceptacji sołtysa.
+            </span>
+          </Link>
+          {pierwszaAktywnaSciezkaWsi ? (
+            <Link
+              href={`${pierwszaAktywnaSciezkaWsi}#sekcja-blog`}
+              className="karta-skrot-modulu group"
+            >
+              <span className="font-semibold text-green-950">Blog wsi</span>
+              <span className="mt-1 block text-xs text-stone-600">
+                Wpisy blogowe opublikowane przez sołectwo na profilu wsi.
+              </span>
+            </Link>
+          ) : null}
           <Link
             href="/panel/mieszkaniec/marketplace"
             className="karta-skrot-modulu group"

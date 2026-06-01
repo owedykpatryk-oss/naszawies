@@ -11,7 +11,10 @@ export const KLUCZE_SEKCJI_WSI = [
   "aktualnosci",
   "pomoc",
   "blog",
+  "historia",
+  "sport",
   "organizacje",
+  "szkola",
   "dotacje",
   "transport",
   "rolnictwo",
@@ -29,8 +32,11 @@ export const ETYKIETY_SEKCJI_WSI: Record<KluczSekcjiWsi, string> = {
   mapa: "Mapa wsi",
   aktualnosci: "Aktualności",
   pomoc: "Pomoc sąsiedzka",
-  blog: "Blog i historia",
+  blog: "Blog mieszkańców",
+  historia: "Historia wsi",
+  sport: "Klub sportowy",
   organizacje: "Organizacje i wydarzenia",
+  szkola: "Szkoła i przedszkole",
   dotacje: "Dotacje",
   transport: "Transport",
   rolnictwo: "Rolnictwo",
@@ -62,7 +68,38 @@ export type BlokTresciWsiPubliczny = {
   obraz_url: string | null;
 };
 
-export type PresetWygladuWsi = "standard" | "parafia_osp" | "turystyczna";
+export type PresetWygladuWsi = "standard" | "parafia_osp" | "turystyczna" | "szkola";
+
+/** Konfiguracja paska nawigacji (zakładki + elementy hero). */
+export type PasekNawigacjiWsi = {
+  sticky_zakladki: boolean;
+  pokaz_skroty: boolean;
+  pokaz_hero_cta: boolean;
+  pokaz_breadcrumb: boolean;
+  /** 0 = wszystkie zakładki widoczne; inaczej reszta w menu „Więcej”. */
+  max_zakladek_widocznych: number;
+};
+
+export type ZakladkaSekcjiWsiConfig = {
+  emoji: string | null;
+  /** Własna etykieta zakładki (max 24 zn.). */
+  label: string | null;
+};
+
+const schemaZakladkaSekcji = z.object({
+  emoji: z.string().trim().max(8).nullable().optional(),
+  label: z.string().trim().max(24).nullable().optional(),
+});
+
+const schemaPasekNawigacji = z
+  .object({
+    sticky_zakladki: z.boolean().optional(),
+    pokaz_skroty: z.boolean().optional(),
+    pokaz_hero_cta: z.boolean().optional(),
+    pokaz_breadcrumb: z.boolean().optional(),
+    max_zakladek_widocznych: z.number().int().min(0).max(20).optional(),
+  })
+  .optional();
 
 const schemaHeroCta = z.object({
   label: z.string().trim().min(1).max(48),
@@ -104,6 +141,8 @@ export const schemaUstawieniaWsiJson = z.object({
   domyslny_tryb_seniora: z.boolean().optional(),
   /** Po pierwszej konfiguracji przez kreator — ukrywa wizard. */
   konfiguracja_ukonczona: z.boolean().optional(),
+  zakladki: z.record(z.enum(KLUCZE_SEKCJI_WSI), schemaZakladkaSekcji).optional(),
+  pasek_nawigacji: schemaPasekNawigacji,
 });
 
 export type UstawieniaWsiJson = z.infer<typeof schemaUstawieniaWsiJson>;
@@ -121,7 +160,47 @@ export type UstawieniaWsiPubliczne = {
   bloki: BlokTresciWsiPubliczny[];
   domyslny_tryb_seniora: boolean;
   konfiguracja_ukonczona: boolean;
+  zakladki: Partial<Record<KluczSekcjiWsi, ZakladkaSekcjiWsiConfig>>;
+  pasek_nawigacji: PasekNawigacjiWsi;
 };
+
+export function domyslnyPasekNawigacjiWsi(): PasekNawigacjiWsi {
+  return {
+    sticky_zakladki: true,
+    pokaz_skroty: true,
+    pokaz_hero_cta: true,
+    pokaz_breadcrumb: true,
+    max_zakladek_widocznych: 0,
+  };
+}
+
+function normalizujPasekNawigacji(raw: UstawieniaWsiJson["pasek_nawigacji"]): PasekNawigacjiWsi {
+  const d = domyslnyPasekNawigacjiWsi();
+  if (!raw) return d;
+  return {
+    sticky_zakladki: raw.sticky_zakladki ?? d.sticky_zakladki,
+    pokaz_skroty: raw.pokaz_skroty ?? d.pokaz_skroty,
+    pokaz_hero_cta: raw.pokaz_hero_cta ?? d.pokaz_hero_cta,
+    pokaz_breadcrumb: raw.pokaz_breadcrumb ?? d.pokaz_breadcrumb,
+    max_zakladek_widocznych: raw.max_zakladek_widocznych ?? d.max_zakladek_widocznych,
+  };
+}
+
+function normalizujZakladkiSekcji(
+  raw: UstawieniaWsiJson["zakladki"],
+): Partial<Record<KluczSekcjiWsi, ZakladkaSekcjiWsiConfig>> {
+  const out: Partial<Record<KluczSekcjiWsi, ZakladkaSekcjiWsiConfig>> = {};
+  if (!raw) return out;
+  for (const k of KLUCZE_SEKCJI_WSI) {
+    const z = raw[k];
+    if (!z) continue;
+    out[k] = {
+      emoji: z.emoji?.trim() || null,
+      label: z.label?.trim() || null,
+    };
+  }
+  return out;
+}
 
 export function domyslneModulyWsi(): Record<KluczSekcjiWsi, boolean> {
   return Object.fromEntries(KLUCZE_SEKCJI_WSI.map((k) => [k, true])) as Record<KluczSekcjiWsi, boolean>;
@@ -176,11 +255,17 @@ function normalizujHeroCta(raw: UstawieniaWsiJson["hero"]): HeroCtaWsi[] {
 export function domyslneSkrotyProfilu(
   sciezka: string,
   moduly: Record<KluczSekcjiWsi, boolean>,
-  ctx: { maRynek: boolean; maPlanCmentarza: boolean },
+  ctx: { maRynek: boolean; maPlanCmentarza: boolean; maSzkola?: boolean; maSport?: boolean },
 ): SkrotWsiPubliczny[] {
   const out: SkrotWsiPubliczny[] = [];
   if (moduly.rynek !== false && ctx.maRynek) {
     out.push({ label: "Rynek", href: "#sekcja-rynek-lokalny", emoji: "🛒", opis: null });
+  }
+  if (moduly.szkola !== false && ctx.maSzkola) {
+    out.push({ label: "Szkoła", href: "#sekcja-szkola", emoji: "🏫", opis: "Tablica" });
+  }
+  if (moduly.sport !== false && ctx.maSport) {
+    out.push({ label: "Sport", href: "#sekcja-sport", emoji: "⚽", opis: "Terminarz" });
   }
   if (moduly.mapa !== false) {
     out.push({ label: "Mapa", href: "#sekcja-mapa", emoji: "🗺️", opis: null });
@@ -199,7 +284,7 @@ export function zbudujSkrotyPubliczne(
   skroty: SkrotWsiPubliczny[],
   sciezka: string,
   moduly: Record<KluczSekcjiWsi, boolean>,
-  ctx: { maRynek: boolean; maPlanCmentarza: boolean },
+  ctx: { maRynek: boolean; maPlanCmentarza: boolean; maSzkola?: boolean; maSport?: boolean },
 ): SkrotWsiPubliczny[] {
   if (skroty.length > 0) return skroty.slice(0, 6);
   return domyslneSkrotyProfilu(sciezka, moduly, ctx);
@@ -232,6 +317,8 @@ export function zbudujUstawieniaWsiPubliczne(wiersz: {
     bloki: normalizujBloki(parsed.bloki),
     domyslny_tryb_seniora: parsed.domyslny_tryb_seniora === true,
     konfiguracja_ukonczona: parsed.konfiguracja_ukonczona === true,
+    zakladki: normalizujZakladkiSekcji(parsed.zakladki),
+    pasek_nawigacji: normalizujPasekNawigacji(parsed.pasek_nawigacji),
   };
 }
 
@@ -259,6 +346,18 @@ export function presetWygladuWsi(preset: PresetWygladuWsi): {
   theme_id: string;
   skroty: SkrotWsiPubliczny[];
 } {
+  if (preset === "szkola") {
+    return {
+      theme_id: "ddk-gops-niebieski",
+      moduly: { szkola: true, rolnictwo: false, dotacje: false },
+      skroty: [
+        { label: "Tablica", href: "#sekcja-szkola", emoji: "📋", opis: "Ogłoszenia" },
+        { label: "Szkoła", href: "#sekcja-szkola", emoji: "🏫", opis: "Kontakt" },
+        { label: "Mapa", href: "#sekcja-mapa", emoji: "🗺️", opis: null },
+        { label: "Dołącz", href: "/rejestracja", emoji: "👋", opis: "Rodzice" },
+      ],
+    };
+  }
   if (preset === "parafia_osp") {
     return {
       theme_id: "parafia-granat",
@@ -266,8 +365,8 @@ export function presetWygladuWsi(preset: PresetWygladuWsi): {
       skroty: [
         { label: "Parafia", href: "#sekcja-organizacje", emoji: "⛪", opis: null },
         { label: "OSP", href: "#sekcja-organizacje", emoji: "🚒", opis: null },
+        { label: "Szkoła", href: "#sekcja-szkola", emoji: "🏫", opis: "Tablica" },
         { label: "Świetlica", href: "#swietlice-wsi", emoji: "🏛️", opis: null },
-        { label: "Ogłoszenia", href: "#sekcja-aktualnosci-laczone", emoji: "📢", opis: null },
       ],
     };
   }

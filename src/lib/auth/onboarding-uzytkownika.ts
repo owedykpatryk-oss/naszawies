@@ -7,6 +7,9 @@ export type IntencjaOnboardingu = "mieszkaniec" | "soltys" | "przegladam";
 
 export function sciezkaPomijaOnboarding(pathname: string): boolean {
   if (pathname === "/panel/onboarding" || pathname.startsWith("/panel/onboarding/")) return true;
+  if (pathname === "/panel/akceptacja-regulaminu" || pathname.startsWith("/panel/akceptacja-regulaminu/")) {
+    return true;
+  }
   if (pathname === "/wyloguj") return true;
   return false;
 }

@@ -8,7 +8,30 @@ import type { WiesPubliczna } from "@/lib/wies/znajdz-wies-po-sciezce";
 import { sciezkaProfiluWsi, sciezkaGminy, sciezkaPowiatu, sciezkaWojewodztwa } from "@/lib/wies/sciezka-publiczna";
 import { ListaZakupowWsiKlient, type PozycjaListyZakupow } from "@/components/wies/lista-zakupow-wsi-klient";
 import { etykietaRodzajuWydarzenia, etykietaTypuGrupy, czyWydarzenieKgw, czyWydarzenieLowieckie, czyWydarzenieOsp, czyWydarzenieParafialne } from "@/lib/wies/teksty-organizacji";
-import { parsujProfilParafii, parsujProfilKgw, parsujProfilLowiecki, parsujProfilOsp, czyOrganizacjaOsp } from "@/lib/wies/profil-organizacji";
+import {
+  parsujProfilParafii,
+  parsujProfilKgw,
+  parsujProfilLowiecki,
+  parsujProfilOsp,
+  parsujProfilSzkoly,
+  czyOrganizacjaOsp,
+  czyOrganizacjaSzkola,
+  czyOrganizacjaSport,
+} from "@/lib/wies/profil-organizacji";
+import {
+  czySlotHarmonogramuSportowego,
+  czyWydarzenieSportowe,
+  nazwyKlubowSportowych,
+} from "@/lib/wies/sport";
+import { SekcjaSzkolaPubliczna } from "@/components/wies/sekcja-szkola-publiczna";
+import { SekcjaHistoriaPubliczna } from "@/components/wies/sekcja-historia-publiczna";
+import { SekcjaHistoriaPusta } from "@/components/wies/sekcja-historia-pusta";
+import { SekcjaSportPubliczna } from "@/components/wies/sekcja-sport-publiczna";
+import { SekcjaSportPusta } from "@/components/wies/sekcja-sport-pusta";
+import type { WpisHistoriiPubliczny } from "@/lib/historia/typy-historii";
+import { BanerPodgladuProfiluWies } from "@/components/wies/baner-podgladu-profilu-wies";
+import type { DaneSzkolyPubliczne } from "@/components/wies/karta-szkoly-publiczna";
+import type { OgloszenieSzkolyPubliczne } from "@/lib/szkola/teksty-szkoly";
 import { KartaParafiiPubliczna } from "@/components/wies/karta-parafii-publiczna";
 import { KartaKgwPubliczna } from "@/components/wies/karta-kgw-publiczna";
 import { KartaOspPubliczna } from "@/components/wies/karta-osp-publiczna";
@@ -47,6 +70,11 @@ import { SwietliceWsiLazy } from "@/components/wies/swietlice-wsi-lazy";
 import { WiesSkrotyProfilu } from "@/components/wies/wies-skroty-profilu";
 import { WiesBlokiTresci } from "@/components/wies/wies-bloki-tresci";
 import { TrybSeniorDomyslnyWsiKlient } from "@/components/wies/tryb-senior-domyslny-wsi-klient";
+import { PowitanieProfiluWies } from "@/components/wies/powitanie-profilu-wies";
+import { PasekPostepuStrony } from "@/components/ui/pasek-postepu-strony";
+import { LicznikAnimowany } from "@/components/ui/licznik-animowany";
+import { InicjalizujUjawnijScrollKlient } from "@/components/ui/inicjalizuj-ujawnij-scroll-klient";
+import { SkokDoSekcjiMobilny } from "@/components/wies/skok-do-sekcji-mobilny";
 import {
   czyModulWsiWlaczony,
   styleMotywuProfiluWsi,
@@ -148,7 +176,12 @@ export function WiesProfilPubliczny({
   mapaPoi = [],
   maPlanCmentarza = false,
   liczbaMieszkancowAktywnych = 0,
+  ogloszeniaSzkoly = [],
   ustawieniaWsi: ustawieniaWsiProp,
+  trybPodgladu = false,
+  przewinDoSzkoly = false,
+  przewinDoHistorii = false,
+  przewinDoSportu = false,
 }: {
   wies: WiesPubliczna;
   posty: WpisPostu[];
@@ -169,13 +202,7 @@ export function WiesProfilPubliczny({
     published_at: string | null;
     created_at: string;
   }[];
-  historia?: {
-    id: string;
-    title: string;
-    short_description: string | null;
-    event_date: string | null;
-    created_at: string;
-  }[];
+  historia?: WpisHistoriiPubliczny[];
   rynek?: RynekOfertaPubliczna[];
   wiadomosci?: {
     id: string;
@@ -194,6 +221,7 @@ export function WiesProfilPubliczny({
     categories: string[] | null;
     phone: string | null;
     is_verified: boolean;
+    profile_kind?: string | null;
   }[];
   organizacje?: {
     id: string;
@@ -274,6 +302,11 @@ export function WiesProfilPubliczny({
   maPlanCmentarza?: boolean;
   /** Aktywni mieszkańcy zatwierdzeni w serwisie (social proof). */
   liczbaMieszkancowAktywnych?: number;
+  ogloszeniaSzkoly?: OgloszenieSzkolyPubliczne[];
+  trybPodgladu?: boolean;
+  przewinDoSzkoly?: boolean;
+  przewinDoHistorii?: boolean;
+  przewinDoSportu?: boolean;
   ustawieniaWsi?: UstawieniaWsiPubliczne;
 }) {
   const ustawieniaWsi = ustawieniaWsiProp ?? zbudujUstawieniaWsiPubliczne(null);
@@ -312,12 +345,34 @@ export function WiesProfilPubliczny({
   const kolaKgw = organizacje.filter((o) => o.group_type === "kgw");
   const kolaLowieckie = organizacje.filter((o) => o.group_type === "lowiectwo");
   const jednostkiOsp = organizacje.filter((o) => czyOrganizacjaOsp(o.group_type, o.name));
+  const szkoly: DaneSzkolyPubliczne[] = organizacje
+    .filter((o) => czyOrganizacjaSzkola(o.group_type, o.name))
+    .map((o) => ({
+      id: o.id,
+      name: o.name,
+      short_description: o.short_description,
+      meeting_place: o.meeting_place,
+      schedule_text: o.schedule_text,
+      contact_phone: o.contact_phone,
+      contact_email: o.contact_email ?? null,
+      profil: parsujProfilSzkoly(o.profile_data),
+    }));
+  const klubySportowe = organizacje.filter((o) => czyOrganizacjaSport(o.group_type, o.name));
+  const nazwyKlubow = nazwyKlubowSportowych(klubySportowe);
   const organizacjePozostale = organizacje.filter(
     (o) =>
       o.group_type !== "parafia" &&
       o.group_type !== "kgw" &&
       o.group_type !== "lowiectwo" &&
-      !czyOrganizacjaOsp(o.group_type, o.name),
+      !czyOrganizacjaOsp(o.group_type, o.name) &&
+      !czyOrganizacjaSzkola(o.group_type, o.name) &&
+      !czyOrganizacjaSport(o.group_type, o.name),
+  );
+  const wydarzeniaBezSportu = wydarzenia.filter(
+    (ev) => !czyWydarzenieSportowe(ev.event_kind, ev.nazwa_grupy, nazwyKlubow),
+  );
+  const harmonogramBezSportu = harmonogramTygodnia.filter(
+    (s) => !czySlotHarmonogramuSportowego(s.nazwa_grupy, nazwyKlubow),
   );
   const prefixOgloszenia = `${sciezka}/ogloszenie`;
   const pilneAlerty = filtrujPilneAlerty(posty);
@@ -346,41 +401,69 @@ export function WiesProfilPubliczny({
     ].some((x) => x && x.trim().length > 0);
 
   const maRynek = profileUslug.length > 0 || rynek.length > 0;
-  const maBlogLubHistorie = blog.length > 0 || historia.length > 0;
+  const maBlog = blog.length > 0;
+  const maHistoria = historia.length > 0;
+  const maModulHistoria = modul("historia");
+  const maSport =
+    klubySportowe.length > 0 ||
+    wydarzenia.some((ev) => czyWydarzenieSportowe(ev.event_kind, ev.nazwa_grupy, nazwyKlubow)) ||
+    harmonogramTygodnia.some((s) => czySlotHarmonogramuSportowego(s.nazwa_grupy, nazwyKlubow));
+  const maModulSport = modul("sport");
   const maOrganizacje =
     parafie.length > 0 ||
     kolaKgw.length > 0 ||
     jednostkiOsp.length > 0 ||
     kolaLowieckie.length > 0 ||
     organizacjePozostale.length > 0 ||
-    wydarzenia.length > 0;
+    wydarzeniaBezSportu.length > 0;
   const maPomocSasiedzka = pomocSasiedzka.length > 0 || zalogowany;
 
   const zakladkiProfilu: ZakladkaProfiluWsi[] = zbudujZakladkiProfiluWsi(
     {
       maRynek,
       maPomocSasiedzka,
-      maBlogLubHistorie,
+      maBlog,
+      maHistoria,
+      maModulHistoria,
+      maSport,
+      maModulSport,
       maOrganizacje,
       maDotacje: dotacjeSkrot.length > 0,
       maPlanCmentarza,
+      maFotokronika: fotokronikaPubliczna.length > 0,
+      maGrafika: plakatyPubliczne.length > 0,
+      maSzkola: szkoly.length > 0 || ogloszeniaSzkoly.length > 0,
       sciezkaCmentarz: `${sciezka}/cmentarz`,
     },
     ustawieniaWsi,
   );
 
+  const linkSzkolaMapa =
+    mapaPoi.find((p) => p.category === "szkola" || p.category === "przedszkole") != null
+      ? `${sciezka}#sekcja-szkola`
+      : null;
+  const linkBoiskoNaMapie = mapaPoi.some((p) => p.category === "boisko") ? `${sciezka}#sekcja-mapa` : null;
+
+  const pasekNaw = ustawieniaWsi.pasek_nawigacji;
+
+  const maSzkola = szkoly.length > 0 || ogloszeniaSzkoly.length > 0;
   const skrotyPubliczne = zbudujSkrotyPubliczne(ustawieniaWsi.skroty, sciezka, ustawieniaWsi.moduly, {
     maRynek,
     maPlanCmentarza,
+    maSzkola,
+    maSport,
   });
 
   const tytulWsi = ustawieniaWsi.hero_naglowek || wies.name;
 
   return (
     <article
-      className="profil-wies-motyw"
+      className="profil-wies-motyw min-w-0"
       style={styleMotywuProfiluWsi(ustawieniaWsi.motyw)}
     >
+      <PasekPostepuStrony />
+      <InicjalizujUjawnijScrollKlient />
+      {trybPodgladu ? <BanerPodgladuProfiluWies /> : null}
       <TrybSeniorDomyslnyWsiKlient wlaczony={ustawieniaWsi.domyslny_tryb_seniora} />
       <a
         href="#informacje-mieszkancow"
@@ -390,7 +473,7 @@ export function WiesProfilPubliczny({
       </a>
 
       {wies.cover_image_url ? (
-        <div className="relative mb-8 aspect-[21/9] max-h-64 overflow-hidden rounded-2xl border border-stone-200/90 bg-stone-100 shadow-sm ring-1 ring-stone-900/[0.03]">
+        <div className="wies-okladka-hero relative mb-8 aspect-[21/9] max-h-64 overflow-hidden rounded-2xl border border-stone-200/90 bg-stone-100 shadow-md ring-1 ring-stone-900/[0.04]">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={wies.cover_image_url}
@@ -399,11 +482,11 @@ export function WiesProfilPubliczny({
             loading="lazy"
             decoding="async"
           />
-          <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-stone-950/35 via-transparent to-transparent" aria-hidden />
         </div>
       ) : null}
 
       <header className="wow-wejscie border-b border-stone-200/90 pb-6">
+        {pasekNaw.pokaz_breadcrumb !== false ? (
         <nav className="text-sm text-stone-500" aria-label="Ścieżka nawigacji">
           <Link href={sciezkaWojewodztwa(wies.voivodeship)} className="text-green-800 underline focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-green-800">
             {wies.voivodeship}
@@ -428,18 +511,19 @@ export function WiesProfilPubliczny({
             </span>
           )}
         </nav>
+        ) : null}
         <div className="mt-3 flex flex-wrap items-start gap-x-4 gap-y-2">
           {ustawieniaWsi.logo_url ? (
             // eslint-disable-next-line @next/next/no-img-element
             <img
               src={ustawieniaWsi.logo_url}
               alt=""
-              className="mt-1 h-14 w-14 shrink-0 rounded-full border border-stone-200/90 bg-white object-cover shadow-sm"
+              className="mt-1 h-14 w-14 shrink-0 rounded-full border-2 border-white bg-white object-cover shadow-md ring-2 ring-[color-mix(in_srgb,var(--wies-ramka,#86efac)_45%,#e7e5e4)] sm:h-16 sm:w-16"
               width={56}
               height={56}
             />
           ) : null}
-          <h1 className="wies-naglowek-tytul font-serif text-3xl sm:text-4xl">{tytulWsi}</h1>
+          <h1 className="wies-naglowek-tytul font-serif text-2xl leading-tight sm:text-3xl lg:text-4xl">{tytulWsi}</h1>
           {wies.is_active ? (
             <span className="mt-1 rounded-full bg-emerald-100 px-2.5 py-0.5 text-[11px] font-semibold text-emerald-900 ring-1 ring-emerald-200/80">
               Aktywny profil
@@ -454,14 +538,15 @@ export function WiesProfilPubliczny({
         {ustawieniaWsi.hero_podtytul ? (
           <p className="mt-2 max-w-2xl text-base leading-relaxed text-stone-700">{ustawieniaWsi.hero_podtytul}</p>
         ) : null}
-        {ustawieniaWsi.hero_cta.length > 0 ? (
-          <div className="mt-4 flex flex-wrap gap-2">
+        <PowitanieProfiluWies nazwaWsi={wies.name} />
+        {pasekNaw.pokaz_hero_cta !== false && ustawieniaWsi.hero_cta.length > 0 ? (
+          <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
             {ustawieniaWsi.hero_cta.map((cta, i) => {
               const zewnetrzny = cta.href.startsWith("http");
               const klasa =
                 cta.wariant === "secondary"
-                  ? "rounded-xl border px-4 py-2 text-sm font-semibold shadow-sm transition hover:opacity-90"
-                  : "rounded-xl px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:opacity-90";
+                  ? "inline-flex min-h-[44px] items-center rounded-xl border px-4 py-2.5 text-sm font-semibold shadow-sm transition hover:opacity-90"
+                  : "inline-flex min-h-[44px] items-center rounded-xl px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:opacity-90";
               const style =
                 cta.wariant === "secondary"
                   ? {
@@ -486,7 +571,7 @@ export function WiesProfilPubliczny({
             })}
           </div>
         ) : null}
-        <WiesSkrotyProfilu skroty={skrotyPubliczne} />
+        {pasekNaw.pokaz_skroty !== false ? <WiesSkrotyProfilu skroty={skrotyPubliczne} /> : null}
         <SpolecznyDowodWsi
           liczbaMieszkancow={liczbaMieszkancowAktywnych}
           liczbaOgloszen={rynek.length}
@@ -496,15 +581,13 @@ export function WiesProfilPubliczny({
         {wies.population != null && wies.population > 0 ? (
           <p className="mt-2 text-sm text-stone-600">
             Szacunkowa liczba mieszkańców:{" "}
-            <span className="font-semibold tabular-nums text-green-950">{wies.population.toLocaleString("pl-PL")}</span>
+            <LicznikAnimowany wartosc={wies.population} className="font-semibold text-green-950" />
           </p>
         ) : wies.gmina_population != null && wies.gmina_population > 0 ? (
           <p className="mt-2 text-sm text-stone-600">
             Ludność gminy {wies.commune}
             {wies.gmina_population_rok ? ` (${wies.gmina_population_rok}, GUS)` : ""}:{" "}
-            <span className="font-semibold tabular-nums text-green-950">
-              {wies.gmina_population.toLocaleString("pl-PL")}
-            </span>
+            <LicznikAnimowany wartosc={wies.gmina_population} className="font-semibold text-green-950" />
             <span className="text-stone-500"> — dane dla całej gminy, nie tylko tej wsi</span>
           </p>
         ) : null}
@@ -562,7 +645,8 @@ export function WiesProfilPubliczny({
           }}
         />
         <BanerDolaczDoWsi nazwaWsi={wies.name} villageId={wies.id} zalogowany={zalogowany} />
-        <WiesZakladkiProfilu zakladki={zakladkiProfilu} />
+        <WiesZakladkiProfilu zakladki={zakladkiProfilu} pasek={pasekNaw} />
+        <SkokDoSekcjiMobilny zakladki={zakladkiProfilu} />
         <div className="mt-4 flex flex-wrap items-center gap-3">
           <PrzelacznikTrybuSeniora />
         </div>
@@ -647,7 +731,7 @@ export function WiesProfilPubliczny({
 
           {profileUslug.length > 0 ? (
             <section className="mt-6">
-              <h3 className="text-sm font-semibold text-stone-800">Profile usługodawców</h3>
+              <h3 className="text-sm font-semibold text-stone-800">Firmy i sklepy</h3>
               <ul className="mt-3 grid gap-3 sm:grid-cols-2">
                 {profileUslug.map((p) => (
                   <li key={p.id}>
@@ -674,9 +758,21 @@ export function WiesProfilPubliczny({
               />
             </section>
           ) : profileUslug.length > 0 ? (
-            <p className="mt-4 text-sm text-stone-500">Brak aktywnych ogłoszeń — zobacz profile usługodawców powyżej.</p>
+            <p className="mt-4 text-sm text-stone-500">Brak aktywnych ogłoszeń — zobacz firmy i sklepy powyżej.</p>
           ) : null}
         </OslonaSekcjiWies>
+      ) : null}
+
+      {modul("szkola") && (szkoly.length > 0 || ogloszeniaSzkoly.length > 0) ? (
+        <SekcjaSzkolaPubliczna
+          szkoly={szkoly}
+          ogloszenia={ogloszeniaSzkoly}
+          linkSzkolaNaMapie={linkSzkolaMapa}
+          villageId={wies.id}
+          sciezkaProfilu={sciezka}
+          nazwaWsi={wies.name}
+          przewinPrzyWejsciu={przewinDoSzkoly}
+        />
       ) : null}
 
       {modul("pomoc") ? (
@@ -825,19 +921,16 @@ export function WiesProfilPubliczny({
         </OslonaSekcjiWies>
       ) : null}
 
-      {(blog.length > 0 || historia.length > 0) && modul("blog") ? (
-        <OslonaSekcjiWies id="sekcja-blog-historia">
+      {maBlog && modul("blog") ? (
+        <OslonaSekcjiWies id="sekcja-blog">
           <TytulSekcjiWies
             etykieta="Społeczność"
-            tytul="Blog i kronika mieszkańców"
-            opis="Lokalne wpisy i materiały historyczne zatwierdzane przez sołtysa."
+            tytul="Blog mieszkańców"
+            opis="Lokalne wpisy opublikowane dla tej wsi."
           />
-          <p className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-xs text-stone-600">
+          <p className="mt-2 text-xs text-stone-600">
             <Link href={`${sciezka}/blog`} className="text-green-800 underline">
               Wszystkie wpisy bloga
-            </Link>
-            <Link href={`${sciezka}/historia`} className="text-green-800 underline">
-              Pełna historia wsi
             </Link>
           </p>
           <div className="mt-5 grid gap-3 sm:grid-cols-2">
@@ -851,23 +944,56 @@ export function WiesProfilPubliczny({
                 </p>
               </Link>
             ))}
-            {historia.map((w) => (
-              <Link key={`historia-${w.id}`} href={`${sciezka}/historia/${w.id}`} className={`${KARTA_LISTY_WIES} block`}>
-                <p className="text-xs uppercase tracking-wide text-amber-700">Historia wsi</p>
-                <p className="mt-1 font-medium text-stone-900">{w.title}</p>
-                {w.short_description ? <p className="mt-1 line-clamp-2 text-xs text-stone-600">{w.short_description}</p> : null}
-                <p className="mt-2 text-xs text-stone-500">
-                  {w.event_date
-                    ? new Date(w.event_date).toLocaleDateString("pl-PL")
-                    : new Date(w.created_at).toLocaleDateString("pl-PL")}
-                </p>
-              </Link>
-            ))}
           </div>
         </OslonaSekcjiWies>
       ) : null}
 
-      {(parafie.length > 0 || kolaKgw.length > 0 || jednostkiOsp.length > 0 || kolaLowieckie.length > 0 || organizacjePozostale.length > 0 || wydarzenia.length > 0) && modul("organizacje") ? (
+      {maModulHistoria && maHistoria ? (
+        <SekcjaHistoriaPubliczna
+          wpisy={historia}
+          sciezkaProfilu={sciezka}
+          nazwaWsi={wies.name}
+          villageId={wies.id}
+          zalogowany={zalogowany}
+          przewinPrzyWejsciu={przewinDoHistorii}
+        />
+      ) : null}
+      {maModulHistoria && !maHistoria ? (
+        <SekcjaHistoriaPusta
+          sciezkaProfilu={sciezka}
+          nazwaWsi={wies.name}
+          villageId={wies.id}
+          zalogowany={zalogowany}
+        />
+      ) : null}
+
+      {maModulSport && maSport ? (
+        <SekcjaSportPubliczna
+          kluby={klubySportowe}
+          klubyPelne={klubySportowe.map((o) => ({
+            id: o.id,
+            name: o.name,
+            short_description: o.short_description,
+            meeting_place: o.meeting_place,
+            schedule_text: o.schedule_text,
+            contact_phone: o.contact_phone,
+            contact_email: o.contact_email ?? null,
+            profile_data: o.profile_data,
+          }))}
+          wydarzenia={wydarzenia}
+          harmonogram={harmonogramTygodnia}
+          sciezkaProfilu={sciezka}
+          nazwaWsi={wies.name}
+          villageId={wies.id}
+          linkBoiskoNaMapie={linkBoiskoNaMapie}
+          przewinPrzyWejsciu={przewinDoSportu}
+        />
+      ) : null}
+      {maModulSport && !maSport ? (
+        <SekcjaSportPusta sciezkaProfilu={sciezka} nazwaWsi={wies.name} />
+      ) : null}
+
+      {(parafie.length > 0 || kolaKgw.length > 0 || jednostkiOsp.length > 0 || kolaLowieckie.length > 0 || organizacjePozostale.length > 0 || wydarzeniaBezSportu.length > 0) && modul("organizacje") ? (
         <OslonaSekcjiWies id="sekcja-organizacje">
           <TytulSekcjiWies
             etykieta="Organizacje"
@@ -1036,11 +1162,11 @@ export function WiesProfilPubliczny({
                 </ul>
               </div>
             ) : null}
-            {wydarzenia.length > 0 ? (
+            {wydarzeniaBezSportu.length > 0 ? (
               <div>
                 <h3 className="text-xs font-semibold uppercase tracking-wide text-stone-500">Nadchodzące wydarzenia</h3>
                 <ul className="mt-3 space-y-3">
-                  {wydarzenia.map((ev) => (
+                  {wydarzeniaBezSportu.map((ev) => (
                     <li key={ev.id}>
                       <div className={`${KARTA_LISTY_WIES} flex flex-wrap items-start justify-between gap-2`}>
                         <Link href={`${sciezka}/wydarzenia/${ev.id}`} className="min-w-0 flex-1">
@@ -1105,7 +1231,7 @@ export function WiesProfilPubliczny({
         </OslonaSekcjiWies>
       ) : null}
 
-      {harmonogramTygodnia.length > 0 ? (
+      {harmonogramBezSportu.length > 0 ? (
         <OslonaSekcjiWies>
           <TytulSekcjiWies
             etykieta="Harmonogram"
@@ -1116,9 +1242,17 @@ export function WiesProfilPubliczny({
             <Link href={`${sciezka}/wydarzenia`} className="text-green-800 underline">
               Kalendarz wydarzeń
             </Link>
+            {maModulSport ? (
+              <>
+                {" · "}
+                <Link href={`${sciezka}#sekcja-sport`} className="text-green-800 underline">
+                  Terminarz sportowy
+                </Link>
+              </>
+            ) : null}
           </p>
           <ul className="mt-4 space-y-2">
-            {harmonogramTygodnia.map((s) => (
+            {harmonogramBezSportu.map((s) => (
               <li key={s.id} className={`${KARTA_LISTY_WIES} border-teal-200/70 bg-teal-50/30`}>
                 <span className="font-medium text-teal-950">{nazwaDniaTygodnia(s.day_of_week)}</span>
                 <span className="text-stone-700">

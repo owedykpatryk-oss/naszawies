@@ -8,6 +8,8 @@ import type { KonkursFotoPubliczny, ZdjecieKonkursu } from "@/lib/konkurs-foto/f
 import { pobierzAktywneOstrzezeniaLowieckie } from "@/lib/lowiectwo/pobierz-ostrzezenia-publiczne";
 import type { OstrzezenieLowieckie } from "@/lib/lowiectwo/pobierz-ostrzezenia-publiczne";
 import { createPublicSupabaseClient } from "@/lib/supabase/public-client";
+import { pobierzOgloszeniaSzkolyPubliczne } from "@/lib/szkola/pobierz-ogloszenia-szkoly";
+import type { OgloszenieSzkolyPubliczne } from "@/lib/szkola/teksty-szkoly";
 
 const POLE_RYNEK =
   "id, title, listing_type, category, equipment_category, location_text, price_amount, price_unit, currency, with_operator, image_urls, published_at, created_at, seller_verified, parcel_area_m2, parcel_number, geoportal_parcel_id, view_count, owner_user_id";
@@ -35,6 +37,7 @@ export type SuroweDanePubliczneProfiluWsi = {
   zgloszeniaPubliczneRaw: unknown[];
   planCmentarzaId: string | null;
   liczbaMieszkancowAktywnych: number;
+  ogloszeniaSzkoly: OgloszenieSzkolyPubliczne[];
 };
 
 async function pobierzKonkursBezGlosu(
@@ -118,6 +121,7 @@ async function pobierzSuroweDanePubliczneProfiluWsi(
       zgloszeniaPubliczneRaw: [],
       planCmentarzaId: null,
       liczbaMieszkancowAktywnych: 0,
+      ogloszeniaSzkoly: [],
     };
   }
 
@@ -146,6 +150,7 @@ async function pobierzSuroweDanePubliczneProfiluWsi(
     { data: zgloszeniaPubliczneRaw },
     planCmentarzaRes,
     { count: liczbaMieszkancowAktywnych },
+    ogloszeniaSzkoly,
   ] = await Promise.all([
     supabase
       .from("posts")
@@ -168,11 +173,14 @@ async function pobierzSuroweDanePubliczneProfiluWsi(
       .limit(6),
     supabase
       .from("village_history_entries")
-      .select("id, title, short_description, event_date, created_at")
+      .select(
+        "id, title, short_description, event_date, era_label, created_at, media_urls, source_links, location_label, latitude, longitude, view_count, candle_count, is_featured",
+      )
       .eq("village_id", villageId)
       .eq("status", "approved")
+      .order("is_featured", { ascending: false })
       .order("event_date", { ascending: false, nullsFirst: false })
-      .limit(6),
+      .limit(24),
     supabase
       .from("marketplace_listings")
       .select(POLE_RYNEK)
@@ -189,7 +197,7 @@ async function pobierzSuroweDanePubliczneProfiluWsi(
       .limit(6),
     supabase
       .from("marketplace_profiles")
-      .select("id, business_name, short_description, categories, phone, is_verified")
+      .select("id, business_name, short_description, categories, phone, is_verified, profile_kind")
       .eq("village_id", villageId)
       .eq("is_active", true)
       .order("is_verified", { ascending: false })
@@ -201,7 +209,8 @@ async function pobierzSuroweDanePubliczneProfiluWsi(
       )
       .eq("village_id", villageId)
       .eq("is_active", true)
-      .order("name"),
+      .order("name")
+      .limit(40),
     supabase
       .from("village_community_events")
       .select(
@@ -239,7 +248,8 @@ async function pobierzSuroweDanePubliczneProfiluWsi(
       .eq("village_id", villageId)
       .eq("is_active", true)
       .order("display_order", { ascending: true })
-      .order("title", { ascending: true }),
+      .order("title", { ascending: true })
+      .limit(40),
     supabase
       .from("village_official_contacts")
       .select(
@@ -284,6 +294,7 @@ async function pobierzSuroweDanePubliczneProfiluWsi(
       .eq("village_id", villageId)
       .eq("role", "mieszkaniec")
       .eq("status", "active"),
+    pobierzOgloszeniaSzkolyPubliczne(supabase, villageId),
   ]);
 
   return {
@@ -309,6 +320,7 @@ async function pobierzSuroweDanePubliczneProfiluWsi(
     zgloszeniaPubliczneRaw: zgloszeniaPubliczneRaw ?? [],
     planCmentarzaId: (planCmentarzaRes.data as { id?: string } | null)?.id ?? null,
     liczbaMieszkancowAktywnych: liczbaMieszkancowAktywnych ?? 0,
+    ogloszeniaSzkoly,
   };
 }
 

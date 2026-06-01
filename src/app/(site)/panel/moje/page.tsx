@@ -28,12 +28,11 @@ export default async function MojePrzegladPage() {
     <main>
       <header className="panel-informacji-hero mb-8">
         <p className="etykieta-modulu">Twój skrót</p>
-        <h1 className="mt-1 font-serif text-3xl text-green-950">Moje</h1>
+        <h1 className="mt-1 font-serif text-3xl text-green-950">Obserwowane</h1>
         <p className="mt-2 max-w-prose text-sm leading-relaxed text-stone-600">
-          Warstwa „co mnie interesuje” — bez szukania po panelu. Skróty do działania (ogłoszenia, świetlica, zgłoszenia)
-          znajdziesz w kartach wsi z aktywną rolą lub w{" "}
+          Warstwa „co mnie interesuje” — wsie, gminy i ulubione. Działania (ogłoszenia, świetlica, zgłoszenia) są w{" "}
           <Link href="/panel/mieszkaniec" className="font-medium text-green-800 underline">
-            module mieszkańca
+            Moja wieś
           </Link>
           .
         </p>
@@ -90,6 +89,13 @@ export default async function MojePrzegladPage() {
           >
             <span className="font-semibold text-green-950">Moja gmina</span>
             <span className="mt-1 block text-xs text-stone-600">{pierwszaGminaNazwa}</span>
+          </Link>
+          <Link
+            href="/panel/moje/firmy"
+            className="karta-skrot-modulu"
+          >
+            <span className="font-semibold text-green-950">Firmy i sklepy</span>
+            <span className="mt-1 block text-xs text-stone-600">Obserwowane profile z rynku — powiadomienia o nowych ofertach.</span>
           </Link>
           <Link
             href="/panel/moje/ulubione"

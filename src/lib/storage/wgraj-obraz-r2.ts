@@ -232,9 +232,9 @@ export async function wgrajObrazDoMagazynuR2(formData: FormData): Promise<WynikW
     }
     const podkatalog = String(formData.get("podkatalog") ?? "poi").replace(/[^a-z0-9_-]/gi, "") || "poi";
     const vidsSoltys = await pobierzVillageIdsRoliPaneluSoltysaDlaUzytkownikaCache(user.id);
-    if (podkatalog === "poi" || podkatalog === "ladne") {
+    if (podkatalog === "poi" || podkatalog === "ladne" || podkatalog === "branding" || podkatalog === "historia") {
       if (!vidsSoltys.includes(villageId)) {
-        return { blad: "Tylko sołtys może wgrywać zdjęcia miejsc na mapie." };
+        return { blad: "Tylko sołtys może wgrywać zdjęcia tej wsi." };
       }
     } else {
       const { data: rola } = await supabase

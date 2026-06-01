@@ -5,6 +5,7 @@ import { pobierzStatystykiKataloguWsi } from "@/lib/landing/statystyki-katalogu-
 import { pobierzSzablonHtmlLandingu } from "@/lib/landing/pobierz-szablon-html-landingu";
 import { wstrzyknijStatystykiWHtmlLandingu } from "@/lib/landing/wstrzyknij-placeholdery-html";
 import "../styles/landing-trasy.css";
+import "../styles/landing-wow.css";
 import "../styles/landing.css";
 
 export const revalidate = 120;
@@ -12,7 +13,7 @@ export const revalidate = 120;
 export const metadata: Metadata = {
   alternates: { canonical: "/" },
   description:
-    "Bezpłatna platforma dla sołtysów i mieszkańców: publiczny profil wsi, świetlica, dokumenty, blog, wiadomości lokalne, rynek — katalog i mapa po zalogowaniu.",
+    "Bezpłatna platforma dla sołtysów i mieszkańców: profil wsi, świetlica, rynek lokalny, firmy i sklepy, przypomnienia (śmieci, podatki, działki). Katalog i mapa po zalogowaniu.",
 };
 
 export default async function Home() {

@@ -43,6 +43,12 @@ const AKCJE_MIESZKANIEC: AkcjaPanelu[] = [
     ikona: "📷",
   },
   {
+    href: "/panel/mieszkaniec/historia",
+    tytul: "Historia i wspomnienia",
+    opis: "Czytaj kronikę na profilu wsi lub zgłoś wspomnienie do sołtysa.",
+    ikona: "📜",
+  },
+  {
     href: "/panel/mieszkaniec/grafika",
     tytul: "Stwórz plakat",
     opis: "Kreator grafiki — zaproszenie na imprezę.",
@@ -71,9 +77,15 @@ const AKCJE_SOLTYS: AkcjaPanelu[] = [
     ikona: "📅",
   },
   {
+    href: "/panel/soltys/zgloszenia",
+    tytul: "Zgłoszenia z wsi",
+    opis: "Sprawy mieszkańców — usterki, prośby, statusy.",
+    ikona: "📋",
+  },
+  {
     href: "/panel/soltys/spolecznosc",
-    tytul: "Społeczność",
-    opis: "Wydarzenia, blog, organizacje KGW/OSP.",
+    tytul: "Treści społeczności",
+    opis: "Blog, kronika, organizacje — to trafia na profil publiczny.",
     ikona: "👥",
   },
   {

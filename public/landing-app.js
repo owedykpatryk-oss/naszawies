@@ -471,6 +471,147 @@
     obs.observe(sekcja);
   }
 
+  function initWowScroll() {
+    if (!("IntersectionObserver" in window)) {
+      document.querySelectorAll(".wow-on-scroll, .ujawnij-scroll").forEach(function (el) {
+        el.classList.add("is-visible", "ujawnij-scroll--widoczny");
+      });
+      return;
+    }
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      document.querySelectorAll(".wow-on-scroll, .ujawnij-scroll").forEach(function (el) {
+        el.classList.add("is-visible", "ujawnij-scroll--widoczny");
+      });
+      return;
+    }
+    var obs = new IntersectionObserver(
+      function (entries) {
+        entries.forEach(function (e) {
+          if (e.isIntersecting) {
+            e.target.classList.add("is-visible", "ujawnij-scroll--widoczny");
+            obs.unobserve(e.target);
+          }
+        });
+      },
+      { rootMargin: "0px 0px -6% 0px", threshold: 0.06 },
+    );
+    document.querySelectorAll(".wow-on-scroll, .ujawnij-scroll").forEach(function (el) {
+      obs.observe(el);
+    });
+  }
+
+  function initStatCounters() {
+    var els = document.querySelectorAll(".meta-value--anim[data-count]");
+    if (!els.length) return;
+
+    function animateEl(el) {
+      var raw = el.getAttribute("data-count") || "0";
+      var target = parseInt(raw.replace(/\s/g, ""), 10);
+      if (!isFinite(target) || target <= 0) {
+        el.textContent = raw;
+        return;
+      }
+      if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+        el.textContent = target.toLocaleString("pl-PL");
+        return;
+      }
+      var start = performance.now();
+      var dur = Math.min(1600, 500 + target * 6);
+      function frame(ts) {
+        var t = Math.min(1, (ts - start) / dur);
+        var eased = 1 - Math.pow(1 - t, 3);
+        el.textContent = Math.round(target * eased).toLocaleString("pl-PL");
+        if (t < 1) requestAnimationFrame(frame);
+      }
+      requestAnimationFrame(frame);
+    }
+
+    if (!("IntersectionObserver" in window)) {
+      els.forEach(animateEl);
+      return;
+    }
+    var obs = new IntersectionObserver(
+      function (entries) {
+        entries.forEach(function (e) {
+          if (e.isIntersecting) {
+            animateEl(e.target);
+            obs.unobserve(e.target);
+          }
+        });
+      },
+      { threshold: 0.35 },
+    );
+    els.forEach(function (el) {
+      obs.observe(el);
+    });
+  }
+
+  function initProductPreview() {
+    var root = document.getElementById("pokaz-demo");
+    if (!root) return;
+
+    var tabs = root.querySelectorAll("[data-pokaz-tab]");
+    var screens = root.querySelectorAll("[data-pokaz-screen]");
+    var hint = document.getElementById("pokaz-hint-tekst");
+    var hints = {
+      profil: "Profil wsi — widoczny dla każdego z linku od sołtysa.",
+      rynek: "Rynek lokalny — ogłoszenia i firmy bez prowizji, z moderacją.",
+      panel: "Panel mieszkańca — przypomnienia, świetlica i Twoje ogłoszenia.",
+    };
+    var order = ["profil", "rynek", "panel"];
+    var idx = 0;
+    var timer = null;
+    var reduced = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+    function show(id) {
+      tabs.forEach(function (tab) {
+        var on = tab.getAttribute("data-pokaz-tab") === id;
+        tab.classList.toggle("active", on);
+        tab.setAttribute("aria-selected", on ? "true" : "false");
+      });
+      screens.forEach(function (screen) {
+        screen.classList.toggle("is-active", screen.getAttribute("data-pokaz-screen") === id);
+      });
+      if (hint && hints[id]) hint.textContent = hints[id];
+      idx = order.indexOf(id);
+      if (idx < 0) idx = 0;
+    }
+
+    function startAuto() {
+      if (reduced || tabs.length < 2) return;
+      stopAuto();
+      timer = window.setInterval(function () {
+        idx = (idx + 1) % order.length;
+        show(order[idx]);
+      }, 5500);
+    }
+
+    function stopAuto() {
+      if (timer) {
+        window.clearInterval(timer);
+        timer = null;
+      }
+    }
+
+    tabs.forEach(function (tab) {
+      tab.addEventListener("click", function () {
+        show(tab.getAttribute("data-pokaz-tab") || "profil");
+        stopAuto();
+        startAuto();
+      });
+    });
+
+    root.addEventListener("mouseenter", stopAuto);
+    root.addEventListener("mouseleave", startAuto);
+    root.addEventListener("focusin", stopAuto);
+    root.addEventListener("focusout", function (e) {
+      if (!root.contains(e.relatedTarget)) startAuto();
+    });
+
+    show("profil");
+    startAuto();
+  }
+
   initPlannerLazy();
   initFaq();
   initTabs();
@@ -479,4 +620,7 @@
   initMobileNav();
   initStickyCta();
   initBackToTop();
+  initWowScroll();
+  initStatCounters();
+  initProductPreview();
 })();

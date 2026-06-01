@@ -39,18 +39,13 @@ export default function PanelPierwszeKrokiPage() {
         className="panel-nawigacja-szklo mt-6 p-4 sm:sticky [top:var(--sticky-nav-offset)]"
       >
         <p className="text-xs font-semibold uppercase tracking-wide text-stone-500">Na tej stronie</p>
-        <ul className="mt-2 flex flex-wrap gap-2 text-sm">
+        <div className="mt-2 flex flex-wrap gap-1">
           {linkToc.map(({ href, label }) => (
-            <li key={href}>
-              <a
-                href={href}
-                className="inline-block rounded-lg border border-stone-200 bg-white px-3 py-1.5 text-green-900 shadow-sm hover:border-green-800/30 hover:bg-emerald-50/50"
-              >
-                {label}
-              </a>
-            </li>
+            <a key={href} href={href} className="nawigacja-pill rounded-xl px-3 py-2 text-sm text-stone-700 hover:bg-white/95 hover:text-green-950">
+              {label}
+            </a>
           ))}
-        </ul>
+        </div>
       </nav>
 
       <section id="krok-profil" className="panel-karta scroll-mt-24 mt-8">

@@ -6,7 +6,9 @@ import { bezpiecznaSciezkaNastepna } from "@/lib/auth/bezpieczna-sciezka-nastepn
 import { czyUzytkownikUknczylOnboarding } from "@/lib/auth/onboarding-uzytkownika";
 import { pobierzUzytkownikaSerwer } from "@/lib/auth/pobierz-uzytkownika-serwer";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
+import { pobierzWiesPoIdDlaRejestracji } from "@/app/(site)/rejestracja/akcje-katalog-wsi";
 import { OnboardingKlient } from "./onboarding-klient";
+import type { IntencjaOnboardingu } from "@/lib/auth/onboarding-uzytkownika";
 
 export const metadata: Metadata = {
   title: "Wybór wsi i roli",
@@ -40,6 +42,17 @@ export default async function PanelOnboardingPage({ searchParams }: Props) {
     user.email?.split("@")[0] ||
     "";
 
+  const villageIdRaw =
+    typeof meta.signup_village_id === "string" ? meta.signup_village_id.trim() : "";
+  const domyslnaWies = villageIdRaw ? await pobierzWiesPoIdDlaRejestracji(villageIdRaw) : null;
+  const intentRaw = typeof meta.signup_intent === "string" ? meta.signup_intent : "";
+  const domyslnaIntencja: IntencjaOnboardingu | undefined =
+    intentRaw === "mieszkaniec" || intentRaw === "soltys" || intentRaw === "przegladam"
+      ? intentRaw
+      : domyslnaWies
+        ? "mieszkaniec"
+        : undefined;
+
   return (
     <main className="mx-auto w-full max-w-7xl py-4">
       <LogoNaszawiesWycentrowane />
@@ -50,7 +63,13 @@ export default async function PanelOnboardingPage({ searchParams }: Props) {
         {" · "}
         inne konto? Wyloguj się i zaloguj właściwym adresem.
       </p>
-      <OnboardingKlient nastepnaSciezka={nastepna} domyslnaNazwa={domyslnaNazwa} email={user.email ?? ""} />
+      <OnboardingKlient
+        nastepnaSciezka={nastepna}
+        domyslnaNazwa={domyslnaNazwa}
+        email={user.email ?? ""}
+        domyslnaIntencja={domyslnaIntencja}
+        domyslnaWies={domyslnaWies}
+      />
     </main>
   );
 }

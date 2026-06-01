@@ -1,5 +1,6 @@
 "use client";
 
+import Link from "next/link";
 import { useEffect, useState } from "react";
 import { generujQrDataUrl, domyslnyUrlQrWies } from "@/lib/grafika/qr-kod";
 import { linkRejestracjiDoWsi } from "@/lib/rejestracja/link-dolacz-do-wsi";
@@ -19,6 +20,7 @@ export function QrProfilWsiPanel({ nazwaWsi, sciezkaPubliczna, villageId }: Prop
     typeof window !== "undefined"
       ? domyslnyUrlQrWies(sciezkaPubliczna)
       : `${siteBase}${sciezkaPubliczna}`;
+  const urlTablicySzkoly = `${pelnyUrl.split("#")[0]}#sekcja-szkola`;
 
   const linkZaproszenia =
     typeof window !== "undefined" && villageId
@@ -108,7 +110,23 @@ export function QrProfilWsiPanel({ nazwaWsi, sciezkaPubliczna, villageId }: Prop
             >
               Kreator plakatów z QR
             </a>
+            <Link
+              href="/panel/soltys/szkola"
+              className="rounded-lg border border-sky-200 bg-sky-50 px-3 py-2 text-xs font-medium text-sky-900 hover:bg-sky-100"
+            >
+              QR tablicy szkoły
+            </Link>
           </div>
+          <p className="text-xs text-stone-500">
+            Tablica ogłoszeń szkoły na profilu:{" "}
+            <button
+              type="button"
+              className="break-all font-mono text-sky-800 underline"
+              onClick={() => kopiujLink(urlTablicySzkoly, ustawKopiuj)}
+            >
+              {urlTablicySzkoly}
+            </button>
+          </p>
           {kopiuj === "blad" || kopiujZaproszenie === "blad" ? (
             <p className="text-xs text-red-800">Nie udało się skopiować — zaznacz link ręcznie.</p>
           ) : null}

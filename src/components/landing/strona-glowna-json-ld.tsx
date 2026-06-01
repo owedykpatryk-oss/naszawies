@@ -3,8 +3,8 @@ import type { StatystykiKataloguWsi } from "@/lib/landing/statystyki-katalogu-ws
 export function StronaGlownaJsonLd({ stats }: { stats: StatystykiKataloguWsi | null }) {
   const opis =
     stats != null
-      ? `Bezpłatna platforma dla sołtysów i mieszkańców. W katalogu ${stats.wsieLacznie} miejscowości, z czego ${stats.wsieZAktywnymProfilem} z aktywnym profilem publicznym. Katalog i mapa po zalogowaniu.`
-      : "Bezpłatna platforma dla sołtysów i mieszkańców. Publiczny profil wsi, rezerwacja świetlicy, dokumenty — katalog i mapa po zalogowaniu.";
+      ? `Bezpłatna platforma dla sołtysów i mieszkańców. W katalogu ${stats.wsieLacznie} miejscowości (${stats.wsieZAktywnymProfilem} z aktywnym profilem). Rynek lokalny: ${stats.ogloszeniaRynek} ogłoszeń, ${stats.profileFirmRynek} profili firm. Katalog i mapa po zalogowaniu.`
+      : "Bezpłatna platforma dla sołtysów i mieszkańców. Profil wsi, świetlica, rynek lokalny, przypomnienia mieszkańców — katalog i mapa po zalogowaniu.";
 
   const payload = {
     "@context": "https://schema.org",

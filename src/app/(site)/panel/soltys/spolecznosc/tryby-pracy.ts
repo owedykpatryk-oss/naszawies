@@ -5,14 +5,18 @@ type GrupaDoFiltrowania = {
   name: string;
 };
 
-export type TrybOrganizacji = "ogolny" | "kgw" | "osp" | "parafia" | "mysliwi";
+import { czyOrganizacjaSport } from "@/lib/wies/sport";
+
+export type TrybOrganizacji = "ogolny" | "kgw" | "osp" | "parafia" | "mysliwi" | "szkola" | "sport";
 
 export const TRYBY_PRACY_OPCJE: ReadonlyArray<{ id: TrybOrganizacji; label: string }> = [
   { id: "ogolny", label: "Ogólny (cała wieś)" },
   { id: "parafia", label: "Parafia" },
+  { id: "szkola", label: "Szkoła / przedszkole" },
+  { id: "sport", label: "Klub sportowy" },
   { id: "kgw", label: "KGW" },
   { id: "mysliwi", label: "Myśliwi" },
-  { id: "osp", label: "OSP / sport" },
+  { id: "osp", label: "OSP" },
 ];
 
 export const KOLEJNOSC_DZIALAN_TRYBU: Record<TrybOrganizacji, { tytul: string; kroki: string[] }> = {
@@ -48,12 +52,28 @@ export const KOLEJNOSC_DZIALAN_TRYBU: Record<TrybOrganizacji, { tytul: string; k
       "Dodaj wydarzenia (Hubertus, zebranie, szkolenie) do kalendarza wsi.",
     ],
   },
-  osp: {
-    tytul: "Tryb OSP / sport — kolejność działań",
+  sport: {
+    tytul: "Tryb sportu — kolejność działań",
     kroki: [
-      "Dodaj grupę OSP/sport i przypisz osobę kontaktową.",
-      "Opublikuj najbliższe ćwiczenia / mecze oraz stałe treningi tygodniowe.",
+      "Dodaj klub (typ „sport”) z boiskiem, kontaktem i opisem sekcji.",
+      "W planie tygodnia wpisz stałe treningi — widoczne w zakładce Sport.",
+      "Dodaj mecze i zawody do kalendarza (rodzaj: mecz / próba / wyjazd).",
+    ],
+  },
+  osp: {
+    tytul: "Tryb OSP — kolejność działań",
+    kroki: [
+      "Dodaj jednostkę OSP i przypisz osobę kontaktową.",
+      "Opublikuj najbliższe ćwiczenia oraz stały plan tygodnia.",
       "Dodaj komunikat bezpieczeństwa dla mieszkańców z krótkimi zaleceniami.",
+    ],
+  },
+  szkola: {
+    tytul: "Tryb szkoły — kolejność działań",
+    kroki: [
+      "Uzupełnij profil placówki: dyrekcja, adres, godziny przyjęć rodziców.",
+      "Włącz moduł „Szkoła” w wyglądzie profilu wsi i dodaj pinezkę szkoły na mapie.",
+      "Publikuj ogłoszenia na tablicy (rodzice, klasy) w panelu tablicy szkoły.",
     ],
   },
 };
@@ -68,6 +88,8 @@ export function domyslnyTypGrupyDlaTrybu(tryb: TrybOrganizacji): string {
   if (tryb === "osp") return "osp";
   if (tryb === "parafia") return "parafia";
   if (tryb === "mysliwi") return "lowiectwo";
+  if (tryb === "szkola") return "szkola";
+  if (tryb === "sport") return "sport";
   return "inne";
 }
 
@@ -83,6 +105,12 @@ export function filtrujGrupyDlaTrybu(
     if (tryb === "kgw") return g.group_type === "kgw" || g.name.toLowerCase().includes("kgw");
     if (tryb === "mysliwi")
       return g.group_type === "lowiectwo" || (g.group_type === "kolo" && nazwaSugerujeLowiectwo(g.name));
-    return g.group_type === "osp" || g.group_type === "sport" || g.name.toLowerCase().includes("osp");
+    if (tryb === "szkola")
+      return g.group_type === "szkola" || g.name.toLowerCase().includes("szkoł") || g.name.toLowerCase().includes("przedszkol");
+    if (tryb === "sport") return czyOrganizacjaSport(g.group_type, g.name);
+    return (
+      (g.group_type === "osp" || g.name.toLowerCase().includes("osp")) &&
+      !czyOrganizacjaSport(g.group_type, g.name)
+    );
   });
 }

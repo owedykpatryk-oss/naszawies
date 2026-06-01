@@ -336,3 +336,69 @@ export function czyOrganizacjaOsp(groupType: string, name: string): boolean {
   const n = name.toLowerCase();
   return n.includes("osp") || n.includes("straż") || n.includes("straz") || n.includes("fire");
 }
+
+/** Profil placówki oświatowej — `village_community_groups.profile_data`. */
+export const schemaProfilSzkoly = z.object({
+  wersja: z.literal(1).default(1),
+  dyrektor: z.string().trim().max(160).nullable().optional(),
+  wicedyrektor: z.string().trim().max(160).nullable().optional(),
+  adres_szkoly: z.string().trim().max(300).nullable().optional(),
+  strona_www: z.string().trim().max(500).nullable().optional(),
+  facebook: z.string().trim().max(500).nullable().optional(),
+  sekretariat: z.string().trim().max(500).nullable().optional(),
+  godziny_przyjec: z.string().trim().max(500).nullable().optional(),
+  dyzury_nauczycieli: z.string().trim().max(800).nullable().optional(),
+  zajecia_pozalekcyjne: z.string().trim().max(1200).nullable().optional(),
+  stołówka: z.string().trim().max(600).nullable().optional(),
+  biblioteka_szkolna: z.string().trim().max(600).nullable().optional(),
+  uwagi: z.string().trim().max(800).nullable().optional(),
+});
+
+export type ProfilSzkolyJson = z.infer<typeof schemaProfilSzkoly>;
+
+export function parsujProfilSzkoly(raw: unknown): ProfilSzkolyJson | null {
+  if (raw == null || typeof raw !== "object") return null;
+  const w = schemaProfilSzkoly.safeParse(raw);
+  if (!w.success) return null;
+  return w.data;
+}
+
+export function profilSzkolyZFormularza(fd: FormData): ProfilSzkolyJson {
+  const pole = (k: string) => {
+    const t = String(fd.get(k) ?? "").trim();
+    return t.length ? t : null;
+  };
+  return {
+    wersja: 1,
+    dyrektor: pole("szkola_dyrektor"),
+    wicedyrektor: pole("szkola_wicedyrektor"),
+    adres_szkoly: pole("szkola_adres"),
+    strona_www: pole("szkola_strona_www"),
+    facebook: pole("szkola_facebook"),
+    sekretariat: pole("szkola_sekretariat"),
+    godziny_przyjec: pole("szkola_godziny_przyjec"),
+    dyzury_nauczycieli: pole("szkola_dyzury"),
+    zajecia_pozalekcyjne: pole("szkola_zajecia"),
+    stołówka: pole("szkola_stolowka"),
+    biblioteka_szkolna: pole("szkola_biblioteka"),
+    uwagi: pole("szkola_uwagi"),
+  };
+}
+
+export function czyProfilSzkolyUzupelniony(p: ProfilSzkolyJson | null): boolean {
+  if (!p) return false;
+  return Boolean(
+    p.dyrektor?.trim() ||
+      p.sekretariat?.trim() ||
+      p.godziny_przyjec?.trim() ||
+      p.adres_szkoly?.trim(),
+  );
+}
+
+export { czyOrganizacjaSport } from "@/lib/wies/sport";
+
+export function czyOrganizacjaSzkola(groupType: string, name: string): boolean {
+  if (groupType === "szkola") return true;
+  const n = name.toLowerCase();
+  return n.includes("szkoł") || n.includes("szkol") || n.includes("przedszkol") || n.includes("liceum");
+}

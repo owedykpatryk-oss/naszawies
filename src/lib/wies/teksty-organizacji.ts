@@ -6,6 +6,7 @@ export const ETYKIETA_TYP_GRUPY: Record<string, string> = {
   rada_solecka: "Rada sołecka",
   seniorzy: "Klub seniora",
   mlodziez: "Młodzież / grupa młodzieżowa",
+  szkola: "Szkoła / przedszkole",
   wolontariat: "Wolontariat / pomoc sąsiedzka",
   rolnicy: "Koło rolników",
   przedsiebiorcy: "Lokalni przedsiębiorcy",

@@ -16,7 +16,7 @@ export function WiesKontaktSzybkiPasek({ kontakty }: { kontakty: Kontakt[] }) {
   const tel = soltys.contact_phone.replace(/\s/g, "");
 
   return (
-    <div className="kontakt-szybki-pasek fixed bottom-4 left-4 right-4 z-40 mx-auto flex max-w-lg justify-center md:hidden">
+    <div className="kontakt-szybki-pasek fixed left-4 right-4 z-40 mx-auto flex max-w-lg justify-center md:hidden">
       <a
         href={`tel:${tel}`}
         className="flex w-full items-center justify-center gap-2 rounded-full bg-green-900 px-5 py-3.5 text-base font-semibold text-white shadow-lg ring-2 ring-white/80"

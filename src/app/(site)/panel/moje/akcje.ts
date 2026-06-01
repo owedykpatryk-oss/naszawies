@@ -109,11 +109,11 @@ export async function przestanObserwowacGmine(followId: string): Promise<WynikPr
   return { ok: true, komunikat: "Usunięto obserwację gminy." };
 }
 
-const typTresci = z.enum(["post", "event", "listing"]);
+const typTresci = z.enum(["post", "event", "listing", "history"]);
 
 export async function zapiszTresc(input: {
   villageId: string;
-  contentType: "post" | "event" | "listing";
+  contentType: "post" | "event" | "listing" | "history";
   contentId: string;
   title: string;
   href: string;

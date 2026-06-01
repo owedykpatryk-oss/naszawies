@@ -5,6 +5,12 @@ import { z } from "zod";
 import { wyciagnijBucketIKluczZUrlaR2 } from "@/lib/cloudflare/r2-url-pomoc";
 import { usunObiektR2JesliUrlNasz } from "@/lib/storage/usun-plik-r2-po-url";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
+import {
+  KLUCZE_DOLNEJ_NAWIGACJI,
+  KLUCZE_PANEL_NAWIGACJI,
+  parsujPreferencjeUiZMeta,
+  type PreferencjeUi,
+} from "@/lib/uzytkownik/preferencje-ui";
 
 const schemat = z.object({
   display_name: z.string().trim().min(1, "Podaj nazwę wyświetlaną.").max(80),
@@ -62,6 +68,50 @@ export async function aktualizujProfilZFormularza(formData: FormData): Promise<W
   revalidatePath("/panel");
   revalidatePath("/panel/profil");
   revalidatePath(`/u/${user.id}`);
+  return { ok: true };
+}
+
+const schemaPreferencjeUiZapis = z
+  .object({
+    dolna_nawigacja: z.array(z.enum(KLUCZE_DOLNEJ_NAWIGACJI)).min(3).max(5).optional(),
+    panel_nawigacja: z.array(z.enum(KLUCZE_PANEL_NAWIGACJI)).min(3).max(8).optional(),
+  })
+  .refine((d) => d.dolna_nawigacja != null || d.panel_nawigacja != null, {
+    message: "Brak danych do zapisu.",
+  });
+
+/** Preferencje nawigacji — zapis w metadanych konta (łączy z istniejącymi). */
+export async function zapiszPreferencjeUi(prefs: PreferencjeUi): Promise<WynikAkcjiProfilu> {
+  const parsed = schemaPreferencjeUiZapis.safeParse(prefs);
+  if (!parsed.success) {
+    return { blad: parsed.error.issues[0]?.message ?? "Nieprawidłowe ustawienia nawigacji." };
+  }
+
+  const supabase = utworzKlientaSupabaseSerwer();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { blad: "Zaloguj się." };
+
+  const meta = (user.user_metadata ?? {}) as Record<string, unknown>;
+  const merged: PreferencjeUi = {
+    ...parsujPreferencjeUiZMeta(meta),
+    ...parsed.data,
+  };
+
+  const { error } = await supabase.auth.updateUser({
+    data: {
+      ...meta,
+      ui_preferences: merged,
+    },
+  });
+  if (error) {
+    console.error("[zapiszPreferencjeUi]", error.message);
+    return { blad: "Nie udało się zapisać preferencji nawigacji." };
+  }
+
+  revalidatePath("/", "layout");
+  revalidatePath("/panel/profil");
   return { ok: true };
 }
 

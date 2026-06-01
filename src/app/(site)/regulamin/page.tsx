@@ -35,8 +35,25 @@ export default function RegulaminPage() {
         <section>
           <h2 className="font-serif text-xl text-green-900">§ 2. Wymagania techniczne i wiek</h2>
           <p className="mt-2 leading-relaxed text-stone-700">
-            Minimalny wiek użytkownika konta: <strong>16 lat</strong>. Użytkownik oświadcza prawdziwość podanych
-            danych. Zakazane jest podszywanie się pod inne osoby lub instytucje.
+            Minimalny wiek użytkownika konta: <strong>16 lat</strong> — potwierdzany przy rejestracji lub pierwszym
+            logowaniu. Użytkownik oświadcza prawdziwość podanych danych. Zakazane jest podszywanie się pod inne osoby
+            lub instytucje. Akceptacja regulaminu i{" "}
+            <Link href="/polityka-prywatnosci" className="font-medium text-green-800 underline">
+              polityki prywatności
+            </Link>{" "}
+            jest wymagana przed korzystaniem z konta.
+          </p>
+        </section>
+
+        <section>
+          <h2 className="font-serif text-xl text-green-900">§ 2a. Usunięcie konta</h2>
+          <p className="mt-2 leading-relaxed text-stone-700">
+            Użytkownik może w każdej chwili usunąć konto w panelu (
+            <Link href="/panel/profil" className="font-medium text-green-800 underline">
+              Mój profil → RODO
+            </Link>
+            ) lub zgłosić żądanie na rodo@naszawies.pl. Szczegóły przetwarzania i wyjątki (np. treści pozostające przy
+            zanonimizowanym autorze) opisuje polityka prywatności.
           </p>
         </section>
 

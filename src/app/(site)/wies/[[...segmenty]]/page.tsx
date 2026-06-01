@@ -32,17 +32,53 @@ import { etykietaKategoriiDotacji } from "@/lib/wies/teksty-dotacji";
 import { czyWydarzenieKgw, czyWydarzenieLowieckie, czyWydarzenieOsp, czyWydarzenieParafialne, etykietaRodzajuWydarzenia } from "@/lib/wies/teksty-organizacji";
 import { normalizujKategorieLinku, type LinkPrzydatnyPubliczny } from "@/lib/wies/linki-przydatne";
 import { pobierzPlanCmentarzaPubliczny } from "@/lib/cmentarz/pobierz-cmentarz-publiczny";
-import { CmentarzPublicznyKlient } from "@/components/cmentarz/cmentarz-publiczny-klient";
 import { pobierzDaneMapyWsi } from "@/lib/mapa/pobierz-dane-mapy-wsi";
-import { mapujOgloszeniaRynekDlaMapy } from "@/lib/mapa/rynek-na-mapie";
-import { mapujDzialkiRynekDlaMapy } from "@/lib/mapa/rynek-dzialki-na-mapie";
+import { CmentarzPublicznyKlient } from "@/components/cmentarz/cmentarz-publiczny-klient";
+import { MarketplaceListaKlient } from "@/components/wies/marketplace-lista-klient";
+import { KartaProfiluRynku } from "@/components/wies/karta-profilu-rynku";
+import { RynekMapaEmbedded } from "@/components/wies/rynek-mapa-embedded";
+import { OkruszkiRynku, NaglowekStronyRynku, RynekBannerSezonowy } from "@/components/wies/rynek-ui";
 import { aktywnyBannerRynku } from "@/lib/marketplace/banner-rynku";
+import { POLE_SELECT_RYNEK_LISTA } from "@/lib/marketplace/pola-select-rynku";
+import {
+  pobierzRynekStronaWsiCached,
+  pobierzSubskrypcjeKategoriiRynku,
+} from "@/lib/marketplace/pobierz-rynek-strona-wsi";
+import { pobierzLiczbeObserwujacychProfiluRynku } from "@/lib/marketplace/liczba-obserwujacych-profilu";
 import { wzbogacOfertyOZaufanie, zaufanieZLiczby } from "@/lib/marketplace/zaufanie-sprzedawcy";
-import type { ZnacznikPoi, ZnacznikRynek, ZnacznikRynekDzialka, ZnacznikWsi } from "@/components/mapa/mapa-wsi-leaflet";
+import type { ZnacznikPoi, ZnacznikWsi } from "@/components/mapa/mapa-wsi-leaflet";
+import { HistoriaListaFiltryKlient } from "@/components/wies/historia-lista-filtry-klient";
+import { MapaJednegoWydarzeniaHistoria } from "@/components/wies/mapa-jednego-wydarzenia-historia";
+import { HistoriaSzczegolyMedia } from "@/components/wies/sekcja-historia-publiczna";
+import { HistoriaWpisEngagementKlient } from "@/components/wies/historia-wpis-engagement-klient";
+import { mapujWpisHistoriiPubliczny } from "@/lib/historia/pobierz-historie-wsi";
+import { czyUzytkownikZapalilSwieczke } from "@/lib/historia/akcje-historia-reakcje";
+import { urlRssHistoriiWsi } from "@/lib/historia/rss-historii";
+import { SportListaFiltryKlient } from "@/components/wies/sport-lista-filtry-klient";
+import { KartaKlubuSportowego } from "@/components/wies/karta-klubu-sportowego";
+import { pobierzTerminarzSportuWsi } from "@/lib/wies/pobierz-terminarz-sportu-wsi";
+import { parsujProfilKlubuSportowego } from "@/lib/wies/profil-klubu-sportowego";
+import { urlIcalSportuWsi, urlRssSportuWsi } from "@/lib/wies/rss-sportu";
+import {
+  czyWydarzenieSportowe,
+  nazwyKlubowSportowych,
+} from "@/lib/wies/sport";
+import { czyOrganizacjaSport } from "@/lib/wies/profil-organizacji";
+import { nazwaDniaTygodnia } from "@/lib/wies/teksty-dotacji";
 
 type Props = {
   params: { segmenty?: string[] };
-  searchParams?: { q?: string | string[]; liturgia?: string | string[]; kgw?: string | string[]; osp?: string | string[]; mysliwi?: string | string[] };
+  searchParams?: {
+    q?: string | string[];
+    liturgia?: string | string[];
+    kgw?: string | string[];
+    osp?: string | string[];
+    mysliwi?: string | string[];
+    podglad?: string | string[];
+    szkola?: string | string[];
+    historia?: string | string[];
+    sport?: string | string[];
+  };
 };
 
 export const revalidate = 120;
@@ -53,14 +89,6 @@ type BlogWpis = {
   excerpt: string | null;
   created_at: string;
   published_at: string | null;
-};
-
-type HistoriaWpis = {
-  id: string;
-  title: string;
-  short_description: string | null;
-  event_date: string | null;
-  created_at: string;
 };
 
 type RynekOferta = {
@@ -84,9 +112,6 @@ type RynekOferta = {
   view_count?: number;
   owner_user_id?: string | null;
 };
-
-const POLE_SELECT_RYNEK_LISTA =
-  "id, title, listing_type, category, equipment_category, location_text, price_amount, price_unit, currency, with_operator, image_urls, published_at, created_at, seller_verified, parcel_area_m2, parcel_number, geoportal_parcel_id, view_count, owner_user_id";
 
 type WiadomoscLokalna = {
   id: string;
@@ -241,10 +266,10 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       }
     }
   }
-  if (s.length === 7 && s[4] === "rynek" && s[5] === "uslugi") {
+  if (s.length === 7 && s[4] === "rynek" && (s[5] === "uslugi" || s[5] === "firmy")) {
     const idProfilu = z.string().uuid().safeParse(s[6]);
     if (idProfilu.success) {
-      if (!supabase) return { title: "Profil usługodawcy" };
+      if (!supabase) return { title: "Profil firmy" };
       const wiesMeta = await znajdzWiesPoSciezce(supabase, s[0], s[1], s[2], s[3]);
       if (wiesMeta) {
         const { data: profil } = await supabase
@@ -256,10 +281,51 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
           .maybeSingle();
         if (profil?.business_name) {
           return {
-            title: `${profil.business_name} — usługi · ${wiesMeta.name}`,
+            title: `${profil.business_name} — rynek · ${wiesMeta.name}`,
             description:
               profil.short_description?.slice(0, 160) ??
-              `Profil usługodawcy na lokalnym rynku we wsi ${wiesMeta.name}.`,
+              `Profil firmy lub sklepu na lokalnym rynku we wsi ${wiesMeta.name}.`,
+          };
+        }
+      }
+    }
+  }
+  if (s.length === 6 && s[4] === "historia") {
+    const id = z.string().uuid().safeParse(s[5]);
+    if (id.success) {
+      if (!supabase) return { title: "Kronika wsi" };
+      const wiesMeta = await znajdzWiesPoSciezce(supabase, s[0], s[1], s[2], s[3]);
+      if (wiesMeta) {
+        const { data: wpis } = await supabase
+          .from("village_history_entries")
+          .select("title, short_description, media_urls")
+          .eq("id", id.data)
+          .eq("village_id", wiesMeta.id)
+          .eq("status", "approved")
+          .maybeSingle();
+        if (wpis?.title) {
+          const sciezka = sciezkaProfiluWsi(wiesMeta);
+          const opis =
+            (wpis.short_description as string | null)?.trim()?.slice(0, 160) ||
+            `Wpis kroniki we wsi ${wiesMeta.name} na naszawies.pl.`;
+          const zdjecie = Array.isArray(wpis.media_urls) ? (wpis.media_urls[0] as string) : undefined;
+          return {
+            title: `${wpis.title} — kronika · ${wiesMeta.name}`,
+            description: opis,
+            alternates: { canonical: `${sciezka}/historia/${id.data}` },
+            openGraph: {
+              title: wpis.title,
+              description: opis,
+              url: `${sciezka}/historia/${id.data}`,
+              type: "article",
+              images: zdjecie ? [{ url: zdjecie, alt: wpis.title }] : undefined,
+            },
+            twitter: {
+              card: zdjecie ? "summary_large_image" : "summary",
+              title: `${wpis.title} — ${wiesMeta.name}`,
+              description: opis,
+              images: zdjecie ? [zdjecie] : undefined,
+            },
           };
         }
       }
@@ -386,6 +452,7 @@ export default async function WiesCatchAllPage({ params, searchParams }: Props) 
     const zgloszeniaPubliczneRaw = danePubliczne.zgloszeniaPubliczneRaw;
     const maPlanCmentarza = !!danePubliczne.planCmentarzaId;
     const liczbaMieszkancowAktywnych = danePubliczne.liczbaMieszkancowAktywnych;
+    const ogloszeniaSzkoly = danePubliczne.ogloszeniaSzkoly;
 
     let userSesji: { id: string } | null = null;
     let mapaZnacznik: ZnacznikWsi | null = null;
@@ -456,7 +523,9 @@ export default async function WiesCatchAllPage({ params, searchParams }: Props) 
     }
 
     const blog = (blogRaw ?? []) as BlogWpis[];
-    const historia = (historiaRaw ?? []) as HistoriaWpis[];
+    const historia = (historiaRaw ?? []).map((w) =>
+      mapujWpisHistoriiPubliczny(w as Record<string, unknown>),
+    );
     const rynek = wzbogacOfertyOZaufanie((rynekRaw ?? []) as RynekOferta[]);
     const wiadomosci = (wiadomosciRaw ?? []) as WiadomoscLokalna[];
     const profileUslug = (profileRaw ?? []) as {
@@ -466,6 +535,7 @@ export default async function WiesCatchAllPage({ params, searchParams }: Props) 
       categories: string[] | null;
       phone: string | null;
       is_verified: boolean;
+      profile_kind?: string | null;
     }[];
 
     type WierszWydarzeniaRaw = {
@@ -578,9 +648,25 @@ export default async function WiesCatchAllPage({ params, searchParams }: Props) 
     }[];
 
     const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? "https://naszawies.pl").replace(/[\r\n]+/g, "").trim();
+    const trybPodgladu =
+      searchParams?.podglad === "1" ||
+      searchParams?.podglad === "true" ||
+      (Array.isArray(searchParams?.podglad) && searchParams.podglad.includes("1"));
+    const przewinDoSzkoly =
+      searchParams?.szkola === "1" ||
+      searchParams?.szkola === "true" ||
+      (Array.isArray(searchParams?.szkola) && searchParams.szkola.includes("1"));
+    const przewinDoHistorii =
+      searchParams?.historia === "1" ||
+      searchParams?.historia === "true" ||
+      (Array.isArray(searchParams?.historia) && searchParams.historia.includes("1"));
+    const przewinDoSportu =
+      searchParams?.sport === "1" ||
+      searchParams?.sport === "true" ||
+      (Array.isArray(searchParams?.sport) && searchParams.sport.includes("1"));
 
     return (
-      <main className="mx-auto min-w-0 w-full max-w-7xl px-4 py-10 sm:px-6 sm:py-14 text-stone-800">
+      <main className="profil-wies-strona mx-auto min-w-0 w-full max-w-7xl px-4 py-8 text-stone-800 sm:px-6 sm:py-14">
         <WiesJsonLd wies={wies} siteUrl={siteUrl} />
         <p className="mb-6 text-sm text-stone-500">
           <Link href="/" className="text-green-800 underline">
@@ -637,7 +723,12 @@ export default async function WiesCatchAllPage({ params, searchParams }: Props) 
           maPlanCmentarza={maPlanCmentarza}
           zapisaneTresci={zapisaneTresci}
           liczbaMieszkancowAktywnych={liczbaMieszkancowAktywnych ?? 0}
+          ogloszeniaSzkoly={ogloszeniaSzkoly}
           ustawieniaWsi={ustawieniaWsi}
+          trybPodgladu={trybPodgladu}
+          przewinDoSzkoly={przewinDoSzkoly}
+          przewinDoHistorii={przewinDoHistorii}
+          przewinDoSportu={przewinDoSportu}
         />
       </main>
     );
@@ -651,90 +742,23 @@ export default async function WiesCatchAllPage({ params, searchParams }: Props) 
     } = await supabaseSerwer.auth.getSession();
     const userRynek = sesjaRynek?.user ?? null;
 
-    const [
-      { data: rynekPelny },
-      { data: profileRynek },
-      { data: metaWies },
-      { data: wierszeGeo },
-      { data: wierszeDzialki },
-    ] = await Promise.all([
-      supabase
-        .from("marketplace_listings")
-        .select(POLE_SELECT_RYNEK_LISTA)
-        .eq("village_id", wies.id)
-        .eq("status", "approved")
-        .order("published_at", { ascending: false, nullsFirst: false })
-        .limit(100),
-      supabase
-        .from("marketplace_profiles")
-        .select("id, business_name, short_description, categories, phone, is_verified")
-        .eq("village_id", wies.id)
-        .eq("is_active", true)
-        .order("is_verified", { ascending: false })
-        .order("business_name"),
-      supabase
-        .from("villages")
-        .select("rynek_banner_text, rynek_banner_until, latitude, longitude, population, boundary_geojson")
-        .eq("id", wies.id)
-        .maybeSingle(),
-      supabase
-        .from("marketplace_listings")
-        .select("id, title, listing_type, latitude, longitude, village_id")
-        .eq("village_id", wies.id)
-        .eq("status", "approved")
-        .not("latitude", "is", null)
-        .not("longitude", "is", null)
-        .limit(200),
-      supabase
-        .from("marketplace_listings")
-        .select("id, title, listing_type, equipment_category, category, parcel_geojson, parcel_area_m2, village_id")
-        .eq("village_id", wies.id)
-        .eq("status", "approved")
-        .not("parcel_geojson", "is", null)
-        .limit(80),
+    const [daneRynek, subskrybowaneKategorie] = await Promise.all([
+      pobierzRynekStronaWsiCached(wies.id, wies),
+      userRynek
+        ? pobierzSubskrypcjeKategoriiRynku(supabaseSerwer, userRynek.id, wies.id)
+        : Promise.resolve([] as (string | null)[]),
     ]);
 
-    let subskrybowaneKategorie: (string | null)[] = [];
-    if (userRynek) {
-      const { data: subs } = await supabaseSerwer
-        .from("marketplace_category_subscriptions")
-        .select("equipment_category")
-        .eq("user_id", userRynek.id)
-        .eq("village_id", wies.id);
-      subskrybowaneKategorie = (subs ?? []).map((s) => s.equipment_category ?? null);
-    }
-
-    const wiesPoId = new Map([[wies.id, { name: wies.name, sciezka }]]);
-    const punktyRynek: ZnacznikRynek[] = mapujOgloszeniaRynekDlaMapy(
-      (wierszeGeo ?? []) as Parameters<typeof mapujOgloszeniaRynekDlaMapy>[0],
-      wiesPoId,
+    const ogloszenia = wzbogacOfertyOZaufanie(daneRynek.ogloszeniaRaw as RynekOferta[]);
+    const profile = daneRynek.profileRynek;
+    const metaWies = daneRynek.metaWies;
+    const znacznikMapy = daneRynek.znacznikMapy;
+    const punktyRynek = daneRynek.punktyRynek;
+    const punktyRynekDzialki = daneRynek.punktyRynekDzialki;
+    const bannerTekst = aktywnyBannerRynku(
+      metaWies?.rynek_banner_text ?? null,
+      metaWies?.rynek_banner_until ?? null,
     );
-    const punktyRynekDzialki: ZnacznikRynekDzialka[] = mapujDzialkiRynekDlaMapy(
-      (wierszeDzialki ?? []) as Parameters<typeof mapujDzialkiRynekDlaMapy>[0],
-      wiesPoId,
-    );
-
-    const { znacznik: znacznikMapy } = await pobierzDaneMapyWsi(supabase, {
-      id: wies.id,
-      name: wies.name,
-      slug: wies.slug,
-      voivodeship: wies.voivodeship,
-      county: wies.county,
-      commune: wies.commune,
-      latitude: metaWies?.latitude ?? wies.latitude,
-      longitude: metaWies?.longitude ?? wies.longitude,
-      population: wies.population,
-      boundary_geojson: metaWies?.boundary_geojson,
-    });
-
-    const ogloszenia = wzbogacOfertyOZaufanie((rynekPelny ?? []) as RynekOferta[]);
-    const profile = profileRynek ?? [];
-    const bannerTekst = aktywnyBannerRynku(metaWies?.rynek_banner_text, metaWies?.rynek_banner_until);
-
-    const { MarketplaceListaKlient } = await import("@/components/wies/marketplace-lista-klient");
-    const { OkruszkiRynku, NaglowekStronyRynku, RynekBannerSezonowy } = await import("@/components/wies/rynek-ui");
-    const { KartaProfiluRynku } = await import("@/components/wies/karta-profilu-rynku");
-    const { RynekMapaEmbedded } = await import("@/components/wies/rynek-mapa-embedded");
 
     return (
       <main className="mx-auto min-w-0 w-full max-w-7xl px-4 py-8 sm:px-6 sm:py-12 text-stone-800">
@@ -751,7 +775,7 @@ export default async function WiesCatchAllPage({ params, searchParams }: Props) 
           <div className="min-w-0 space-y-8">
             {profile.length > 0 ? (
               <section>
-                <h2 className="text-sm font-semibold text-stone-800">Profile usługodawców</h2>
+                <h2 className="text-sm font-semibold text-stone-800">Firmy i sklepy</h2>
                 <ul className="mt-3 grid gap-3 sm:grid-cols-2 lg:grid-cols-2">
                   {profile.map((p) => (
                     <li key={p.id}>
@@ -810,14 +834,24 @@ export default async function WiesCatchAllPage({ params, searchParams }: Props) 
     );
   }
 
-  if (reszta.length === 3 && reszta[0] === "rynek" && reszta[1] === "uslugi") {
+  if (
+    reszta.length === 3 &&
+    reszta[0] === "rynek" &&
+    (reszta[1] === "uslugi" || reszta[1] === "firmy")
+  ) {
     const idProfilu = z.string().uuid().safeParse(reszta[2]);
     if (!idProfilu.success) notFound();
+
+    const supabaseSerwer = utworzKlientaSupabaseSerwer();
+    const {
+      data: { session },
+    } = await supabaseSerwer.auth.getSession();
+    const userProfil = session?.user ?? null;
 
     const { data: profil } = await supabase
       .from("marketplace_profiles")
       .select(
-        "id, business_name, short_description, details, phone, email, website, categories, service_area, is_verified",
+        "id, owner_user_id, business_name, short_description, details, phone, email, website, categories, service_area, is_verified, profile_kind",
       )
       .eq("id", idProfilu.data)
       .eq("village_id", wies.id)
@@ -826,13 +860,26 @@ export default async function WiesCatchAllPage({ params, searchParams }: Props) 
 
     if (!profil) notFound();
 
-    const { data: ogloszeniaProfilu } = await supabase
-      .from("marketplace_listings")
-      .select(POLE_SELECT_RYNEK_LISTA)
-      .eq("village_id", wies.id)
-      .eq("profile_id", profil.id)
-      .eq("status", "approved")
-      .order("published_at", { ascending: false, nullsFirst: false });
+    const [{ data: ogloszeniaProfilu }, liczbaObserwujacych] = await Promise.all([
+      supabase
+        .from("marketplace_listings")
+        .select(POLE_SELECT_RYNEK_LISTA)
+        .eq("village_id", wies.id)
+        .eq("profile_id", profil.id)
+        .eq("status", "approved")
+        .order("published_at", { ascending: false, nullsFirst: false }),
+      pobierzLiczbeObserwujacychProfiluRynku(supabase, profil.id),
+    ]);
+
+    let obserwujeProfil = false;
+    if (userProfil) {
+      const { count: moja } = await supabase
+        .from("marketplace_profile_follows")
+        .select("id", { count: "exact", head: true })
+        .eq("profile_id", profil.id)
+        .eq("user_id", userProfil.id);
+      obserwujeProfil = (moja ?? 0) > 0;
+    }
 
     const sciezka = sciezkaProfiluWsi(wies);
     const { RynekProfilUslugPubliczny } = await import("@/components/wies/rynek-profil-uslug-publiczny");
@@ -845,6 +892,10 @@ export default async function WiesCatchAllPage({ params, searchParams }: Props) 
           profil={profil}
           ogloszenia={wzbogacOfertyOZaufanie((ogloszeniaProfilu ?? []) as RynekOferta[])}
           sciezkaWsi={sciezka}
+          zalogowany={!!userProfil}
+          obserwujeProfil={obserwujeProfil}
+          jestWlascicielem={userProfil?.id === profil.owner_user_id}
+          liczbaObserwujacych={liczbaObserwujacych}
         />
       </main>
     );
@@ -1063,12 +1114,37 @@ export default async function WiesCatchAllPage({ params, searchParams }: Props) 
     }
     const { data: wpis, error } = await supabase
       .from("village_history_entries")
-      .select("id, title, short_description, body, event_date, created_at, village_id")
+      .select(
+        "id, title, short_description, body, event_date, era_label, created_at, village_id, media_urls, source_links, location_label, latitude, longitude, view_count, candle_count, is_featured",
+      )
       .eq("id", idWpisu.data)
       .eq("status", "approved")
       .maybeSingle();
     if (error || !wpis || wpis.village_id !== wies.id) {
       notFound();
+    }
+    const wpisHistoria = mapujWpisHistoriiPubliczny(wpis as Record<string, unknown>);
+    const sciezka = sciezkaProfiluWsi(wies);
+    const hrefWpisu = `${sciezka}/historia/${wpisHistoria.id}`;
+    let zapalonaSwieczka = false;
+    let zapisaneId: string | null = null;
+    if (await maCiasteczkaSesjiSupabaseSerwer()) {
+      const supabaseSerwer = utworzKlientaSupabaseSerwer();
+      const {
+        data: { user },
+      } = await supabaseSerwer.auth.getUser();
+      if (user) {
+        zapalonaSwieczka = await czyUzytkownikZapalilSwieczke(wpisHistoria.id, user.id);
+        const { data: zapis } = await supabaseSerwer
+          .from("user_saved_content")
+          .select("id")
+          .eq("user_id", user.id)
+          .eq("village_id", wies.id)
+          .eq("content_type", "history")
+          .eq("content_id", wpisHistoria.id)
+          .maybeSingle();
+        zapisaneId = (zapis?.id as string) ?? null;
+      }
     }
     return (
       <main className="mx-auto min-w-0 w-full max-w-7xl px-4 py-16 text-stone-800 sm:px-6">
@@ -1076,17 +1152,43 @@ export default async function WiesCatchAllPage({ params, searchParams }: Props) 
           <Link href={sciezkaProfiluWsi(wies)} className="text-green-800 underline">
             ← {wies.name}
           </Link>
+          {" · "}
+          <Link href={`${sciezka}/historia`} className="text-green-800 underline">
+            Kronika wsi
+          </Link>
         </p>
-        <article className="rounded-xl border border-stone-200 bg-white p-5 shadow-sm">
-          <p className="text-xs uppercase tracking-wide text-stone-500">Historia wsi</p>
-          <h1 className="mt-1 font-serif text-2xl text-green-950">{wpis.title}</h1>
+        <article className="rounded-xl border border-amber-200/60 bg-white p-5 shadow-sm">
+          <p className="text-xs uppercase tracking-wide text-amber-800">Historia wsi</p>
+          {wpisHistoria.era_label ? (
+            <p className="mt-1 text-sm font-medium text-amber-900">{wpisHistoria.era_label}</p>
+          ) : null}
+          <h1 className="mt-1 font-serif text-2xl text-green-950">{wpisHistoria.title}</h1>
           <p className="mt-2 text-xs text-stone-500">
-            {wpis.event_date
-              ? `Data wydarzenia: ${new Date(wpis.event_date).toLocaleDateString("pl-PL")}`
-              : `Dodano: ${new Date(wpis.created_at).toLocaleDateString("pl-PL")}`}
+            {wpisHistoria.event_date
+              ? `Data wydarzenia: ${new Date(wpisHistoria.event_date).toLocaleDateString("pl-PL")}`
+              : `Dodano: ${new Date(wpisHistoria.created_at).toLocaleDateString("pl-PL")}`}
           </p>
-          {wpis.short_description ? <p className="mt-3 text-sm font-medium text-stone-700">{wpis.short_description}</p> : null}
-          <div className="mt-4 whitespace-pre-wrap text-sm leading-relaxed text-stone-800">{wpis.body}</div>
+          {wpisHistoria.short_description ? (
+            <p className="mt-3 text-sm font-medium text-stone-700">{wpisHistoria.short_description}</p>
+          ) : null}
+          <HistoriaSzczegolyMedia wpis={wpisHistoria} />
+          <HistoriaWpisEngagementKlient
+            entryId={wpisHistoria.id}
+            villageId={wies.id}
+            title={wpisHistoria.title}
+            href={hrefWpisu}
+            viewCount={wpisHistoria.view_count}
+            candleCount={wpisHistoria.candle_count}
+            zapalonaSwieczka={zapalonaSwieczka}
+            zapisaneId={zapisaneId}
+          />
+          <MapaJednegoWydarzeniaHistoria
+            wpis={wpisHistoria}
+            villageId={wies.id}
+            villageName={wies.name}
+            sciezkaProfilu={sciezka}
+          />
+          <div className="mt-4 whitespace-pre-wrap text-sm leading-relaxed text-stone-800">{wpisHistoria.body}</div>
         </article>
       </main>
     );
@@ -1221,6 +1323,22 @@ export default async function WiesCatchAllPage({ params, searchParams }: Props) 
       searchParams?.mysliwi === "1" ||
       searchParams?.mysliwi === "true" ||
       (Array.isArray(searchParams?.mysliwi) && searchParams.mysliwi.includes("1"));
+    const tylkoSport =
+      searchParams?.sport === "1" ||
+      searchParams?.sport === "true" ||
+      (Array.isArray(searchParams?.sport) && searchParams.sport.includes("1"));
+    const { data: grupyWsi } = tylkoSport
+      ? await supabase
+          .from("village_community_groups")
+          .select("id, name, group_type")
+          .eq("village_id", wies.id)
+          .eq("is_active", true)
+      : { data: null };
+    const nazwyKlubow = tylkoSport
+      ? nazwyKlubowSportowych(
+          (grupyWsi ?? []).filter((g) => czyOrganizacjaSport(String(g.group_type), String(g.name))),
+        )
+      : [];
     const listaWidoczna = tylkoLiturgia
       ? lista.filter((w) => czyWydarzenieParafialne(w.event_kind, nazwaPowiazanejGrupy(w.village_community_groups)))
       : tylkoKgw
@@ -1229,14 +1347,22 @@ export default async function WiesCatchAllPage({ params, searchParams }: Props) 
           ? lista.filter((w) => czyWydarzenieOsp(w.event_kind, nazwaPowiazanejGrupy(w.village_community_groups)))
           : tylkoMysliwi
             ? lista.filter((w) => czyWydarzenieLowieckie(w.event_kind, nazwaPowiazanejGrupy(w.village_community_groups)))
-            : lista;
+            : tylkoSport
+              ? lista.filter((w) =>
+                  czyWydarzenieSportowe(
+                    w.event_kind,
+                    nazwaPowiazanejGrupy(w.village_community_groups),
+                    nazwyKlubow,
+                  ),
+                )
+              : lista;
     return (
       <main className="mx-auto min-w-0 w-full max-w-7xl px-4 py-16 text-stone-800 sm:px-6">
         <p className="mb-4 text-sm text-stone-500">
           <Link href={sciezka} className="text-green-800 underline">
             ← {wies.name}
           </Link>
-          {tylkoLiturgia || tylkoKgw || tylkoOsp || tylkoMysliwi ? (
+          {tylkoLiturgia || tylkoKgw || tylkoOsp || tylkoMysliwi || tylkoSport ? (
             <>
               {" · "}
               <Link href={`${sciezka}/wydarzenia`} className="text-green-800 underline">
@@ -1254,7 +1380,9 @@ export default async function WiesCatchAllPage({ params, searchParams }: Props) 
                 ? "Kalendarz wydarzeń OSP"
                 : tylkoMysliwi
                   ? "Kalendarz wydarzeń koła łowieckiego"
-                  : "Kalendarz wydarzeń"}
+                  : tylkoSport
+                    ? "Terminarz sportowy"
+                    : "Kalendarz wydarzeń"}
         </h1>
         <p className="mt-2 text-sm text-stone-600">
           {tylkoLiturgia
@@ -1265,9 +1393,11 @@ export default async function WiesCatchAllPage({ params, searchParams }: Props) 
                 ? "Ćwiczenia, zebrania i uroczystości jednostki OSP."
                 : tylkoMysliwi
                   ? "Polowania, zebrania koła, szkolenia i uroczystości myśliwskie."
-                  : "Mecze, wyjazdy, próby zespołów, festyny i spotkania — wg daty rozpoczęcia."}
+                  : tylkoSport
+                    ? "Mecze, treningi, wyjazdy i zawody klubów sportowych we wsi."
+                    : "Mecze, wyjazdy, próby zespołów, festyny i spotkania — wg daty rozpoczęcia."}
         </p>
-        {!tylkoLiturgia && !tylkoKgw && !tylkoOsp && !tylkoMysliwi ? (
+        {!tylkoLiturgia && !tylkoKgw && !tylkoOsp && !tylkoMysliwi && !tylkoSport ? (
           <div className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm">
             <Link href={`${sciezka}/wydarzenia?liturgia=1`} className="text-violet-800 underline">
               Tylko wydarzenia parafialne →
@@ -1281,6 +1411,9 @@ export default async function WiesCatchAllPage({ params, searchParams }: Props) 
             <Link href={`${sciezka}/wydarzenia?mysliwi=1`} className="text-emerald-800 underline">
               Tylko wydarzenia myśliwych →
             </Link>
+            <Link href={`${sciezka}/wydarzenia?sport=1`} className="text-sky-800 underline">
+              Terminarz sportowy →
+            </Link>
           </div>
         ) : null}
         {listaWidoczna.length === 0 ? (
@@ -1293,7 +1426,9 @@ export default async function WiesCatchAllPage({ params, searchParams }: Props) 
                   ? "Brak zaplanowanych wydarzeń OSP."
                   : tylkoMysliwi
                     ? "Brak zaplanowanych wydarzeń koła łowieckiego."
-                    : "Brak zaplanowanych wydarzeń."}
+                    : tylkoSport
+                      ? "Brak zaplanowanych wydarzeń sportowych."
+                      : "Brak zaplanowanych wydarzeń."}
           </p>
         ) : (
           <ul className="mt-6 space-y-3">
@@ -1434,45 +1569,129 @@ export default async function WiesCatchAllPage({ params, searchParams }: Props) 
     );
   }
 
-  if (reszta.length === 1 && reszta[0] === "historia") {
-    const { data: wpisy } = await supabase
-      .from("village_history_entries")
-      .select("id, title, short_description, event_date, created_at")
-      .eq("village_id", wies.id)
-      .eq("status", "approved")
-      .order("event_date", { ascending: false, nullsFirst: false })
-      .limit(60);
-    const lista = (wpisy ?? []) as HistoriaWpis[];
+  if (reszta.length === 1 && reszta[0] === "sport") {
+    const sciezka = sciezkaProfiluWsi(wies);
+    const { kluby, wydarzenia, treningi } = await pobierzTerminarzSportuWsi(supabase, wies.id);
+    const sciezkaWydarzenia = `${sciezka}/wydarzenia`;
+    const pusto = kluby.length === 0 && treningi.length === 0 && wydarzenia.length === 0;
     return (
       <main className="mx-auto min-w-0 w-full max-w-7xl px-4 py-16 text-stone-800 sm:px-6">
         <p className="mb-4 text-sm text-stone-500">
-          <Link href={sciezkaProfiluWsi(wies)} className="text-green-800 underline">
+          <Link href={sciezka} className="text-green-800 underline">
+            ← {wies.name}
+          </Link>
+        </p>
+        <h1 className="font-serif text-2xl text-green-950">Terminarz sportowy</h1>
+        <p className="mt-2 text-sm text-stone-600">Treningi w tygodniu, mecze i zawody — gdzie i kiedy.</p>
+        <p className="mt-2 flex flex-wrap gap-x-3 gap-y-1 text-sm">
+          <Link href={`${sciezka}#sekcja-sport`} className="text-green-800 underline">
+            Zakładka Sport
+          </Link>
+          <Link href={`${sciezka}/wydarzenia?sport=1`} className="text-green-800 underline">
+            Kalendarz (sport)
+          </Link>
+          <a href={urlRssSportuWsi(wies.id)} className="text-green-800 underline">
+            RSS
+          </a>
+          <a href={urlIcalSportuWsi(wies.id)} className="text-green-800 underline">
+            iCal
+          </a>
+        </p>
+        {pusto ? (
+          <p className="mt-6 text-sm text-stone-500">Brak opublikowanych informacji sportowych.</p>
+        ) : (
+          <div className="mt-8 space-y-8">
+            {kluby.map((k) => (
+              <KartaKlubuSportowego
+                key={k.id}
+                klub={{
+                  id: k.id,
+                  name: k.name,
+                  short_description: k.short_description,
+                  meeting_place: k.meeting_place,
+                  schedule_text: k.schedule_text,
+                  contact_phone: k.contact_phone,
+                  contact_email: k.contact_email,
+                  profil: parsujProfilKlubuSportowego(k.profile_data),
+                }}
+                sciezkaProfilu={sciezka}
+                sciezkaWydarzenia={sciezkaWydarzenia}
+                nadchodzaceWydarzenia={wydarzenia
+                  .filter((ev) => ev.nazwa_grupy === k.name || !ev.nazwa_grupy)
+                  .slice(0, 6)
+                  .map((ev) => ({
+                    id: ev.id,
+                    event_kind: ev.event_kind,
+                    title: ev.title,
+                    location_text: ev.location_text,
+                    starts_at: ev.starts_at,
+                  }))}
+              />
+            ))}
+            {treningi.length > 0 ? (
+              <section>
+                <h2 className="text-sm font-semibold uppercase tracking-wide text-emerald-900">Plan treningów</h2>
+                <ul className="mt-3 space-y-2">
+                  {treningi.map((s) => (
+                    <li key={s.id} className="rounded-xl border border-stone-200 bg-white px-4 py-3 text-sm">
+                      <span className="font-medium text-emerald-950">{nazwaDniaTygodnia(s.day_of_week)}</span>
+                      {" "}
+                      {s.time_start.slice(0, 5)}
+                      {s.time_end ? `–${s.time_end.slice(0, 5)}` : ""} — {s.title}
+                      {s.nazwa_grupy ? ` · ${s.nazwa_grupy}` : ""}
+                      {s.description ? <p className="mt-1 text-xs text-stone-600">{s.description}</p> : null}
+                    </li>
+                  ))}
+                </ul>
+              </section>
+            ) : null}
+            {wydarzenia.length > 0 ? (
+              <section>
+                <h2 className="text-sm font-semibold uppercase tracking-wide text-stone-500">Mecze i zawody</h2>
+                <SportListaFiltryKlient wydarzenia={wydarzenia} sciezkaProfilu={sciezka} />
+              </section>
+            ) : null}
+          </div>
+        )}
+      </main>
+    );
+  }
+
+  if (reszta.length === 1 && reszta[0] === "historia") {
+    const { data: wpisy } = await supabase
+      .from("village_history_entries")
+      .select(
+        "id, title, short_description, event_date, era_label, created_at, media_urls, location_label, latitude, longitude, view_count, candle_count, is_featured",
+      )
+      .eq("village_id", wies.id)
+      .eq("status", "approved")
+      .order("is_featured", { ascending: false })
+      .order("event_date", { ascending: false, nullsFirst: false })
+      .limit(60);
+    const lista = (wpisy ?? []).map((w) => mapujWpisHistoriiPubliczny(w as Record<string, unknown>));
+    const sciezka = sciezkaProfiluWsi(wies);
+    const rssUrl = urlRssHistoriiWsi(wies.id);
+    return (
+      <main className="mx-auto min-w-0 w-full max-w-7xl px-4 py-16 text-stone-800 sm:px-6">
+        <p className="mb-4 text-sm text-stone-500">
+          <Link href={sciezka} className="text-green-800 underline">
             ← {wies.name}
           </Link>
         </p>
         <h1 className="font-serif text-2xl text-green-950">Historia wsi</h1>
-        <p className="mt-2 text-sm text-stone-600">Kronika i wspomnienia opublikowane dla mieszkańców i gości.</p>
+        <p className="mt-2 text-sm text-stone-600">Kronika, zdjęcia archiwalne i miejsca zdarzeń na mapie.</p>
+        <p className="mt-2 flex flex-wrap gap-x-4 gap-y-1 text-sm">
+          <Link href={`${sciezka}#sekcja-historia`} className="text-green-800 underline">
+            Wróć do zakładki na profilu wsi
+          </Link>
+          <a href={rssUrl} className="text-green-800 underline">
+            Kanał RSS
+          </a>
+        </p>
         {lista.length === 0 ? (
           <p className="mt-6 text-sm text-stone-500">Brak opublikowanych wpisów historii.</p>
         ) : (
-          <ul className="mt-6 space-y-3">
-            {lista.map((w) => (
-              <li key={w.id}>
-                <Link
-                  href={`${sciezkaProfiluWsi(wies)}/historia/${w.id}`}
-                  className="block rounded-xl border border-stone-200 bg-white px-4 py-3 shadow-sm transition hover:border-green-300 hover:bg-green-50/40"
-                >
-                  <p className="font-medium text-stone-900">{w.title}</p>
-                  {w.short_description ? <p className="mt-1 text-sm text-stone-700">{w.short_description}</p> : null}
-                  <p className="mt-2 text-xs text-stone-500">
-                    {w.event_date
-                      ? new Date(w.event_date).toLocaleDateString("pl-PL")
-                      : new Date(w.created_at).toLocaleDateString("pl-PL")}
-                  </p>
-                </Link>
-              </li>
-            ))}
-          </ul>
+          <HistoriaListaFiltryKlient wpisy={lista} sciezkaProfilu={sciezka} nazwaWsi={wies.name} />
         )}
       </main>
     );

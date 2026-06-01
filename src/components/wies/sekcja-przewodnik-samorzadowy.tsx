@@ -68,7 +68,8 @@ export function SekcjaPrzewodnikSamorzadowy({
       ) : (
         <p className="mt-5 rounded-xl border border-dashed border-stone-300/90 bg-white/60 px-4 py-3 text-sm text-stone-600">
           Sołtys może dopisać telefony do urzędu gminy, link do harmonogramu śmieci i wskazówki, komu zgłaszać sprawy
-          lokalne — wtedy pojawi się sekcja „Na miejscu we wsi”.
+          lokalne — wtedy pojawi się sekcja „Na miejscu we wsi”. W panelu sołtysa można też włączyć{" "}
+          <strong>automatyczne przypomnienia</strong> (śmieci, podatki) dla mieszkańców.
         </p>
       )}
     </OslonaSekcjiWies>

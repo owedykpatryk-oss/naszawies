@@ -2,7 +2,7 @@
 
 import { createAdminSupabaseClient } from "@/lib/supabase/admin-client";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
-import { odwiazObceKluczePrzedUsunieciemUzytkownika } from "@/lib/rodo/odwiaz-obce-klucze-przed-usunieciem-uzytkownika";
+import { usunDaneOsobowePrzedUsunieciemKonta } from "@/lib/rodo/usun-dane-osobowe-przed-kontem";
 import { zbierzPakietEksportuRodo } from "@/lib/rodo/zbierz-eksport-danych-uzytkownika";
 
 const TEKST_POTWIERDZENIA_USUNIECIA = "USUN KONTO";
@@ -57,9 +57,9 @@ export async function usunKontoNaZawsze(potwierdzenie: string): Promise<WynikUsu
     return { blad: "Usuwanie konta jest chwilowo niedostępne (brak konfiguracji klucza serwisowego Supabase)." };
   }
 
-  const bledyOdwiazania = await odwiazObceKluczePrzedUsunieciemUzytkownika(admin, user.id);
-  if (bledyOdwiazania.length > 0) {
-    console.warn("[usunKontoNaZawsze] odwiazanie kluczy", bledyOdwiazania);
+  const bledyCzyszczenia = await usunDaneOsobowePrzedUsunieciemKonta(admin, user.id);
+  if (bledyCzyszczenia.length > 0) {
+    console.warn("[usunKontoNaZawsze] czyszczenie danych", bledyCzyszczenia);
   }
 
   const { error } = await admin.auth.admin.deleteUser(user.id);

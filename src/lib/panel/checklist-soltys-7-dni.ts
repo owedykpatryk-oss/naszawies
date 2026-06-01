@@ -31,6 +31,7 @@ export async function pobierzChecklisteSoltys7Dni(
     { count: wnioskiPending },
     { count: granice },
     { count: wiadomosci },
+    { count: ogloszeniaSzkoly },
   ] = await Promise.all([
     supabase.from("villages").select("id, is_active, slug").in("id", villageIds),
     supabase
@@ -60,6 +61,11 @@ export async function pobierzChecklisteSoltys7Dni(
       .select("id", { count: "exact", head: true })
       .in("village_id", villageIds)
       .eq("status", "published"),
+    supabase
+      .from("school_announcements")
+      .select("id", { count: "exact", head: true })
+      .in("village_id", villageIds)
+      .eq("status", "approved"),
   ]);
 
   const profilAktywny = (wsi ?? []).some((w) => w.is_active === true);
@@ -68,6 +74,7 @@ export async function pobierzChecklisteSoltys7Dni(
   const maPost =
     (typeof posty === "number" && posty > 0) || (typeof wiadomosci === "number" && wiadomosci > 0);
   const wnioskiCzyste = typeof wnioskiPending !== "number" || wnioskiPending === 0;
+  const maTabliceSzkoly = typeof ogloszeniaSzkoly === "number" && ogloszeniaSzkoly > 0;
 
   const kroki: KrokChecklistySoltysa[] = [
     {
@@ -106,15 +113,22 @@ export async function pobierzChecklisteSoltys7Dni(
       ok: maPost,
     },
     {
+      id: "szkola-tablica",
+      tytul: "6. Tablica szkoły (opcj.)",
+      opis: "Przynajmniej jedno ogłoszenie na tablicy — dla rodziców i uczniów.",
+      href: "/panel/soltys/szkola",
+      ok: maTabliceSzkoly,
+    },
+    {
       id: "wnioski",
-      tytul: "6. Wnioski rozpatrzone",
+      tytul: "7. Wnioski rozpatrzone",
       opis: "Brak oczekujących wniosków o role (mieszkaniec, OSP, KGW…).",
       href: "/panel/soltys#wnioski-o-role",
       ok: wnioskiCzyste,
     },
     {
       id: "qr",
-      tytul: "7. QR / link na tablicę",
+      tytul: "8. QR / link na tablicę",
       opis: "Wygeneruj kod QR w profilu wsi i powieś na tablicy ogłoszeń.",
       href: "/panel/soltys/moja-wies#qr-profil-wsi",
       ok: profilAktywny && wiesOpisWypelniony,

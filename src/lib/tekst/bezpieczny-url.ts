@@ -11,3 +11,16 @@ export function bezpiecznyHref(url: string | null | undefined): string | null {
     return null;
   }
 }
+
+/** Ścieżka względna w aplikacji (bez open redirect). */
+export function bezpiecznaSciezkaWzgledna(url: string | null | undefined): string | null {
+  const s = url?.trim();
+  if (!s || !s.startsWith("/") || s.startsWith("//")) return null;
+  if (s.includes("\\") || s.includes("\0")) return null;
+  return s;
+}
+
+/** Link w powiadomieniu: https do BIP albo ścieżka w serwisie. */
+export function linkPowiadomienia(url: string | null | undefined, fallback: string): string {
+  return bezpiecznyHref(url) ?? bezpiecznaSciezkaWzgledna(url) ?? fallback;
+}

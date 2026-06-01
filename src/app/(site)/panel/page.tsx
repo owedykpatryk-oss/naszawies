@@ -92,7 +92,7 @@ export default async function PanelPage() {
       <ul className="mb-10 grid gap-4 text-sm sm:grid-cols-2">
         <li className="group panel-karta ring-2 ring-emerald-600/15">
           <Link href="/panel/moje" className="link-panel">
-            Moje
+            Obserwowane
             <span
               className="ml-0.5 inline-block text-emerald-700/80 transition group-hover:translate-x-0.5"
               aria-hidden
@@ -101,6 +101,18 @@ export default async function PanelPage() {
             </span>
           </Link>
           <p className="mt-2 text-sm text-stone-600">Twoje wsie, gminy, powiaty i ulubione — bez szukania po serwisie.</p>
+        </li>
+        <li className="group panel-karta border-sky-200/60 bg-sky-50/30">
+          <Link href="/panel/sugestie" className="link-panel">
+            Sugestie
+            <span
+              className="ml-0.5 inline-block text-emerald-700/80 transition group-hover:translate-x-0.5"
+              aria-hidden
+            >
+              →
+            </span>
+          </Link>
+          <p className="mt-2 text-sm text-stone-600">Powiedz, co działa i co poprawić — pomaga nam rozwijać serwis.</p>
         </li>
         <li className="group panel-karta">
           <Link href="/panel/profil" className="link-panel">
@@ -116,7 +128,7 @@ export default async function PanelPage() {
         </li>
         <li className="group panel-karta">
           <Link href="/panel/mieszkaniec" className="link-panel">
-            Działania (mieszkaniec)
+            Moja wieś
             <span
               className="ml-0.5 inline-block text-emerald-700/80 transition group-hover:translate-x-0.5"
               aria-hidden

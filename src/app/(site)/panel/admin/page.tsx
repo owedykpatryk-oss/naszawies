@@ -58,7 +58,10 @@ export default async function AdminPage() {
     <main>
       <h1 className="font-serif text-3xl text-green-950">Administrator platformy</h1>
       <p className="mt-2 text-sm text-stone-600">
-        Tylko wskazane konta administratora platformy widzą tę stronę i poniższe narzędzia.
+        Tylko wskazane konta administratora platformy widzą tę stronę i poniższe narzędzia.{" "}
+        <Link href="/panel/admin/sugestie" className="font-medium text-green-800 underline">
+          Opinie użytkowników →
+        </Link>
       </p>
 
       {brakDostepu ? (

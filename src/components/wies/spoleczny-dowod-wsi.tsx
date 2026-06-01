@@ -18,6 +18,7 @@ export function SpolecznyDowodWsi({
     <ul className="mt-3 flex flex-wrap gap-2 text-[11px] font-medium">
       {aktywnyProfil ? (
         <li className="rounded-full bg-emerald-100 px-2.5 py-1 text-emerald-900 ring-1 ring-emerald-200/80">
+          <span className="spolecznosc-puls" aria-hidden />
           Aktywna społeczność online
         </li>
       ) : null}

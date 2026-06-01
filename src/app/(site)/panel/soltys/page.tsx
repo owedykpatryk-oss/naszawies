@@ -740,7 +740,7 @@ export default async function SoltysPage() {
             >
               <span className="font-semibold text-green-950">Społeczność i WOW</span>
               <span className="mt-1 block text-xs text-stone-600">
-                Blog, historia, marketplace, KGW i kluby, kalendarz wydarzeń, wiadomości i automatyzacje.
+                Blog, kronika, marketplace, KGW — treści na profil publiczny. Zgłoszenia i świetlica osobno.
               </span>
             </Link>
             <Link

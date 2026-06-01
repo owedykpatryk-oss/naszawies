@@ -5,6 +5,11 @@ import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
 import { NaglowekModuluPanelu } from "@/components/pomoc/naglowek-modulu-panelu";
 import { ProfilFormularz } from "./profil-formularz";
 import { ProfilSekcjaRodo } from "./profil-sekcja-rodo";
+import { ProfilPreferencjeNawigacjiKlient } from "./profil-preferencje-nawigacji-klient";
+import { pobierzKluczeDolnejNawigacjiZMeta, pobierzKluczePanelNawigacjiZMeta } from "@/lib/uzytkownik/preferencje-ui";
+import { ProfilPreferencjePanelKlient } from "./profil-preferencje-panel-klient";
+import { pobierzVillageIdsRoliPaneluSoltysaDlaUzytkownikaCache } from "@/lib/panel/rola-panelu-soltysa";
+import { czyAdminPlatformy } from "@/lib/admin/czy-admin-platformy";
 import { ProfilPowiazanieWsiKlient } from "./profil-powiazanie-wsi-klient";
 import { pobierzMojePowiazania } from "@/lib/panel/pobierz-moje-powiazania";
 import type { IntencjaOnboardingu } from "@/lib/auth/onboarding-uzytkownika";
@@ -57,6 +62,16 @@ export default async function PanelProfilPage() {
 
   const powiazania = await pobierzMojePowiazania(user);
   const wszystkieWsi = powiazania?.powiaty.flatMap((po) => po.gminy.flatMap((g) => g.wies)) ?? [];
+  const metaUser = user.user_metadata as Record<string, unknown>;
+  const kluczeDolnejNaw = pobierzKluczeDolnejNawigacjiZMeta(metaUser, true);
+  const [villageIdsSoltys, pokazAdmin] = await Promise.all([
+    pobierzVillageIdsRoliPaneluSoltysaDlaUzytkownikaCache(user.id),
+    czyAdminPlatformy(supabase),
+  ]);
+  const kluczePanelu = pobierzKluczePanelNawigacjiZMeta(metaUser, {
+    pokazSoltysa: villageIdsSoltys.length > 0,
+    pokazAdmin,
+  });
 
   return (
     <main>
@@ -93,6 +108,14 @@ export default async function PanelProfilPage() {
       )}
 
       <ProfilFormularz poczatkowe={poczatkowe} />
+
+      <ProfilPreferencjeNawigacjiKlient zalogowany poczatkowe={kluczeDolnejNaw} />
+
+      <ProfilPreferencjePanelKlient
+        poczatkowe={kluczePanelu}
+        pokazSoltysa={villageIdsSoltys.length > 0}
+        pokazAdmin={pokazAdmin}
+      />
 
       <ProfilPowiazanieWsiKlient
         intencjaStart={intencjaStart}

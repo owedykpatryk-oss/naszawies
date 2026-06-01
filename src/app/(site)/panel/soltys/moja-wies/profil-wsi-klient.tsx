@@ -186,6 +186,10 @@ export function ProfilWsiSoltysKlient({
               <a href="#qr-profil-wsi" className="text-green-800 underline">
                 Kod QR dla tablicy
               </a>
+              {" · "}
+              <Link href="/panel/soltys/szkola" className="text-green-800 underline">
+                Tablica szkoły (QR)
+              </Link>
             </p>
             <QrProfilWsiPanel nazwaWsi={w.name} sciezkaPubliczna={sciezka} villageId={w.id} />
             <SugestieAutomatyzacjiMapy

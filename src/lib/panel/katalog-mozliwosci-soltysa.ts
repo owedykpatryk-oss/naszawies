@@ -53,6 +53,7 @@ type StanWsi = {
   maTransportCache: boolean;
   maOpis: boolean;
   maSale: boolean;
+  maTablicaSzkoly: boolean;
 };
 
 export async function pobierzKatalogMozliwosciSoltysa(
@@ -88,6 +89,7 @@ export async function pobierzKatalogMozliwosciSoltysa(
     { count: sale },
     { count: przystanki },
     { count: stacje },
+    { count: ogloszeniaSzkoly },
   ] = await Promise.all([
     supabase.from("villages").select("id, description, boundary_geojson").in("id", villageIds),
     supabase.from("pois").select("village_id, category").in("village_id", villageIds),
@@ -163,6 +165,11 @@ export async function pobierzKatalogMozliwosciSoltysa(
       .select("id", { count: "exact", head: true })
       .in("village_id", villageIds)
       .eq("category", "stacja_kolejowa"),
+    supabase
+      .from("school_announcements")
+      .select("id", { count: "exact", head: true })
+      .in("village_id", villageIds)
+      .eq("status", "approved"),
   ]);
 
   const opisyOk = (wsi ?? []).filter((w) => (w.description ?? "").trim().length >= 30).length > 0;
@@ -191,6 +198,7 @@ export async function pobierzKatalogMozliwosciSoltysa(
     maTransportCache: (transportCache ?? 0) > 0 || maStacje,
     maOpis: opisyOk,
     maSale: (sale ?? 0) > 0,
+    maTablicaSzkoly: (ogloszeniaSzkoly ?? 0) > 0,
   };
 
   const transportPlatforma = transportKolejWlaczony() || transportAutobusSkonfigurowany();
@@ -276,6 +284,18 @@ export async function pobierzKatalogMozliwosciSoltysa(
       href: "/panel/soltys/wiadomosci-lokalne",
       status: stan.maTresc ? "wlaczone" : "do_uruchomienia",
       automatyczne: false,
+    },
+    {
+      id: "tablica_szkoly",
+      kategoria: "organizacja",
+      ikona: "🏫",
+      tytul: "Tablica szkoły",
+      coDostajaMieszkancy: "Ogłoszenia dla rodziców i uczniów, filtry klas, RSS i kod QR.",
+      coRobiSoltys: "Dodaj ogłoszenia w panelu Szkoła; profil placówki w Społeczność (tryb szkoły).",
+      href: "/panel/soltys/szkola",
+      status: stan.maTablicaSzkoly ? "wlaczone" : "do_uruchomienia",
+      automatyczne: false,
+      wskazowka: stan.maTablicaSzkoly ? undefined : "Włącz moduł szkoły w wyglądzie profilu wsi.",
     },
     {
       id: "zgloszenia",

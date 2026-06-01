@@ -2,10 +2,12 @@
 
 import Link from "next/link";
 import { useEffect, useState } from "react";
+import { zapiszZgodeBaneruCookies } from "@/app/(site)/panel/profil/akcje-zgody-cookies";
+import { WERSJA_BANERU_COOKIES } from "@/lib/rodo/wersje-dokumentow";
 
-const KLUCZ = "naszawies_zgoda_ciasteczka_v1";
+const KLUCZ = `naszawies_zgoda_ciasteczka_${WERSJA_BANERU_COOKIES}`;
 
-/** Minimalna informacja o cookies (sesja, brak reklam) — wg LEGAL.md */
+/** Informacja o cookies niezbędnych + zapis zgody (localStorage; opcjonalnie w bazie po zalogowaniu). */
 export function BanerCiasteczek() {
   const [widoczny, ustawWidoczny] = useState(false);
 
@@ -37,6 +39,16 @@ export function BanerCiasteczek() {
     };
   }, [widoczny]);
 
+  function potwierdz() {
+    try {
+      localStorage.setItem(KLUCZ, new Date().toISOString());
+    } catch {
+      /* ignore */
+    }
+    void zapiszZgodeBaneruCookies();
+    ustawWidoczny(false);
+  }
+
   if (!widoczny) return null;
 
   return (
@@ -48,27 +60,21 @@ export function BanerCiasteczek() {
     >
       <div className="mx-auto flex max-w-4xl flex-col gap-2 sm:flex-row sm:items-center sm:justify-between sm:gap-3">
         <p id="baner-ciasteczek-tytul" className="text-xs leading-snug text-stone-800 sm:text-sm sm:leading-relaxed">
-          <span className="sm:hidden">Niezbędne cookies (sesja). Bez reklam. </span>
+          <span className="sm:hidden">Cookies: sesja (niezbędne). Bez reklam. </span>
           <span className="hidden sm:inline">
-            Używamy wyłącznie niezbędnych plików cookie (np. sesja po zalogowaniu). Nie stosujemy cookies
-            reklamowych. Analityka (jeśli włączona) działa bez plików cookie zgodnie z ustawieniami Plausible.{" "}
+            Używamy wyłącznie niezbędnych plików cookie (sesja po zalogowaniu, bezpieczeństwo). Nie stosujemy
+            cookies reklamowych ani profilowania. Statystyka odwiedzin (Plausible) — bez cookies, zgodnie z
+            ustawieniami dostawcy. Szczegóły:{" "}
           </span>
-          <Link href="/polityka-prywatnosci" className="font-semibold text-green-800 underline">
-            Polityka prywatności
+          <Link href="/polityka-prywatnosci#cookies" className="font-semibold text-green-800 underline">
+            Polityka — sekcja cookies
           </Link>
           .
         </p>
         <button
           type="button"
           className="shrink-0 self-end rounded-full bg-green-800 px-4 py-2 text-sm font-semibold text-white transition hover:bg-green-900 sm:px-5 sm:py-2.5"
-          onClick={() => {
-            try {
-              localStorage.setItem(KLUCZ, "1");
-            } catch {
-              /* ignore */
-            }
-            ustawWidoczny(false);
-          }}
+          onClick={potwierdz}
         >
           Rozumiem
         </button>

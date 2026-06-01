@@ -1,3 +1,5 @@
+import { porownajSekrety } from "@/lib/bezpieczenstwo/porownaj-sekrety";
+
 /**
  * Autoryzacja zadań cron / maintenance (CRON_SECRET).
  * Wyłącznie nagłówek `Authorization: Bearer <CRON_SECRET>` — bez query ani alternatywnych nagłówków,
@@ -9,6 +11,6 @@ export function czyZapytanieCronAutoryzowane(request: Request): boolean {
 
   const authHeader = request.headers.get("authorization");
   if (!authHeader?.startsWith("Bearer ")) return false;
-  const token = authHeader.slice("Bearer ".length).trim();
-  return token === expected;
+  const token = authHeader.slice("Bearer ".length);
+  return porownajSekrety(token, expected);
 }

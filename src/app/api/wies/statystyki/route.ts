@@ -14,6 +14,8 @@ export async function GET() {
     {
       wsieLacznie: stats.wsieLacznie,
       wsieZAktywnymProfilem: stats.wsieZAktywnymProfilem,
+      ogloszeniaRynek: stats.ogloszeniaRynek,
+      profileFirmRynek: stats.profileFirmRynek,
       czas: new Date().toISOString(),
     },
     {

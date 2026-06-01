@@ -23,12 +23,21 @@ export function KodyEmbedWsiKlient({ villageId }: { villageId: string }) {
         [
           { klucz: "kalendarz", tytul: "Kalendarz świetlicy", dane: kody.kalendarz },
           { klucz: "rynek", tytul: "Rynek lokalny", dane: kody.rynek },
+          { klucz: "szkola", tytul: "Tablica szkoły", dane: kody.szkola },
+          { klucz: "historia", tytul: "Kronika wsi", dane: kody.historia },
+          { klucz: "sport", tytul: "Terminarz sportowy", dane: kody.sport },
         ] as const
       ).map(({ klucz, tytul, dane }) => (
         <div key={klucz} className="rounded-xl border border-stone-200 bg-stone-50/80 p-4">
           <p className="text-sm font-medium text-stone-800">{tytul}</p>
           <p className="mt-1 break-all text-xs text-stone-600">{dane.url}</p>
-          <textarea readOnly className="form-control form-control--textarea mt-2 font-mono text-[11px]" rows={3} value={dane.iframe} aria-label={`Kod iframe: ${tytul}`} />
+          <textarea
+            readOnly
+            className="form-control form-control--textarea mt-2 w-full max-w-full min-w-0 font-mono text-[11px]"
+            rows={3}
+            value={dane.iframe}
+            aria-label={`Kod iframe: ${tytul}`}
+          />
           <button type="button" className="mt-2 text-xs font-medium text-green-800 underline" onClick={() => kopiuj(klucz, dane.iframe)}>
             {skopiowano === klucz ? "Skopiowano!" : "Kopiuj kod iframe"}
           </button>

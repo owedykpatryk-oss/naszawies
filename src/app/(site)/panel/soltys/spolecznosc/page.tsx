@@ -129,6 +129,8 @@ export default async function SoltysSpolecznoscPage({
     searchParams?.tryb === "osp" ||
     searchParams?.tryb === "parafia" ||
     searchParams?.tryb === "mysliwi" ||
+    searchParams?.tryb === "szkola" ||
+    searchParams?.tryb === "sport" ||
     searchParams?.tryb === "ogolny"
       ? searchParams.tryb
       : "ogolny";
@@ -153,28 +155,18 @@ export default async function SoltysSpolecznoscPage({
       szeroki
       dzieci={
         <>
-          <div className="baner-wskazowka border-teal-200/90 bg-teal-50/50 text-teal-950">
-            <p className="font-medium text-green-950">Checklista sołtysa (5 min.)</p>
-            <ol className="mt-2 list-decimal space-y-1 pl-5 text-xs leading-relaxed text-stone-700 sm:text-sm">
+          <details className="panel-nawigacja-szklo mb-6 text-sm text-stone-700">
+            <summary className="cursor-pointer px-3 py-2.5 font-medium text-green-950">
+              Checklista startu modułu (rozwiń, ~5 min.)
+            </summary>
+            <ol className="list-decimal space-y-1.5 border-t border-stone-200/60 px-4 py-3 text-xs leading-relaxed sm:text-sm">
               <li>Wybierz wieś w formularzu poniżej — treści zapisują się per sołectwo.</li>
-              <li>Uzupełnij blog lub historię, żeby strona wsi żyła i była widoczna w wyszukiwarkach.</li>
-              <li>Dodaj kilka ogłoszeń na marketplace (wszystkie darmowe) — mieszkańcy szybciej zaufają modułowi.</li>
-              <li>
-                Zarejestruj KGW, klub sportowy lub zespół — potem uzupełniaj kalendarz (mecze, wyjazdy, próby) na publicznym
-                profilu wsi.
-              </li>
-              <li>
-                Uzupełnij tygodniowy plan stałych zajęć oraz listę zakupów (mieszkańcy mogą dopisywać i zaznaczać „kupione”).
-              </li>
-              <li>Dodaj skrócone informacje o dotacjach i programach — z linkiem do naboru (bez obietnic prawnych).</li>
-              <li>Wstaw krótką wiadomość lokalną (np. wyłączenie wody, zbiórka) — buduje nawyk zaglądania na profil.</li>
-              <li>
-                Raz na jakiś czas uruchom automatyzacje — archiwizuje m.in. wygasłe oferty marketplace i wiadomości, wpisy
-                kalendarza i naborów po terminie, zakończone wydarzenia na tablicy, bardzo stare oczekujące wpisy z RSS
-                (90 dni) oraz przeczytane powiadomienia sprzed pół roku.
-              </li>
+              <li>Użyj trybu pracy (szkoła, sport, KGW…) — filtruje organizacje i skróty u góry formularza.</li>
+              <li>Uzupełnij blog lub historię pod obszarem „Publikacje”.</li>
+              <li>Dodaj ogłoszenia marketplace i krótką wiadomość lokalną.</li>
+              <li>Raz na jakiś czas uruchom automatyzacje (archiwizacja wygasłych treści).</li>
             </ol>
-          </div>
+          </details>
           <Suspense
             fallback={
               <div className="mt-6 h-40 animate-pulse rounded-2xl border border-stone-200 bg-stone-100" aria-hidden />

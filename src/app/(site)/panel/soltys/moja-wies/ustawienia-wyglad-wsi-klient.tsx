@@ -5,7 +5,16 @@ import { FormEvent, useState, useTransition } from "react";
 import { zapiszUstawieniaWygladuWsi } from "../akcje";
 import { sciezkaProfiluWsi } from "@/lib/wies/sciezka-publiczna";
 import { KodyEmbedWsiKlient } from "@/components/wies/kody-embed-wsi-klient";
+import { PodgladWygladWsiKlient } from "@/components/wies/podglad-wyglad-wsi-klient";
+import { WgrajObrazWiesKlient } from "@/components/wies/wgraj-obraz-wies-klient";
+import { ListaPrzeciagnij } from "@/components/ui/lista-przeciagnij";
 import {
+  DOMYSLNE_IKONY_SEKCJI_WSI,
+  ikonaSekcjiWsi,
+  PALETA_IKON_ZAKLADEK,
+} from "@/lib/wies/ikony-sekcji-wsi";
+import {
+  domyslnyPasekNawigacjiWsi,
   ETYKIETY_SEKCJI_WSI,
   KLUCZE_SEKCJI_WSI,
   MOTYWY_GRAFIKI,
@@ -13,9 +22,11 @@ import {
   type BlokTresciWsiPubliczny,
   type HeroCtaWsi,
   type KluczSekcjiWsi,
+  type PasekNawigacjiWsi,
   type PresetWygladuWsi,
   type SkrotWsiPubliczny,
   type UstawieniaWsiPubliczne,
+  type ZakladkaSekcjiWsiConfig,
 } from "@/lib/wies/ustawienia-wsi";
 
 export type WiesWygladDoEdycji = {
@@ -25,6 +36,7 @@ export type WiesWygladDoEdycji = {
   county: string;
   commune: string;
   slug: string;
+  cover_image_url: string | null;
   ustawienia: UstawieniaWsiPubliczne;
 };
 
@@ -43,6 +55,7 @@ function wczytajStan(w: WiesWygladDoEdycji) {
   return {
     themeId: w.ustawienia.theme_id,
     logoUrl: w.ustawienia.logo_url ?? "",
+    coverUrl: w.cover_image_url ?? "",
     heroNaglowek: w.ustawienia.hero_naglowek ?? "",
     heroPodtytul: w.ustawienia.hero_podtytul ?? "",
     heroCta: [...w.ustawienia.hero_cta],
@@ -50,6 +63,8 @@ function wczytajStan(w: WiesWygladDoEdycji) {
     bloki: [...w.ustawienia.bloki],
     moduly: { ...w.ustawienia.moduly },
     kolejnosc: [...w.ustawienia.kolejnosc_sekcji],
+    zakladki: { ...w.ustawienia.zakladki },
+    pasek: { ...w.ustawienia.pasek_nawigacji },
     domyslnyTrybSeniora: w.ustawienia.domyslny_tryb_seniora,
   };
 }
@@ -61,6 +76,7 @@ export function UstawieniaWygladWsiKlient({ wsie }: { wsie: WiesWygladDoEdycji[]
 
   const [themeId, ustawThemeId] = useState(pocz?.themeId ?? "zielony-wies");
   const [logoUrl, ustawLogoUrl] = useState(pocz?.logoUrl ?? "");
+  const [coverUrl, ustawCoverUrl] = useState(pocz?.coverUrl ?? "");
   const [heroNaglowek, ustawHeroNaglowek] = useState(pocz?.heroNaglowek ?? "");
   const [heroPodtytul, ustawHeroPodtytul] = useState(pocz?.heroPodtytul ?? "");
   const [heroCta, ustawHeroCta] = useState<HeroCtaWsi[]>(pocz?.heroCta ?? []);
@@ -71,6 +87,10 @@ export function UstawieniaWygladWsiKlient({ wsie }: { wsie: WiesWygladDoEdycji[]
       (Object.fromEntries(KLUCZE_SEKCJI_WSI.map((k) => [k, true])) as Record<KluczSekcjiWsi, boolean>),
   );
   const [kolejnosc, ustawKolejnosc] = useState<KluczSekcjiWsi[]>(pocz?.kolejnosc ?? [...KLUCZE_SEKCJI_WSI]);
+  const [zakladkiCfg, ustawZakladkiCfg] = useState<Partial<Record<KluczSekcjiWsi, ZakladkaSekcjiWsiConfig>>>(
+    pocz?.zakladki ?? {},
+  );
+  const [pasek, ustawPasek] = useState<PasekNawigacjiWsi>(pocz?.pasek ?? domyslnyPasekNawigacjiWsi());
   const [domyslnyTrybSeniora, ustawDomyslnyTrybSeniora] = useState(pocz?.domyslnyTrybSeniora ?? false);
   const [czek, startT] = useTransition();
   const [blad, ustawBlad] = useState("");
@@ -83,6 +103,7 @@ export function UstawieniaWygladWsiKlient({ wsie }: { wsie: WiesWygladDoEdycji[]
     ustawVillageId(id);
     ustawThemeId(s.themeId);
     ustawLogoUrl(s.logoUrl);
+    ustawCoverUrl(s.coverUrl);
     ustawHeroNaglowek(s.heroNaglowek);
     ustawHeroPodtytul(s.heroPodtytul);
     ustawHeroCta(s.heroCta);
@@ -90,6 +111,8 @@ export function UstawieniaWygladWsiKlient({ wsie }: { wsie: WiesWygladDoEdycji[]
     ustawBloki(s.bloki);
     ustawModuly(s.moduly);
     ustawKolejnosc(s.kolejnosc);
+    ustawZakladkiCfg(s.zakladki);
+    ustawPasek(s.pasek);
     ustawDomyslnyTrybSeniora(s.domyslnyTrybSeniora);
     ustawBlad("");
     ustawOk(false);
@@ -102,16 +125,18 @@ export function UstawieniaWygladWsiKlient({ wsie }: { wsie: WiesWygladDoEdycji[]
     ustawSkroty(p.skroty);
   }
 
-  function przesun(klucz: KluczSekcjiWsi, kierunek: -1 | 1) {
-    ustawKolejnosc((prev) => {
-      const idx = prev.indexOf(klucz);
-      if (idx < 0) return prev;
-      const next = idx + kierunek;
-      if (next < 0 || next >= prev.length) return prev;
-      const kopia = [...prev];
-      [kopia[idx], kopia[next]] = [kopia[next], kopia[idx]];
-      return kopia;
-    });
+  function ustawIkoneZakladki(klucz: KluczSekcjiWsi, emoji: string) {
+    ustawZakladkiCfg((z) => ({
+      ...z,
+      [klucz]: { label: z[klucz]?.label ?? null, emoji: emoji || null },
+    }));
+  }
+
+  function ustawEtykieteZakladki(klucz: KluczSekcjiWsi, label: string) {
+    ustawZakladkiCfg((z) => ({
+      ...z,
+      [klucz]: { emoji: z[klucz]?.emoji ?? null, label: label.trim() || null },
+    }));
   }
 
   function wyslij(e: FormEvent) {
@@ -120,10 +145,18 @@ export function UstawieniaWygladWsiKlient({ wsie }: { wsie: WiesWygladDoEdycji[]
     ustawBlad("");
     ustawOk(false);
     startT(async () => {
+      const zakladkiDoZapisu: Record<string, { emoji: string | null; label: string | null }> = {};
+      for (const k of KLUCZE_SEKCJI_WSI) {
+        const c = zakladkiCfg[k];
+        if (!c?.emoji && !c?.label) continue;
+        zakladkiDoZapisu[k] = { emoji: c.emoji ?? null, label: c.label ?? null };
+      }
+
       const wynik = await zapiszUstawieniaWygladuWsi({
         villageId: wies.id,
         theme_id: themeId,
         logo_url: logoUrl || null,
+        cover_image_url: coverUrl || null,
         moduly,
         kolejnosc_sekcji: kolejnosc,
         hero_naglowek: heroNaglowek || null,
@@ -132,6 +165,8 @@ export function UstawieniaWygladWsiKlient({ wsie }: { wsie: WiesWygladDoEdycji[]
         skroty: skroty.filter((s) => s.label.trim() && s.href.trim()),
         bloki: bloki.filter((b) => b.id.trim()),
         domyslny_tryb_seniora: domyslnyTrybSeniora,
+        zakladki: Object.keys(zakladkiDoZapisu).length ? zakladkiDoZapisu : undefined,
+        pasek_nawigacji: pasek,
       });
       if ("blad" in wynik) {
         ustawBlad(wynik.blad);
@@ -167,6 +202,9 @@ export function UstawieniaWygladWsiKlient({ wsie }: { wsie: WiesWygladDoEdycji[]
         </button>
         <button type="button" className="rounded-lg border border-stone-300 px-3 py-1.5 text-xs font-medium hover:bg-stone-50" onClick={() => zastosujPreset("turystyczna")}>
           Szablon: turystyczna
+        </button>
+        <button type="button" className="rounded-lg border border-stone-300 px-3 py-1.5 text-xs font-medium hover:bg-stone-50" onClick={() => zastosujPreset("szkola")}>
+          Szablon: szkoła / tablica
         </button>
       </div>
 
@@ -207,10 +245,30 @@ export function UstawieniaWygladWsiKlient({ wsie }: { wsie: WiesWygladDoEdycji[]
         </div>
 
         <div className="grid gap-4 sm:grid-cols-2">
-          <label className="block text-sm">
-            <span className="font-medium text-stone-700">Logo / herb (URL)</span>
-            <input type="url" className="form-control mt-1" value={logoUrl} onChange={(e) => ustawLogoUrl(e.target.value)} placeholder="https://…" />
-          </label>
+          <div className="sm:col-span-2">
+            <WgrajObrazWiesKlient
+              villageId={wies.id}
+              etykieta="Logo / herb — wgraj plik"
+              aktualnyUrl={logoUrl}
+              onUrl={ustawLogoUrl}
+            />
+            <label className="mt-2 block text-sm">
+              <span className="font-medium text-stone-700">lub adres URL logo</span>
+              <input type="url" className="form-control mt-1" value={logoUrl} onChange={(e) => ustawLogoUrl(e.target.value)} placeholder="https://…" />
+            </label>
+          </div>
+          <div className="sm:col-span-2">
+            <WgrajObrazWiesKlient
+              villageId={wies.id}
+              etykieta="Okładka profilu — wgraj zdjęcie"
+              aktualnyUrl={coverUrl}
+              onUrl={ustawCoverUrl}
+            />
+            <label className="mt-2 block text-sm">
+              <span className="font-medium text-stone-700">lub adres URL okładki</span>
+              <input type="url" className="form-control mt-1" value={coverUrl} onChange={(e) => ustawCoverUrl(e.target.value)} placeholder="https://… szerokie zdjęcie wsi" />
+            </label>
+          </div>
           <label className="block text-sm">
             <span className="font-medium text-stone-700">Nagłówek (zamiast nazwy wsi)</span>
             <input type="text" className="form-control mt-1" value={heroNaglowek} onChange={(e) => ustawHeroNaglowek(e.target.value)} maxLength={120} placeholder={wies.name} />
@@ -236,14 +294,18 @@ export function UstawieniaWygladWsiKlient({ wsie }: { wsie: WiesWygladDoEdycji[]
           </div>
           <ul className="mt-2 space-y-2">
             {heroCta.map((c, i) => (
-              <li key={i} className="grid gap-2 rounded-lg border border-stone-200 p-3 sm:grid-cols-[1fr_1fr_auto_auto]">
+              <li key={i} className="grid gap-2 rounded-lg border border-stone-200 p-3 sm:grid-cols-2 lg:grid-cols-[1fr_1fr_auto_auto]">
                 <input className="form-control" placeholder="Etykieta" value={c.label} onChange={(e) => ustawHeroCta((arr) => arr.map((x, j) => (j === i ? { ...x, label: e.target.value } : x)))} />
                 <input className="form-control" placeholder="Link (#sekcja-mapa lub /rejestracja)" value={c.href} onChange={(e) => ustawHeroCta((arr) => arr.map((x, j) => (j === i ? { ...x, href: e.target.value } : x)))} />
                 <select className="form-control" value={c.wariant} onChange={(e) => ustawHeroCta((arr) => arr.map((x, j) => (j === i ? { ...x, wariant: e.target.value as HeroCtaWsi["wariant"] } : x)))}>
                   <option value="primary">Główny</option>
                   <option value="secondary">Drugorzędny</option>
                 </select>
-                <button type="button" className="text-xs text-red-700 underline" onClick={() => ustawHeroCta((arr) => arr.filter((_, j) => j !== i))}>
+                <button
+                  type="button"
+                  className="min-h-[44px] text-left text-xs text-red-700 underline sm:min-h-0 sm:col-span-2 lg:col-span-1"
+                  onClick={() => ustawHeroCta((arr) => arr.filter((_, j) => j !== i))}
+                >
                   Usuń
                 </button>
               </li>
@@ -332,29 +394,111 @@ export function UstawieniaWygladWsiKlient({ wsie }: { wsie: WiesWygladDoEdycji[]
           </ul>
         </div>
 
-        <div>
-          <p className="text-sm font-medium text-stone-800">Kolejność zakładek</p>
-          <ol className="mt-2 space-y-1">
-            {kolejnosc.map((klucz, i) => (
-              <li key={klucz} className="flex items-center justify-between gap-2 rounded-lg border border-stone-200 bg-white px-3 py-2 text-sm">
-                <span>
-                  {i + 1}. {ETYKIETY_SEKCJI_WSI[klucz]}
-                </span>
-                <span className="flex gap-1">
-                  <button type="button" className="rounded border border-stone-300 px-2 py-0.5 text-xs disabled:opacity-40" disabled={i === 0} onClick={() => przesun(klucz, -1)} aria-label={`Wyżej: ${ETYKIETY_SEKCJI_WSI[klucz]}`}>
-                    ↑
-                  </button>
-                  <button type="button" className="rounded border border-stone-300 px-2 py-0.5 text-xs disabled:opacity-40" disabled={i === kolejnosc.length - 1} onClick={() => przesun(klucz, 1)} aria-label={`Niżej: ${ETYKIETY_SEKCJI_WSI[klucz]}`}>
-                    ↓
-                  </button>
-                </span>
-              </li>
-            ))}
-          </ol>
+        <div className="rounded-xl border border-stone-200 bg-stone-50/60 p-4">
+          <p className="text-sm font-medium text-stone-800">Pasek nawigacji (top bar profilu)</p>
+          <p className="mt-1 text-xs text-stone-500">Wybierz, co mieszkańcy widzą pod nagłówkiem wsi.</p>
+          <ul className="mt-3 grid gap-2 sm:grid-cols-2">
+            <li>
+              <label className="flex cursor-pointer items-center gap-2 text-sm">
+                <input type="checkbox" className="accent-green-800" checked={pasek.sticky_zakladki} onChange={(e) => ustawPasek((p) => ({ ...p, sticky_zakladki: e.target.checked }))} />
+                Przyklejone zakładki przy scrollu
+              </label>
+            </li>
+            <li>
+              <label className="flex cursor-pointer items-center gap-2 text-sm">
+                <input type="checkbox" className="accent-green-800" checked={pasek.pokaz_skroty} onChange={(e) => ustawPasek((p) => ({ ...p, pokaz_skroty: e.target.checked }))} />
+                Kafelki skrótów
+              </label>
+            </li>
+            <li>
+              <label className="flex cursor-pointer items-center gap-2 text-sm">
+                <input type="checkbox" className="accent-green-800" checked={pasek.pokaz_hero_cta} onChange={(e) => ustawPasek((p) => ({ ...p, pokaz_hero_cta: e.target.checked }))} />
+                Przyciski pod nagłówkiem
+              </label>
+            </li>
+            <li>
+              <label className="flex cursor-pointer items-center gap-2 text-sm">
+                <input type="checkbox" className="accent-green-800" checked={pasek.pokaz_breadcrumb} onChange={(e) => ustawPasek((p) => ({ ...p, pokaz_breadcrumb: e.target.checked }))} />
+                Ścieżka woj. · powiat · gmina
+              </label>
+            </li>
+          </ul>
+          <label className="mt-3 block text-sm">
+            <span className="font-medium text-stone-700">Maks. zakładek w rzędzie (0 = wszystkie)</span>
+            <input
+              type="number"
+              min={0}
+              max={12}
+              className="form-control mt-1 max-w-[8rem]"
+              value={pasek.max_zakladek_widocznych}
+              onChange={(e) =>
+                ustawPasek((p) => ({
+                  ...p,
+                  max_zakladek_widocznych: Math.max(0, Math.min(12, Number(e.target.value) || 0)),
+                }))
+              }
+            />
+            <span className="mt-1 block text-xs text-stone-500">Reszta w menu „Więcej”.</span>
+          </label>
         </div>
 
+        <div>
+          <p className="text-sm font-medium text-stone-800">Zakładki — kolejność, ikony i nazwy</p>
+          <p className="mt-1 text-xs text-stone-500">Przeciągnij wiersz, aby zmienić kolejność. Ikony i krótkie nazwy widać na profilu publicznym.</p>
+          <div className="mt-2">
+            <ListaPrzeciagnij
+              elementy={kolejnosc}
+              onChange={ustawKolejnosc}
+              renderWiersz={(klucz) => {
+                const wlaczony = moduly[klucz] !== false;
+                const cfg = zakladkiCfg[klucz];
+                const ikona = ikonaSekcjiWsi(klucz, cfg?.emoji);
+                return (
+                  <div className={`flex flex-1 flex-wrap items-center gap-2 ${!wlaczony ? "opacity-50" : ""}`}>
+                    <span className="text-lg" aria-hidden>
+                      {ikona}
+                    </span>
+                    <span className="min-w-[6rem] font-medium text-stone-800">{ETYKIETY_SEKCJI_WSI[klucz]}</span>
+                    <input
+                      className="form-control max-w-[7rem] py-1 text-xs"
+                      placeholder="Krótka nazwa"
+                      value={cfg?.label ?? ""}
+                      maxLength={24}
+                      disabled={!wlaczony}
+                      onChange={(e) => ustawEtykieteZakladki(klucz, e.target.value)}
+                    />
+                    <select
+                      className="form-control max-w-[5rem] py-1 text-xs"
+                      value={cfg?.emoji ?? DOMYSLNE_IKONY_SEKCJI_WSI[klucz]}
+                      disabled={!wlaczony}
+                      onChange={(e) => ustawIkoneZakladki(klucz, e.target.value)}
+                      aria-label={`Ikona: ${ETYKIETY_SEKCJI_WSI[klucz]}`}
+                    >
+                      {PALETA_IKON_ZAKLADEK.map((em) => (
+                        <option key={em} value={em}>
+                          {em}
+                        </option>
+                      ))}
+                    </select>
+                    {!wlaczony ? <span className="text-[10px] text-stone-500">wyłączony moduł</span> : null}
+                  </div>
+                );
+              }}
+            />
+          </div>
+        </div>
+
+        <PodgladWygladWsiKlient
+          wies={wies}
+          themeId={themeId}
+          logoUrl={logoUrl}
+          coverUrl={coverUrl}
+          heroNaglowek={heroNaglowek}
+          heroPodtytul={heroPodtytul}
+        />
+
         <div className="rounded-xl border p-4" style={{ background: motywAktywny.tlo, borderColor: motywAktywny.ramka, color: motywAktywny.tekst }}>
-          <p className="text-xs font-semibold uppercase tracking-wide opacity-70">Podgląd</p>
+          <p className="text-xs font-semibold uppercase tracking-wide opacity-70">Podgląd hero (lokalny)</p>
           <p className="mt-2 font-serif text-2xl">{tytulPodglad}</p>
           {heroPodtytul ? <p className="mt-1 text-sm opacity-80">{heroPodtytul}</p> : null}
           <div className="mt-3 flex flex-wrap gap-2">

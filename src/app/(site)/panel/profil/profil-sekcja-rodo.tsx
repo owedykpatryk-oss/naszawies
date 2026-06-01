@@ -1,7 +1,9 @@
 "use client";
 
+import Link from "next/link";
 import { type FormEvent, useState } from "react";
 import { pobierzJsonEksportuRodo, usunKontoNaZawsze } from "./akcje-rodo";
+import { AKTUALNY_BUNDLE_WERSJI_PRAWNYCH } from "@/lib/rodo/wersje-dokumentow";
 
 export function ProfilSekcjaRodo() {
   const [bladEksportu, ustawBladEksportu] = useState("");
@@ -52,14 +54,38 @@ export function ProfilSekcjaRodo() {
 
   return (
     <div className="mt-14 max-w-xl space-y-10 border-t border-stone-200 pt-10">
+      <section aria-labelledby="rodo-info-naglowek">
+        <h2 id="rodo-info-naglowek" className="mb-2 font-serif text-xl text-green-950">
+          Prywatność i zgody
+        </h2>
+        <p className="text-sm text-stone-600">
+          Aktualna wersja dokumentów: <strong>{AKTUALNY_BUNDLE_WERSJI_PRAWNYCH}</strong>.{" "}
+          <Link href="/regulamin" className="font-medium text-green-800 underline" target="_blank">
+            Regulamin
+          </Link>
+          {" · "}
+          <Link href="/polityka-prywatnosci" className="font-medium text-green-800 underline" target="_blank">
+            Polityka prywatności
+          </Link>
+          {" · "}
+          <Link href="/polityka-prywatnosci#cookies" className="font-medium text-green-800 underline" target="_blank">
+            Cookies
+          </Link>
+          . Kontakt:{" "}
+          <a href="mailto:rodo@naszawies.pl" className="font-medium text-green-800 underline">
+            rodo@naszawies.pl
+          </a>
+          .
+        </p>
+      </section>
+
       <section aria-labelledby="rodo-eksport-naglowek">
         <h2 id="rodo-eksport-naglowek" className="mb-2 font-serif text-xl text-green-950">
-          Twoje dane (RODO)
+          Pobierz swoje dane (RODO)
         </h2>
         <p className="mb-4 text-sm text-stone-600">
-          Pobierz plik JSON z danymi powiązanymi z kontem w serwisie (w tym rola we wsi, treści, powiadomienia,
-          subskrypcje Web Push i inne rekordy przechowywane w naszej bazie). Plik może być duży — przechowuj go
-          bezpiecznie.
+          Plik JSON zawiera m.in. profil, role we wsi, treści, powiadomienia, subskrypcje Web Push, zgody prawne i inne
+          rekordy powiązane z kontem.
         </p>
         {bladEksportu ? (
           <p className="mb-3 text-sm text-red-800" role="alert">
@@ -80,11 +106,13 @@ export function ProfilSekcjaRodo() {
         <h2 id="rodo-usun-naglowek" className="mb-2 font-serif text-xl text-red-950">
           Usuń konto na zawsze
         </h2>
+        <p className="mb-3 text-sm text-stone-700">
+          Operacja jest <strong>nieodwracalna</strong>. Usuwamy m.in. konto logowania, profil, powiadomienia, obserwacje,
+          subskrypcje push i treści przypisane do konta. Część wpisów we wsi może pozostać przy odłączonym autorze
+          (anonimizacja).
+        </p>
         <p className="mb-4 text-sm text-stone-700">
-          Ta operacja jest <strong>nieodwracalna</strong>: konto logowania zostanie usunięte, a powiązane dane
-          osobowe usunięte lub odłączone od konta (m.in. wpisy, w których byłeś autorem, mogą pozostać przy
-          zanonimizowanym autorze). Jeśli jesteś jedynym sołtysem wsi, po usunięciu konta wieś może wymagać
-          ponownego przypisania sołtysa przez administrację serwisu.
+          Jako jedyny sołtys wsi — po usunięciu konta może być potrzebne ponowne przypisanie sołtysa przez administrację.
         </p>
         <form onSubmit={(e) => void onUsunKonto(e)} className="space-y-3">
           <div>
