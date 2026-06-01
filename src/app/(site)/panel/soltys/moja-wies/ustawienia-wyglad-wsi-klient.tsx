@@ -4,6 +4,7 @@ import Link from "next/link";
 import { FormEvent, useState, useTransition } from "react";
 import { zapiszUstawieniaWygladuWsi } from "../akcje";
 import { sciezkaProfiluWsi } from "@/lib/wies/sciezka-publiczna";
+import { KodyEmbedWsiKlient } from "@/components/wies/kody-embed-wsi-klient";
 import {
   ETYKIETY_SEKCJI_WSI,
   KLUCZE_SEKCJI_WSI,
@@ -371,6 +372,14 @@ export function UstawieniaWygladWsiKlient({ wsie }: { wsie: WiesWygladDoEdycji[]
 
         {blad ? <p className="text-sm text-red-700">{blad}</p> : null}
         {ok ? <p className="text-sm text-green-800">Zapisano ustawienia wyglądu.</p> : null}
+
+        <div className="rounded-xl border border-stone-200 bg-stone-50/80 p-4">
+          <p className="text-sm font-medium text-stone-800">Widgety na stronie gminy (iframe)</p>
+          <p className="mt-1 text-xs text-stone-600">Osadź kalendarz świetlicy lub rynek lokalny na BIP lub stronie urzędu.</p>
+          <div className="mt-3">
+            <KodyEmbedWsiKlient villageId={wies.id} />
+          </div>
+        </div>
 
         <button type="submit" disabled={czek} className="rounded-xl bg-green-800 px-5 py-2.5 text-sm font-semibold text-white hover:bg-green-900 disabled:opacity-60">
           {czek ? "Zapisywanie…" : "Zapisz wygląd i układ"}

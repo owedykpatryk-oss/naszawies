@@ -7,7 +7,7 @@ type Props = {
   zalogowany?: boolean;
 };
 
-const UKRYJ_NA = ["/logowanie", "/rejestracja", "/reset-hasla", "/auth/"];
+const UKRYJ_NA = ["/logowanie", "/rejestracja", "/reset-hasla", "/auth/", "/embed/"];
 
 /** Ukrywa dolny pasek na stronach auth. */
 export function DolnaNawigacjaWarunkowa({ zalogowany = false }: Props) {

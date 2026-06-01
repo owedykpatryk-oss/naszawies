@@ -12,6 +12,7 @@ import { PanelStronaSoltysa } from "@/components/panel/panel-strona-soltysa";
 import { SoltysKatalogMozliwosci } from "@/components/panel/soltys-katalog-mozliwosci";
 import { ProfilWsiSoltysKlient, type WiesDoEdycji } from "./profil-wsi-klient";
 import { UstawieniaWygladWsiKlient, type WiesWygladDoEdycji } from "./ustawienia-wyglad-wsi-klient";
+import { KonfiguracjaWiesWizardKlient, type WiesWizardDoEdycji } from "@/components/wies/konfiguracja-wies-wizard-klient";
 import { zbudujUstawieniaWsiPubliczne } from "@/lib/wies/ustawienia-wsi";
 import type { PoiDoEdycjiKontaktu } from "@/components/panel/edytor-kontaktu-poi-soltys";
 import type { PrzystanekDoRozkladu } from "@/components/panel/edytor-rozkladu-przystanku-soltys";
@@ -155,6 +156,7 @@ export default async function SoltysMojaWiesPage() {
             </Link>
             .
           </p>
+          <KonfiguracjaWiesWizardKlient wsie={wsieWyglad as WiesWizardDoEdycji[]} />
           <SoltysKatalogMozliwosci katalog={katalogMozliwosci} kompaktowy />
           <UstawieniaWygladWsiKlient wsie={wsieWyglad} />
           <ProfilWsiSoltysKlient

@@ -5,6 +5,7 @@ export function czyStronaBezNaglowkaWitryny(pathname: string): boolean {
     pathname.startsWith("/logowanie") ||
     pathname.startsWith("/rejestracja") ||
     pathname.startsWith("/reset-hasla") ||
-    pathname.startsWith("/auth/")
+    pathname.startsWith("/auth/") ||
+    pathname.startsWith("/embed/")
   );
 }

@@ -10,6 +10,7 @@ import type { ZnacznikNaPlanie } from "@/components/swietlica/plan-sali-rysunek"
 import type { PlanSaliJson } from "@/lib/swietlica/plan-sali";
 import { zbudujPlanRezerwacji } from "@/lib/swietlica/rezerwacja-plan-sali";
 import { zlozRezerwacjeSwietlicy } from "../../akcje";
+import type { PoleRezerwacjiSali } from "@/lib/swietlica/pola-rezerwacji";
 
 const typyWydarzen = ["urodziny", "wesele", "zebranie", "zajecia", "inne"] as const;
 const typyUstawienia = ["auto_bankiet", "teatralny", "warsztatowy", "u_ksztalt", "wlasny"] as const;
@@ -26,6 +27,7 @@ type Props = {
   regulaminPlikUrl: string | null;
   planSali: PlanSaliJson;
   znacznikiRzutu?: ZnacznikNaPlanie[];
+  polaFormularza?: PoleRezerwacjiSali[];
 };
 
 function domyslnyStart(): string {
@@ -61,6 +63,7 @@ export function RezerwacjaSwietlicyFormularz({
   regulaminPlikUrl,
   planSali,
   znacznikiRzutu = [],
+  polaFormularza = [],
 }: Props) {
   const router = useRouter();
   const [blad, ustawBlad] = useState("");
@@ -71,6 +74,7 @@ export function RezerwacjaSwietlicyFormularz({
   const [seatingPresetInput, setSeatingPresetInput] =
     useState<(typeof typyUstawienia)[number]>("auto_bankiet");
   const [planWlasny, setPlanWlasny] = useState<PlanSaliJson | null>(null);
+  const [odpowiedziWlasne, setOdpowiedziWlasne] = useState<Record<string, string | boolean>>({});
   const [startAt, setStartAt] = useState(domyslnyStart);
   const [endAt, setEndAt] = useState(() => domyslnyKoniec(domyslnyStart()));
 
@@ -176,6 +180,15 @@ export function RezerwacjaSwietlicyFormularz({
       .filter(([, q]) => Number.isFinite(q) && q > 0)
       .map(([inventoryId, quantity]) => ({ inventoryId, quantity: Math.trunc(quantity) }));
 
+    const customAnswers: Record<string, unknown> = {};
+    for (const pole of polaFormularza) {
+      if (pole.typ === "checkbox") {
+        customAnswers[pole.id] = odpowiedziWlasne[pole.id] === true;
+      } else {
+        customAnswers[pole.id] = odpowiedziWlasne[pole.id] ?? "";
+      }
+    }
+
     startTransition(async () => {
       const wynik = await zlozRezerwacjeSwietlicy({
         hallId,
@@ -190,6 +203,7 @@ export function RezerwacjaSwietlicyFormularz({
         contactPhone: contactPhone.length ? contactPhone : null,
         acceptRules: true as const,
         customLayoutData: seatingPreset === "wlasny" ? planWlasny : null,
+        customAnswers,
       });
       if ("blad" in wynik) {
         ustawBlad(wynik.blad);
@@ -382,6 +396,88 @@ export function RezerwacjaSwietlicyFormularz({
         </label>
         <input id="rs-phone" name="contact_phone" type="tel" maxLength={40} autoComplete="tel" />
       </div>
+
+      {polaFormularza.length > 0 ? (
+        <div className="rounded-xl border border-amber-200/80 bg-amber-50/40 p-4">
+          <p className="text-sm font-medium text-stone-800">Dodatkowe informacje (sołtys)</p>
+          <ul className="mt-3 space-y-3">
+            {polaFormularza.map((pole) => (
+              <li key={pole.id}>
+                {pole.typ === "checkbox" ? (
+                  <label className="flex cursor-pointer items-start gap-2 text-sm">
+                    <input
+                      type="checkbox"
+                      className="mt-1 accent-green-800"
+                      checked={odpowiedziWlasne[pole.id] === true}
+                      onChange={(e) => setOdpowiedziWlasne((o) => ({ ...o, [pole.id]: e.target.checked }))}
+                      required={pole.wymagane}
+                    />
+                    <span>
+                      {pole.label}
+                      {pole.wymagane ? " *" : ""}
+                    </span>
+                  </label>
+                ) : pole.typ === "select" ? (
+                  <>
+                    <label htmlFor={`rs-pole-${pole.id}`} className="mb-1 block text-sm">
+                      {pole.label}
+                      {pole.wymagane ? " *" : ""}
+                    </label>
+                    <select
+                      id={`rs-pole-${pole.id}`}
+                      className="w-full rounded border border-stone-300 px-3 py-2 text-sm"
+                      required={pole.wymagane}
+                      value={String(odpowiedziWlasne[pole.id] ?? "")}
+                      onChange={(e) => setOdpowiedziWlasne((o) => ({ ...o, [pole.id]: e.target.value }))}
+                    >
+                      <option value="">— wybierz —</option>
+                      {(pole.opcje ?? []).map((op) => (
+                        <option key={op} value={op}>
+                          {op}
+                        </option>
+                      ))}
+                    </select>
+                  </>
+                ) : pole.typ === "textarea" ? (
+                  <>
+                    <label htmlFor={`rs-pole-${pole.id}`} className="mb-1 block text-sm">
+                      {pole.label}
+                      {pole.wymagane ? " *" : ""}
+                    </label>
+                    <textarea
+                      id={`rs-pole-${pole.id}`}
+                      className="w-full rounded border border-stone-300 px-3 py-2 text-sm"
+                      rows={3}
+                      required={pole.wymagane}
+                      placeholder={pole.placeholder ?? undefined}
+                      maxLength={pole.maxLength ?? 2000}
+                      value={String(odpowiedziWlasne[pole.id] ?? "")}
+                      onChange={(e) => setOdpowiedziWlasne((o) => ({ ...o, [pole.id]: e.target.value }))}
+                    />
+                  </>
+                ) : (
+                  <>
+                    <label htmlFor={`rs-pole-${pole.id}`} className="mb-1 block text-sm">
+                      {pole.label}
+                      {pole.wymagane ? " *" : ""}
+                    </label>
+                    <input
+                      id={`rs-pole-${pole.id}`}
+                      type={pole.typ === "number" ? "number" : "text"}
+                      className="w-full rounded border border-stone-300 px-3 py-2 text-sm"
+                      required={pole.wymagane}
+                      placeholder={pole.placeholder ?? undefined}
+                      maxLength={pole.typ === "text" ? pole.maxLength ?? 500 : undefined}
+                      value={String(odpowiedziWlasne[pole.id] ?? "")}
+                      onChange={(e) => setOdpowiedziWlasne((o) => ({ ...o, [pole.id]: e.target.value }))}
+                    />
+                  </>
+                )}
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
 
       {sortedInventory.length > 0 ? (
         <div id="rs-sekcja-asortyment" className="scroll-mt-[10.5rem] rounded-xl border border-stone-200 bg-stone-50 p-3">

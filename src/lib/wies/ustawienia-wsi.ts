@@ -102,6 +102,8 @@ export const schemaUstawieniaWsiJson = z.object({
   skroty: z.array(schemaSkrot).max(6).optional(),
   bloki: z.array(schemaBlok).max(8).optional(),
   domyslny_tryb_seniora: z.boolean().optional(),
+  /** Po pierwszej konfiguracji przez kreator — ukrywa wizard. */
+  konfiguracja_ukonczona: z.boolean().optional(),
 });
 
 export type UstawieniaWsiJson = z.infer<typeof schemaUstawieniaWsiJson>;
@@ -118,6 +120,7 @@ export type UstawieniaWsiPubliczne = {
   skroty: SkrotWsiPubliczny[];
   bloki: BlokTresciWsiPubliczny[];
   domyslny_tryb_seniora: boolean;
+  konfiguracja_ukonczona: boolean;
 };
 
 export function domyslneModulyWsi(): Record<KluczSekcjiWsi, boolean> {
@@ -228,7 +231,12 @@ export function zbudujUstawieniaWsiPubliczne(wiersz: {
     skroty: normalizujSkroty(parsed.skroty),
     bloki: normalizujBloki(parsed.bloki),
     domyslny_tryb_seniora: parsed.domyslny_tryb_seniora === true,
+    konfiguracja_ukonczona: parsed.konfiguracja_ukonczona === true,
   };
+}
+
+export function czyWymagaKonfiguracjiWsi(ust: UstawieniaWsiPubliczne): boolean {
+  return !ust.konfiguracja_ukonczona;
 }
 
 export function czyModulWsiWlaczony(ust: UstawieniaWsiPubliczne, klucz: KluczSekcjiWsi): boolean {

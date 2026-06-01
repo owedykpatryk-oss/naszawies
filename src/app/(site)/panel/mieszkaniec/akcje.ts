@@ -235,6 +235,7 @@ export const schemaRezerwacjaSwietlicy = z.object({
   acceptRules: z.literal(true),
   /** Plan własny (JSON) — tylko przy seatingPreset = wlasny */
   customLayoutData: z.unknown().optional().nullable(),
+  customAnswers: z.record(z.string(), z.unknown()).optional().default({}),
 });
 
 export async function zlozRezerwacjeSwietlicy(

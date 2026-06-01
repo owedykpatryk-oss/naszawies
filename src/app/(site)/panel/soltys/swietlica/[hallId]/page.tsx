@@ -18,6 +18,8 @@ import { wyznaczObszarStolow, znacznikiNaPlanieStolow } from "@/lib/swietlica/ma
 import { pojedynczaWies } from "@/lib/supabase/wies-z-zapytania";
 import { KalendarzZajetosciSoltysKlient } from "@/components/swietlica/kalendarz-zajetosci-soltys-klient";
 import { AsortymentSwietlicyKlient, type PozycjaWyposazenia } from "./asortyment-klient";
+import { EdytorPolRezerwacjiKlient } from "@/components/swietlica/edytor-pol-rezerwacji-klient";
+import { parsujPolaRezerwacjiSali } from "@/lib/swietlica/pola-rezerwacji";
 
 type Props = { params: { hallId: string } };
 
@@ -42,7 +44,7 @@ export default async function SoltysSwietlicaHallPage({ params }: Props) {
   const { data: sala, error: salaErr } = await supabase
     .from("halls")
     .select(
-      "id, name, description, address, area_m2, max_capacity, parking_spaces, village_id, layout_data, layout_presets, floor_plan_data, rules_text, rules_file_url, rules_file_name, deposit, price_resident, price_external, contact_phone, contact_email, contact_duty_hours, caretaker_name, villages(id, name, playground_rules_text)"
+      "id, name, description, address, area_m2, max_capacity, parking_spaces, village_id, layout_data, layout_presets, floor_plan_data, rules_text, rules_file_url, rules_file_name, deposit, price_resident, price_external, contact_phone, contact_email, contact_duty_hours, caretaker_name, booking_form_fields, villages(id, name, playground_rules_text)"
     )
     .eq("id", hallId)
     .maybeSingle();
@@ -138,6 +140,10 @@ export default async function SoltysSwietlicaHallPage({ params }: Props) {
   const popularnyPreset =
     Object.entries(presetCounts).sort((a, b) => b[1] - a[1])[0]?.[0] ?? null;
 
+  const polaRezerwacji = parsujPolaRezerwacjiSali(
+    (sala as { booking_form_fields?: unknown }).booking_form_fields,
+  );
+
   const krokiOnboarding = [
     { id: "profil", label: "Uzupełnij profil budynku (adres, kontakt)", href: `#profil-budynku`, gotowe: Boolean(sala.address?.trim() && sala.contact_phone?.trim()) },
     { id: "rzut", label: "Zapisz rzut parteru z wejściami/oknami", href: "#rzut-parteru-sali", gotowe: rzutParteru != null },
@@ -220,6 +226,7 @@ export default async function SoltysSwietlicaHallPage({ params }: Props) {
           priceResidentPoczatek={pr}
           priceExternalPoczatek={pe}
         />
+        <EdytorPolRezerwacjiKlient hallId={hallId} poczatkowe={polaRezerwacji} />
       </div>
 
       {wies?.id ? (

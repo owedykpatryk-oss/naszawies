@@ -32,6 +32,7 @@ import {
 } from "@/lib/wies/ustawienia-wsi";
 import { schemaPlanSali, parsujPresetyPlanu, type PlanSaliJson } from "@/lib/swietlica/plan-sali";
 import { schemaRzutParteruSali, type RzutParteruSaliJson } from "@/lib/swietlica/rzut-parteru-sali";
+import { schemaPolaRezerwacjiSali } from "@/lib/swietlica/pola-rezerwacji";
 
 const uuid = z.string().uuid();
 
@@ -1905,6 +1906,7 @@ const schemaWygladWsi = z.object({
     .max(8)
     .optional(),
   domyslny_tryb_seniora: z.boolean().optional(),
+  konfiguracja_ukonczona: z.boolean().optional(),
 });
 
 export async function zapiszUstawieniaWygladuWsi(dane: z.infer<typeof schemaWygladWsi>): Promise<WynikProsty> {
@@ -1996,6 +1998,7 @@ export async function zapiszUstawieniaWygladuWsi(dane: z.infer<typeof schemaWygl
       obraz_url: b.obraz_url?.trim() || null,
     })),
     domyslny_tryb_seniora: p.data.domyslny_tryb_seniora === true,
+    konfiguracja_ukonczona: p.data.konfiguracja_ukonczona === true,
   });
 
   const { error } = await supabase.from("village_settings").upsert(
@@ -2022,6 +2025,86 @@ export async function zapiszUstawieniaWygladuWsi(dane: z.infer<typeof schemaWygl
   if (wiersz) {
     revalidatePath(sciezkaProfiluWsi(wiersz));
   }
+  revalidatePath("/panel/soltys/moja-wies");
+  return { ok: true };
+}
+
+const schemaPolaRezerwacji = z.object({
+  hallId: z.string().uuid(),
+  pola: schemaPolaRezerwacjiSali,
+});
+
+export async function zapiszPolaRezerwacjiSali(dane: z.infer<typeof schemaPolaRezerwacji>): Promise<WynikProsty> {
+  const p = schemaPolaRezerwacji.safeParse(dane);
+  if (!p.success) return { blad: "Nieprawidłowa definicja pól formularza." };
+
+  const supabase = utworzKlientaSupabaseSerwer();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { blad: "Zaloguj się." };
+
+  const wolno = await czyUzytkownikJestSoltysemDlaSali(supabase, user.id, p.data.hallId);
+  if (!wolno) return { blad: "Brak uprawnień do edycji tej sali." };
+
+  for (const pole of p.data.pola) {
+    if (pole.typ === "select" && (!pole.opcje || pole.opcje.length === 0)) {
+      return { blad: `Pole „${pole.label}” (lista) wymaga co najmniej jednej opcji.` };
+    }
+  }
+
+  const { error } = await supabase
+    .from("halls")
+    .update({ booking_form_fields: p.data.pola, updated_at: new Date().toISOString() })
+    .eq("id", p.data.hallId);
+
+  if (error) {
+    console.error("[zapiszPolaRezerwacjiSali]", error.message);
+    return { blad: "Nie udało się zapisać pól formularza." };
+  }
+
+  revalidatePath(`/panel/soltys/swietlica/${p.data.hallId}`);
+  return { ok: true };
+}
+
+export async function oznaczKonfiguracjeWsiUkonczona(villageId: string): Promise<WynikProsty> {
+  const id = uuid.safeParse(villageId);
+  if (!id.success) return { blad: "Niepoprawny identyfikator wsi." };
+
+  const supabase = utworzKlientaSupabaseSerwer();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { blad: "Zaloguj się." };
+
+  const vids = await pobierzVillageIdsRoliPaneluSoltysa(supabase, user.id);
+  if (!vids.includes(id.data)) return { blad: "Nie możesz edytować danych tej wsi." };
+
+  const { data: istniejace } = await supabase
+    .from("village_settings")
+    .select("theme_id, logo_url, settings")
+    .eq("village_id", id.data)
+    .maybeSingle();
+
+  const parsed = schemaUstawieniaWsiJson.parse(istniejace?.settings ?? {});
+  const settingsJson = { ...parsed, konfiguracja_ukonczona: true };
+
+  const { error } = await supabase.from("village_settings").upsert(
+    {
+      village_id: id.data,
+      theme_id: istniejace?.theme_id ?? "zielony-wies",
+      logo_url: istniejace?.logo_url ?? null,
+      settings: settingsJson,
+      updated_at: new Date().toISOString(),
+    },
+    { onConflict: "village_id" },
+  );
+
+  if (error) {
+    console.error("[oznaczKonfiguracjeWsiUkonczona]", error.message);
+    return { blad: "Nie udało się zapisać postępu konfiguracji." };
+  }
+
   revalidatePath("/panel/soltys/moja-wies");
   return { ok: true };
 }
