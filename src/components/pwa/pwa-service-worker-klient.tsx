@@ -71,27 +71,28 @@ export function PwaServiceWorkerKlient() {
 
   return (
     <div
-      className="no-print fixed inset-x-0 bottom-0 z-[110] border-t border-stone-200 bg-white/95 px-4 py-3 shadow-[0_-8px_30px_rgba(0,0,0,0.08)] backdrop-blur-sm [bottom:var(--pwa-bottom-bar-offset,0px)]"
+      className="no-print fixed inset-x-0 bottom-0 z-[110] border-t border-stone-200 bg-white/95 px-3 py-2 shadow-[0_-8px_30px_rgba(0,0,0,0.08)] backdrop-blur-sm sm:px-4 sm:py-3 [bottom:var(--pwa-bottom-bar-offset,0px)]"
       role="dialog"
       aria-label="Instalacja aplikacji"
     >
-      <div className="mx-auto flex max-w-2xl flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-        <p className="text-sm text-stone-800">
-          <strong className="font-semibold text-green-950">Zainstaluj naszawies.pl</strong> jak aplikację — szybszy
-          dostęp z ekranu głównego i możliwość powiadomień push (po włączeniu w panelu).
+      <div className="mx-auto flex max-w-2xl items-center justify-between gap-2 sm:gap-3">
+        <p className="min-w-0 text-xs leading-snug text-stone-800 sm:text-sm">
+          <strong className="font-semibold text-green-950">Zainstaluj naszawies.pl</strong>
+          <span className="hidden sm:inline"> jak aplikację — szybszy dostęp z ekranu głównego i możliwość powiadomień push (po włączeniu w panelu).</span>
+          <span className="sm:hidden"> — szybki dostęp z ekranu głównego.</span>
         </p>
-        <div className="flex shrink-0 gap-2">
+        <div className="flex shrink-0 gap-1.5 sm:gap-2">
           <button
             type="button"
             onClick={odrzuc}
-            className="rounded-lg border border-stone-300 px-3 py-2 text-sm text-stone-700 hover:bg-stone-50"
+            className="rounded-lg border border-stone-300 px-2.5 py-1.5 text-xs text-stone-700 hover:bg-stone-50 sm:px-3 sm:py-2 sm:text-sm"
           >
             Później
           </button>
           <button
             type="button"
             onClick={() => void instaluj()}
-            className="rounded-lg bg-green-800 px-4 py-2 text-sm font-medium text-white hover:bg-green-900"
+            className="rounded-lg bg-green-800 px-3 py-1.5 text-xs font-medium text-white hover:bg-green-900 sm:px-4 sm:py-2 sm:text-sm"
           >
             Zainstaluj
           </button>

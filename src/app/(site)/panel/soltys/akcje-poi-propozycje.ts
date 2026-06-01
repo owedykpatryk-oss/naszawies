@@ -5,6 +5,8 @@ import { z } from "zod";
 import { KATEGORIE_PROPONOWALNE_POI } from "@/lib/mapa/kategorie-poi-bazowe";
 import { pobierzVillageIdsRoliPaneluSoltysa } from "@/lib/panel/rola-panelu-soltysa";
 import { roleDlaUprawnienia } from "@/lib/panel/uprawnienia-wsi";
+import { powiadomSoltysowOPropozycjiPoi } from "@/lib/powiadomienia/powiadom-soltysow-o-propozycji-poi";
+import { createAdminSupabaseClient } from "@/lib/supabase/admin-client";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
 import { sciezkaProfiluWsi } from "@/lib/wies/sciezka-publiczna";
 
@@ -67,21 +69,18 @@ export async function zlozPropozycjePoi(niesprawdzone: unknown): Promise<WynikPr
 
   const { data: wies } = await supabase
     .from("villages")
-    .select("name, soltys_user_id")
+    .select("name")
     .eq("id", p.data.villageId)
     .maybeSingle();
 
-  if (wies?.soltys_user_id) {
-    await supabase.from("notifications").insert({
-      user_id: wies.soltys_user_id,
-      type: "poi_proposal",
-      title: "Nowa propozycja punktu na mapie",
-      body: `${p.data.name} — ${wies.name ?? "wies"}. Zatwierdź w panelu Moja wieś.`,
-      link_url: "/panel/soltys/moja-wies",
-      related_id: p.data.villageId,
-      related_type: "village",
-      channel: "in_app",
-    });
+  const admin = createAdminSupabaseClient();
+  if (admin) {
+    void powiadomSoltysowOPropozycjiPoi(admin, {
+      villageId: p.data.villageId,
+      nazwaPoi: p.data.name,
+      nazwaWsi: wies?.name ?? "wies",
+      proponentUserId: user.id,
+    }).catch((e) => console.warn("[zlozPropozycjePoi] powiadomienie", e));
   }
 
   revalidatePath("/panel/soltys/moja-wies");
@@ -106,7 +105,7 @@ export async function zatwierdzPropozycjePoi(niesprawdzone: unknown): Promise<Wy
 
   const { data: prop, error: errProp } = await supabase
     .from("poi_proposals")
-    .select("id, village_id, category, name, description, latitude, longitude, status")
+    .select("id, village_id, category, name, description, latitude, longitude, status, proposed_by")
     .eq("id", p.data.proposalId)
     .maybeSingle();
 
@@ -162,7 +161,34 @@ export async function zatwierdzPropozycjePoi(niesprawdzone: unknown): Promise<Wy
 
   revalidatePath("/mapa");
   revalidatePath("/panel/soltys/moja-wies");
+  revalidatePath("/panel/mieszkaniec");
   if (village) revalidatePath(sciezkaProfiluWsi(village));
+
+  if (prop.proposed_by) {
+    const admin = createAdminSupabaseClient();
+    const tytul = "Propozycja punktu zaakceptowana";
+    const tresc = `„${prop.name}” jest już na mapie wsi.`;
+    if (admin) {
+      await admin.from("notifications").insert({
+        user_id: prop.proposed_by,
+        type: "poi_proposal_approved",
+        title: tytul,
+        body: tresc,
+        link_url: "/panel/mieszkaniec",
+        related_id: prop.village_id,
+        related_type: "village",
+        channel: "in_app",
+      });
+      const { wyslijWebPushDoWieluOdbiorcow } = await import("@/lib/pwa/wyslij-web-push");
+      void wyslijWebPushDoWieluOdbiorcow(admin, [prop.proposed_by], {
+        title: tytul,
+        body: tresc,
+        linkUrl: "/panel/mieszkaniec",
+        tag: `poi-approved-${prop.id}`,
+      }).catch(() => undefined);
+    }
+  }
+
   return { ok: true };
 }
 
@@ -179,7 +205,7 @@ export async function odrzucPropozycjePoi(niesprawdzone: unknown): Promise<Wynik
 
   const { data: prop } = await supabase
     .from("poi_proposals")
-    .select("id, village_id, status")
+    .select("id, village_id, status, proposed_by, name")
     .eq("id", p.data.proposalId)
     .maybeSingle();
 
@@ -205,5 +231,34 @@ export async function odrzucPropozycjePoi(niesprawdzone: unknown): Promise<Wynik
   }
 
   revalidatePath("/panel/soltys/moja-wies");
+  revalidatePath("/panel/mieszkaniec");
+
+  if (prop.proposed_by) {
+    const admin = createAdminSupabaseClient();
+    const tytul = "Propozycja punktu odrzucona";
+    const tresc = prop.name
+      ? `„${prop.name}” nie trafi na mapę.${p.data.reviewNote?.trim() ? ` Uwaga: ${p.data.reviewNote.trim()}` : ""}`
+      : "Twoja propozycja punktu nie została przyjęta.";
+    if (admin) {
+      await admin.from("notifications").insert({
+        user_id: prop.proposed_by,
+        type: "poi_proposal_rejected",
+        title: tytul,
+        body: tresc.slice(0, 500),
+        link_url: "/panel/mieszkaniec",
+        related_id: prop.village_id,
+        related_type: "village",
+        channel: "in_app",
+      });
+      const { wyslijWebPushDoWieluOdbiorcow } = await import("@/lib/pwa/wyslij-web-push");
+      void wyslijWebPushDoWieluOdbiorcow(admin, [prop.proposed_by], {
+        title: tytul,
+        body: tresc.length > 110 ? `${tresc.slice(0, 110)}…` : tresc,
+        linkUrl: "/panel/mieszkaniec",
+        tag: `poi-rejected-${prop.id}`,
+      }).catch(() => undefined);
+    }
+  }
+
   return { ok: true };
 }

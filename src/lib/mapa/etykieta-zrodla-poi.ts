@@ -1,42 +1,61 @@
-/** Etykieta źródła punktu na mapie (publiczny widok). */
-export function etykietaZrodlaPoi(args: {
-  source: string | null;
-  verified_at: string | null;
-  is_local_override: boolean | null;
-}): { tekst: string; wymagaWeryfikacji: boolean; klasy: string } {
-  const src = (args.source ?? "").trim();
-  const wymaga =
-    !args.verified_at &&
-    args.is_local_override !== true &&
-    (src === "osm_auto" || src === "geoportal");
+const ETYKIETY_ZRODLA_POI: Record<string, string> = {
+  manual: "Ręczna",
+  local_corrected: "Skorygowana",
+  osm_auto: "OSM (auto)",
+  geoportal: "Urzędowa (Geoportal)",
+  nazwa_geo: "Urzędowa (PRNG)",
+};
 
-  if (wymaga) {
+export type SzczegolyZrodlaPoi = {
+  tekst: string;
+  klasy: string;
+  wymagaWeryfikacji: boolean;
+};
+
+export function etykietaZrodlaPoi(source: string | null | undefined): string {
+  if (!source) return "Nieznane";
+  return ETYKIETY_ZRODLA_POI[source] ?? source;
+}
+
+export function opisZrodlaPoi(poi: {
+  source: string | null | undefined;
+  verified_at?: string | null;
+  is_local_override?: boolean | null;
+}): SzczegolyZrodlaPoi {
+  const src = poi.source ?? "";
+  const etykieta = etykietaZrodlaPoi(src);
+  const zweryfikowana = Boolean(poi.verified_at?.trim());
+  const lokalna = Boolean(poi.is_local_override);
+
+  if (lokalna) {
     return {
-      tekst: src === "geoportal" ? "Geoportal — do weryfikacji" : "OSM — do weryfikacji",
+      tekst: `${etykieta} · poprawka sołtysa`,
+      klasy: "bg-emerald-100 text-emerald-900",
+      wymagaWeryfikacji: false,
+    };
+  }
+  if (src === "geoportal" || src === "nazwa_geo") {
+    return {
+      tekst: `${etykieta} · dane urzędowe`,
+      klasy: "bg-violet-100 text-violet-900",
+      wymagaWeryfikacji: false,
+    };
+  }
+  if (src === "osm_auto" && !zweryfikowana) {
+    return {
+      tekst: `${etykieta} · do weryfikacji`,
+      klasy: "bg-amber-100 text-amber-950",
       wymagaWeryfikacji: true,
-      klasy: "border-amber-300 bg-amber-50 text-amber-900",
     };
   }
-
-  if (src === "osm_auto" || src === "geoportal") {
-    return {
-      tekst: src === "geoportal" ? "Geoportal" : "OpenStreetMap",
-      wymagaWeryfikacji: false,
-      klasy: "border-stone-200 bg-stone-50 text-stone-600",
-    };
-  }
-
-  if (src === "local_corrected") {
-    return {
-      tekst: "Zweryfikowane lokalnie",
-      wymagaWeryfikacji: false,
-      klasy: "border-emerald-200 bg-emerald-50 text-emerald-800",
-    };
-  }
-
   return {
-    tekst: "Dodane przez społeczność",
+    tekst: zweryfikowana ? `${etykieta} · zweryfikowana` : etykieta,
+    klasy: "bg-stone-100 text-stone-800",
     wymagaWeryfikacji: false,
-    klasy: "border-sky-200 bg-sky-50 text-sky-800",
   };
+}
+
+export function czyPoiUsuwalnaZeEdytora(source: string | null | undefined): boolean {
+  const src = source ?? "";
+  return src !== "geoportal" && src !== "nazwa_geo";
 }

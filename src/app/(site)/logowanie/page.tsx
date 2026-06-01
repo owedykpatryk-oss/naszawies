@@ -50,8 +50,8 @@ export default async function LogowaniePage({ searchParams }: Props) {
         />
         <h1 className="relative font-serif text-3xl tracking-tight text-green-950 sm:text-[2rem]">Logowanie</h1>
         <p className="relative mt-2 text-sm leading-relaxed text-stone-600">
-          Zaloguj się przez Google albo e-mail i hasło. Po zalogowaniu wrócisz do miejsca, z którego przyszedłeś
-          lub przejdziesz do panelu konta.
+          Zaloguj się przez Google albo e-mail i hasło. Po pierwszym wejściu wybierzesz swoją miejscowość i rolę
+          (mieszkaniec, sołtys lub tylko przeglądanie) — każde konto jest przypisane do Ciebie, nie do jednej wsi.
         </p>
         <div className="relative mt-6">
           <LogowanieProwiderzy pochodzeniePubliczne={pochodzenie} nastepnaSciezka={nastepna} />

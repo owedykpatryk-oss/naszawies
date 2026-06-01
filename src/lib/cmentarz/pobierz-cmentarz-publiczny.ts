@@ -14,6 +14,8 @@ export type RekordGrobuPubliczny = {
   rok_smierci: number | null;
   notatka: string | null;
   plan_element_id: string | null;
+  latitude: number | null;
+  longitude: number | null;
 };
 
 export type PlanCmentarzaPubliczny = {
@@ -44,7 +46,9 @@ export async function pobierzPlanCmentarzaPubliczny(
 
   const { data: groby } = await supabase
     .from("cemetery_grave_records")
-    .select("id, nazwisko, imie, kwatera, rzad, numer_gravu, rok_urodzenia, rok_smierci, notatka, plan_element_id")
+    .select(
+      "id, nazwisko, imie, kwatera, rzad, numer_gravu, rok_urodzenia, rok_smierci, notatka, plan_element_id, latitude, longitude",
+    )
     .eq("cemetery_plan_id", plan.id)
     .eq("status", "approved")
     .order("nazwisko", { ascending: true })

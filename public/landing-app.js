@@ -328,27 +328,49 @@
   function initMobileNav() {
     var toggle = document.querySelector(".nav-toggle");
     var menu = document.getElementById("nav-menu");
+    var backdrop = document.getElementById("nav-backdrop");
     if (!toggle || !menu) return;
+
+    function syncNavHeight() {
+      var navEl = document.querySelector("#strona-glowna nav") || document.querySelector("nav");
+      if (navEl) {
+        document.documentElement.style.setProperty("--landing-nav-height", navEl.offsetHeight + "px");
+      }
+    }
 
     function closeMenu() {
       toggle.setAttribute("aria-expanded", "false");
       menu.classList.remove("is-open");
+      if (backdrop) {
+        backdrop.setAttribute("hidden", "");
+        backdrop.setAttribute("aria-hidden", "true");
+      }
+      document.body.classList.remove("landing-nav-open");
+    }
+
+    function openMenu() {
+      syncNavHeight();
+      toggle.setAttribute("aria-expanded", "true");
+      menu.classList.add("is-open");
+      if (backdrop) {
+        backdrop.removeAttribute("hidden");
+        backdrop.setAttribute("aria-hidden", "false");
+      }
+      document.body.classList.add("landing-nav-open");
     }
 
     toggle.addEventListener("click", function () {
       var open = toggle.getAttribute("aria-expanded") === "true";
-      toggle.setAttribute("aria-expanded", open ? "false" : "true");
-      menu.classList.toggle("is-open", !open);
+      if (open) closeMenu();
+      else openMenu();
     });
+
+    if (backdrop) {
+      backdrop.addEventListener("click", closeMenu);
+    }
 
     menu.querySelectorAll("a").forEach(function (link) {
       link.addEventListener("click", closeMenu);
-    });
-
-    document.addEventListener("click", function (e) {
-      if (!menu.classList.contains("is-open")) return;
-      if (toggle.contains(e.target) || menu.contains(e.target)) return;
-      closeMenu();
     });
 
     document.addEventListener("keydown", function (e) {
@@ -362,6 +384,9 @@
       },
       { passive: true },
     );
+
+    syncNavHeight();
+    window.addEventListener("resize", syncNavHeight);
   }
 
   function syncLandingBottomStack() {

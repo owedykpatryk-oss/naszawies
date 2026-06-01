@@ -4,7 +4,7 @@ import { createPublicSupabaseClient } from "@/lib/supabase/public-client";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
 import { sciezkaProfiluWsi } from "@/lib/wies/sciezka-publiczna";
 import { formatujGodzinyOtwarcia } from "@/lib/mapa/formatuj-godziny-otwarcia";
-import { etykietaZrodlaPoi } from "@/lib/mapa/etykieta-zrodla-poi";
+import { opisZrodlaPoi } from "@/lib/mapa/etykieta-zrodla-poi";
 import { MiejscePoiKlient, type KomentarzPoiWiersz } from "./miejsce-poi-klient";
 import { RozkladPrzystankuPubliczny } from "@/components/mapa/rozklad-przystanku-publiczny";
 
@@ -66,7 +66,7 @@ export default async function MiejscePoiPage({ params }: Props) {
 
   const lat = Number(poi.latitude);
   const lon = Number(poi.longitude);
-  const zrodlo = etykietaZrodlaPoi({
+  const zrodlo = opisZrodlaPoi({
     source: (poi as { source?: string | null }).source ?? null,
     verified_at: (poi as { verified_at?: string | null }).verified_at ?? null,
     is_local_override: (poi as { is_local_override?: boolean | null }).is_local_override ?? null,

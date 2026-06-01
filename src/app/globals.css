@@ -7,7 +7,8 @@
   --nasza-zielen-jasna: #5a9c3e;
   --nasza-tlo-panel: #f4f0e6;
   --nasza-szklo: rgba(255, 255, 255, 0.72);
-  --site-header-offset: 7.25rem;
+  --site-header-offset: 3.75rem;
+  --site-header-height: 3.5rem;
   --panel-header-offset: 6.75rem;
   --sticky-nav-offset: var(--site-header-offset);
   --dolna-naw-offset: 0px;
@@ -15,7 +16,13 @@
 
 @media (min-width: 640px) {
   :root {
-    --site-header-offset: 6.25rem;
+    --site-header-offset: 4rem;
+  }
+}
+
+@media (min-width: 1024px) {
+  :root {
+    --site-header-offset: 6.75rem;
   }
 }
 
@@ -27,6 +34,29 @@ body {
   text-rendering: optimizeLegibility;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+}
+
+body.site-nav-open,
+body.landing-nav-open {
+  overflow: hidden;
+}
+
+.profil-wies-motyw .wies-naglowek-tytul {
+  color: var(--wies-tekst, #14532d);
+}
+
+.profil-wies-motyw a.wies-akcent-link,
+.profil-wies-motyw nav[aria-label="Ścieżka nawigacji"] a {
+  color: var(--wies-akcent, #166534);
+}
+
+.profil-wies-motyw .rynek-hero-wow {
+  border-color: color-mix(in srgb, var(--wies-ramka, #86efac) 65%, transparent);
+  background: linear-gradient(
+    135deg,
+    color-mix(in srgb, var(--wies-tlo, #f0fdf4) 85%, white) 0%,
+    white 100%
+  );
 }
 
 /* Tryb uproszczony (senior) — większa czcionka i wyraźniejsze przyciski */
@@ -274,12 +304,12 @@ html.tryb-senior textarea {
 
   .dolna-naw-mobilna {
     @apply fixed bottom-0 left-0 right-0 z-50 border-t border-green-900/10 bg-[#f5f1e8]/95 backdrop-blur-lg lg:hidden;
-    padding-bottom: max(0.35rem, env(safe-area-inset-bottom));
-    box-shadow: 0 -8px 32px rgba(45, 90, 45, 0.08);
+    padding-bottom: max(0.25rem, env(safe-area-inset-bottom));
+    box-shadow: 0 -6px 24px rgba(45, 90, 45, 0.07);
   }
 
   .dolna-naw-link {
-    @apply flex min-h-[52px] flex-1 flex-col items-center justify-center gap-0.5 rounded-lg px-1 py-1.5 text-[10px] font-semibold text-stone-600 transition;
+    @apply flex min-h-[46px] flex-1 flex-col items-center justify-center gap-0.5 rounded-lg px-0.5 py-1 text-[10px] font-semibold text-stone-600 transition;
   }
 
   .dolna-naw-link--aktywny {

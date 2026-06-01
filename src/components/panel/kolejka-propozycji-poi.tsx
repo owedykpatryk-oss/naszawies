@@ -53,7 +53,7 @@ export function KolejkaPropozycjiPoi({ poczatkowe }: Props) {
   if (lista.length === 0) return null;
 
   return (
-    <section className="mt-4 rounded-xl border border-violet-200/80 bg-violet-50/40 p-4">
+    <section id="propozycje-poi" className="mt-4 scroll-mt-24 rounded-xl border border-violet-200/80 bg-violet-50/40 p-4">
       <h3 className="text-sm font-semibold text-violet-950">
         Propozycje mieszkańców ({lista.length})
       </h3>

@@ -2,6 +2,7 @@ import Link from "next/link";
 import { RynekUdostepnijPrzycisk } from "@/components/wies/rynek-udostepnij-przycisk";
 import { etykietaRodzajuWydarzenia } from "@/lib/wies/teksty-organizacji";
 import type { ProfilParafiiJson } from "@/lib/wies/profil-organizacji";
+import { ETYKIETY_DNI_INTENCJI } from "@/lib/wies/profil-organizacji";
 
 export type DaneParafiiPubliczne = {
   id: string;
@@ -167,6 +168,29 @@ export function KartaParafiiPubliczna({
       ) : null}
 
       <div className="mt-5 grid gap-3 sm:grid-cols-2">
+        {p?.msze_niedziele || p?.msze_dni_powszednie ? (
+          <div className="rounded-xl border border-violet-200/80 bg-white/90 p-4 shadow-sm sm:col-span-2">
+            <h4 className="flex items-center gap-2 text-sm font-semibold text-violet-950">
+              <span aria-hidden>✝</span>
+              Msze św.
+            </h4>
+            <div className="mt-2 grid gap-3 sm:grid-cols-2">
+              {p?.msze_niedziele ? (
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-wide text-violet-800">Niedziele i święta</p>
+                  <p className="mt-1 whitespace-pre-wrap text-sm leading-relaxed text-stone-700">{p.msze_niedziele}</p>
+                </div>
+              ) : null}
+              {p?.msze_dni_powszednie ? (
+                <div>
+                  <p className="text-xs font-semibold uppercase tracking-wide text-violet-800">Dni powszednie</p>
+                  <p className="mt-1 whitespace-pre-wrap text-sm leading-relaxed text-stone-700">{p.msze_dni_powszednie}</p>
+                </div>
+              ) : null}
+            </div>
+          </div>
+        ) : null}
+
         {p?.adres_kosciola || parafia.meeting_place ? (
           <Blok tytul="Kościół / miejsce" ikona="⛪">
             {p?.adres_kosciola ?? parafia.meeting_place}
@@ -176,13 +200,13 @@ export function KartaParafiiPubliczna({
           </Blok>
         ) : null}
 
-        {p?.msze_niedziele ? (
+        {p?.msze_niedziele && !(p?.msze_dni_powszednie) ? (
           <Blok tytul="Msze św. — niedziele i święta" ikona="✝">
             {p.msze_niedziele}
           </Blok>
         ) : null}
 
-        {p?.msze_dni_powszednie ? (
+        {p?.msze_dni_powszednie && !(p?.msze_niedziele) ? (
           <Blok tytul="Msze św. — dni powszednie" ikona="📅">
             {p.msze_dni_powszednie}
           </Blok>
@@ -210,6 +234,37 @@ export function KartaParafiiPubliczna({
           <Blok tytul="Intencje mszalne" ikona="🕯">
             {p.intencje_mszalne}
           </Blok>
+        ) : null}
+
+        {p?.intencje_tygodniowe && p.intencje_tygodniowe.length > 0 ? (
+          <div className="rounded-xl border border-violet-200/80 bg-white/90 p-4 shadow-sm sm:col-span-2">
+            <h4 className="flex items-center gap-2 text-sm font-semibold text-violet-950">
+              <span aria-hidden>📋</span>
+              Intencje mszalne — tydzień
+            </h4>
+            <div className="mt-2 overflow-x-auto">
+              <table className="w-full min-w-[280px] text-left text-sm">
+                <thead>
+                  <tr className="text-xs text-stone-600">
+                    <th className="py-1 pr-3 font-medium">Dzień</th>
+                    <th className="py-1 pr-3 font-medium">Godz.</th>
+                    <th className="py-1 pr-3 font-medium">Intencja</th>
+                    <th className="py-1 font-medium">Celebrans</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {p.intencje_tygodniowe.map((w, i) => (
+                    <tr key={i} className="border-t border-violet-100/80 text-stone-700">
+                      <td className="py-1.5 pr-3 whitespace-nowrap">{ETYKIETY_DNI_INTENCJI[w.dzien]}</td>
+                      <td className="py-1.5 pr-3 whitespace-nowrap">{w.godzina || "—"}</td>
+                      <td className="py-1.5 pr-3">{w.intencja}</td>
+                      <td className="py-1.5 text-stone-600">{w.celebrans ?? "—"}</td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
         ) : null}
 
         {p?.sakramenty ? (

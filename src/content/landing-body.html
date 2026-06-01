@@ -7,26 +7,39 @@
       </div>
       <div class="logo-text"><span class="p1">naszawies</span><span class="p2">.pl</span></div>
     </a>
-    <button type="button" class="nav-toggle" aria-expanded="false" aria-controls="nav-menu" aria-label="Otwórz menu">
+    <button type="button" class="nav-toggle" aria-expanded="false" aria-controls="nav-menu" aria-label="Otwórz menu nawigacji">
       <span class="nav-toggle__bar" aria-hidden="true"></span>
       <span class="nav-toggle__bar" aria-hidden="true"></span>
       <span class="nav-toggle__bar" aria-hidden="true"></span>
     </button>
-    <div class="nav-links" id="nav-menu">
-      <a href="#dla-kogo">Dla kogo</a>
-      <a href="#jak">Jak to działa</a>
-      <a href="#swietlica">Świetlica</a>
-      <a href="#funkcje">Funkcje</a>
-      <a href="#nowosci" class="nav-discover">Nowości</a>
-      <a href="/rynek" class="nav-discover">Rynek lokalny</a>
-      <a href="#faq">Pytania</a>
-      <a href="/o-nas" class="nav-discover">O nas</a>
-      <a href="/kontakt" class="nav-discover">Kontakt</a>
-      <a href="/logowanie?next=/szukaj" class="nav-discover">Katalog wsi</a>
-      <span class="nav-discover nav-discover--muted" title="Dostępna po zalogowaniu">Mapa</span>
-      <a href="/logowanie" class="nav-auth">Logowanie</a>
-      <a href="/rejestracja" class="nav-auth">Rejestracja</a>
-      <a href="#zapisz" class="nav-cta">Dołącz</a>
+    <div class="nav-backdrop" id="nav-backdrop" hidden aria-hidden="true"></div>
+    <div class="nav-links" id="nav-menu" role="navigation" aria-label="Menu strony głównej">
+      <div class="nav-links__group">
+        <p class="nav-links__label">Na tej stronie</p>
+        <div class="nav-links__grid">
+          <a href="#dla-kogo">Dla kogo</a>
+          <a href="#jak">Jak to działa</a>
+          <a href="#swietlica">Świetlica</a>
+          <a href="#funkcje">Funkcje</a>
+          <a href="#nowosci">Nowości</a>
+          <a href="#faq">Pytania</a>
+        </div>
+      </div>
+      <div class="nav-links__group">
+        <p class="nav-links__label">Odkrywaj</p>
+        <div class="nav-links__grid nav-links__grid--2">
+          <a href="/rynek" class="nav-discover">Rynek lokalny</a>
+          <a href="/o-nas" class="nav-discover">O nas</a>
+          <a href="/kontakt" class="nav-discover">Kontakt</a>
+          <a href="/logowanie?next=/szukaj" class="nav-discover">Katalog wsi</a>
+        </div>
+        <span class="nav-discover nav-discover--muted" title="Dostępna po zalogowaniu">Mapa (po logowaniu)</span>
+      </div>
+      <div class="nav-links__actions">
+        <a href="/logowanie" class="nav-auth">Logowanie</a>
+        <a href="/rejestracja" class="nav-auth nav-auth--primary">Rejestracja</a>
+        <a href="#zapisz" class="nav-cta">Dołącz</a>
+      </div>
     </div>
   </div>
 </nav>

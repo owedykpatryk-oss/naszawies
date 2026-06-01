@@ -2,7 +2,8 @@
 
 import { FormEvent, useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { dodajKanalRssWsi, uruchomSynchronizacjeRssDlaMoichWsi, usunKanalRssWsi } from "../akcje";
+import { dodajKanalRssWsi, uruchomSynchronizacjeRssDlaMoichWsi, usunKanalRssWsi, ustawTrybImportuRssKanalu } from "../akcje";
+import { dodajWieleKanalowRss, odkryjRssDlaWsiSoltys } from "./akcje-rss-discovery";
 
 export type WiesDoRss = { id: string; name: string };
 
@@ -12,6 +13,7 @@ export type KanalRssWiersz = {
   label: string;
   feed_url: string;
   is_enabled: boolean;
+  import_titles_only: boolean;
   last_fetched_at: string | null;
   last_error: string | null;
 };
@@ -28,6 +30,8 @@ export function SoltysKanalyRssKlient({
   const [czek, startT] = useTransition();
   const [komunikat, setKomunikat] = useState("");
   const [blad, setBlad] = useState("");
+  const [propozycje, setPropozycje] = useState<{ label: string; feed_url: string; zrodlo: string }[]>([]);
+  const [wybraneFeedy, setWybraneFeedy] = useState<Set<string>>(new Set());
 
   const lista = kanaly.filter((k) => k.village_id === villageId);
 
@@ -41,6 +45,7 @@ export function SoltysKanalyRssKlient({
         villageId,
         label: String(fd.get("label") ?? ""),
         feed_url: String(fd.get("feed_url") ?? ""),
+        import_titles_only: fd.get("import_titles_only") === "on",
       });
       if ("blad" in wynik && wynik.blad) {
         setBlad(wynik.blad);
@@ -66,6 +71,57 @@ export function SoltysKanalyRssKlient({
         `Zsynchronizowano źródła: ${wynik.zrodlaPrzetworzone}, nowe wpisy (oczekujące): ${wynik.noweWpisy}.${errPart}`,
       );
       router.refresh();
+    });
+  }
+
+  function onOdkryjRss() {
+    setBlad("");
+    setKomunikat("");
+    setPropozycje([]);
+    setWybraneFeedy(new Set());
+    startT(async () => {
+      const w = await odkryjRssDlaWsiSoltys(villageId);
+      if ("blad" in w) {
+        setBlad(w.blad);
+        return;
+      }
+      setPropozycje(w.propozycje);
+      setWybraneFeedy(new Set(w.propozycje.map((p) => p.feed_url)));
+      if (w.propozycje.length === 0) {
+        setKomunikat("Nie znaleziono kanałów RSS — dodaj adres ręcznie poniżej.");
+      } else {
+        setKomunikat(`Znaleziono ${w.propozycje.length} propozycji (BIP gminy, strona urzędu itd.).`);
+      }
+    });
+  }
+
+  function onDodajWybrane() {
+    const kanaly = propozycje.filter((p) => wybraneFeedy.has(p.feed_url));
+    if (!kanaly.length) {
+      setBlad("Zaznacz co najmniej jeden kanał.");
+      return;
+    }
+    setBlad("");
+    setKomunikat("");
+    startT(async () => {
+      const w = await dodajWieleKanalowRss(villageId, kanaly);
+      if ("blad" in w) {
+        setBlad(w.blad);
+        return;
+      }
+      setKomunikat(`Dodano ${w.dodano} kanałów RSS.`);
+      setPropozycje([]);
+      setWybraneFeedy(new Set());
+      router.refresh();
+    });
+  }
+
+  function toggleFeed(url: string) {
+    setWybraneFeedy((prev) => {
+      const next = new Set(prev);
+      if (next.has(url)) next.delete(url);
+      else next.add(url);
+      return next;
     });
   }
 
@@ -129,10 +185,32 @@ export function SoltysKanalyRssKlient({
                   </a>
                   <p className="mt-2 text-xs text-stone-500">
                     {k.is_enabled ? "Aktywny" : "Wyłączony"}
+                    {k.import_titles_only ? " · tylko tytuły" : " · pełna treść"}
                     {k.last_fetched_at
                       ? ` · ostatnio: ${new Date(k.last_fetched_at).toLocaleString("pl-PL")}`
                       : " · jeszcze nie pobierano"}
                   </p>
+                  <label className="mt-2 flex items-center gap-2 text-xs text-stone-700">
+                    <input
+                      type="checkbox"
+                      checked={k.import_titles_only}
+                      disabled={czek}
+                      onChange={() => {
+                        setBlad("");
+                        setKomunikat("");
+                        startT(async () => {
+                          const w = await ustawTrybImportuRssKanalu(k.id, !k.import_titles_only);
+                          if ("blad" in w && w.blad) {
+                            setBlad(w.blad);
+                            return;
+                          }
+                          setKomunikat("Zaktualizowano tryb importu kanału.");
+                          router.refresh();
+                        });
+                      }}
+                    />
+                    Importuj tylko tytuły (link u źródła)
+                  </label>
                   {k.last_error ? (
                     <p className="mt-1 text-xs text-red-800">Błąd: {k.last_error}</p>
                   ) : null}
@@ -163,6 +241,50 @@ export function SoltysKanalyRssKlient({
         )}
       </div>
 
+      <div className="rounded-2xl border border-sky-200/80 bg-sky-50/40 p-5 shadow-sm">
+        <h2 className="font-serif text-lg text-sky-950">Auto-discovery (BIP / strona gminy)</h2>
+        <p className="mt-1 text-xs text-stone-600">
+          System przeszuka linki przydatne w profilu wsi (BIP, urząd gminy) i typowe ścieżki RSS (/feed, /rss.xml…).
+        </p>
+        <button
+          type="button"
+          disabled={czek || !villageId}
+          onClick={onOdkryjRss}
+          className="mt-3 rounded-lg border border-sky-400 bg-white px-4 py-2 text-sm font-medium text-sky-950 hover:bg-sky-50 disabled:opacity-60"
+        >
+          {czek ? "Szukam…" : "Znajdź kanały RSS dla tej wsi"}
+        </button>
+        {propozycje.length > 0 ? (
+          <ul className="mt-4 space-y-2">
+            {propozycje.map((p) => (
+              <li key={p.feed_url} className="flex items-start gap-2 rounded-lg border border-sky-100 bg-white px-3 py-2 text-sm">
+                <input
+                  type="checkbox"
+                  checked={wybraneFeedy.has(p.feed_url)}
+                  onChange={() => toggleFeed(p.feed_url)}
+                  className="mt-1"
+                />
+                <div className="min-w-0">
+                  <p className="font-medium text-stone-900">{p.label}</p>
+                  <p className="truncate text-xs text-stone-600">{p.feed_url}</p>
+                  <p className="text-[11px] text-stone-500">Źródło: {p.zrodlo}</p>
+                </div>
+              </li>
+            ))}
+          </ul>
+        ) : null}
+        {propozycje.length > 0 ? (
+          <button
+            type="button"
+            disabled={czek}
+            onClick={onDodajWybrane}
+            className="mt-3 rounded-lg bg-sky-800 px-4 py-2 text-sm text-white hover:bg-sky-900 disabled:opacity-60"
+          >
+            Dodaj zaznaczone kanały
+          </button>
+        ) : null}
+      </div>
+
       <form onSubmit={onDodaj} className="rounded-2xl border border-stone-200 bg-slate-50/40 p-5 shadow-sm">
         <h2 className="font-serif text-lg text-green-950">Dodaj kanał RSS</h2>
         <p className="mt-1 text-xs text-stone-600">Adres musi zaczynać się od http:// lub https:// (bez skrótów).</p>
@@ -184,6 +306,10 @@ export function SoltysKanalyRssKlient({
             placeholder="https://…"
             className="mt-1 w-full max-w-xl rounded border border-stone-300 px-3 py-2 text-sm"
           />
+        </label>
+        <label className="mt-3 flex items-center gap-2 text-sm text-stone-700">
+          <input type="checkbox" name="import_titles_only" defaultChecked />
+          Importuj tylko tytuły (bez duplikowania treści — link „Czytaj u źródła”)
         </label>
         <button
           type="submit"

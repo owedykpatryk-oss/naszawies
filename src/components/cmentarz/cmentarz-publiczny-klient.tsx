@@ -1,18 +1,25 @@
 "use client";
 
+import dynamic from "next/dynamic";
 import { useMemo, useState, useTransition } from "react";
 import Link from "next/link";
 import { PlanCmentarzaRysunek } from "@/components/cmentarz/plan-cmentarza-rysunek";
 import { filtrujGroby, type PlanCmentarzaPubliczny } from "@/lib/cmentarz/pobierz-cmentarz-publiczny";
 import { zapalWirtualnyZnicz } from "@/app/(site)/panel/soltys/cmentarz/akcje-cmentarz";
 
+const CmentarzGrobyMapaKlient = dynamic(
+  () => import("@/components/cmentarz/cmentarz-groby-mapa-klient").then((m) => m.CmentarzGrobyMapaKlient),
+  { ssr: false, loading: () => <p className="text-xs text-stone-500">Ładowanie mapy grobów…</p> },
+);
+
 type Props = {
   nazwaWsi: string;
   sciezkaWsi: string;
+  villageId: string;
   plan: PlanCmentarzaPubliczny;
 };
 
-export function CmentarzPublicznyKlient({ nazwaWsi, sciezkaWsi, plan }: Props) {
+export function CmentarzPublicznyKlient({ nazwaWsi, sciezkaWsi, villageId, plan }: Props) {
   const [szukaj, ustawSzukaj] = useState("");
   const [podswietl, ustawPodswietl] = useState<string | null>(null);
   const [wybranyGrob, ustawWybranyGrob] = useState<string | null>(null);
@@ -21,6 +28,10 @@ export function CmentarzPublicznyKlient({ nazwaWsi, sciezkaWsi, plan }: Props) {
   const [czek, startT] = useTransition();
 
   const wyniki = useMemo(() => filtrujGroby(plan.groby, szukaj), [plan.groby, szukaj]);
+  const grobyZGps = useMemo(
+    () => plan.groby.filter((g) => g.latitude != null && g.longitude != null).length,
+    [plan.groby],
+  );
 
   const urlQr = `${sciezkaWsi}/cmentarz`;
 
@@ -52,6 +63,23 @@ export function CmentarzPublicznyKlient({ nazwaWsi, sciezkaWsi, plan }: Props) {
         <p className="mt-2 text-xs text-stone-500">
           Link do QR przy bramie: <code className="rounded bg-stone-200/80 px-1 break-all">{urlQr}</code>
         </p>
+        <div className="mt-3 flex flex-wrap gap-2 print:hidden">
+          <button
+            type="button"
+            onClick={() => window.print()}
+            className="rounded-lg border border-stone-300 bg-white px-3 py-1.5 text-xs font-medium text-stone-800 hover:bg-stone-50"
+          >
+            Drukuj / PDF
+          </button>
+          {grobyZGps > 0 ? (
+            <Link
+              href={`/mapa?village=${encodeURIComponent(villageId)}&warstwa=cmentarz`}
+              className="rounded-lg border border-emerald-300 bg-emerald-50 px-3 py-1.5 text-xs font-medium text-emerald-900 hover:bg-emerald-100"
+            >
+              Groby z GPS na mapie ({grobyZGps})
+            </Link>
+          ) : null}
+        </div>
       </header>
 
       {blad ? (
@@ -61,7 +89,17 @@ export function CmentarzPublicznyKlient({ nazwaWsi, sciezkaWsi, plan }: Props) {
       ) : null}
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_minmax(260px,320px)]">
-        <div className="rounded-2xl border border-stone-200 bg-white p-3 shadow-sm">
+        <div className="space-y-3">
+          <CmentarzGrobyMapaKlient
+            groby={plan.groby}
+            podswietlId={wybranyGrob}
+            onGrobClick={(id) => {
+              ustawWybranyGrob(id);
+              const g = plan.groby.find((gr) => gr.id === id);
+              if (g?.plan_element_id) ustawPodswietl(g.plan_element_id);
+            }}
+          />
+          <div className="rounded-2xl border border-stone-200 bg-white p-3 shadow-sm">
           <PlanCmentarzaRysunek
             plan={plan.plan_data}
             className="h-auto w-full max-h-[min(70vh,520px)]"
@@ -80,6 +118,7 @@ export function CmentarzPublicznyKlient({ nazwaWsi, sciezkaWsi, plan }: Props) {
               ? "Podkład satelitarny (Esri World Imagery) — orientacyjny."
               : "Kliknij grób na planie, aby zobaczyć dane w wynikach."}
           </p>
+        </div>
         </div>
 
         <aside className="space-y-4">
@@ -134,6 +173,20 @@ export function CmentarzPublicznyKlient({ nazwaWsi, sciezkaWsi, plan }: Props) {
                       {g.rok_urodzenia || g.rok_smierci
                         ? ` · ${g.rok_urodzenia ?? "?"}–${g.rok_smierci ?? "?"}`
                         : null}
+                      {g.latitude != null && g.longitude != null ? (
+                        <>
+                          {" · "}
+                          <a
+                            href={`https://www.openstreetmap.org/?mlat=${g.latitude}&mlon=${g.longitude}&zoom=19`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-green-800 underline"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            GPS ↗
+                          </a>
+                        </>
+                      ) : null}
                     </p>
                   </button>
                 </li>

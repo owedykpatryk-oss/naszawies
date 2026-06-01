@@ -41,7 +41,7 @@ export function DolnaNawigacjaMobilna({ zalogowany = false }: Props) {
   const tabs = zalogowany ? TABS_ZALOGOWANY : TABS_PUBLICZNY;
 
   useEffect(() => {
-    document.documentElement.style.setProperty("--dolna-naw-offset", "4.25rem");
+    document.documentElement.style.setProperty("--dolna-naw-offset", "3.75rem");
     return () => {
       document.documentElement.style.setProperty("--dolna-naw-offset", "0px");
     };

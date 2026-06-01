@@ -5,6 +5,9 @@ import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
 import { NaglowekModuluPanelu } from "@/components/pomoc/naglowek-modulu-panelu";
 import { ProfilFormularz } from "./profil-formularz";
 import { ProfilSekcjaRodo } from "./profil-sekcja-rodo";
+import { ProfilPowiazanieWsiKlient } from "./profil-powiazanie-wsi-klient";
+import { pobierzMojePowiazania } from "@/lib/panel/pobierz-moje-powiazania";
+import type { IntencjaOnboardingu } from "@/lib/auth/onboarding-uzytkownika";
 
 export const metadata: Metadata = {
   title: "Mój profil",
@@ -41,6 +44,20 @@ export default async function PanelProfilPage() {
 
   const nickStartuOk = (profil?.display_name ?? poczatkowe.display_name).trim().length >= 2;
 
+  const meta = (user.user_metadata ?? {}) as Record<string, unknown>;
+  const intencjaStart =
+    typeof meta.signup_intent === "string" &&
+    (meta.signup_intent === "mieszkaniec" || meta.signup_intent === "soltys" || meta.signup_intent === "przegladam")
+      ? (meta.signup_intent as IntencjaOnboardingu)
+      : null;
+  const etykietaWsiStart =
+    typeof meta.signup_village_label === "string" && meta.signup_village_label.trim()
+      ? meta.signup_village_label.trim()
+      : null;
+
+  const powiazania = await pobierzMojePowiazania(user);
+  const wszystkieWsi = powiazania?.powiaty.flatMap((po) => po.gminy.flatMap((g) => g.wies)) ?? [];
+
   return (
     <main>
       {!nickStartuOk ? (
@@ -76,6 +93,12 @@ export default async function PanelProfilPage() {
       )}
 
       <ProfilFormularz poczatkowe={poczatkowe} />
+
+      <ProfilPowiazanieWsiKlient
+        intencjaStart={intencjaStart}
+        etykietaWsiStart={etykietaWsiStart}
+        powiazania={wszystkieWsi}
+      />
 
       <ProfilSekcjaRodo />
     </main>

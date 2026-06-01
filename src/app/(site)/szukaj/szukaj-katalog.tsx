@@ -146,7 +146,7 @@ export function SzukajKatalog({ poczatkoweZapytanie }: { poczatkoweZapytanie?: s
               id="szukaj-fraza"
               value={fraza}
               onChange={(e) => ustawFraze(e.target.value)}
-              placeholder="np. Studzienki, Kcynia…"
+              placeholder="np. nazwa miejscowości, gmina…"
               className="min-h-[48px] flex-1"
               autoComplete="off"
             />

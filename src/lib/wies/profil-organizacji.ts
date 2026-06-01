@@ -29,11 +29,55 @@ export const schemaProfilParafii = z.object({
   sakramenty: z.string().trim().max(1200).nullable().optional(),
   grupy_duszpasterskie: z.string().trim().max(800).nullable().optional(),
   intencje_mszalne: z.string().trim().max(600).nullable().optional(),
+  intencje_tygodniowe: z
+    .array(
+      z.object({
+        dzien: z.enum(["nd", "pon", "wt", "sr", "czw", "pt", "sob"]),
+        godzina: z.string().trim().max(12),
+        intencja: z.string().trim().max(280),
+        celebrans: z.string().trim().max(80).nullable().optional(),
+      }),
+    )
+    .max(24)
+    .nullable()
+    .optional(),
   info_cmentarz: z.string().trim().max(600).nullable().optional(),
   uwagi: z.string().trim().max(800).nullable().optional(),
 });
 
 export type ProfilParafiiJson = z.infer<typeof schemaProfilParafii>;
+
+export type IntencjaTygodniowaParafii = NonNullable<ProfilParafiiJson["intencje_tygodniowe"]>[number];
+
+export const ETYKIETY_DNI_INTENCJI: Record<IntencjaTygodniowaParafii["dzien"], string> = {
+  nd: "Niedziela",
+  pon: "Poniedziałek",
+  wt: "Wtorek",
+  sr: "Środa",
+  czw: "Czwartek",
+  pt: "Piątek",
+  sob: "Sobota",
+};
+
+const schemaIntencjiTygodniowych = z.array(
+  z.object({
+    dzien: z.enum(["nd", "pon", "wt", "sr", "czw", "pt", "sob"]),
+    godzina: z.string().trim().max(12),
+    intencja: z.string().trim().max(280),
+    celebrans: z.string().trim().max(80).nullable().optional(),
+  }),
+).max(24);
+
+export function parsujIntencjeTygodnioweZJson(raw: string): ProfilParafiiJson["intencje_tygodniowe"] {
+  if (!raw.trim()) return null;
+  try {
+    const arr = JSON.parse(raw) as unknown;
+    const w = schemaIntencjiTygodniowych.safeParse(arr);
+    return w.success ? w.data : null;
+  } catch {
+    return null;
+  }
+}
 
 export function pustyProfilParafii(): ProfilParafiiJson {
   return { wersja: 1 };
@@ -65,6 +109,7 @@ export function profilParafiiZFormularza(fd: FormData): ProfilParafiiJson {
     sakramenty: pole("parafia_sakramenty"),
     grupy_duszpasterskie: pole("parafia_grupy"),
     intencje_mszalne: pole("parafia_intencje"),
+    intencje_tygodniowe: parsujIntencjeTygodnioweZJson(String(fd.get("parafia_intencje_tygodniowe_json") ?? "")),
     info_cmentarz: pole("parafia_info_cmentarz"),
     uwagi: pole("parafia_uwagi"),
   };

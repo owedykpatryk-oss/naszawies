@@ -17,6 +17,10 @@ import {
   kolorObramowaniaPoi,
 } from "@/lib/mapa/kategorie-poi";
 import {
+  czyPoiUsuwalnaZeEdytora,
+  etykietaZrodlaPoi,
+} from "@/lib/mapa/etykieta-zrodla-poi";
+import {
   type LeafletModul,
   type RodzajPodkladuMapyEdytor,
   ustawPodkladEdytoraMapy,
@@ -284,6 +288,10 @@ export function EdytorMapyPoiSoltys({ wsie, poisByVillage }: Props) {
     if (!wybranyId) return;
     const p = pois.find((x) => x.id === wybranyId);
     if (!p) return;
+    if (!czyPoiUsuwalnaZeEdytora(p.source)) {
+      ustawBlad("Tej pinezki nie można usunąć — dane urzędowe (Geoportal / PRNG).");
+      return;
+    }
     if (!window.confirm(`Usunąć pinezkę „${p.name}” z mapy?`)) return;
     startT(async () => {
       const w = await usunPoiNaMapieSoltys({ poiId: wybranyId });
@@ -450,7 +458,9 @@ export function EdytorMapyPoiSoltys({ wsie, poisByVillage }: Props) {
                     }`}
                   >
                     <span className="font-medium">{p.name}</span>
-                    <span className="block text-stone-500">{etykietaKategoriiPoi(p.category)}</span>
+                    <span className="block text-stone-500">
+                      {etykietaKategoriiPoi(p.category)} · {etykietaZrodlaPoi(p.source)}
+                    </span>
                   </button>
                 </li>
               ))
@@ -465,9 +475,21 @@ export function EdytorMapyPoiSoltys({ wsie, poisByVillage }: Props) {
               >
                 Podgląd publiczny
               </Link>
-              <button type="button" onClick={usunWybrany} className="text-xs text-red-700 underline">
-                Usuń
-              </button>
+              {(() => {
+                const p = pois.find((x) => x.id === wybranyId);
+                if (!p || !czyPoiUsuwalnaZeEdytora(p.source)) {
+                  return (
+                    <span className="text-xs text-stone-500" title="Pinezki urzędowe można tylko przesuwać">
+                      Dane urzędowe — bez usuwania
+                    </span>
+                  );
+                }
+                return (
+                  <button type="button" onClick={usunWybrany} className="text-xs text-red-700 underline">
+                    Usuń
+                  </button>
+                );
+              })()}
             </div>
           ) : null}
         </div>

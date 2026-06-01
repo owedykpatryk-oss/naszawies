@@ -43,6 +43,7 @@ function odpowiedzZNastepnym(
   user: User | null,
 ): NextResponse {
   const requestHeaders = new Headers(request.headers);
+  requestHeaders.set("x-pathname", request.nextUrl.pathname);
   dolaczNaglowkiUzytkownika(requestHeaders, user);
   const odpowiedz = NextResponse.next({
     request: {

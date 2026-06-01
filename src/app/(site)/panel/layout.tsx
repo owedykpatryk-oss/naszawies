@@ -1,5 +1,7 @@
 import { Suspense } from "react";
+import { headers } from "next/headers";
 import { PanelNaglowekZLogo } from "@/components/panel/panel-naglowek-z-logo";
+import { BramkaOnboardingu } from "@/components/panel/bramka-onboardingu";
 import { pobierzUzytkownikaSerwer } from "@/lib/auth/pobierz-uzytkownika-serwer";
 import { pobierzMetadaneNaglowkaPaneluCache } from "@/lib/panel/metadane-naglowka-panelu";
 
@@ -34,14 +36,25 @@ function NaglowekPaneluSzkielet() {
 }
 
 export default function PanelLayout({ children }: { children: React.ReactNode }) {
+  const sciezka = headers().get("x-pathname") ?? "/panel";
+  const ekranOnboardingu =
+    sciezka === "/panel/onboarding" || sciezka.startsWith("/panel/onboarding/");
+
   return (
     <div className="panel-tlo min-h-[100dvh] min-w-0 overflow-x-hidden">
       <div className="panel-shell w-full min-w-0 py-6 text-stone-800 sm:py-8 lg:py-10">
-        <Suspense fallback={<NaglowekPaneluSzkielet />}>
-          <div className="no-print">
-            <NaglowekPanelu />
-          </div>
-        </Suspense>
+        {!ekranOnboardingu ? (
+          <>
+            <Suspense fallback={null}>
+              <BramkaOnboardingu />
+            </Suspense>
+            <Suspense fallback={<NaglowekPaneluSzkielet />}>
+              <div className="no-print">
+                <NaglowekPanelu />
+              </div>
+            </Suspense>
+          </>
+        ) : null}
         <div className="min-w-0">{children}</div>
       </div>
     </div>

@@ -182,7 +182,7 @@ async function pobierzSuroweDanePubliczneProfiluWsi(
       .limit(8),
     supabase
       .from("local_news_items")
-      .select("id, title, summary, category, source_name, published_at, created_at")
+      .select("id, title, summary, category, source_name, source_url, published_at, created_at")
       .eq("village_id", villageId)
       .eq("status", "approved")
       .order("published_at", { ascending: false, nullsFirst: false })

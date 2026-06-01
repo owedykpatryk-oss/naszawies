@@ -117,7 +117,7 @@ export function RejestracjaWyborWsi({ wybrana, onZmiana }: Props) {
                 <input
                   value={fraza}
                   onChange={(e) => ustawFraze(e.target.value)}
-                  placeholder="np. Studzienki, Sipiory…"
+                  placeholder="np. Sipiory, Kaczory…"
                   className="min-h-[44px] flex-1 rounded-lg border border-stone-300 bg-white px-3 py-2 text-stone-900 outline-none ring-green-800 focus:ring-2"
                 />
                 <button

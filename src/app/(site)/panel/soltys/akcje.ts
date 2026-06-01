@@ -24,6 +24,12 @@ import { powiadomOWygasajacychOgloszeniachMarketplace } from "@/lib/marketplace/
 import { dataWygasnieciaOgloszeniaRynek, DNI_WAZNOSCI_OGLOSZENIA_RYNEK } from "@/lib/marketplace/waznosc-ogloszenia";
 import { schemaProfilParafii, schemaProfilKgw, schemaProfilLowiecki } from "@/lib/wies/profil-organizacji";
 import { sciezkaProfiluWsi } from "@/lib/wies/sciezka-publiczna";
+import {
+  KLUCZE_SEKCJI_WSI,
+  schemaUstawieniaWsiJson,
+  domyslnaKolejnoscSekcji,
+  domyslneModulyWsi,
+} from "@/lib/wies/ustawienia-wsi";
 import { schemaPlanSali, parsujPresetyPlanu, type PlanSaliJson } from "@/lib/swietlica/plan-sali";
 import { schemaRzutParteruSali, type RzutParteruSaliJson } from "@/lib/swietlica/rzut-parteru-sali";
 
@@ -1856,6 +1862,78 @@ export async function zapiszBannerRynkuWsi(dane: z.infer<typeof schemaBannerRynk
   return { ok: true };
 }
 
+const schemaWygladWsi = z.object({
+  villageId: z.string().uuid(),
+  theme_id: z.string().trim().min(1).max(64),
+  logo_url: z.string().max(2048).optional().nullable(),
+  moduly: z.record(z.enum(KLUCZE_SEKCJI_WSI), z.boolean()).optional(),
+  kolejnosc_sekcji: z.array(z.enum(KLUCZE_SEKCJI_WSI)).max(32).optional(),
+  hero_podtytul: z.string().max(280).optional().nullable(),
+});
+
+export async function zapiszUstawieniaWygladuWsi(dane: z.infer<typeof schemaWygladWsi>): Promise<WynikProsty> {
+  const p = schemaWygladWsi.safeParse(dane);
+  if (!p.success) return { blad: "Nieprawidłowe ustawienia wyglądu." };
+
+  const supabase = utworzKlientaSupabaseSerwer();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { blad: "Zaloguj się." };
+
+  const vids = await pobierzVillageIdsRoliPaneluSoltysa(supabase, user.id);
+  if (!vids.includes(p.data.villageId)) return { blad: "Nie możesz edytować danych tej wsi." };
+
+  const logo = czyPustyLubUrlHttp(p.data.logo_url);
+  if (!logo.ok) return { blad: logo.blad };
+
+  const moduly = { ...domyslneModulyWsi(), ...(p.data.moduly ?? {}) };
+  let kolejnosc = p.data.kolejnosc_sekcji?.length ? [...p.data.kolejnosc_sekcji] : domyslnaKolejnoscSekcji();
+  for (const k of KLUCZE_SEKCJI_WSI) {
+    if (!kolejnosc.includes(k)) kolejnosc.push(k);
+  }
+  kolejnosc = kolejnosc.filter((k, i, a) => a.indexOf(k) === i);
+
+  const settingsJson = schemaUstawieniaWsiJson.parse({
+    wersja: 1,
+    moduly,
+    kolejnosc_sekcji: kolejnosc,
+    hero: {
+      podtytul:
+        p.data.hero_podtytul != null && p.data.hero_podtytul.trim().length > 0
+          ? p.data.hero_podtytul.trim()
+          : null,
+    },
+  });
+
+  const { error } = await supabase.from("village_settings").upsert(
+    {
+      village_id: p.data.villageId,
+      theme_id: p.data.theme_id,
+      logo_url: logo.val,
+      settings: settingsJson,
+      updated_at: new Date().toISOString(),
+    },
+    { onConflict: "village_id" },
+  );
+
+  if (error) {
+    console.error("[zapiszUstawieniaWygladuWsi]", error.message);
+    return { blad: "Nie udało się zapisać ustawień wyglądu." };
+  }
+
+  const { data: wiersz } = await supabase
+    .from("villages")
+    .select("voivodeship, county, commune, slug")
+    .eq("id", p.data.villageId)
+    .maybeSingle();
+  if (wiersz) {
+    revalidatePath(sciezkaProfiluWsi(wiersz));
+  }
+  revalidatePath("/panel/soltys/moja-wies");
+  return { ok: true };
+}
+
 const schemaVillageScoped = z.object({
   villageId: z.string().uuid(),
 });
@@ -3051,6 +3129,7 @@ const schemaKanalRss = z.object({
     .min(8)
     .max(2048)
     .refine((u) => /^https?:\/\//i.test(u), "Podaj adres http lub https."),
+  import_titles_only: z.boolean().optional(),
 });
 
 export async function dodajKanalRssWsi(dane: z.infer<typeof schemaKanalRss>): Promise<WynikProsty> {
@@ -3069,6 +3148,7 @@ export async function dodajKanalRssWsi(dane: z.infer<typeof schemaKanalRss>): Pr
     label: parsed.data.label,
     feed_url: parsed.data.feed_url,
     is_enabled: true,
+    import_titles_only: parsed.data.import_titles_only ?? false,
   });
   if (error) {
     console.error("[dodajKanalRssWsi]", error.message);
@@ -3099,6 +3179,35 @@ export async function usunKanalRssWsi(sourceId: string): Promise<WynikProsty> {
   if (error) {
     console.error("[usunKanalRssWsi]", error.message);
     return { blad: "Nie udało się usunąć." };
+  }
+  revalidatePath("/panel/soltys/kanaly-rss");
+  return { ok: true };
+}
+
+export async function ustawTrybImportuRssKanalu(sourceId: string, tylkoTytuly: boolean): Promise<WynikProsty> {
+  const id = uuid.safeParse(sourceId);
+  if (!id.success) return { blad: "Niepoprawny identyfikator." };
+  const supabase = utworzKlientaSupabaseSerwer();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) return { blad: "Zaloguj się." };
+  const { data: row, error: rErr } = await supabase
+    .from("village_news_feed_sources")
+    .select("id, village_id")
+    .eq("id", id.data)
+    .maybeSingle();
+  if (rErr || !row) return { blad: "Nie znaleziono kanału." };
+  if (!(await czyUzytkownikMozeZarzadzacWsia(supabase, user.id, row.village_id))) {
+    return { blad: "Brak uprawnień." };
+  }
+  const { error } = await supabase
+    .from("village_news_feed_sources")
+    .update({ import_titles_only: tylkoTytuly })
+    .eq("id", id.data);
+  if (error) {
+    console.error("[ustawTrybImportuRssKanalu]", error.message);
+    return { blad: "Nie udało się zapisać ustawienia." };
   }
   revalidatePath("/panel/soltys/kanaly-rss");
   return { ok: true };

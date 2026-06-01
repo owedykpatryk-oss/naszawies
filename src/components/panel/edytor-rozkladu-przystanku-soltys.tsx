@@ -7,6 +7,7 @@ import {
   usunRecznyRozkladPrzystanku,
   zapiszRozkladPrzystankuSoltysa,
 } from "@/app/(site)/panel/soltys/akcje-rozklad-przystanku";
+import { rozpoznajRozkladZTabliczki } from "@/app/(site)/panel/soltys/akcje-ocr-rozkladu";
 import { utworzKlientaSupabasePrzegladarka } from "@/lib/supabase/przegladarka";
 import { czyKlientUzywaMagazynuR2 } from "@/lib/storage/czy-magazyn-r2";
 import { wgrajObrazDoMagazynuR2 } from "@/lib/storage/wgraj-obraz-r2";
@@ -75,6 +76,7 @@ function KartaPrzystanku({ villageId, przystanek }: { villageId: string; przysta
   const [photoUrl, ustawPhotoUrl] = useState(przystanek.photoUrl);
   const [blad, ustawBlad] = useState("");
   const [ok, ustawOk] = useState(false);
+  const [infoOcr, ustawInfoOcr] = useState("");
   const [czek, startT] = useTransition();
 
   function zapiszRozklad(e: FormEvent) {
@@ -204,6 +206,26 @@ function KartaPrzystanku({ villageId, przystanek }: { villageId: string; przysta
               }}
             />
           </label>
+          <button
+            type="button"
+            disabled={czek || !photoUrl}
+            onClick={() => {
+              ustawBlad("");
+              ustawInfoOcr("");
+              startT(async () => {
+                const w = await rozpoznajRozkladZTabliczki(przystanek.id);
+                if ("blad" in w) {
+                  ustawBlad(w.blad);
+                  return;
+                }
+                ustawInfoOcr(w.komunikat);
+              });
+            }}
+            className="mt-2 rounded border border-sky-300 bg-sky-50 px-2 py-1 text-[11px] font-medium text-sky-950 hover:bg-sky-100 disabled:opacity-50"
+          >
+            OCR tabliczki (beta)
+          </button>
+          {infoOcr ? <p className="mt-2 text-[11px] leading-relaxed text-sky-900">{infoOcr}</p> : null}
         </div>
 
         <form onSubmit={zapiszRozklad} className="space-y-3">

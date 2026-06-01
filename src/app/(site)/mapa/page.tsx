@@ -21,6 +21,7 @@ import { pobierzPubliczneDaneMapy } from "@/lib/mapa/pobierz-publiczne-dane-mapy
 import { createPublicSupabaseClient } from "@/lib/supabase/public-client";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
 import { wymagajLogowaniaStrona } from "@/lib/auth/wymagaj-logowania-strona";
+import { wymagajOnboardinguJesliTrzeba } from "@/app/(site)/panel/onboarding/akcje-onboarding";
 
 export const metadata: Metadata = {
   title: "Mapa wsi",
@@ -44,6 +45,7 @@ function etykietaLiczbyWsi(n: number): string {
 
 export default async function MapaPage() {
   const user = await wymagajLogowaniaStrona("/mapa");
+  await wymagajOnboardinguJesliTrzeba("/mapa", "/mapa");
 
   const { znaczniki, punktyPoi, punktyRynek, punktyRynekDzialki, obrysyCmentarzy, bladZapytania } =
     await pobierzPubliczneDaneMapy();

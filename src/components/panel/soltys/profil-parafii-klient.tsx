@@ -17,6 +17,7 @@ import {
   type OrganizacjaPelna,
   type ProfilParafiiJson,
 } from "@/lib/wies/profil-organizacji";
+import { IntencjeTygodnioweParafiaKlient } from "@/components/panel/soltys/intencje-tygodniowe-parafia-klient";
 
 export type { OrganizacjaPelna };
 
@@ -466,7 +467,7 @@ function PolaParafii({
             />
           </label>
           <label className="block text-sm">
-            <span className="font-medium">Intencje mszalne</span>
+            <span className="font-medium">Intencje mszalne — ogólne informacje</span>
             <textarea
               name="parafia_intencje"
               rows={2}
@@ -475,6 +476,10 @@ function PolaParafii({
               className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
             />
           </label>
+          <div className="block text-sm">
+            <span className="font-medium">Intencje mszalne — tabela tygodnia</span>
+            <IntencjeTygodnioweParafiaKlient poczatkowe={p?.intencje_tygodniowe ?? null} />
+          </div>
         </div>
       </fieldset>
 

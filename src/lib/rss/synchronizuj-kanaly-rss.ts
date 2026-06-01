@@ -71,7 +71,10 @@ export async function synchronizujKanalyRssDlaWsi(
   let zrodlaPrzetworzone = 0;
   let noweWpisy = 0;
 
-  let q = client.from("village_news_feed_sources").select("id, village_id, label, feed_url, is_enabled").eq("is_enabled", true);
+  let q = client
+    .from("village_news_feed_sources")
+    .select("id, village_id, label, feed_url, is_enabled, import_titles_only")
+    .eq("is_enabled", true);
   if (filtrVillageIds && filtrVillageIds.length > 0) {
     q = q.in("village_id", filtrVillageIds);
   }
@@ -102,14 +105,16 @@ export async function synchronizujKanalyRssDlaWsi(
         const items = parseRss2Items(xml).slice(0, MAX_RSS_ITEMS_NA_KANAL);
         for (const it of items) {
           const hash = sha256Hex(`${z.village_id}:${it.guid}`);
+          const tylkoTytuly = Boolean(z.import_titles_only);
+          const opis = tylkoTytuly ? null : it.description ? it.description.slice(0, 500) : null;
           const { error: insErr } = await client.from("local_news_items").insert({
             village_id: z.village_id,
             created_by: null,
             source_name: z.label,
             source_url: it.link || null,
             title: it.title.slice(0, 200),
-            summary: it.description ? it.description.slice(0, 500) : null,
-            body: it.description,
+            summary: opis,
+            body: tylkoTytuly ? null : it.description,
             category: "Z kanału RSS",
             is_automated: true,
             status: "pending",

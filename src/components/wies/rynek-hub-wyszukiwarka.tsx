@@ -40,7 +40,7 @@ export function RynekHubWyszukiwarka({ wsie }: { wsie: WiesNaHubieRynku[] }) {
           type="search"
           value={fraza}
           onChange={(e) => ustawFraze(e.target.value)}
-          placeholder="np. Studzienki, miód, gmina…"
+          placeholder="np. nazwa wsi, miód, gmina…"
           className="mt-1.5 w-full max-w-md rounded-xl border border-stone-300 bg-white px-3 py-2.5 text-sm shadow-sm focus:border-green-700 focus:outline-none focus:ring-2 focus:ring-green-200"
         />
       </label>

@@ -44,6 +44,13 @@ import { WiesTransportLazy } from "@/components/wies/wies-transport-lazy";
 import { WiesRolnictwoLazy } from "@/components/wies/wies-rolnictwo-lazy";
 import { linkChroniony } from "@/lib/auth/sciezki-chronione";
 import { SwietliceWsiLazy } from "@/components/wies/swietlice-wsi-lazy";
+import {
+  czyModulWsiWlaczony,
+  styleMotywuProfiluWsi,
+  zbudujUstawieniaWsiPubliczne,
+  type UstawieniaWsiPubliczne,
+} from "@/lib/wies/ustawienia-wsi";
+import { zbudujZakladkiProfiluWsi } from "@/lib/wies/zbuduj-zakladki-profilu-wsi";
 import type { KonkursFotoPubliczny, ZdjecieKonkursu } from "@/lib/konkurs-foto/fazy-konkursu";
 import type { OstrzezenieLowieckie } from "@/lib/lowiectwo/pobierz-ostrzezenia-publiczne";
 import type { ZdjeciePubliczne } from "@/lib/fotokronika/pobierz-fotokronike-publiczna";
@@ -137,6 +144,7 @@ export function WiesProfilPubliczny({
   mapaPoi = [],
   maPlanCmentarza = false,
   liczbaMieszkancowAktywnych = 0,
+  ustawieniaWsi: ustawieniaWsiProp,
 }: {
   wies: WiesPubliczna;
   posty: WpisPostu[];
@@ -171,6 +179,7 @@ export function WiesProfilPubliczny({
     summary: string | null;
     category: string | null;
     source_name: string | null;
+    source_url: string | null;
     published_at: string | null;
     created_at: string;
   }[];
@@ -261,7 +270,11 @@ export function WiesProfilPubliczny({
   maPlanCmentarza?: boolean;
   /** Aktywni mieszkańcy zatwierdzeni w serwisie (social proof). */
   liczbaMieszkancowAktywnych?: number;
+  ustawieniaWsi?: UstawieniaWsiPubliczne;
 }) {
+  const ustawieniaWsi = ustawieniaWsiProp ?? zbudujUstawieniaWsiPubliczne(null);
+  const modul = (klucz: Parameters<typeof czyModulWsiWlaczony>[1]) =>
+    czyModulWsiWlaczony(ustawieniaWsi, klucz);
   const sciezka = sciezkaProfiluWsi(wies);
   const parafie = organizacje.filter((o) => o.group_type === "parafia");
   const poiKosciol = mapaPoi.find((poi) => poi.category === "kosciol");
@@ -339,23 +352,24 @@ export function WiesProfilPubliczny({
     wydarzenia.length > 0;
   const maPomocSasiedzka = pomocSasiedzka.length > 0 || zalogowany;
 
-  const zakladkiProfilu: ZakladkaProfiluWsi[] = [
-    { href: "#informacje-mieszkancow", label: "Informacje" },
-    ...(maRynek ? [{ href: "#sekcja-rynek-lokalny", label: "Rynek" }] : []),
-    { href: "#sekcja-mapa", label: "Mapa" },
-    { href: "#sekcja-aktualnosci-laczone", label: "Aktualności" },
-    ...(maPomocSasiedzka ? [{ href: "#sekcja-pomoc-sasiedzka", label: "Pomoc sąsiedzka" }] : []),
-    ...(maBlogLubHistorie ? [{ href: "#sekcja-blog-historia", label: "Blog" }] : []),
-    ...(maOrganizacje ? [{ href: "#sekcja-organizacje", label: "Organizacje" }] : []),
-    ...(dotacjeSkrot.length > 0 ? [{ href: "#sekcja-dotacje", label: "Dotacje" }] : []),
-    { href: "#sekcja-transport", label: "Transport" },
-    { href: "#sekcja-rolnictwo", label: "Rolnictwo" },
-    { href: "#swietlice-wsi", label: "Świetlica" },
-    ...(maPlanCmentarza ? [{ href: `${sciezka}/cmentarz`, label: "Cmentarz" }] : []),
-  ];
+  const zakladkiProfilu: ZakladkaProfiluWsi[] = zbudujZakladkiProfiluWsi(
+    {
+      maRynek,
+      maPomocSasiedzka,
+      maBlogLubHistorie,
+      maOrganizacje,
+      maDotacje: dotacjeSkrot.length > 0,
+      maPlanCmentarza,
+      sciezkaCmentarz: `${sciezka}/cmentarz`,
+    },
+    ustawieniaWsi,
+  );
 
   return (
-    <article>
+    <article
+      className="profil-wies-motyw"
+      style={styleMotywuProfiluWsi(ustawieniaWsi.motyw)}
+    >
       <a
         href="#informacje-mieszkancow"
         className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:rounded-lg focus:bg-green-900 focus:px-4 focus:py-2 focus:text-sm focus:font-medium focus:text-white"
@@ -403,7 +417,17 @@ export function WiesProfilPubliczny({
           )}
         </nav>
         <div className="mt-3 flex flex-wrap items-start gap-x-4 gap-y-2">
-          <h1 className="font-serif text-3xl text-green-950 sm:text-4xl">{wies.name}</h1>
+          {ustawieniaWsi.logo_url ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={ustawieniaWsi.logo_url}
+              alt=""
+              className="mt-1 h-14 w-14 shrink-0 rounded-full border border-stone-200/90 bg-white object-cover shadow-sm"
+              width={56}
+              height={56}
+            />
+          ) : null}
+          <h1 className="wies-naglowek-tytul font-serif text-3xl sm:text-4xl">{wies.name}</h1>
           {wies.is_active ? (
             <span className="mt-1 rounded-full bg-emerald-100 px-2.5 py-0.5 text-[11px] font-semibold text-emerald-900 ring-1 ring-emerald-200/80">
               Aktywny profil
@@ -415,6 +439,9 @@ export function WiesProfilPubliczny({
             tekst={`Zobacz profil wsi ${wies.name} na naszawies.pl — ogłoszenia, mapa i społeczność lokalna.`}
           />
         </div>
+        {ustawieniaWsi.hero_podtytul ? (
+          <p className="mt-2 max-w-2xl text-base leading-relaxed text-stone-700">{ustawieniaWsi.hero_podtytul}</p>
+        ) : null}
         <SpolecznyDowodWsi
           liczbaMieszkancow={liczbaMieszkancowAktywnych}
           liczbaOgloszen={rynek.length}
@@ -512,38 +539,42 @@ export function WiesProfilPubliczny({
         </OslonaSekcjiWies>
       ) : null}
 
-      <PanelInformacjiMieszkancow
-        wies={wies}
-        linkiPrzydatne={linkiPrzydatne}
-        maPrzewodnik={maPrzewodnik}
-        maKontakty={kontaktyUrzedowe.length > 0}
-        maWiadomosci={wiadomosci.length > 0}
-        maSwietlice={wies.is_active}
-        maRynek={maRynek}
-        maDotacje={dotacjeSkrot.length > 0}
-        maTransport={wies.is_active}
-        maMape={wies.is_active}
-      />
-
-      <LazyWidoczny
-        placeholder={
-          <section className="mt-8 h-[min(280px,40dvh)] animate-pulse rounded-2xl bg-stone-100" aria-hidden />
-        }
-      >
-        <MapaWsiProfilEmbedded
-          nazwaWsi={wies.name}
-          villageId={wies.id}
-          zalogowany={zalogowany}
-          znacznik={mapaZnacznik}
-          pois={mapaPoi}
+      {modul("informacje") ? (
+        <PanelInformacjiMieszkancow
+          wies={wies}
+          linkiPrzydatne={linkiPrzydatne}
+          maPrzewodnik={maPrzewodnik}
+          maKontakty={kontaktyUrzedowe.length > 0}
+          maWiadomosci={wiadomosci.length > 0}
+          maSwietlice={wies.is_active}
+          maRynek={maRynek}
+          maDotacje={dotacjeSkrot.length > 0}
+          maTransport={wies.is_active}
+          maMape={wies.is_active}
         />
-      </LazyWidoczny>
+      ) : null}
+
+      {modul("mapa") ? (
+        <LazyWidoczny
+          placeholder={
+            <section className="mt-8 h-[min(280px,40dvh)] animate-pulse rounded-2xl bg-stone-100" aria-hidden />
+          }
+        >
+          <MapaWsiProfilEmbedded
+            nazwaWsi={wies.name}
+            villageId={wies.id}
+            zalogowany={zalogowany}
+            znacznik={mapaZnacznik}
+            pois={mapaPoi}
+          />
+        </LazyWidoczny>
+      ) : null}
 
       <SekcjaPrzewodnikSamorzadowy wies={wies} przewodnik={przewodnikSamorzadowy} />
 
-      <WiesLaczonyFeedAktualnosci wpisy={laczonyFeed} />
+      {modul("aktualnosci") ? <WiesLaczonyFeedAktualnosci wpisy={laczonyFeed} /> : null}
 
-      {maRynek ? (
+      {maRynek && modul("rynek") ? (
         <OslonaSekcjiWies id="sekcja-rynek-lokalny">
           <div className="rynek-hero-wow mb-6 !p-4 sm:!p-5">
             <TytulSekcjiWies
@@ -601,23 +632,29 @@ export function WiesProfilPubliczny({
         </OslonaSekcjiWies>
       ) : null}
 
-      <PomocSasiedzkaSekcja
-        oferty={pomocSasiedzka}
-        sciezkaPanelu="/panel/mieszkaniec/pomoc-sasiedzka"
-        zalogowany={zalogowany}
-      />
+      {modul("pomoc") ? (
+        <PomocSasiedzkaSekcja
+          oferty={pomocSasiedzka}
+          sciezkaPanelu="/panel/mieszkaniec/pomoc-sasiedzka"
+          zalogowany={zalogowany}
+        />
+      ) : null}
 
       <WiesZgloszeniaPubliczne wiersze={zgloszeniaPubliczne} />
 
-      <LazyWidoczny
-        placeholder={
-          <section className="sekcja-poza-foldem mt-12 h-48 animate-pulse rounded-2xl bg-stone-100" aria-hidden />
-        }
-      >
-        <GaleriaPlakatowWsi plakaty={plakatyPubliczne} nazwaWsi={wies.name} />
-      </LazyWidoczny>
+      {modul("grafika") ? (
+        <LazyWidoczny
+          placeholder={
+            <section className="sekcja-poza-foldem mt-12 h-48 animate-pulse rounded-2xl bg-stone-100" aria-hidden />
+          }
+        >
+          <GaleriaPlakatowWsi plakaty={plakatyPubliczne} nazwaWsi={wies.name} />
+        </LazyWidoczny>
+      ) : null}
 
-      <FotokronikaPublicznaWsi zdjecia={fotokronikaPubliczna} nazwaWsi={wies.name} pokazLinkDodaj={zalogowany} />
+      {modul("fotokronika") ? (
+        <FotokronikaPublicznaWsi zdjecia={fotokronikaPubliczna} nazwaWsi={wies.name} pokazLinkDodaj={zalogowany} />
+      ) : null}
 
       {konkursFoto ? (
         <KonkursFotoWsiKlient
@@ -630,9 +667,9 @@ export function WiesProfilPubliczny({
         />
       ) : null}
 
-      <WiesTransportLazy villageId={wies.id} zalogowany={zalogowany} />
+      {modul("transport") ? <WiesTransportLazy villageId={wies.id} zalogowany={zalogowany} /> : null}
 
-      <WiesRolnictwoLazy villageId={wies.id} zalogowany={zalogowany} />
+      {modul("rolnictwo") ? <WiesRolnictwoLazy villageId={wies.id} zalogowany={zalogowany} /> : null}
 
       <OslonaSekcjiWies id="kontakty-urzedowe-wsi" pusta={kontaktyUrzedowe.length === 0}>
         <TytulSekcjiWies
@@ -741,7 +778,7 @@ export function WiesProfilPubliczny({
         </OslonaSekcjiWies>
       ) : null}
 
-      {(blog.length > 0 || historia.length > 0) ? (
+      {(blog.length > 0 || historia.length > 0) && modul("blog") ? (
         <OslonaSekcjiWies id="sekcja-blog-historia">
           <TytulSekcjiWies
             etykieta="Społeczność"
@@ -783,7 +820,7 @@ export function WiesProfilPubliczny({
         </OslonaSekcjiWies>
       ) : null}
 
-      {(parafie.length > 0 || kolaKgw.length > 0 || jednostkiOsp.length > 0 || kolaLowieckie.length > 0 || organizacjePozostale.length > 0 || wydarzenia.length > 0) ? (
+      {(parafie.length > 0 || kolaKgw.length > 0 || jednostkiOsp.length > 0 || kolaLowieckie.length > 0 || organizacjePozostale.length > 0 || wydarzenia.length > 0) && modul("organizacje") ? (
         <OslonaSekcjiWies id="sekcja-organizacje">
           <TytulSekcjiWies
             etykieta="Organizacje"
@@ -1050,7 +1087,7 @@ export function WiesProfilPubliczny({
         </OslonaSekcjiWies>
       ) : null}
 
-      {dotacjeSkrot.length > 0 ? (
+      {dotacjeSkrot.length > 0 && modul("dotacje") ? (
         <OslonaSekcjiWies id="sekcja-dotacje">
           <TytulSekcjiWies
             etykieta="Finansowanie"
@@ -1102,6 +1139,19 @@ export function WiesProfilPubliczny({
                   {w.source_name ? ` · źródło: ${w.source_name}` : ""}
                   {" · "}
                   {new Date(w.published_at ?? w.created_at).toLocaleDateString("pl-PL")}
+                  {w.source_url ? (
+                    <>
+                      {" · "}
+                      <a
+                        href={w.source_url}
+                        target="_blank"
+                        rel="noopener noreferrer"
+                        className="font-medium text-green-800 underline hover:text-green-950"
+                      >
+                        Czytaj u źródła ↗
+                      </a>
+                    </>
+                  ) : null}
                 </p>
               </li>
             ))}
@@ -1109,36 +1159,40 @@ export function WiesProfilPubliczny({
         </OslonaSekcjiWies>
       ) : null}
 
-      <SwietliceWsiLazy
-        nazwaWsi={wies.name}
-        villageId={wies.id}
-        isActive={wies.is_active}
-        zalogowany={zalogowany}
-      />
+      {modul("swietlica") ? (
+        <>
+          <SwietliceWsiLazy
+            nazwaWsi={wies.name}
+            villageId={wies.id}
+            isActive={wies.is_active}
+            zalogowany={zalogowany}
+          />
+
+          <OslonaSekcjiWies id="swietlica-regulamin" className="from-stone-50/80 via-white to-stone-50/40">
+            <TytulSekcjiWies etykieta="Regulamin" tytul="Świetlica i rezerwacje" />
+            <p className="mt-3 text-sm text-stone-700">
+              Rezerwacja sali odbywa się w{" "}
+              <Link href={linkChroniony("/panel/mieszkaniec/swietlica", zalogowany)} className="text-green-800 underline">
+                panelu mieszkańca
+              </Link>{" "}
+              (po akceptacji roli we wsi). Kto zajął salę w danym terminie — tylko sołtys w panelu obiegu; powyżej widać
+              wyłącznie że przedział jest zajęty, bez danych osobowych.
+            </p>
+            {wies.teryt_id === "0088390" ? (
+              <p className="mt-4 border-t border-stone-200 pt-4">
+                <Link
+                  href={`${sciezka}/projekt-swietlicy`}
+                  className="inline-flex items-center gap-2 rounded-lg bg-green-800 px-4 py-2.5 text-sm font-medium text-white shadow-sm hover:bg-green-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-green-800"
+                >
+                  Zobacz projekt świetlicy (rzut, elewacje, powierzchnie)
+                </Link>
+              </p>
+            ) : null}
+          </OslonaSekcjiWies>
+        </>
+      ) : null}
 
       <SekcjaDaneGeoWsiLazy villageId={wies.id} />
-
-      <OslonaSekcjiWies id="swietlica-regulamin" className="from-stone-50/80 via-white to-stone-50/40">
-        <TytulSekcjiWies etykieta="Regulamin" tytul="Świetlica i rezerwacje" />
-        <p className="mt-3 text-sm text-stone-700">
-          Rezerwacja sali odbywa się w{" "}
-          <Link href={linkChroniony("/panel/mieszkaniec/swietlica", zalogowany)} className="text-green-800 underline">
-            panelu mieszkańca
-          </Link>{" "}
-          (po akceptacji roli we wsi). Kto zajął salę w danym terminie — tylko sołtys w panelu obiegu; powyżej widać
-          wyłącznie że przedział jest zajęty, bez danych osobowych.
-        </p>
-        {wies.teryt_id === "0088390" ? (
-          <p className="mt-4 border-t border-stone-200 pt-4">
-            <Link
-              href={`${sciezka}/projekt-swietlicy`}
-              className="inline-flex items-center gap-2 rounded-lg bg-green-800 px-4 py-2.5 text-sm font-medium text-white shadow-sm hover:bg-green-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-green-800"
-            >
-              Zobacz projekt świetlicy (rzut, elewacje, powierzchnie)
-            </Link>
-          </p>
-        ) : null}
-      </OslonaSekcjiWies>
     </article>
   );
 }

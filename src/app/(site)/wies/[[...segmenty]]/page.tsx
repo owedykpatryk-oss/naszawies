@@ -21,6 +21,7 @@ import {
   pobierzHubWojewodztwaCached,
 } from "@/lib/wies/hub-administracyjny";
 import { pobierzDanePubliczneProfiluWsi } from "@/lib/wies/pobierz-dane-publiczne-profilu-wsi";
+import { pobierzUstawieniaWsi } from "@/lib/wies/pobierz-ustawienia-wsi";
 import { maCiasteczkaSesjiSupabaseSerwer } from "@/lib/auth/ciasteczka-sesji";
 import { pobierzLinkiPrzydatneDlaWsiGminy } from "@/lib/wies/pobierz-linki-przydatne";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
@@ -93,6 +94,7 @@ type WiadomoscLokalna = {
   summary: string | null;
   category: string | null;
   source_name: string | null;
+  source_url: string | null;
   published_at: string | null;
   created_at: string;
 };
@@ -337,7 +339,10 @@ export default async function WiesCatchAllPage({ params, searchParams }: Props) 
   }
 
   if (reszta.length === 0) {
-    const danePubliczne = await pobierzDanePubliczneProfiluWsi(wies.id, wies.is_active);
+    const [danePubliczne, ustawieniaWsi] = await Promise.all([
+      pobierzDanePubliczneProfiluWsi(wies.id, wies.is_active),
+      pobierzUstawieniaWsi(supabase, wies.id),
+    ]);
 
     const posty = danePubliczne.postyRaw as {
       id: string;
@@ -622,6 +627,7 @@ export default async function WiesCatchAllPage({ params, searchParams }: Props) 
           maPlanCmentarza={maPlanCmentarza}
           zapisaneTresci={zapisaneTresci}
           liczbaMieszkancowAktywnych={liczbaMieszkancowAktywnych ?? 0}
+          ustawieniaWsi={ustawieniaWsi}
         />
       </main>
     );
@@ -957,7 +963,7 @@ export default async function WiesCatchAllPage({ params, searchParams }: Props) 
     const sciezka = sciezkaProfiluWsi(wies);
     return (
       <main className="mx-auto min-w-0 w-full max-w-7xl px-4 py-12 text-stone-800 sm:px-6 sm:py-16">
-        <CmentarzPublicznyKlient nazwaWsi={wies.name} sciezkaWsi={sciezka} plan={plan} />
+        <CmentarzPublicznyKlient nazwaWsi={wies.name} sciezkaWsi={sciezka} villageId={wies.id} plan={plan} />
       </main>
     );
   }

@@ -11,6 +11,8 @@ import { pobierzKatalogMozliwosciSoltysa } from "@/lib/panel/katalog-mozliwosci-
 import { PanelStronaSoltysa } from "@/components/panel/panel-strona-soltysa";
 import { SoltysKatalogMozliwosci } from "@/components/panel/soltys-katalog-mozliwosci";
 import { ProfilWsiSoltysKlient, type WiesDoEdycji } from "./profil-wsi-klient";
+import { UstawieniaWygladWsiKlient, type WiesWygladDoEdycji } from "./ustawienia-wyglad-wsi-klient";
+import { zbudujUstawieniaWsiPubliczne } from "@/lib/wies/ustawienia-wsi";
 import type { PoiDoEdycjiKontaktu } from "@/components/panel/edytor-kontaktu-poi-soltys";
 import type { PrzystanekDoRozkladu } from "@/components/panel/edytor-rozkladu-przystanku-soltys";
 import { mapujPrzystanekDoRozkladu } from "@/components/panel/edytor-rozkladu-przystanku-soltys";
@@ -53,7 +55,7 @@ export default async function SoltysMojaWiesPage() {
   const poiDoWeryfikacji = await pobierzPoiDoWeryfikacjiWsi(supabase, villageIds);
   const propozycjePoi = await pobierzPropozycjePoiWsi(supabase, villageIds);
 
-  const [{ data: poisRaw }, { data: saleRaw }] = await Promise.all([
+  const [{ data: poisRaw }, { data: saleRaw }, { data: ustawieniaRaw }] = await Promise.all([
     supabase
       .from("pois")
       .select("id, village_id, name, category, phone, opening_hours, linked_hall_id, source, photo_url, photo_caption, bus_schedule_manual")
@@ -61,6 +63,7 @@ export default async function SoltysMojaWiesPage() {
       .order("category")
       .order("name"),
     supabase.from("halls").select("id, village_id, name").in("village_id", villageIds).order("name"),
+    supabase.from("village_settings").select("village_id, theme_id, logo_url, settings").in("village_id", villageIds),
   ]);
 
   const poisByVillage: Record<string, PoiDoEdycjiKontaktu[]> = {};
@@ -121,7 +124,17 @@ export default async function SoltysMojaWiesPage() {
     cover_image_url: r.cover_image_url,
     latitude: r.latitude != null ? Number(r.latitude) : null,
     longitude: r.longitude != null ? Number(r.longitude) : null,
+    rynek_banner_text: (r as { rynek_banner_text?: string | null }).rynek_banner_text ?? null,
+    rynek_banner_until: (r as { rynek_banner_until?: string | null }).rynek_banner_until ?? null,
   }));
+
+  const wsieWyglad: WiesWygladDoEdycji[] = wies.map((w) => {
+    const row = (ustawieniaRaw ?? []).find((u) => u.village_id === w.id);
+    return {
+      ...w,
+      ustawienia: zbudujUstawieniaWsiPubliczne(row ?? null),
+    };
+  });
 
   return (
     <PanelStronaSoltysa
@@ -143,6 +156,7 @@ export default async function SoltysMojaWiesPage() {
             .
           </p>
           <SoltysKatalogMozliwosci katalog={katalogMozliwosci} kompaktowy />
+          <UstawieniaWygladWsiKlient wsie={wsieWyglad} />
           <ProfilWsiSoltysKlient
             wies={wies}
             sugestieMapy={sugestieMapy}

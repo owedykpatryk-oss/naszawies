@@ -144,7 +144,7 @@ export function AdminNowaWiesKlient() {
                 ustawWybranaKat(null);
               }}
               className="mt-1 w-full max-w-lg rounded border border-stone-300 px-2 py-1.5"
-              placeholder="np. Sipiory, Studzienki…"
+              placeholder="np. Sipiory, Kaczory…"
               autoComplete="off"
             />
             {wynikiKat.length > 0 && !wybranaKat ? (

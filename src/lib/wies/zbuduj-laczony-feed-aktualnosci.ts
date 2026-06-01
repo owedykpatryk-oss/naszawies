@@ -29,6 +29,7 @@ type WiadSkrot = {
   summary: string | null;
   category: string | null;
   source_name: string | null;
+  source_url: string | null;
   published_at: string | null;
   created_at: string;
 };
@@ -110,11 +111,13 @@ export function zbudujLaczonyFeedAktualnosci(
     if (!Number.isFinite(t)) continue;
     const zrodlo = w.source_name ? `Źródło: ${w.source_name}` : "";
     const kat = w.category ?? "aktualność";
+    const hrefZewnetrzny =
+      w.source_url?.trim().startsWith("http") ? w.source_url.trim() : `${sciezka}#wiadomosc-lokalna-${w.id}`;
     out.push({
       sortAt: t,
       etykieta: "Wiadomość lokalna",
       tytul: w.title,
-      href: `${sciezka}#wiadomosc-lokalna-${w.id}`,
+      href: hrefZewnetrzny,
       podpis: [kat, zrodlo, formatPl(t)].filter(Boolean).join(" · "),
     });
   }

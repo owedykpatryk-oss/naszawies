@@ -33,7 +33,7 @@ export default async function SoltysKanalyRssPage() {
 
   const { data: feedRows } = await supabase
     .from("village_news_feed_sources")
-    .select("id, village_id, label, feed_url, is_enabled, last_fetched_at, last_error")
+    .select("id, village_id, label, feed_url, is_enabled, import_titles_only, last_fetched_at, last_error")
     .in("village_id", villageIds)
     .order("label");
 
