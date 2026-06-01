@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 import dynamic from "next/dynamic";
 import Link from "next/link";
-import { redirect } from "next/navigation";
+import { NaglowekModuluPanelu } from "@/components/pomoc/naglowek-modulu-panelu";
 import { pobierzStanPrzewodnikaStartu } from "@/lib/panel/stan-przewodnika-startu";
-import { pobierzUzytkownikaSerwer } from "@/lib/auth/pobierz-uzytkownika-serwer";
+import { pobierzUzytkownikaPanelu } from "@/lib/auth/pobierz-uzytkownika-serwer";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
 
 const PanelPrzewodnikStartu = dynamic(
@@ -33,12 +33,8 @@ export const metadata: Metadata = {
 };
 
 export default async function PanelPage() {
-  const user = await pobierzUzytkownikaSerwer();
+  const user = await pobierzUzytkownikaPanelu();
   const supabase = utworzKlientaSupabaseSerwer();
-
-  if (!user) {
-    redirect("/logowanie?next=/panel");
-  }
 
   const signupVillageIdRaw =
     user.user_metadata && typeof user.user_metadata === "object" ? user.user_metadata.signup_village_id : null;
@@ -53,11 +49,12 @@ export default async function PanelPage() {
   return (
     <main>
       <PanelPrzewodnikStartu stan={stanStartu} />
-      <header className="panel-informacji-hero mb-10">
-        <div className="relative z-[1]">
-          <p className="etykieta-modulu">Konto</p>
-          <h1 className="mt-1 font-serif text-3xl tracking-tight text-green-950 sm:text-[2rem]">Witaj w panelu</h1>
-          <p className="mt-2 text-sm leading-relaxed text-stone-600">
+      <NaglowekModuluPanelu
+        etykieta="Konto"
+        tytul="Witaj w panelu"
+        hrefPomocy="/pomoc"
+        opis={
+          <>
             Zalogowano: <span className="font-medium text-stone-800">{user.email}</span>
             {profil?.display_name ? (
               <>
@@ -66,9 +63,9 @@ export default async function PanelPage() {
                 <span className="text-stone-800">{profil.display_name}</span>
               </>
             ) : null}
-          </p>
-        </div>
-      </header>
+          </>
+        }
+      />
 
       <CoMogeZrobic jestSoltysem={stanStartu.jestSoltysem} />
 

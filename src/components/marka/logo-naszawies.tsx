@@ -88,23 +88,27 @@ export function LogoNaszawies({
   );
 }
 
-/** Logo wyśrodkowane na stronach logowania / rejestracji — jeden plik PNG z pełnym znakiem. */
+/** Logo wyśrodkowane na stronach logowania / rejestracji — jeden znak (emblem + napis). */
 export function LogoNaszawiesWycentrowane({ className = "" }: { className?: string }) {
   return (
-    <div className={`flex justify-center pb-6 ${className}`}>
+    <div className={`flex flex-col items-center justify-center gap-3 pb-6 ${className}`}>
       <Link
         href="/"
-        className="inline-block outline-none ring-green-800 ring-offset-2 ring-offset-stone-50 focus-visible:ring-2"
+        className="inline-flex flex-col items-center gap-3 no-underline outline-none ring-green-800 ring-offset-2 ring-offset-stone-50 focus-visible:ring-2"
         aria-label="naszawies.pl — strona główna"
       >
         <Image
-          src={LOGO_PELNE_SRC}
-          alt="naszawies.pl"
-          width={682}
-          height={1024}
-          className="h-auto w-40 max-w-full sm:w-44"
+          src={EMBLEM_MARKI_SRC}
+          alt=""
+          width={96}
+          height={96}
+          className="h-20 w-20 sm:h-24 sm:w-24"
           priority
         />
+        <span className="font-sans text-xl font-semibold tracking-tight sm:text-2xl">
+          <span className="text-[#7cb342]">naszawies</span>
+          <span className="font-medium text-[#d4a017]">.pl</span>
+        </span>
       </Link>
     </div>
   );

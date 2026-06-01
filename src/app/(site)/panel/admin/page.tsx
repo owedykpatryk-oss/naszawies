@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
+import { NaglowekModuluPanelu } from "@/components/pomoc/naglowek-modulu-panelu";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
+import { pobierzUzytkownikaPanelu } from "@/lib/auth/pobierz-uzytkownika-serwer";
 import { AdminNowaWiesKlient } from "./admin-nowa-wies-klient";
 import { AdminKolejkaSoltysowKlient } from "./admin-kolejka-soltysow-klient";
 import type { WniosekAdminWiersz } from "@/lib/admin/typy-wniosek-soltysa";
@@ -15,11 +17,8 @@ export const metadata: Metadata = {
 
 export default async function AdminPage() {
   const supabase = utworzKlientaSupabaseSerwer();
-  const { data: { session } } = await supabase.auth.getSession();
-  const user = session?.user ?? null;
-  if (!user) {
-    redirect("/logowanie?next=/panel/admin");
-  }
+  await pobierzUzytkownikaPanelu();
+
 
   if (!(await czyAdminPlatformy(supabase))) {
     redirect("/panel");
@@ -56,13 +55,18 @@ export default async function AdminPage() {
 
   return (
     <main>
-      <h1 className="font-serif text-3xl text-green-950">Administrator platformy</h1>
-      <p className="mt-2 text-sm text-stone-600">
-        Tylko wskazane konta administratora platformy widzą tę stronę i poniższe narzędzia.{" "}
-        <Link href="/panel/admin/sugestie" className="font-medium text-green-800 underline">
-          Opinie użytkowników →
-        </Link>
-      </p>
+      <NaglowekModuluPanelu
+        etykieta="Administrator"
+        tytul="Administrator platformy"
+        opis={
+          <>
+            Tylko wskazane konta widzą tę stronę.{" "}
+            <Link href="/panel/admin/sugestie" className="font-medium text-green-800 underline">
+              Opinie użytkowników →
+            </Link>
+          </>
+        }
+      />
 
       {brakDostepu ? (
         <p className="mt-8 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-950">

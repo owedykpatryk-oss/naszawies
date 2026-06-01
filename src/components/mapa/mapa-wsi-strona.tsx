@@ -12,17 +12,19 @@ import {
   useState,
   type ReactNode,
 } from "react";
-import { etykietaKategoriiPoi } from "@/lib/mapa/kategorie-poi";
+import { etykietaKategoriiPoi, KATEGORIA_LATARNIA } from "@/lib/mapa/kategorie-poi";
+import { etykietaStatusuInwestycji, KATEGORIA_INWESTYCJA } from "@/lib/mapa/inwestycje-poi";
+import { ETYKIETA_LANDUSE, KOLOR_LANDUSE } from "@/lib/mapa/landuse-osm";
 import {
   filtrujZnacznikiAdministracyjnie,
   MapaFiltrAdministracyjny,
   type FiltrAdministracyjny,
 } from "@/components/mapa/mapa-filtr-administracyjny";
 import { sciezkaGminy } from "@/lib/wies/sciezka-publiczna";
-import { MapaStatystykiBanner, type StatystykiMapy } from "./mapa-statystyki-banner";
 import {
   MapaWsiLeaflet,
   type MapaWsiLeafletRef,
+  type ObrysLanduseMapy,
   type ZnacznikAdres,
   type ZnacznikCmentarzObrys,
   type ZnacznikGeoKontekst,
@@ -95,7 +97,6 @@ export function MapaWsiStrona({
   punktyPolowania = [],
   punktyCmentarze = [],
   punktyGeoKontekst = [],
-  statystykiMapy,
 }: {
   znaczniki: ZnacznikWsi[];
   punktyPoi?: ZnacznikPoi[];
@@ -106,7 +107,6 @@ export function MapaWsiStrona({
   punktyPolowania?: ZnacznikPolowanie[];
   punktyCmentarze?: ZnacznikCmentarzObrys[];
   punktyGeoKontekst?: ZnacznikGeoKontekst[];
-  statystykiMapy?: StatystykiMapy;
 }) {
   const searchParams = useSearchParams();
   const pathname = usePathname();
@@ -116,13 +116,27 @@ export function MapaWsiStrona({
   const [tryb, ustawTryb] = useState<TrybSidebara>(() =>
     searchParams.get("q")?.trim() ? "szukaj" : "katalog",
   );
+  const [panelFiltrOtwarty, ustawPanelFiltrOtwarty] = useState(
+    () => Boolean(searchParams.get("q")?.trim() || searchParams.get("woj")),
+  );
   const [szukaj, setSzukaj] = useState(() => searchParams.get("q") ?? "");
   const [filtrPoi, setFiltrPoi] = useState(() => {
     const warstwa = searchParams.get("warstwa");
     if (warstwa === "transport") return "transport";
     if (warstwa === "ladne") return "ladne_miejsce";
+    if (warstwa === "oswietlenie") return KATEGORIA_LATARNIA;
+    if (warstwa === "inwestycje") return KATEGORIA_INWESTYCJA;
     return searchParams.get("poi") ?? "wszystkie";
   });
+  const [pokazOswietlenie, ustawPokazOswietlenie] = useState(
+    () => searchParams.get("warstwa") === "oswietlenie" || searchParams.get("latarnie") === "1",
+  );
+  const [pokazZagospodarowanie, ustawPokazZagospodarowanie] = useState(
+    () => searchParams.get("zagospodarowanie") === "1",
+  );
+  const [pokazZakonczoneInwestycje, ustawPokazZakonczoneInwestycje] = useState(
+    () => searchParams.get("inwest_zakonczone") === "1",
+  );
   const [pokazPolowania, ustawPokazPolowania] = useState(
     () => searchParams.get("warstwa") !== "transport",
   );
@@ -159,6 +173,9 @@ export function MapaWsiStrona({
   const wykonanoDeepLinkWsi = useRef(false);
   const wykonanoDeepLinkPolowania = useRef(false);
   const wykonanoDeepLinkPoi = useRef(false);
+  const [obrysyLanduse, ustawObrysyLanduse] = useState<ObrysLanduseMapy[]>([]);
+  const [statusLanduse, ustawStatusLanduse] = useState<"idle" | "wczytuje" | "ok" | "blad">("idle");
+  const [bladLanduse, ustawBladLanduse] = useState("");
 
   const poAdministracji = useMemo(
     () => filtrujZnacznikiAdministracyjnie(znaczniki, filtrAdmin),
@@ -227,6 +244,43 @@ export function MapaWsiStrona({
     [punktyPoi],
   );
 
+  const liczbaLatarn = useMemo(
+    () => punktyPoi.filter((p) => p.category.trim().toLowerCase() === KATEGORIA_LATARNIA).length,
+    [punktyPoi],
+  );
+
+  const liczbaInwestycji = useMemo(
+    () => punktyPoi.filter((p) => p.category.trim().toLowerCase() === KATEGORIA_INWESTYCJA).length,
+    [punktyPoi],
+  );
+
+  const filtrujInwestycjeWidocznosc = useCallback(
+    (lista: ZnacznikPoi[]) =>
+      lista.filter((p) => {
+        if (p.category.trim().toLowerCase() !== KATEGORIA_INWESTYCJA) return true;
+        if (pokazZakonczoneInwestycje) return true;
+        return p.investmentStatus?.trim().toLowerCase() !== "zakonczona";
+      }),
+    [pokazZakonczoneInwestycje],
+  );
+
+  const inwestycjeNaMapie = useMemo(
+    () =>
+      filtrujInwestycjeWidocznosc(
+        punktyPoi.filter((p) => p.category.trim().toLowerCase() === KATEGORIA_INWESTYCJA),
+      ),
+    [punktyPoi, filtrujInwestycjeWidocznosc],
+  );
+
+  const srodekLanduse = useMemo(() => {
+    if (odfiltrowane.length === 0) return null;
+    const sample = odfiltrowane.slice(0, 5);
+    const lat = sample.reduce((s, z) => s + z.lat, 0) / sample.length;
+    const lon = sample.reduce((s, z) => s + z.lon, 0) / sample.length;
+    const radiusM = Math.min(5500, Math.max(1800, 1200 + odfiltrowane.length * 350));
+    return { lat, lon, radiusM };
+  }, [odfiltrowane]);
+
   const filtrPoiEfektywny = useMemo(() => {
     if (!filtrPoi || filtrPoi === "wszystkie") return "wszystkie";
     if (filtrPoi === "transport") return "transport";
@@ -234,15 +288,22 @@ export function MapaWsiStrona({
   }, [filtrPoi, kategoriePoi]);
 
   const punktyPoiPoKategorii = useMemo(() => {
-    if (filtrPoiEfektywny === "wszystkie") return punktyPoi;
-    if (filtrPoiEfektywny === "transport") {
-      return punktyPoi.filter((p) => {
+    let lista: ZnacznikPoi[];
+    if (filtrPoiEfektywny === "wszystkie") {
+      lista = punktyPoi.filter((p) => {
+        const jestLatarnia = p.category.trim().toLowerCase() === KATEGORIA_LATARNIA;
+        return !jestLatarnia || pokazOswietlenie;
+      });
+    } else if (filtrPoiEfektywny === "transport") {
+      lista = punktyPoi.filter((p) => {
         const k = p.category.trim().toLowerCase();
         return k === "przystanek" || k === "stacja_kolejowa";
       });
+    } else {
+      lista = punktyPoi.filter((p) => p.category === filtrPoiEfektywny);
     }
-    return punktyPoi.filter((p) => p.category === filtrPoiEfektywny);
-  }, [punktyPoi, filtrPoiEfektywny]);
+    return filtrujInwestycjeWidocznosc(lista);
+  }, [punktyPoi, filtrPoiEfektywny, pokazOswietlenie, filtrujInwestycjeWidocznosc]);
 
   const punktyPoiFiltrowane = useMemo(() => {
     const idWsi = new Set(odfiltrowane.map((z) => z.id));
@@ -284,8 +345,15 @@ export function MapaWsiStrona({
       if (filtrAdmin.gminaSlug) params.set("gmina", filtrAdmin.gminaSlug);
       if (filtrPoiEfektywny === "transport") params.set("warstwa", "transport");
       else if (filtrPoiEfektywny === "ladne_miejsce") params.set("warstwa", "ladne");
+      else if (filtrPoiEfektywny === KATEGORIA_LATARNIA) params.set("warstwa", "oswietlenie");
+      else if (filtrPoiEfektywny === KATEGORIA_INWESTYCJA) params.set("warstwa", "inwestycje");
       else if (filtrPoiEfektywny !== "wszystkie") params.set("poi", filtrPoiEfektywny);
+      else if (pokazOswietlenie) params.set("latarnie", "1");
       else params.delete("warstwa");
+      if (pokazZagospodarowanie) params.set("zagospodarowanie", "1");
+      else params.delete("zagospodarowanie");
+      if (pokazZakonczoneInwestycje) params.set("inwest_zakonczone", "1");
+      else params.delete("inwest_zakonczone");
       if (!pokazPolowania) params.set("polowania", "0");
       else params.delete("polowania");
       if (!pokazZgloszenia) params.set("zgloszenia", "0");
@@ -313,6 +381,9 @@ export function MapaWsiStrona({
     tylkoOferty,
     pokazObrysGminy,
     promienKm,
+    pokazOswietlenie,
+    pokazZagospodarowanie,
+    pokazZakonczoneInwestycje,
     pathname,
     router,
   ]);
@@ -355,6 +426,56 @@ export function MapaWsiStrona({
     const t = window.setTimeout(() => mapRef.current?.pokazPoi(id), 450);
     return () => window.clearTimeout(t);
   }, [searchParams, punktyPoi]);
+
+  useEffect(() => {
+    if (!pokazZagospodarowanie || !srodekLanduse) {
+      ustawObrysyLanduse([]);
+      ustawStatusLanduse("idle");
+      ustawBladLanduse("");
+      return;
+    }
+    let cancelled = false;
+    ustawStatusLanduse("wczytuje");
+    ustawBladLanduse("");
+    const ctrl = new AbortController();
+    const t = window.setTimeout(() => {
+      void (async () => {
+        try {
+          const q = new URLSearchParams({
+            lat: String(srodekLanduse.lat),
+            lon: String(srodekLanduse.lon),
+            radiusM: String(srodekLanduse.radiusM),
+          });
+          const res = await fetch(`/api/mapa/landuse?${q.toString()}`, {
+            credentials: "include",
+            signal: ctrl.signal,
+          });
+          if (cancelled) return;
+          if (!res.ok) {
+            const j = (await res.json().catch(() => ({}))) as { blad?: string };
+            ustawBladLanduse(j.blad ?? "Nie udało się wczytać warstwy zagospodarowania.");
+            ustawObrysyLanduse([]);
+            ustawStatusLanduse("blad");
+            return;
+          }
+          const json = (await res.json()) as {
+            obrysy?: { id: string; landuse: string; name: string | null; geojson: GeoJSON.Polygon }[];
+          };
+          ustawObrysyLanduse(json.obrysy ?? []);
+          ustawStatusLanduse("ok");
+        } catch (e) {
+          if (cancelled || (e instanceof DOMException && e.name === "AbortError")) return;
+          ustawBladLanduse("Błąd połączenia z serwerem mapy.");
+          ustawStatusLanduse("blad");
+        }
+      })();
+    }, 350);
+    return () => {
+      cancelled = true;
+      ctrl.abort();
+      window.clearTimeout(t);
+    };
+  }, [pokazZagospodarowanie, srodekLanduse]);
 
   const ladneMiejsca = useMemo(
     () => punktyPoi.filter((p) => p.category === "ladne_miejsce" && p.photoUrl),
@@ -425,11 +546,44 @@ export function MapaWsiStrona({
   const kluczListy = `${frazaDoPodswietlenia}|${pozycjaUzytkownika ? "gps" : "nogps"}|${filtrAdmin.gminaSlug}`;
 
   return (
-    <div className="flex flex-col gap-0 lg:mx-auto lg:w-full lg:max-w-[min(100%,1600px)]">
-      {statystykiMapy ? <MapaStatystykiBanner statystyki={statystykiMapy} /> : null}
-      <div className="flex flex-col gap-0 lg:flex-row lg:items-stretch lg:gap-0">
-      <aside className="flex max-h-[min(48vh,420px)] shrink-0 flex-col border-b border-stone-200/80 bg-white/90 backdrop-blur-md lg:max-h-none lg:w-[min(100%,360px)] lg:border-b-0 lg:border-r lg:border-stone-200/60">
+    <div className="flex h-full min-h-0 flex-col">
+      {panelFiltrOtwarty ? (
+        <button
+          type="button"
+          className="fixed inset-0 z-[45] border-0 bg-green-950/25 backdrop-blur-[1px] lg:hidden"
+          aria-label="Zamknij filtry mapy"
+          onClick={() => ustawPanelFiltrOtwarty(false)}
+        />
+      ) : null}
+
+      {!panelFiltrOtwarty ? (
+        <button
+          type="button"
+          className="mapa-fab-filtry lg:hidden"
+          aria-expanded={false}
+          onClick={() => ustawPanelFiltrOtwarty(true)}
+        >
+          Filtry · {odfiltrowane.length}
+        </button>
+      ) : null}
+
+      <div className="flex min-h-0 flex-1 flex-col lg:flex-row lg:items-stretch">
+      <aside
+        className={`${
+          panelFiltrOtwarty ? "fixed inset-x-0 z-[46] flex max-h-[min(72dvh,520px)] rounded-t-2xl border-t border-stone-200/90 shadow-[0_-12px_40px_rgba(45,90,45,0.14)]" : "hidden"
+        } mapa-panel-filtry-sheet shrink-0 flex-col bg-white/98 backdrop-blur-md lg:relative lg:flex lg:max-h-none lg:w-[min(100%,340px)] lg:rounded-none lg:border-r lg:border-t-0 lg:border-stone-200/60 lg:shadow-none`}
+      >
         <div className="border-b border-stone-100/90 p-4">
+          <div className="mb-2 flex items-center justify-between gap-2 lg:hidden">
+            <span className="mapa-panel-filtry-sheet__uchwyt" aria-hidden />
+            <button
+              type="button"
+              className="rounded-lg px-2 py-1 text-xs font-medium text-stone-600 hover:bg-stone-100"
+              onClick={() => ustawPanelFiltrOtwarty(false)}
+            >
+              Zamknij
+            </button>
+          </div>
           <div className="mb-3 flex flex-wrap gap-2" role="tablist" aria-label="Sposób wyboru wsi">
             <button
               type="button"
@@ -563,6 +717,16 @@ export function MapaWsiStrona({
                 Obrysy wsi w gminie
               </button>
             ) : null}
+            <button
+              type="button"
+              role="switch"
+              aria-checked={pokazZagospodarowanie}
+              onClick={() => ustawPokazZagospodarowanie((v) => !v)}
+              className={`mapa-pill-warstwa ${pokazZagospodarowanie ? "border-emerald-300/80 bg-gradient-to-br from-emerald-50 to-lime-50 text-emerald-950 shadow-sm" : "mapa-pill-warstwa--off"}`}
+            >
+              <span aria-hidden>🌾</span>
+              Zagospodarowanie
+            </button>
           </div>
 
           <div className="mt-2 flex flex-wrap gap-1.5" role="group" aria-label="Szybki filtr kategorii POI">
@@ -575,6 +739,17 @@ export function MapaWsiStrona({
                 { id: "szkola", label: "🏫 Szkoły" },
                 { id: "przystanek", label: "🚏 Przystanki" },
                 { id: "cmentarz", label: "🕯 Cmentarze" },
+                ...(liczbaInwestycji > 0
+                  ? [
+                      {
+                        id: KATEGORIA_INWESTYCJA,
+                        label: `🏗 Inwestycje (${liczbaInwestycji})`,
+                      } as const,
+                    ]
+                  : []),
+                ...(liczbaLatarn > 0
+                  ? [{ id: KATEGORIA_LATARNIA, label: `💡 Oświetlenie (${liczbaLatarn})` } as const]
+                  : []),
               ] as const
             ).map(({ id, label }) => (
               <button
@@ -588,7 +763,83 @@ export function MapaWsiStrona({
                 {label}
               </button>
             ))}
+            {liczbaLatarn > 0 && filtrPoiEfektywny === "wszystkie" ? (
+              <button
+                type="button"
+                role="switch"
+                aria-checked={pokazOswietlenie}
+                onClick={() => ustawPokazOswietlenie((v) => !v)}
+                className={`mapa-pill-warstwa text-[11px] ${
+                  pokazOswietlenie ? "mapa-pill-warstwa--on" : "mapa-pill-warstwa--off"
+                }`}
+              >
+                💡 Latarnie na mapie
+              </button>
+            ) : null}
           </div>
+
+          {liczbaInwestycji > 0 ? (
+            <div className="mt-1.5 flex flex-wrap gap-1.5">
+              <button
+                type="button"
+                role="switch"
+                aria-checked={pokazZakonczoneInwestycje}
+                onClick={() => ustawPokazZakonczoneInwestycje((v) => !v)}
+                className={`mapa-pill-warstwa text-[11px] ${
+                  pokazZakonczoneInwestycje ? "mapa-pill-warstwa--on" : "mapa-pill-warstwa--off"
+                }`}
+              >
+                Pokaż zakończone inwestycje
+              </button>
+            </div>
+          ) : null}
+
+          {pokazZagospodarowanie ? (
+            <div className="mt-2 rounded-lg border border-emerald-200/80 bg-emerald-50/50 p-2 text-[11px] text-emerald-950">
+              {statusLanduse === "wczytuje" ? (
+                <p>Wczytuję strefy z OpenStreetMap…</p>
+              ) : statusLanduse === "blad" ? (
+                <p className="text-amber-900">{bladLanduse || "Brak danych zagospodarowania."}</p>
+              ) : (
+                <p>
+                  {obrysyLanduse.length > 0
+                    ? `${obrysyLanduse.length} stref w okolicy (OSM) — orientacyjnie, nie zastępuje MPZP gminy.`
+                    : "Brak polygonów landuse w tym obszarze OSM."}
+                </p>
+              )}
+              <ul className="mt-1.5 flex flex-wrap gap-x-3 gap-y-1">
+                {(["forest", "farmland", "residential", "industrial", "meadow"] as const).map((k) => (
+                  <li key={k} className="flex items-center gap-1">
+                    <span
+                      className="inline-block h-2.5 w-2.5 rounded-sm border"
+                      style={{
+                        backgroundColor: KOLOR_LANDUSE[k]?.fill ?? "#94a3b8",
+                        borderColor: KOLOR_LANDUSE[k]?.stroke ?? "#64748b",
+                      }}
+                    />
+                    {ETYKIETA_LANDUSE[k]}
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : null}
+
+          {liczbaInwestycji > 0 ? (
+            <p className="mt-1 text-[11px] text-stone-500">
+              Inwestycje: planowane budowy i roboty w toku — pinezki 🏗 z OpenStreetMap lub dodane przez sołtysa. W opisie
+              można podać termin i link do uchwały gminy.
+            </p>
+          ) : null}
+
+          {liczbaLatarn > 0 ? (
+            <p className="mt-1 text-[11px] text-stone-500">
+              Latarnie pochodzą z OpenStreetMap lub są dodane przez sołtysa. Uszkodzoną lampę zgłoś w{" "}
+              <Link href="/panel/mieszkaniec/zgloszenia" className="text-green-800 underline">
+                Zgłoszeniach
+              </Link>
+              .
+            </p>
+          ) : null}
 
           {linkHubGminy ? (
             <p className="mt-2 text-xs">
@@ -614,6 +865,31 @@ export function MapaWsiStrona({
               ) : null}
             </p>
           )}
+
+          {inwestycjeNaMapie.length > 0 ? (
+            <ul className="mt-2 max-h-36 space-y-1 overflow-y-auto rounded-lg border border-orange-200/80 bg-orange-50/55 p-2">
+              {inwestycjeNaMapie.slice(0, 12).map((p) => {
+                const status = etykietaStatusuInwestycji(p.investmentStatus);
+                return (
+                  <li key={p.id}>
+                    <button
+                      type="button"
+                      className="w-full rounded-md px-2 py-1.5 text-left text-xs text-orange-950 transition hover:bg-orange-100/80"
+                      onClick={() => mapRef.current?.pokazPoi(p.id)}
+                    >
+                      <span className="font-medium">🏗 {p.name}</span>
+                      {status ? (
+                        <span className="ml-1 rounded-full bg-orange-100 px-1.5 py-0.5 text-[10px] font-medium text-orange-900">
+                          {status}
+                        </span>
+                      ) : null}
+                      <span className="block text-[11px] text-orange-900/80">{p.villageName}</span>
+                    </button>
+                  </li>
+                );
+              })}
+            </ul>
+          ) : null}
 
           {ladneMiejsca.length > 0 ? (
             <ul className="mt-2 max-h-32 space-y-1 overflow-y-auto rounded-lg border border-amber-200/80 bg-amber-50/60 p-2">
@@ -798,7 +1074,7 @@ export function MapaWsiStrona({
         </ul>
       </aside>
 
-      <div className="min-h-[min(72dvh,560px)] flex-1 bg-gradient-to-br from-stone-100/80 via-emerald-50/20 to-stone-100/90 p-3 md:p-4">
+      <div className="mapa-widget-pelny min-h-0 flex-1 bg-stone-100/60 p-0 lg:p-0">
         {odfiltrowane.length === 0 ? (
           <p className="rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-950">
             Brak wsi do pokazania na mapie — zmień filtry w panelu po lewej.
@@ -816,6 +1092,8 @@ export function MapaWsiStrona({
             punktyCmentarze={punktyCmentarzeFiltrowane}
             punktyGeoKontekst={punktyGeoKontekstFiltrowane}
             obrysyGminy={pokazObrysGminy ? obrysyGminy : []}
+            obrysyLanduse={obrysyLanduse}
+            pokazLanduse={pokazZagospodarowanie}
             pozycjaUzytkownika={pozycjaUzytkownika}
             promienKm={promienKm > 0 ? promienKm : null}
           />

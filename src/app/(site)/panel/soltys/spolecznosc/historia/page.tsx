@@ -1,11 +1,12 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { redirect } from "next/navigation";
 import { HistoriaPanelKlient } from "@/components/panel/soltys/historia-panel-klient";
 import { PanelStronaSoltysa } from "@/components/panel/panel-strona-soltysa";
 import { pobierzHistoriePaneluWsi } from "@/lib/historia/pobierz-historie-wsi";
 import { pobierzVillageIdsRoliPaneluSoltysa } from "@/lib/panel/rola-panelu-soltysa";
+import { pobierzUzytkownikaPanelu } from "@/lib/auth/pobierz-uzytkownika-serwer";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
+import { redirect } from "next/navigation";
 
 export const metadata: Metadata = {
   title: "Kronika wsi — treści publiczne",
@@ -13,11 +14,8 @@ export const metadata: Metadata = {
 };
 
 export default async function SpolecznoscHistoriaPage() {
+  const user = await pobierzUzytkownikaPanelu();
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) redirect("/logowanie?next=/panel/soltys/spolecznosc/historia");
 
   const villageIds = await pobierzVillageIdsRoliPaneluSoltysa(supabase, user.id);
   if (villageIds.length === 0) redirect("/panel");

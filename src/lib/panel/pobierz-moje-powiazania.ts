@@ -1,6 +1,6 @@
 import type { User } from "@supabase/supabase-js";
 import { etykietaRoliWsi } from "@/lib/panel/role-definicje";
-import { pobierzUzytkownikaSerwer } from "@/lib/auth/pobierz-uzytkownika-serwer";
+import { pobierzUzytkownikaPanelu, pobierzUzytkownikaSerwer } from "@/lib/auth/pobierz-uzytkownika-serwer";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
 import { pojedynczaWies } from "@/lib/supabase/wies-z-zapytania";
 import {
@@ -344,4 +344,14 @@ export async function pobierzMojePowiazania(userWejsciowy?: User | null): Promis
     liczbaGminObserwowanych: gminyObserwowane.length,
     liczbaZapisanychTresci: zapisaneTresci.length,
   };
+}
+
+/** Panel — layout już wymaga sesji; bez redundantnego redirect(/logowanie). */
+export async function pobierzMojePowiazaniaPanelu(): Promise<MojePowiazania> {
+  const user = await pobierzUzytkownikaPanelu();
+  const dane = await pobierzMojePowiazania(user);
+  if (!dane) {
+    throw new Error("Nie udało się wczytać powiązań użytkownika.");
+  }
+  return dane;
 }

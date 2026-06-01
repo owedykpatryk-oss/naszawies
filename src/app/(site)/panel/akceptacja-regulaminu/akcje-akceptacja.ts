@@ -7,6 +7,7 @@ import { sciezkaPomijaAkceptacjePrawnej } from "@/lib/rodo/bramka-zgod-prawnych"
 import { czyProfilMaAktualnaAkceptacjePrawna } from "@/lib/rodo/czy-ma-akceptacje-prawna";
 import { AKTUALNY_BUNDLE_WERSJI_PRAWNYCH } from "@/lib/rodo/wersje-dokumentow";
 import { zapiszZgodyUzytkownika, zgodyPakietuRejestracji } from "@/lib/rodo/zapisz-zgody-uzytkownika";
+import { pobierzUzytkownikaDoAkcji } from "@/lib/auth/pobierz-uzytkownika-serwer";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
 
 export type WynikAkceptacji = { blad: string } | { ok: true; next: string };
@@ -19,11 +20,9 @@ export async function zaakceptujDokumentyPrawne(
     return { blad: "Zaznacz wszystkie wymagane zgody, aby kontynuować." };
   }
 
-  const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await pobierzUzytkownikaDoAkcji();
   if (!user) return { blad: "Zaloguj się ponownie." };
+  const supabase = utworzKlientaSupabaseSerwer();
 
   const wynik = await zapiszZgodyUzytkownika(supabase, user.id, zgodyPakietuRejestracji(), "oauth_akceptacja", {
     ustawBundleNaProfilu: true,
@@ -39,7 +38,7 @@ export async function zaakceptujDokumentyPrawne(
   });
 
   revalidatePath("/panel", "layout");
-  const cel = bezpiecznaSciezkaNastepna(next ?? "/panel");
+  const cel = bezpiecznaSciezkaNastepna(next ?? undefined);
   return { ok: true, next: cel };
 }
 
@@ -47,12 +46,10 @@ export async function zaakceptujDokumentyPrawne(
 export async function wymagajAkceptacjiPrawnejJesliTrzeba(sciezka: string, next?: string): Promise<void> {
   if (sciezkaPomijaAkceptacjePrawnej(sciezka)) return;
 
-  const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await pobierzUzytkownikaDoAkcji();
   if (!user) return;
 
+  const supabase = utworzKlientaSupabaseSerwer();
   const { data: profil } = await supabase
     .from("users")
     .select("legal_accepted_at, legal_bundle_version")

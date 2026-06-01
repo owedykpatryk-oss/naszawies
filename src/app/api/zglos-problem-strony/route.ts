@@ -6,9 +6,9 @@ import { wyslijPrzezResend } from "@/lib/email/wyslij-przez-resend";
 import { KATEGORIE_ZGLOSZENIA_STRONY } from "@/lib/pomoc/przewodniki";
 import { sprawdzLimitApi } from "@/lib/rate-limit/sprawdz-limit-upstash";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin-client";
-import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
 import { escapeHtml } from "@/lib/tekst/escape-html";
 import { walidujOdpowiedzTurnstile } from "@/lib/turnstile/waliduj-token-serwer";
+import { pobierzUzytkownikaDoAkcji } from "@/lib/auth/pobierz-uzytkownika-serwer";
 
 const schema = z
   .object({
@@ -56,10 +56,7 @@ export async function POST(request: Request) {
     );
   }
 
-  const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await pobierzUzytkownikaDoAkcji();
 
   const admin = createAdminSupabaseClient();
   if (admin) {

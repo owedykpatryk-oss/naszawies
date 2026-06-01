@@ -3,6 +3,7 @@
 import { z } from "zod";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
 import { pobierzVillageIdsRoliPaneluSoltysaDlaUzytkownikaCache } from "@/lib/panel/rola-panelu-soltysa";
+import { pobierzUzytkownikaDoAkcji } from "@/lib/auth/pobierz-uzytkownika-serwer";
 
 export type WynikOcrRozkladu =
   | { blad: string }
@@ -16,10 +17,8 @@ export async function rozpoznajRozkladZTabliczki(poiId: string): Promise<WynikOc
   const id = z.string().uuid().safeParse(poiId);
   if (!id.success) return { blad: "Nieprawidłowy przystanek." };
 
+  const user = await pobierzUzytkownikaDoAkcji();
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
   if (!user) return { blad: "Zaloguj się." };
 
   const { data: poi } = await supabase

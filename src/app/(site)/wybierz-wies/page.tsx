@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { wymagajLogowaniaStrona } from "@/lib/auth/wymagaj-logowania-strona";
 import { SzukajKatalog } from "../szukaj/szukaj-katalog";
 
 export const metadata: Metadata = {
@@ -10,8 +9,6 @@ export const metadata: Metadata = {
 };
 
 export default async function WybierzWiesPage() {
-  await wymagajLogowaniaStrona("/wybierz-wies");
-
   return (
     <main className="mx-auto min-w-0 w-full max-w-7xl px-4 py-16 text-stone-800 sm:px-6">
       <p className="mb-6 text-sm text-stone-500">

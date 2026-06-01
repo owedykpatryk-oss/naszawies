@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
 import { PrzewodnikKrokow } from "@/components/pomoc/przewodnik-krokow";
 import { MapaGdzieCoKlient } from "@/components/pomoc/mapa-gdzie-co-klient";
 import { ETYKIETA_ROLI, PRZEWODNIKI, type RolaPrzewodnika } from "@/lib/pomoc/przewodniki";
@@ -15,6 +15,13 @@ type Props = {
 
 export function CentrumPomocyKlient({ rola, pokazLinkSoltys }: Props) {
   const sekcje = useMemo(() => PRZEWODNIKI[rola] ?? PRZEWODNIKI.ogolne, [rola]);
+
+  useEffect(() => {
+    const hash = window.location.hash.replace(/^#/, "");
+    if (!hash) return;
+    const el = document.getElementById(hash);
+    if (el) el.scrollIntoView({ behavior: "smooth", block: "start" });
+  }, [rola]);
 
   return (
     <div>

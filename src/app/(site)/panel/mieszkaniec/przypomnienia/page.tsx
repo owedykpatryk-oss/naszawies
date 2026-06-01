@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import { redirect } from "next/navigation";
 import { PanelStronaMieszkaneca } from "@/components/panel/panel-strona-mieszkaneca";
 import { najblizszeWydarzenie } from "@/lib/przypomnienia/oblicz-terminy";
 import {
@@ -7,6 +6,7 @@ import {
   type PreferencjePrzypomnien,
   type RodzajPrzypomnienia,
 } from "@/lib/przypomnienia/rodzaje";
+import { pobierzUzytkownikaPanelu } from "@/lib/auth/pobierz-uzytkownika-serwer";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
 import { pojedynczaWies } from "@/lib/supabase/wies-z-zapytania";
 import { sciezkaProfiluWsi } from "@/lib/wies/sciezka-publiczna";
@@ -17,11 +17,8 @@ export const metadata: Metadata = {
 };
 
 export default async function MieszkaniecPrzypomnieniaPage() {
+  const user = await pobierzUzytkownikaPanelu();
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) redirect("/logowanie?next=/panel/mieszkaniec/przypomnienia");
 
   const { data: roleRows } = await supabase
     .from("user_village_roles")

@@ -5,13 +5,12 @@ import { powiadomSoltysowONowymWnioskuRoli } from "@/lib/powiadomienia/powiadom-
 import { etykietaRoliWsi } from "@/lib/panel/role-definicje";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin-client";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
+import { pobierzUzytkownikaDoAkcji } from "@/lib/auth/pobierz-uzytkownika-serwer";
 
 /** Po rejestracji z intencją „mieszkaniec” — jednorazowo składa wniosek o rolę we wsi z metadanych konta. */
 export async function utworzWniosekMieszkaniecZRejestracji(): Promise<void> {
+  const user = await pobierzUzytkownikaDoAkcji();
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
   if (!user?.user_metadata || typeof user.user_metadata !== "object") return;
 
   const meta = user.user_metadata as Record<string, unknown>;

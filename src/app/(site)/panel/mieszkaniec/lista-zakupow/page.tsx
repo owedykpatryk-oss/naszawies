@@ -1,11 +1,11 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { redirect } from "next/navigation";
 import { ListaZakupowWsiKlient } from "@/components/wies/lista-zakupow-wsi-klient";
 import { PanelStronaMieszkaneca } from "@/components/panel/panel-strona-mieszkaneca";
 import { roleDlaUprawnienia } from "@/lib/panel/uprawnienia-wsi";
 import { pojedynczaWies } from "@/lib/supabase/wies-z-zapytania";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
+import { pobierzUzytkownikaPanelu } from "@/lib/auth/pobierz-uzytkownika-serwer";
 
 export const metadata: Metadata = {
   title: "Lista zakupów wsi",
@@ -17,11 +17,7 @@ export default async function MieszkaniecListaZakupowPage({
   searchParams: { village?: string };
 }) {
   const supabase = utworzKlientaSupabaseSerwer();
-  const { data: { session } } = await supabase.auth.getSession();
-  const user = session?.user ?? null;
-  if (!user) {
-    redirect("/logowanie?next=/panel/mieszkaniec/lista-zakupow");
-  }
+  const user = await pobierzUzytkownikaPanelu();
 
   const { data: roleRows } = await supabase
     .from("user_village_roles")

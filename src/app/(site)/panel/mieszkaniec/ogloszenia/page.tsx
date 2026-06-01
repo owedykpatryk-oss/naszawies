@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { redirect } from "next/navigation";
+
 import { NaglowekModuluMieszkaniec } from "@/components/pomoc/naglowek-modulu-panelu";
+import { pobierzUzytkownikaPanelu } from "@/lib/auth/pobierz-uzytkownika-serwer";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
 import { pojedynczaWies } from "@/lib/supabase/wies-z-zapytania";
 import { sciezkaProfiluWsi } from "@/lib/wies/sciezka-publiczna";
@@ -11,14 +12,8 @@ export const metadata: Metadata = {
 };
 
 export default async function MieszkaniecOgloszeniaPage() {
+  const user = await pobierzUzytkownikaPanelu();
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
-  const user = session?.user ?? null;
-  if (!user) {
-    redirect("/logowanie?next=/panel/mieszkaniec/ogloszenia");
-  }
 
   const { data: aktywne } = await supabase
     .from("user_village_roles")

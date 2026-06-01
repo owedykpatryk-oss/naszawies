@@ -4,6 +4,7 @@ import { utworzPlikIcsWiele, type WpisIcs } from "@/lib/kalendarz/utworz-plik-ic
 import { ETYKIETA_RODZAJU } from "@/lib/kalendarz/typy-kalendarza";
 import { pobierzVillageIdsRoliPaneluSoltysaDlaUzytkownikaCache } from "@/lib/panel/rola-panelu-soltysa";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
+import { pobierzUzytkownikaDoAkcji } from "@/lib/auth/pobierz-uzytkownika-serwer";
 
 function miesiacZParam(miesiac: string | null): string {
   const teraz = new Date();
@@ -20,10 +21,8 @@ function zakresMiesiaca(ym: string): { od: Date; doDaty: Date } {
 }
 
 export async function GET(request: Request) {
+  const user = await pobierzUzytkownikaDoAkcji();
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
   if (!user) {
     return NextResponse.json({ blad: "Brak autoryzacji." }, { status: 401 });
   }

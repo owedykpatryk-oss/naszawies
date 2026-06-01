@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { redirect } from "next/navigation";
 import { pobierzVillageIdsModeracjiTresciCache } from "@/lib/panel/rola-moderacji";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
+import { pobierzUzytkownikaPanelu } from "@/lib/auth/pobierz-uzytkownika-serwer";
 import { PanelStronaSoltysa } from "@/components/panel/panel-strona-soltysa";
 import {
   SoltysWiadomosciLokalneKlient,
@@ -16,11 +16,7 @@ export const metadata: Metadata = {
 
 export default async function SoltysWiadomosciLokalnePage() {
   const supabase = utworzKlientaSupabaseSerwer();
-  const { data: { session } } = await supabase.auth.getSession();
-  const user = session?.user ?? null;
-  if (!user) {
-    redirect("/logowanie?next=/panel/soltys/wiadomosci-lokalne");
-  }
+  const user = await pobierzUzytkownikaPanelu();
   const villageIds = await pobierzVillageIdsModeracjiTresciCache(user.id);
   if (villageIds.length === 0) {
     return (

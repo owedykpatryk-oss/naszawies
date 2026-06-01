@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
-import { redirect } from "next/navigation";
 import { pobierzVillageIdsRoliPaneluSoltysaDlaUzytkownikaCache } from "@/lib/panel/rola-panelu-soltysa";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
+import { pobierzUzytkownikaPanelu } from "@/lib/auth/pobierz-uzytkownika-serwer";
 import { PanelStronaSoltysa } from "@/components/panel/panel-strona-soltysa";
 import { SoltysSamorzadKlient, type PrzewodnikWiersz, type WiesDoSamorzadu } from "./samorzad-klient";
 import {
@@ -15,11 +15,7 @@ export const metadata: Metadata = {
 
 export default async function SoltysSamorzadPage() {
   const supabase = utworzKlientaSupabaseSerwer();
-  const { data: { session } } = await supabase.auth.getSession();
-  const user = session?.user ?? null;
-  if (!user) {
-    redirect("/logowanie?next=/panel/soltys/samorzad");
-  }
+  const user = await pobierzUzytkownikaPanelu();
   const villageIds = await pobierzVillageIdsRoliPaneluSoltysaDlaUzytkownikaCache(user.id);
   if (villageIds.length === 0) {
     return (

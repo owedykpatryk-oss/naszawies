@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { sciezkaProfiluWsi } from "@/lib/wies/sciezka-publiczna";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
+import { pobierzUzytkownikaDoAkcji } from "@/lib/auth/pobierz-uzytkownika-serwer";
 
 const uuid = z.string().uuid();
 
@@ -16,10 +17,8 @@ export async function dodajSubskrypcjeKategoriiRynku(
   const vid = uuid.safeParse(villageId);
   if (!vid.success) return { blad: "Niepoprawna wieś." };
 
+  const user = await pobierzUzytkownikaDoAkcji();
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
   if (!user) return { blad: "Zaloguj się." };
 
   const kat = equipmentCategory?.trim() || null;
@@ -49,10 +48,8 @@ export async function usunSubskrypcjeKategoriiRynku(subscriptionId: string): Pro
   const id = uuid.safeParse(subscriptionId);
   if (!id.success) return { blad: "Niepoprawny identyfikator." };
 
+  const user = await pobierzUzytkownikaDoAkcji();
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
   if (!user) return { blad: "Zaloguj się." };
 
   const { error } = await supabase

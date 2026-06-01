@@ -2,20 +2,14 @@ import Link from "next/link";
 import { PanelStronaMoje } from "@/components/panel/panel-strona-moje";
 import { MojeDodajWiesKlient } from "@/components/panel/moje/moje-dodaj-wies-klient";
 import { MojeKartaWsi } from "@/components/panel/moje/moje-karta-wsi";
-import { wymagajLogowaniaStrona } from "@/lib/auth/wymagaj-logowania-strona";
-import { pobierzMojePowiazania } from "@/lib/panel/pobierz-moje-powiazania";
+import { pobierzMojePowiazaniaPanelu } from "@/lib/panel/pobierz-moje-powiazania";
 
 export const metadata = { title: "Moje wsie" };
 
 export const dynamic = "force-dynamic";
 
 export default async function MojeWiesPage() {
-  const user = await wymagajLogowaniaStrona("/panel/moje/wies");
-  const dane = await pobierzMojePowiazania(user);
-  if (!dane) {
-    throw new Error("Nie udało się wczytać powiązań z wsiami.");
-  }
-
+  const dane = await pobierzMojePowiazaniaPanelu();
   const mieszkam = dane.wies.filter((w) => w.rola && w.statusRoli === "active");
   const obserwuje = dane.wies.filter((w) => !w.rola && w.followId);
   const wnioskiWToku = dane.wies.filter((w) => w.rola && w.statusRoli === "pending");

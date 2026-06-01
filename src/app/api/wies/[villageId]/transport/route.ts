@@ -13,6 +13,7 @@ import {
 import { reczneDoApiOdjazdow } from "@/lib/transport/scal-odjazdy-przystanku";
 import { createPublicSupabaseClient } from "@/lib/supabase/public-client";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
+import { pobierzUzytkownikaDoAkcji } from "@/lib/auth/pobierz-uzytkownika-serwer";
 
 type Params = { params: { villageId: string } };
 
@@ -131,9 +132,7 @@ export async function GET(_req: Request, { params }: Params) {
   let stacjaWojPkp: string | null = null;
   try {
     const supabaseUser = utworzKlientaSupabaseSerwer();
-    const {
-      data: { user },
-    } = await supabaseUser.auth.getUser();
+    const user = await pobierzUzytkownikaDoAkcji();
     if (user) {
       const { data: relacje } = await supabaseUser
         .from("user_transport_favorite_relations")

@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { redirect } from "next/navigation";
 import { PanelStronaSoltysa } from "@/components/panel/panel-strona-soltysa";
 import {
   EdytorMapyPoiSoltys,
@@ -8,6 +7,7 @@ import {
   type WiesDoMapyEdycji,
 } from "@/components/panel/edytor-mapy-poi-soltys";
 import { pobierzVillageIdsRoliPaneluSoltysaDlaUzytkownikaCache } from "@/lib/panel/rola-panelu-soltysa";
+import { pobierzUzytkownikaPanelu } from "@/lib/auth/pobierz-uzytkownika-serwer";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
 
 export const metadata: Metadata = {
@@ -15,12 +15,8 @@ export const metadata: Metadata = {
 };
 
 export default async function SoltysMapaPage() {
+  const user = await pobierzUzytkownikaPanelu();
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
-  const user = session?.user ?? null;
-  if (!user) redirect("/logowanie?next=/panel/soltys/mapa");
 
   const villageIds = await pobierzVillageIdsRoliPaneluSoltysaDlaUzytkownikaCache(user.id);
   if (villageIds.length === 0) {
@@ -41,7 +37,9 @@ export default async function SoltysMapaPage() {
       .order("name"),
     supabase
       .from("pois")
-      .select("id, village_id, name, category, latitude, longitude, source, description")
+      .select(
+        "id, village_id, name, category, latitude, longitude, source, description, investment_status, planned_completion_at, document_url",
+      )
       .in("village_id", villageIds)
       .order("category")
       .order("name"),
@@ -73,6 +71,9 @@ export default async function SoltysMapaPage() {
       longitude: Number(p.longitude),
       source: p.source ?? null,
       description: p.description,
+      investmentStatus: p.investment_status ?? null,
+      plannedCompletionAt: p.planned_completion_at ?? null,
+      documentUrl: p.document_url ?? null,
     });
   }
 

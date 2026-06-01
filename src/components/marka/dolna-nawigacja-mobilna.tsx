@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useState } from "react";
+import { IkonaDolnejNawigacji } from "@/components/marka/ikony-dolnej-nawigacji";
 import {
   dolnaNawigacjaZKluczy,
   wczytajPreferencjeUiZLocalStorage,
@@ -12,6 +13,7 @@ import {
 function czyAktywny(href: string, pathname: string): boolean {
   if (href === "/panel") return pathname === "/panel" || pathname.startsWith("/panel/");
   if (href === "/panel/moje") return pathname.startsWith("/panel/moje");
+  if (href === "/mapa") return pathname === "/mapa" || pathname.startsWith("/mapa/");
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 
@@ -68,20 +70,21 @@ export function DolnaNawigacjaMobilna({ zalogowany = false, kluczePoczatkowe }: 
 
   return (
     <nav aria-label="Szybka nawigacja" className="dolna-naw-mobilna no-print">
-      <div className="mx-auto flex max-w-lg items-stretch gap-0.5 px-2 pt-1.5">
-        {tabs.map(({ href, label, ikona }) => {
+      <div className="mx-auto flex max-w-lg items-end gap-0.5 px-1.5 pt-1">
+        {tabs.map(({ href, label, klucz }) => {
           const aktywny = czyAktywny(href, pathname);
+          const centralnaMapa = klucz === "mapa";
           return (
             <Link
               key={href}
               href={href}
-              className={`dolna-naw-link nawigacja-pill ${aktywny ? "dolna-naw-link--aktywny" : ""}`}
+              className={`dolna-naw-link nawigacja-pill ${centralnaMapa ? "dolna-naw-link--mapa" : ""} ${aktywny ? "dolna-naw-link--aktywny" : ""}`}
               aria-current={aktywny ? "page" : undefined}
             >
-              <span className="text-base leading-none" aria-hidden>
-                {ikona}
+              <span className={`dolna-naw-ikona-wrap ${centralnaMapa ? "dolna-naw-ikona-wrap--mapa" : ""}`}>
+                <IkonaDolnejNawigacji klucz={klucz} />
               </span>
-              <span>{label}</span>
+              <span className="dolna-naw-etykieta">{label}</span>
             </Link>
           );
         })}

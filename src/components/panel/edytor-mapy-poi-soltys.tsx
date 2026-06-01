@@ -6,11 +6,17 @@ import { useCallback, useEffect, useMemo, useRef, useState, useTransition } from
 import "leaflet/dist/leaflet.css";
 import "@/components/mapa/mapa-wsi-leaflet.css";
 import {
+  aktualizujInwestycjePoiSoltys,
   dodajPoiNaMapieSoltys,
   przesunPoiNaMapieSoltys,
   usunPoiNaMapieSoltys,
 } from "@/app/(site)/panel/soltys/akcje-edytor-mapy-soltysa";
 import { KATEGORIE_PROPONOWALNE_POI } from "@/lib/mapa/kategorie-poi-bazowe";
+import {
+  ETYKIETA_STATUSU_INWESTYCJI,
+  KATEGORIA_INWESTYCJA,
+  STATUSY_INWESTYCJI,
+} from "@/lib/mapa/inwestycje-poi";
 import {
   emojiKategoriiPoi,
   etykietaKategoriiPoi,
@@ -36,6 +42,9 @@ export type PoiNaMapieEdycja = {
   longitude: number;
   source: string | null;
   description: string | null;
+  investmentStatus?: string | null;
+  plannedCompletionAt?: string | null;
+  documentUrl?: string | null;
 };
 
 export type WiesDoMapyEdycji = {
@@ -80,6 +89,9 @@ export function EdytorMapyPoiSoltys({ wsie, poisByVillage }: Props) {
   const [kategoria, ustawKategoria] = useState<string>("przystanek");
   const [nazwa, ustawNazwa] = useState("");
   const [opis, ustawOpis] = useState("");
+  const [statusInwestycji, ustawStatusInwestycji] = useState<string>("planowana");
+  const [terminInwestycji, ustawTerminInwestycji] = useState("");
+  const [linkDokumentu, ustawLinkDokumentu] = useState("");
   const [oczekujaca, ustawOczekujaca] = useState<{ lat: number; lng: number } | null>(null);
   const [wybranyId, ustawWybranyId] = useState<string | null>(null);
   const [blad, ustawBlad] = useState("");
@@ -169,6 +181,38 @@ export function EdytorMapyPoiSoltys({ wsie, poisByVillage }: Props) {
   useEffect(() => {
     narysujPoi(pois, wybranyId);
   }, [pois, wybranyId, tryb, narysujPoi]);
+
+  const wybranyPoi = useMemo(
+    () => pois.find((p) => p.id === wybranyId) ?? null,
+    [pois, wybranyId],
+  );
+
+  useEffect(() => {
+    if (!wybranyPoi || wybranyPoi.category !== KATEGORIA_INWESTYCJA) return;
+    ustawStatusInwestycji(wybranyPoi.investmentStatus?.trim() || "planowana");
+    ustawTerminInwestycji(wybranyPoi.plannedCompletionAt?.slice(0, 10) ?? "");
+    ustawLinkDokumentu(wybranyPoi.documentUrl ?? "");
+    ustawOpis(wybranyPoi.description ?? "");
+  }, [wybranyPoi]);
+
+  function zapiszInwestycje() {
+    if (!wybranyPoi || wybranyPoi.category !== KATEGORIA_INWESTYCJA) return;
+    ustawBlad("");
+    startT(async () => {
+      const w = await aktualizujInwestycjePoiSoltys({
+        poiId: wybranyPoi.id,
+        investmentStatus: statusInwestycji as (typeof STATUSY_INWESTYCJI)[number],
+        plannedCompletionAt: terminInwestycji.trim() || null,
+        documentUrl: linkDokumentu.trim() || null,
+        description: opis.trim() || null,
+      });
+      if ("blad" in w) ustawBlad(w.blad);
+      else {
+        ustawKomunikat(`Zaktualizowano inwestycję: ${wybranyPoi.name}`);
+        router.refresh();
+      }
+    });
+  }
 
   useEffect(() => {
     const el = refEl.current;
@@ -271,6 +315,13 @@ export function EdytorMapyPoiSoltys({ wsie, poisByVillage }: Props) {
         description: opis.trim() || null,
         latitude: oczekujaca.lat,
         longitude: oczekujaca.lng,
+        ...(kategoria === KATEGORIA_INWESTYCJA
+          ? {
+              investmentStatus: statusInwestycji as (typeof STATUSY_INWESTYCJI)[number],
+              plannedCompletionAt: terminInwestycji.trim() || null,
+              documentUrl: linkDokumentu.trim() || null,
+            }
+          : {}),
       });
       if ("blad" in w) {
         ustawBlad(w.blad);
@@ -280,6 +331,9 @@ export function EdytorMapyPoiSoltys({ wsie, poisByVillage }: Props) {
       ustawOczekujaca(null);
       ustawNazwa("");
       ustawOpis("");
+      ustawTerminInwestycji("");
+      ustawLinkDokumentu("");
+      ustawStatusInwestycji("planowana");
       router.refresh();
     });
   }
@@ -391,11 +445,55 @@ export function EdytorMapyPoiSoltys({ wsie, poisByVillage }: Props) {
               <input
                 value={nazwa}
                 onChange={(e) => ustawNazwa(e.target.value)}
-                placeholder={kategoria === "przystanek" ? "np. Przystanek — centrum" : "Nazwa miejsca"}
+                placeholder={
+                  kategoria === "przystanek"
+                    ? "np. Przystanek — centrum"
+                    : kategoria === KATEGORIA_INWESTYCJA
+                      ? "np. Rozbudowa świetlicy, droga do…"
+                      : "Nazwa miejsca"
+                }
                 maxLength={120}
                 className="mt-1 w-full rounded-lg border border-stone-300 px-2 py-1.5"
               />
             </label>
+            {kategoria === KATEGORIA_INWESTYCJA ? (
+              <>
+                <label className="block">
+                  Status inwestycji *
+                  <select
+                    value={statusInwestycji}
+                    onChange={(e) => ustawStatusInwestycji(e.target.value)}
+                    className="mt-1 w-full rounded-lg border border-stone-300 px-2 py-1.5"
+                  >
+                    {STATUSY_INWESTYCJI.map((s) => (
+                      <option key={s} value={s}>
+                        {ETYKIETA_STATUSU_INWESTYCJI[s]}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <label className="block">
+                  Planowany termin (opcj.)
+                  <input
+                    type="date"
+                    value={terminInwestycji}
+                    onChange={(e) => ustawTerminInwestycji(e.target.value)}
+                    className="mt-1 w-full rounded-lg border border-stone-300 px-2 py-1.5"
+                  />
+                </label>
+                <label className="block">
+                  Link do uchwały / dokumentacji (opcj.)
+                  <input
+                    type="url"
+                    value={linkDokumentu}
+                    onChange={(e) => ustawLinkDokumentu(e.target.value)}
+                    placeholder="https://bip.gmina.pl/…"
+                    maxLength={500}
+                    className="mt-1 w-full rounded-lg border border-stone-300 px-2 py-1.5"
+                  />
+                </label>
+              </>
+            ) : null}
             <label className="block">
               Opis (opcjonalnie)
               <textarea
@@ -403,6 +501,11 @@ export function EdytorMapyPoiSoltys({ wsie, poisByVillage }: Props) {
                 onChange={(e) => ustawOpis(e.target.value)}
                 rows={2}
                 maxLength={800}
+                placeholder={
+                  kategoria === KATEGORIA_INWESTYCJA
+                    ? "np. fundusz sołecki, strefa MPZP, wykonawca, zakres prac"
+                    : undefined
+                }
                 className="mt-1 w-full rounded-lg border border-stone-300 px-2 py-1.5"
               />
             </label>
@@ -490,6 +593,61 @@ export function EdytorMapyPoiSoltys({ wsie, poisByVillage }: Props) {
                   </button>
                 );
               })()}
+            </div>
+          ) : null}
+          {wybranyPoi?.category === KATEGORIA_INWESTYCJA ? (
+            <div className="mt-3 space-y-2 rounded-xl border border-orange-200/80 bg-orange-50/40 p-3 text-sm">
+              <p className="text-xs font-semibold text-orange-950">Edycja inwestycji: {wybranyPoi.name}</p>
+              <label className="block text-xs">
+                Status
+                <select
+                  value={statusInwestycji}
+                  onChange={(e) => ustawStatusInwestycji(e.target.value)}
+                  className="mt-1 w-full rounded-lg border border-stone-300 px-2 py-1.5"
+                >
+                  {STATUSY_INWESTYCJI.map((s) => (
+                    <option key={s} value={s}>
+                      {ETYKIETA_STATUSU_INWESTYCJI[s]}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="block text-xs">
+                Termin
+                <input
+                  type="date"
+                  value={terminInwestycji}
+                  onChange={(e) => ustawTerminInwestycji(e.target.value)}
+                  className="mt-1 w-full rounded-lg border border-stone-300 px-2 py-1.5"
+                />
+              </label>
+              <label className="block text-xs">
+                Link do dokumentu
+                <input
+                  type="url"
+                  value={linkDokumentu}
+                  onChange={(e) => ustawLinkDokumentu(e.target.value)}
+                  className="mt-1 w-full rounded-lg border border-stone-300 px-2 py-1.5"
+                />
+              </label>
+              <label className="block text-xs">
+                Opis
+                <textarea
+                  value={opis}
+                  onChange={(e) => ustawOpis(e.target.value)}
+                  rows={2}
+                  maxLength={800}
+                  className="mt-1 w-full rounded-lg border border-stone-300 px-2 py-1.5"
+                />
+              </label>
+              <button
+                type="button"
+                disabled={czek}
+                onClick={zapiszInwestycje}
+                className="w-full rounded-lg bg-orange-700 px-3 py-2 text-xs font-medium text-white disabled:opacity-50"
+              >
+                {czek ? "Zapisuję…" : "Zapisz inwestycję"}
+              </button>
             </div>
           ) : null}
         </div>

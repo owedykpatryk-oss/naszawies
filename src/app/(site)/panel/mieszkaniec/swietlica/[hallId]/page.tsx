@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { notFound, redirect } from "next/navigation";
+import { notFound } from "next/navigation";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
+import { pobierzUzytkownikaPanelu } from "@/lib/auth/pobierz-uzytkownika-serwer";
 import { PanelStronaMieszkaneca } from "@/components/panel/panel-strona-mieszkaneca";
 import { NawigacjaSali } from "@/components/swietlica/nawigacja-sali";
 import { KartaBudynkuSwietlicy } from "@/components/swietlica/karta-budynku-swietlicy";
@@ -48,11 +49,7 @@ export default async function MieszkaniecSwietlicaHallPage({ params }: Props) {
   }
 
   const supabase = utworzKlientaSupabaseSerwer();
-  const { data: { session } } = await supabase.auth.getSession();
-  const user = session?.user ?? null;
-  if (!user) {
-    redirect(`/logowanie?next=/panel/mieszkaniec/swietlica/${hallId}`);
-  }
+  const user = await pobierzUzytkownikaPanelu();
 
   const { data: sala, error: salaErr } = await supabase
     .from("halls")

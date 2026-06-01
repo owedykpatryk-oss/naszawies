@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
+import { pobierzUzytkownikaDoAkcji } from "@/lib/auth/pobierz-uzytkownika-serwer";
 
 const uuid = z.string().uuid();
 
@@ -22,10 +23,8 @@ export async function zapiszZdjecieFotokroniki(dane: z.infer<typeof schemaDodaj>
   if (!p.success) {
     return { blad: "Niepoprawne dane zdjęcia." };
   }
+  const user = await pobierzUzytkownikaDoAkcji();
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
   if (!user) {
     return { blad: "Zaloguj się." };
   }
@@ -98,10 +97,8 @@ export async function usunMojeOczekujaceZdjecie(dane: z.infer<typeof schemaUsun>
   if (!p.success) {
     return { blad: "Niepoprawny identyfikator." };
   }
+  const user = await pobierzUzytkownikaDoAkcji();
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
   if (!user) {
     return { blad: "Zaloguj się." };
   }

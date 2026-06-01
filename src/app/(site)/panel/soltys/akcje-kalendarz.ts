@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { pobierzVillageIdsRoliPaneluSoltysaDlaUzytkownikaCache } from "@/lib/panel/rola-panelu-soltysa";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
+import { pobierzUzytkownikaDoAkcji } from "@/lib/auth/pobierz-uzytkownika-serwer";
 
 const uuid = z.string().uuid();
 
@@ -27,10 +28,8 @@ export async function dodajWpisKalendarzaSoltys(dane: z.infer<typeof schemaDodaj
   const p = schemaDodaj.safeParse(dane);
   if (!p.success) return { blad: "Uzupełnij poprawnie wpis." };
 
+  const user = await pobierzUzytkownikaDoAkcji();
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
   if (!user) return { blad: "Zaloguj się." };
   if (!(await czySoltysWsi(user.id, p.data.villageId))) return { blad: "Brak uprawnień." };
 
@@ -66,10 +65,8 @@ export async function oznaczWpisKalendarzaJakoGotowy(dane: z.infer<typeof schema
   const p = schemaGotowe.safeParse(dane);
   if (!p.success) return { blad: "Niepoprawny wpis." };
 
+  const user = await pobierzUzytkownikaDoAkcji();
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
   if (!user) return { blad: "Zaloguj się." };
 
   const { data: wpis } = await supabase
@@ -93,10 +90,8 @@ export async function usunWpisKalendarzaSoltys(dane: z.infer<typeof schemaGotowe
   const p = schemaGotowe.safeParse(dane);
   if (!p.success) return { blad: "Niepoprawny wpis." };
 
+  const user = await pobierzUzytkownikaDoAkcji();
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
   if (!user) return { blad: "Zaloguj się." };
 
   const { data: wpis } = await supabase

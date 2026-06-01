@@ -20,6 +20,7 @@ import {
 } from "@/lib/panel/rola-panelu-soltysa";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
 import { czyBuforZgodnyZMimeObrazu } from "@/lib/storage/waliduj-magic-bytes-obrazu";
+import { pobierzUzytkownikaDoAkcji } from "@/lib/auth/pobierz-uzytkownika-serwer";
 
 const uuid = z.string().uuid();
 const MIME_OBRAZ = new Set(["image/jpeg", "image/png", "image/webp"]);
@@ -84,10 +85,8 @@ export async function wgrajObrazDoMagazynuR2(formData: FormData): Promise<WynikW
     return { blad: "Zapisywanie plików jest chwilowo niedostępne. Spróbuj później." };
   }
 
+  const user = await pobierzUzytkownikaDoAkcji();
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
   if (!user) {
     return { blad: "Zaloguj się." };
   }

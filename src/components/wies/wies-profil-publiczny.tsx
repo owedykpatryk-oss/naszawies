@@ -523,7 +523,7 @@ export function WiesProfilPubliczny({
               height={56}
             />
           ) : null}
-          <h1 className="wies-naglowek-tytul font-serif text-2xl leading-tight sm:text-3xl lg:text-4xl">{tytulWsi}</h1>
+          <h1 className="wies-naglowek-tytul tytul-strony-hero">{tytulWsi}</h1>
           {wies.is_active ? (
             <span className="mt-1 rounded-full bg-emerald-100 px-2.5 py-0.5 text-[11px] font-semibold text-emerald-900 ring-1 ring-emerald-200/80">
               Aktywny profil

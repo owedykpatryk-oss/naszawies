@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
-import { redirect } from "next/navigation";
 import { PanelStronaMieszkaneca } from "@/components/panel/panel-strona-mieszkaneca";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
+import { pobierzUzytkownikaPanelu } from "@/lib/auth/pobierz-uzytkownika-serwer";
 import { pojedynczaWies } from "@/lib/supabase/wies-z-zapytania";
 import { PomocSasiedzkaFormularz } from "./pomoc-sasiedzka-formularz";
 
@@ -9,9 +9,7 @@ export const metadata: Metadata = { title: "Pomoc sąsiedzka" };
 
 export default async function PomocSasiedzkaPage() {
   const supabase = utworzKlientaSupabaseSerwer();
-  const { data: { session } } = await supabase.auth.getSession();
-  const user = session?.user ?? null;
-  if (!user) redirect("/logowanie?next=/panel/mieszkaniec/pomoc-sasiedzka");
+  const user = await pobierzUzytkownikaPanelu();
 
   const { data: roleRows } = await supabase
     .from("user_village_roles")

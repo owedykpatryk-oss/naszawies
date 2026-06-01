@@ -18,6 +18,7 @@ import {
 import { sciezkaProfiluWsi } from "@/lib/wies/sciezka-publiczna";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
 import { dataWygasnieciaOgloszeniaRynek } from "@/lib/marketplace/waznosc-ogloszenia";
+import { pobierzUzytkownikaDoAkcji } from "@/lib/auth/pobierz-uzytkownika-serwer";
 
 const uuid = z.string().uuid();
 
@@ -107,10 +108,8 @@ export async function dodajOgloszenieMarketplaceMieszkanca(
     return { blad: "Dla działki zaznacz granicę na mapie albo podaj współrzędne GPS." };
   }
 
+  const user = await pobierzUzytkownikaDoAkcji();
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
   if (!user) return { blad: "Zaloguj się." };
 
   const expires = dataWygasnieciaOgloszeniaRynek();
@@ -193,10 +192,8 @@ export async function edytujOgloszenieMarketplaceMieszkanca(
     return { blad: `Maksymalnie ${maxZdj} zdjęć dla tej kategorii.` };
   }
 
+  const user = await pobierzUzytkownikaDoAkcji();
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
   if (!user) return { blad: "Zaloguj się." };
 
   const { data: row } = await supabase
@@ -261,10 +258,8 @@ export async function archiwizujOgloszenieMarketplaceMieszkanca(listingId: strin
   const id = uuid.safeParse(listingId);
   if (!id.success) return { blad: "Niepoprawny identyfikator." };
 
+  const user = await pobierzUzytkownikaDoAkcji();
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
   if (!user) return { blad: "Zaloguj się." };
 
   const { data: row } = await supabase
@@ -295,10 +290,8 @@ export async function aktywujPonownieOgloszenieMarketplace(listingId: string): P
   const id = uuid.safeParse(listingId);
   if (!id.success) return { blad: "Niepoprawny identyfikator." };
 
+  const user = await pobierzUzytkownikaDoAkcji();
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
   if (!user) return { blad: "Zaloguj się." };
 
   const { data: row } = await supabase
@@ -349,10 +342,8 @@ export async function dodajPakietOgloszenKgw(body: z.infer<typeof schemaPakietKg
   const p = schemaPakietKgw.safeParse(body);
   if (!p.success) return { blad: "Sprawdź szablon (1–20 pozycji)." };
 
+  const user = await pobierzUzytkownikaDoAkcji();
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
   if (!user) return { blad: "Zaloguj się." };
 
   const expires = dataWygasnieciaOgloszeniaRynek();

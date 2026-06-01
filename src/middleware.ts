@@ -4,7 +4,13 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { bezpiecznaSciezkaNastepna } from "@/lib/auth/bezpieczna-sciezka-nastepna";
 import { maCiasteczkaSesjiSupabase } from "@/lib/auth/ciasteczka-sesji";
-import { NAGLOWEK_USER_EMAIL, NAGLOWEK_USER_ID } from "@/lib/auth/naglowki-sesji-middleware";
+import {
+  NAGLOWEK_USER_EMAIL,
+  NAGLOWEK_USER_ID,
+  NAGLOWEK_USER_ONBOARDING_DONE,
+  NAGLOWEK_USER_SIGNUP_INTENT,
+  NAGLOWEK_USER_SIGNUP_VILLAGE_ID,
+} from "@/lib/auth/naglowki-sesji-middleware";
 import {
   sciezkaApiWymagaLogowania,
   sciezkaWymagaLogowania,
@@ -32,9 +38,25 @@ function dolaczCiasteczkaSesji(cel: NextResponse, ciasteczka: CiasteczkaDoUstawi
 function dolaczNaglowkiUzytkownika(requestHeaders: Headers, user: User | null): void {
   requestHeaders.delete(NAGLOWEK_USER_ID);
   requestHeaders.delete(NAGLOWEK_USER_EMAIL);
+  requestHeaders.delete(NAGLOWEK_USER_SIGNUP_VILLAGE_ID);
+  requestHeaders.delete(NAGLOWEK_USER_SIGNUP_INTENT);
+  requestHeaders.delete(NAGLOWEK_USER_ONBOARDING_DONE);
   if (!user) return;
   requestHeaders.set(NAGLOWEK_USER_ID, user.id);
   if (user.email) requestHeaders.set(NAGLOWEK_USER_EMAIL, user.email);
+  const meta =
+    user.user_metadata && typeof user.user_metadata === "object"
+      ? (user.user_metadata as Record<string, unknown>)
+      : null;
+  if (meta) {
+    const villageId = typeof meta.signup_village_id === "string" ? meta.signup_village_id.trim() : "";
+    if (villageId) requestHeaders.set(NAGLOWEK_USER_SIGNUP_VILLAGE_ID, villageId);
+    const intent = typeof meta.signup_intent === "string" ? meta.signup_intent.trim() : "";
+    if (intent) requestHeaders.set(NAGLOWEK_USER_SIGNUP_INTENT, intent);
+    const onboardingDone =
+      typeof meta.onboarding_completed_at === "string" ? meta.onboarding_completed_at.trim() : "";
+    if (onboardingDone) requestHeaders.set(NAGLOWEK_USER_ONBOARDING_DONE, onboardingDone);
+  }
 }
 
 function odpowiedzZNastepnym(
@@ -175,7 +197,7 @@ export async function middleware(request: NextRequest) {
   }
 
   if (sciezka === "/" && user) {
-    return przekierujZachowujacSesje(request, ciasteczkaSesji, "/panel", "", user);
+    return przekierujZachowujacSesje(request, ciasteczkaSesji, "/mapa", "", user);
   }
 
   if (sciezka.startsWith("/logowanie") && user) {

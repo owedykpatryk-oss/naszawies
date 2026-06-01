@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { redirect } from "next/navigation";
+
 import { KartaBudynkuSwietlicy } from "@/components/swietlica/karta-budynku-swietlicy";
 import { NaglowekModuluMieszkaniec } from "@/components/pomoc/naglowek-modulu-panelu";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
+import { pobierzUzytkownikaPanelu } from "@/lib/auth/pobierz-uzytkownika-serwer";
 import { pojedynczaWies } from "@/lib/supabase/wies-z-zapytania";
 
 export const metadata: Metadata = {
@@ -12,11 +13,7 @@ export const metadata: Metadata = {
 
 export default async function MieszkaniecSwietlicaPage() {
   const supabase = utworzKlientaSupabaseSerwer();
-  const { data: { session } } = await supabase.auth.getSession();
-  const user = session?.user ?? null;
-  if (!user) {
-    redirect("/logowanie?next=/panel/mieszkaniec/swietlica");
-  }
+  const user = await pobierzUzytkownikaPanelu();
 
   const { data: aktywne } = await supabase
     .from("user_village_roles")

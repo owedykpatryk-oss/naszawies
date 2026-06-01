@@ -1,12 +1,12 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { redirect } from "next/navigation";
 import { Suspense } from "react";
 import { PanelStronaSoltysa } from "@/components/panel/panel-strona-soltysa";
 import { GeneratorDokumentowSoltysaKlient } from "@/components/soltys/generator-dokumentow-klient";
 import { PRESETY_DOKUMENTOW_SOLTYSA } from "@/lib/dokumenty-soltysa/presety";
 import { pobierzVillageIdsRoliPaneluSoltysaDlaUzytkownikaCache } from "@/lib/panel/rola-panelu-soltysa";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
+import { pobierzUzytkownikaPanelu } from "@/lib/auth/pobierz-uzytkownika-serwer";
 
 export const metadata: Metadata = {
   title: "Generator dokumentów",
@@ -14,11 +14,7 @@ export const metadata: Metadata = {
 
 export default async function SoltysDokumentyPage() {
   const supabase = utworzKlientaSupabaseSerwer();
-  const { data: { session } } = await supabase.auth.getSession();
-  const user = session?.user ?? null;
-  if (!user) {
-    redirect("/logowanie?next=/panel/soltys/dokumenty");
-  }
+  const user = await pobierzUzytkownikaPanelu();
 
   const villageIds = await pobierzVillageIdsRoliPaneluSoltysaDlaUzytkownikaCache(user.id);
 

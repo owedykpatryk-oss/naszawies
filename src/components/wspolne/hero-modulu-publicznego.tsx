@@ -16,9 +16,7 @@ export function HeroModuluPublicznego({ etykieta, tytul, opis, wariant = "domysl
     <header className={klasyWariant}>
       <div className="relative z-[1]">
         {etykieta ? <p className="etykieta-modulu">{etykieta}</p> : null}
-        <h1 className="mt-1 font-serif text-[clamp(1.75rem,4vw,2.5rem)] leading-tight tracking-tight text-green-950">
-          {tytul}
-        </h1>
+        <h1 className="tytul-strony-app mt-1">{tytul}</h1>
         {opis ? <p className="mt-3 max-w-2xl text-sm leading-relaxed text-stone-600 sm:text-base">{opis}</p> : null}
         {dzieci ? <div className="mt-4">{dzieci}</div> : null}
       </div>

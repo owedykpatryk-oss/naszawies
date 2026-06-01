@@ -1,19 +1,14 @@
 import Link from "next/link";
-import { redirect } from "next/navigation";
 import { PanelStronaMoje } from "@/components/panel/panel-strona-moje";
 import { MojeGminyObserwowaneLista } from "@/components/panel/moje/moje-gminy-obserwowane-lista";
 import { MojeZapisaneTresciLista } from "@/components/panel/moje/moje-zapisane-tresci-lista";
 import { MojeUlubioneLista } from "@/components/panel/moje/moje-ulubione-lista";
-import { pobierzMojePowiazania } from "@/lib/panel/pobierz-moje-powiazania";
+import { pobierzMojePowiazaniaPanelu } from "@/lib/panel/pobierz-moje-powiazania";
 
 export const metadata = { title: "Ulubione — Moje" };
 
 export default async function MojeUlubionePage() {
-  const dane = await pobierzMojePowiazania();
-  if (!dane) {
-    redirect("/logowanie?next=/panel/moje/ulubione");
-  }
-
+  const dane = await pobierzMojePowiazaniaPanelu();
   return (
     <PanelStronaMoje
       tytul="Ulubione"

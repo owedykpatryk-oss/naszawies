@@ -11,14 +11,13 @@ import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
 import { synchronizujAutobusyAutomatycznie } from "@/lib/transport/synchronizuj-autobusy-automatycznie";
 import { synchronizujTransportAutomatycznie } from "@/lib/transport/synchronizuj-transport-automatycznie";
 import { z } from "zod";
+import { pobierzUzytkownikaDoAkcji } from "@/lib/auth/pobierz-uzytkownika-serwer";
 
 const uuidSchema = z.string().uuid();
 
 async function wymagajAdminaLubSoltysaWsi(villageIds: string[]) {
+  const user = await pobierzUzytkownikaDoAkcji();
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
   if (!user) {
     return { ok: false as const, blad: "Zaloguj się." };
   }
@@ -44,9 +43,7 @@ async function wymagajAdminaLubSoltysaWsi(villageIds: string[]) {
 /** Uruchamiane z mapy w tle — uzupełnia brakujące obrysy PRG (tylko admin platformy). */
 export async function uruchomSyncGraniceZMapy() {
   const supabaseUser = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabaseUser.auth.getUser();
+  const user = await pobierzUzytkownikaDoAkcji();
   if (!user) {
     return { ok: false as const, blad: "Zaloguj się." };
   }

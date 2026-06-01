@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { redirect } from "next/navigation";
 import { PanelStronaMieszkaneca } from "@/components/panel/panel-strona-mieszkaneca";
 import { pojedynczaWies } from "@/lib/supabase/wies-z-zapytania";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
+import { pobierzUzytkownikaPanelu } from "@/lib/auth/pobierz-uzytkownika-serwer";
 import {
   MieszkaniecSpolecznoscKlient,
   type GlosMoj,
@@ -18,12 +18,7 @@ export const metadata: Metadata = {
 
 export default async function MieszkaniecSpolecznoscPage() {
   const supabase = utworzKlientaSupabaseSerwer();
-  const { data: { session } } = await supabase.auth.getSession();
-  const user = session?.user ?? null;
-
-  if (!user) {
-    redirect("/logowanie?next=/panel/mieszkaniec/spolecznosc");
-  }
+  const user = await pobierzUzytkownikaPanelu();
 
   const { data: roleRows } = await supabase
     .from("user_village_roles")

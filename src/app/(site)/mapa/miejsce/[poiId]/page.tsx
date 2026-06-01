@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { createPublicSupabaseClient } from "@/lib/supabase/public-client";
-import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
+import { pobierzUzytkownikaSerwer } from "@/lib/auth/pobierz-uzytkownika-serwer";
 import { sciezkaProfiluWsi } from "@/lib/wies/sciezka-publiczna";
 import { formatujGodzinyOtwarcia } from "@/lib/mapa/formatuj-godziny-otwarcia";
 import { opisZrodlaPoi } from "@/lib/mapa/etykieta-zrodla-poi";
@@ -53,16 +53,7 @@ export default async function MiejscePoiPage({ params }: Props) {
     authorLabel: `Mieszkaniec ${i + 1}`,
   }));
 
-  let zalogowany = false;
-  try {
-    const serwer = utworzKlientaSupabaseSerwer();
-    const {
-      data: { session },
-    } = await serwer.auth.getSession();
-    zalogowany = Boolean(session?.user);
-  } catch {
-    zalogowany = false;
-  }
+  const zalogowany = Boolean(await pobierzUzytkownikaSerwer());
 
   const lat = Number(poi.latitude);
   const lon = Number(poi.longitude);

@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
+import { pobierzUzytkownikaDoAkcji } from "@/lib/auth/pobierz-uzytkownika-serwer";
 
 const schema = z.object({
   villageId: z.string().uuid(),
@@ -20,10 +21,8 @@ export async function dodajOfertePomocySasiedzkiej(body: z.infer<typeof schema>)
   const p = schema.safeParse(body);
   if (!p.success) return { blad: "Sprawdź tytuł i opis oferty." };
 
+  const user = await pobierzUzytkownikaDoAkcji();
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
   if (!user) return { blad: "Zaloguj się." };
 
   const dni = p.data.dniWaznosci ?? 14;

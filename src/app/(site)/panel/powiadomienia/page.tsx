@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
-import { redirect } from "next/navigation";
+
 import { NaglowekModuluPanelu } from "@/components/pomoc/naglowek-modulu-panelu";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
+import { pobierzUzytkownikaPanelu } from "@/lib/auth/pobierz-uzytkownika-serwer";
 import { PowiadomieniaPushKlient } from "@/components/pwa/powiadomienia-push-klient";
 import { IosPushOnboarding } from "@/components/pwa/ios-push-onboarding";
 import { PowiadomieniaLista, type PowiadomienieWiersz } from "./powiadomienia-lista";
@@ -12,11 +13,7 @@ export const metadata: Metadata = {
 
 export default async function PowiadomieniaPage() {
   const supabase = utworzKlientaSupabaseSerwer();
-  const { data: { session } } = await supabase.auth.getSession();
-  const user = session?.user ?? null;
-  if (!user) {
-    redirect("/logowanie?next=/panel/powiadomienia");
-  }
+  const user = await pobierzUzytkownikaPanelu();
 
   const { data } = await supabase
     .from("notifications")

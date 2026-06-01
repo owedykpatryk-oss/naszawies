@@ -23,6 +23,7 @@ import {
 import { pobierzDanePubliczneProfiluWsi } from "@/lib/wies/pobierz-dane-publiczne-profilu-wsi";
 import { pobierzUstawieniaWsi } from "@/lib/wies/pobierz-ustawienia-wsi";
 import { maCiasteczkaSesjiSupabaseSerwer } from "@/lib/auth/ciasteczka-sesji";
+import { pobierzUzytkownikaSerwer } from "@/lib/auth/pobierz-uzytkownika-serwer";
 import { pobierzLinkiPrzydatneDlaWsiGminy } from "@/lib/wies/pobierz-linki-przydatne";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
 import { linkChroniony } from "@/lib/auth/sciezki-chronione";
@@ -471,10 +472,7 @@ export default async function WiesCatchAllPage({ params, searchParams }: Props) 
 
     if (maCiasteczkaSesjiSupabaseSerwer()) {
       const supabaseSerwer = utworzKlientaSupabaseSerwer();
-      const {
-        data: { session },
-      } = await supabaseSerwer.auth.getSession();
-      userSesji = session?.user ?? null;
+      userSesji = await pobierzUzytkownikaSerwer();
 
       if (userSesji) {
         const [daneMapy, uvrResult, zapisaneResult] = await Promise.all([
@@ -737,10 +735,7 @@ export default async function WiesCatchAllPage({ params, searchParams }: Props) 
   if (reszta.length === 1 && reszta[0] === "rynek") {
     const sciezka = sciezkaProfiluWsi(wies);
     const supabaseSerwer = utworzKlientaSupabaseSerwer();
-    const {
-      data: { session: sesjaRynek },
-    } = await supabaseSerwer.auth.getSession();
-    const userRynek = sesjaRynek?.user ?? null;
+    const userRynek = await pobierzUzytkownikaSerwer();
 
     const [daneRynek, subskrybowaneKategorie] = await Promise.all([
       pobierzRynekStronaWsiCached(wies.id, wies),
@@ -842,11 +837,7 @@ export default async function WiesCatchAllPage({ params, searchParams }: Props) 
     const idProfilu = z.string().uuid().safeParse(reszta[2]);
     if (!idProfilu.success) notFound();
 
-    const supabaseSerwer = utworzKlientaSupabaseSerwer();
-    const {
-      data: { session },
-    } = await supabaseSerwer.auth.getSession();
-    const userProfil = session?.user ?? null;
+    const userProfil = await pobierzUzytkownikaSerwer();
 
     const { data: profil } = await supabase
       .from("marketplace_profiles")
@@ -906,10 +897,7 @@ export default async function WiesCatchAllPage({ params, searchParams }: Props) 
     if (!idOgl.success) notFound();
 
     const supabaseSerwer = utworzKlientaSupabaseSerwer();
-    const {
-      data: { session: sesjaRynek },
-    } = await supabaseSerwer.auth.getSession();
-    const userRynek = sesjaRynek?.user ?? null;
+    const userRynek = await pobierzUzytkownikaSerwer();
 
     const { data: ogl } = await supabase
       .from("marketplace_listings")
@@ -1129,11 +1117,9 @@ export default async function WiesCatchAllPage({ params, searchParams }: Props) 
     let zapalonaSwieczka = false;
     let zapisaneId: string | null = null;
     if (await maCiasteczkaSesjiSupabaseSerwer()) {
-      const supabaseSerwer = utworzKlientaSupabaseSerwer();
-      const {
-        data: { user },
-      } = await supabaseSerwer.auth.getUser();
+      const user = await pobierzUzytkownikaSerwer();
       if (user) {
+        const supabaseSerwer = utworzKlientaSupabaseSerwer();
         zapalonaSwieczka = await czyUzytkownikZapalilSwieczke(wpisHistoria.id, user.id);
         const { data: zapis } = await supabaseSerwer
           .from("user_saved_content")

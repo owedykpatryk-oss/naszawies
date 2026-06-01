@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { notFound, redirect } from "next/navigation";
+import { notFound } from "next/navigation";
 import { DokumentWynajmuWidok } from "@/components/swietlica/dokument-wynajmu-widok";
 import { PanelStronaMieszkaneca } from "@/components/panel/panel-strona-mieszkaneca";
 import { NawigacjaSali } from "@/components/swietlica/nawigacja-sali";
@@ -9,6 +9,7 @@ import {
   pobierzDaneDokumentuWynajmuRezerwacji,
 } from "@/lib/swietlica/pobierz-dane-dokumentu-wynajmu";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
+import { pobierzUzytkownikaPanelu } from "@/lib/auth/pobierz-uzytkownika-serwer";
 
 type Props = {
   params: { hallId: string };
@@ -28,9 +29,7 @@ export default async function DokumentWynajmuMieszkaniecPage({ params, searchPar
   const bookingId = Array.isArray(rezerwacjaParam) ? rezerwacjaParam[0] : rezerwacjaParam;
 
   const supabase = utworzKlientaSupabaseSerwer();
-  const { data: { session } } = await supabase.auth.getSession();
-  const user = session?.user ?? null;
-  if (!user) redirect(`/logowanie?next=/panel/mieszkaniec/swietlica/${hallId}/dokument`);
+  const user = await pobierzUzytkownikaPanelu();
 
   if (bookingId && /^[0-9a-f-]{36}$/i.test(bookingId)) {
     const { data: rezerwacja } = await supabase

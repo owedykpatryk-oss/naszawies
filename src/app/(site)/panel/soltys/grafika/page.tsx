@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import { redirect } from "next/navigation";
 import { PanelStronaSoltysa } from "@/components/panel/panel-strona-soltysa";
 import { KreatorGrafikiKlient } from "@/components/grafika/kreator-grafiki-klient";
 import { SZABLONY_GRAFIKI } from "@/lib/grafika/szablony";
@@ -7,6 +6,7 @@ import type { ProfilWsiGrafiki } from "@/lib/grafika/typy";
 import { pobierzVillageIdsRoliPaneluSoltysaDlaUzytkownikaCache } from "@/lib/panel/rola-panelu-soltysa";
 import { sciezkaProfiluWsi } from "@/lib/wies/sciezka-publiczna";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
+import { pobierzUzytkownikaPanelu } from "@/lib/auth/pobierz-uzytkownika-serwer";
 
 export const metadata: Metadata = {
   title: "Kreator grafiki",
@@ -15,11 +15,7 @@ export const metadata: Metadata = {
 
 export default async function SoltysGrafikaPage() {
   const supabase = utworzKlientaSupabaseSerwer();
-  const { data: { session } } = await supabase.auth.getSession();
-  const user = session?.user ?? null;
-  if (!user) {
-    redirect("/logowanie?next=/panel/soltys/grafika");
-  }
+  const user = await pobierzUzytkownikaPanelu();
 
   const villageIds = await pobierzVillageIdsRoliPaneluSoltysaDlaUzytkownikaCache(user.id);
 

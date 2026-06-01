@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { redirect } from "next/navigation";
 import { NaglowekModuluPanelu } from "@/components/pomoc/naglowek-modulu-panelu";
 import { pobierzObserwowaneProfileRynku } from "@/lib/marketplace/pobierz-obserwowane-profile";
+import { pobierzUzytkownikaPanelu } from "@/lib/auth/pobierz-uzytkownika-serwer";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
 import { FirmyObserwowaneLista } from "./firmy-obserwowane-lista";
 
@@ -11,11 +11,8 @@ export const metadata: Metadata = {
 };
 
 export default async function MojeObserwowaneFirmyPage() {
+  const user = await pobierzUzytkownikaPanelu();
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) redirect("/logowanie?next=/panel/moje/firmy");
 
   const profile = await pobierzObserwowaneProfileRynku(supabase, user.id);
 

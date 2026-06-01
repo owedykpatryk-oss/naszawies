@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
+import { pobierzUzytkownikaDoAkcji } from "@/lib/auth/pobierz-uzytkownika-serwer";
 
 const uuid = z.string().uuid();
 
@@ -19,10 +20,8 @@ export async function rozpocznijCzatZOgloszenia(listingId: string): Promise<Wyni
   const id = uuid.safeParse(listingId);
   if (!id.success) return { blad: "Niepoprawne ogłoszenie." };
 
+  const user = await pobierzUzytkownikaDoAkcji();
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
   if (!user) return { blad: "Zaloguj się, aby napisać wiadomość." };
 
   const { data, error } = await supabase.rpc("chat_start_listing_conversation", {
@@ -51,10 +50,8 @@ export async function dolaczDoGrupyPreset(
   const pr = presetSchema.safeParse(preset);
   if (!vid.success || !pr.success) return { blad: "Sprawdź dane grupy." };
 
+  const user = await pobierzUzytkownikaDoAkcji();
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
   if (!user) return { blad: "Zaloguj się." };
 
   const { data, error } = await supabase.rpc("chat_get_or_create_preset_group", {
@@ -72,10 +69,8 @@ export async function utworzGrupeWlasna(villageId: string, tytul: string): Promi
   const t = z.string().trim().min(3).max(80).safeParse(tytul);
   if (!vid.success || !t.success) return { blad: "Podaj nazwę grupy (3–80 znaków)." };
 
+  const user = await pobierzUzytkownikaDoAkcji();
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
   if (!user) return { blad: "Zaloguj się." };
 
   const { data: conv, error } = await supabase
@@ -107,10 +102,8 @@ export async function wyslijWiadomoscCzat(conversationId: string, body: string):
   const tekst = z.string().trim().min(1).max(4000).safeParse(body);
   if (!cid.success || !tekst.success) return { blad: "Wpisz wiadomość." };
 
+  const user = await pobierzUzytkownikaDoAkcji();
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
   if (!user) return { blad: "Zaloguj się." };
 
   const { data: wiersz, error } = await supabase
@@ -183,10 +176,8 @@ export async function pobierzStarszeWiadomosciCzat(
   const przed = z.string().min(10).safeParse(przedCreatedAt);
   if (!cid.success || !przed.success) return { blad: "Niepoprawne dane." };
 
+  const user = await pobierzUzytkownikaDoAkcji();
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
   if (!user) return { blad: "Zaloguj się." };
 
   const { data: czlonkostwo } = await supabase
@@ -230,10 +221,8 @@ export async function zaprosDoGrupyCzatu(conversationId: string, inviteUserId: s
   const uid = uuid.safeParse(inviteUserId);
   if (!cid.success || !uid.success) return { blad: "Niepoprawne dane zaproszenia." };
 
+  const user = await pobierzUzytkownikaDoAkcji();
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
   if (!user) return { blad: "Zaloguj się." };
 
   const { data: conv } = await supabase
@@ -285,10 +274,8 @@ export async function zaprosDoGrupyCzatu(conversationId: string, inviteUserId: s
 export async function oznaczPrzeczytane(conversationId: string): Promise<void> {
   const cid = uuid.safeParse(conversationId);
   if (!cid.success) return;
+  const user = await pobierzUzytkownikaDoAkcji();
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
   if (!user) return;
   await supabase
     .from("chat_members")

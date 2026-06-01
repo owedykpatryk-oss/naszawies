@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
-import { notFound, redirect } from "next/navigation";
+import { notFound } from "next/navigation";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
+import { pobierzUzytkownikaPanelu } from "@/lib/auth/pobierz-uzytkownika-serwer";
 import { pojedynczaWies } from "@/lib/supabase/wies-z-zapytania";
 import { PanelStronaMieszkaneca } from "@/components/panel/panel-strona-mieszkaneca";
 import type { PoiOpcja } from "../../marketplace-formularz-rozszerzenia";
@@ -14,9 +15,7 @@ type Props = { params: { id: string } };
 
 export default async function EdytujOgloszenieMarketplacePage({ params }: Props) {
   const supabase = utworzKlientaSupabaseSerwer();
-  const { data: { session } } = await supabase.auth.getSession();
-  const user = session?.user ?? null;
-  if (!user) redirect(`/logowanie?next=/panel/mieszkaniec/marketplace/${params.id}/edytuj`);
+  const user = await pobierzUzytkownikaPanelu();
 
   const { data: ogl } = await supabase
     .from("marketplace_listings")

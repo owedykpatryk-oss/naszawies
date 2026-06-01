@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { bezpiecznaSciezkaNastepna } from "@/lib/auth/bezpieczna-sciezka-nastepna";
-import { pobierzSesjeSerwer } from "@/lib/auth/pobierz-uzytkownika-serwer";
+import { pobierzUzytkownikaSerwer } from "@/lib/auth/pobierz-uzytkownika-serwer";
 import { ponowJesliRedirect } from "@/lib/next/ponow-redirect";
 import { pobierzPochodzeniePubliczne } from "@/lib/zadanie/pochodzenie-publiczne";
 import { LogowanieFormularz } from "./logowanie-formularz";
@@ -22,7 +22,7 @@ export default async function LogowaniePage({ searchParams }: Props) {
   const pochodzenie = pobierzPochodzeniePubliczne();
   const nastepnyParam = searchParams.next;
   const nastepna =
-    typeof nastepnyParam === "string" ? bezpiecznaSciezkaNastepna(nastepnyParam) : "/panel";
+    typeof nastepnyParam === "string" ? bezpiecznaSciezkaNastepna(nastepnyParam) : "/mapa";
   const bladParam = searchParams.blad;
   const kodBledu = typeof bladParam === "string" ? bladParam : undefined;
   const szczegolParam = searchParams.szczegol;
@@ -31,8 +31,8 @@ export default async function LogowaniePage({ searchParams }: Props) {
   const emailStartowy = typeof emailParam === "string" ? emailParam.slice(0, 200) : "";
 
   try {
-    const session = await pobierzSesjeSerwer();
-    if (session?.user) {
+    const user = await pobierzUzytkownikaSerwer();
+    if (user) {
       redirect(nastepna);
     }
   } catch (error) {

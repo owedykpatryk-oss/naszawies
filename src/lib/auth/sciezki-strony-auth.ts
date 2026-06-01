@@ -1,3 +1,8 @@
+/** Główna mapa wsi — bez globalnego nagłówka (więcej miejsca na mapę). */
+export function czyStronaMapyImmersyjna(pathname: string): boolean {
+  return pathname === "/mapa";
+}
+
 /** Strony z własnym układem — bez globalnego nagłówka witryny. */
 export function czyStronaBezNaglowkaWitryny(pathname: string): boolean {
   return (
@@ -6,6 +11,7 @@ export function czyStronaBezNaglowkaWitryny(pathname: string): boolean {
     pathname.startsWith("/rejestracja") ||
     pathname.startsWith("/reset-hasla") ||
     pathname.startsWith("/auth/") ||
-    pathname.startsWith("/embed/")
+    pathname.startsWith("/embed/") ||
+    czyStronaMapyImmersyjna(pathname)
   );
 }

@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { FormEvent, useState } from "react";
 import { utworzKlientaSupabasePrzegladarka } from "@/lib/supabase/przegladarka";
 
@@ -26,7 +25,6 @@ function mapujBladLogowania(msg: string): string {
 }
 
 export function LogowanieFormularz({ nastepnaSciezka, kodBledu, szczegolBledu, emailStartowy = "" }: Props) {
-  const router = useRouter();
   const [laduje, ustawLaduje] = useState(false);
   const [pokazHaslo, ustawPokazHaslo] = useState(false);
   const [blad, ustawBlad] = useState(() => {
@@ -53,8 +51,8 @@ export function LogowanieFormularz({ nastepnaSciezka, kodBledu, szczegolBledu, e
         ustawBlad(mapujBladLogowania(error.message));
         return;
       }
-      router.push(nastepnaSciezka.startsWith("/") ? nastepnaSciezka : "/panel");
-      router.refresh();
+      const cel = nastepnaSciezka.startsWith("/") ? nastepnaSciezka : "/panel";
+      window.location.assign(cel);
     } catch {
       ustawBlad("Nie udało się połączyć z serwerem.");
     } finally {

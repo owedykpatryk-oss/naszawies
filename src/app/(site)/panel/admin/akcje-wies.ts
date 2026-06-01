@@ -5,6 +5,7 @@ import { z } from "zod";
 import { czyAdminPlatformy } from "@/lib/admin/czy-admin-platformy";
 import slugify from "slugify";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
+import { pobierzUzytkownikaDoAkcji } from "@/lib/auth/pobierz-uzytkownika-serwer";
 
 const zod = z.object({
   terytId: z.string().trim().min(4).max(20),
@@ -36,10 +37,8 @@ export async function adminUtworzWiesISoltysa(niesprawdzone: unknown): Promise<W
     return { blad: p.error.issues[0]?.message ?? "Sprawdź dane formularza." };
   }
   const x = p.data;
+  const user = await pobierzUzytkownikaDoAkcji();
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
   if (!user) {
     return { blad: "Zaloguj się." };
   }
@@ -104,10 +103,8 @@ export async function adminAktywujWiesZKatalogu(niesprawdzone: unknown): Promise
   if (!p.success) {
     return { blad: p.error.issues[0]?.message ?? "Sprawdź dane formularza." };
   }
+  const user = await pobierzUzytkownikaDoAkcji();
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
   if (!user) {
     return { blad: "Zaloguj się." };
   }

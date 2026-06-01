@@ -17,6 +17,7 @@ import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
 import { createPublicSupabaseClient } from "@/lib/supabase/public-client";
 import { wyslijPrzezResend } from "@/lib/email/wyslij-przez-resend";
 import { htmlSzablonNaszawies, siteUrlDlaSzablonuEmail } from "@/lib/email/szablon-html-naszawies";
+import { pobierzUzytkownikaDoAkcji } from "@/lib/auth/pobierz-uzytkownika-serwer";
 
 const uuid = z.string().uuid();
 
@@ -64,10 +65,8 @@ function mapujWiersz(w: WierszProjektu): ProjektGrafiki {
 export async function wczytajProjektyGrafiki(
   villageId?: string,
 ): Promise<{ blad: string } | { projekty: ProjektGrafiki[] }> {
+  const user = await pobierzUzytkownikaDoAkcji();
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
   if (!user) return { blad: "Zaloguj się." };
 
   let query = supabase
@@ -112,10 +111,8 @@ export async function zapiszProjektGrafiki(
   const parsed = schemaZapisu.safeParse(dane);
   if (!parsed.success) return { blad: "Niepoprawne dane projektu." };
 
+  const user = await pobierzUzytkownikaDoAkcji();
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
   if (!user) return { blad: "Zaloguj się." };
 
   const {
@@ -172,10 +169,8 @@ export async function opublikujPlakatNaProfilWsi(projektId: string): Promise<Wyn
   const parsed = uuid.safeParse(projektId);
   if (!parsed.success) return { blad: "Niepoprawny identyfikator." };
 
+  const user = await pobierzUzytkownikaDoAkcji();
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
   if (!user) return { blad: "Zaloguj się." };
 
   const { data: projekt } = await supabase
@@ -223,10 +218,8 @@ export async function pobierzLogoWsiJakoDataUrl(
   const parsed = uuid.safeParse(villageId);
   if (!parsed.success) return { blad: "Niepoprawna wieś." };
 
+  const user = await pobierzUzytkownikaDoAkcji();
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
   if (!user) return { blad: "Zaloguj się." };
 
   const dozwolone = await pobierzVillageIdsRoliPaneluSoltysa(supabase, user.id);
@@ -264,10 +257,8 @@ export async function usunProjektGrafiki(id: string): Promise<WynikProsty> {
   const parsed = uuid.safeParse(id);
   if (!parsed.success) return { blad: "Niepoprawny identyfikator." };
 
+  const user = await pobierzUzytkownikaDoAkcji();
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
   if (!user) return { blad: "Zaloguj się." };
 
   const { error } = await supabase
@@ -297,10 +288,7 @@ export async function wyslijGrafikeEmail(dane: z.infer<typeof schemaEmail>): Pro
   const parsed = schemaEmail.safeParse(dane);
   if (!parsed.success) return { blad: "Niepoprawne dane wiadomości." };
 
-  const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await pobierzUzytkownikaDoAkcji();
   if (!user) return { blad: "Zaloguj się." };
 
   const html = htmlSzablonNaszawies({
@@ -397,10 +385,8 @@ export async function dodajOgloszenieZPlakatu(projektId: string): Promise<WynikP
   const parsed = uuid.safeParse(projektId);
   if (!parsed.success) return { blad: "Niepoprawny identyfikator projektu." };
 
+  const user = await pobierzUzytkownikaDoAkcji();
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
   if (!user) return { blad: "Zaloguj się." };
 
   const wczytany = await wczytajProjektSoltysa(supabase, user.id, parsed.data);
@@ -453,10 +439,8 @@ export async function dodajDoKalendarzaZPlakatu(projektId: string): Promise<Wyni
   const parsed = uuid.safeParse(projektId);
   if (!parsed.success) return { blad: "Niepoprawny identyfikator projektu." };
 
+  const user = await pobierzUzytkownikaDoAkcji();
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
   if (!user) return { blad: "Zaloguj się." };
 
   const wczytany = await wczytajProjektSoltysa(supabase, user.id, parsed.data);
@@ -518,10 +502,8 @@ export async function ustawPlakatNaTablicyCyfrowej(
   const parsed = uuid.safeParse(projektId);
   if (!parsed.success) return { blad: "Niepoprawny identyfikator projektu." };
 
+  const user = await pobierzUzytkownikaDoAkcji();
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
   if (!user) return { blad: "Zaloguj się." };
 
   const wczytany = await wczytajProjektSoltysa(supabase, user.id, parsed.data);
@@ -555,10 +537,8 @@ export async function pobierzPlakatyTablicyCyfrowejWsi(villageId: string): Promi
   const parsed = uuid.safeParse(villageId);
   if (!parsed.success) return [];
 
+  const user = await pobierzUzytkownikaDoAkcji();
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
   if (!user) return [];
 
   const dozwolone = await pobierzVillageIdsRoliPaneluSoltysa(supabase, user.id);

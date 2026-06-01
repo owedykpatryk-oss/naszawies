@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { sciezkaProfiluWsi } from "@/lib/wies/sciezka-publiczna";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
+import { pobierzUzytkownikaDoAkcji } from "@/lib/auth/pobierz-uzytkownika-serwer";
 
 export type WynikObserwacjiProfilu = { blad: string } | { ok: true; obserwuje: boolean };
 
@@ -11,10 +12,8 @@ export async function przelaczObserwacjeProfiluRynku(profileId: string): Promise
   const id = z.string().uuid().safeParse(profileId);
   if (!id.success) return { blad: "Niepoprawny profil." };
 
+  const user = await pobierzUzytkownikaDoAkcji();
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
   if (!user) return { blad: "Zaloguj się, aby obserwować firmy." };
 
   const { data: profil } = await supabase
@@ -70,10 +69,8 @@ export async function pobierzCzyObserwujeProfilRynku(profileId: string): Promise
   const id = z.string().uuid().safeParse(profileId);
   if (!id.success) return false;
 
+  const user = await pobierzUzytkownikaDoAkcji();
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
   if (!user) return false;
 
   const { count } = await supabase

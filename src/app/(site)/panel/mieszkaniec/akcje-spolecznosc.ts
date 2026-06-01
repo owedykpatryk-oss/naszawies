@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
+import { pobierzUzytkownikaDoAkcji } from "@/lib/auth/pobierz-uzytkownika-serwer";
 
 const uuid = z.string().uuid();
 
@@ -152,10 +153,8 @@ export async function dodajWatekDyskusjiMieszkanca(
   const parsed = schemaNowyWatek.safeParse(dane);
   if (!parsed.success) return { blad: "Sprawdź tytuł i treść wątku." };
 
+  const user = await pobierzUzytkownikaDoAkcji();
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
   if (!user) return { blad: "Zaloguj się." };
 
   if (!(await czyMaDostepDoWsi(supabase, user.id, parsed.data.villageId))) {
@@ -226,10 +225,8 @@ export async function dodajKomentarzDyskusjiMieszkanca(
   const parsed = schemaKomentarz.safeParse(dane);
   if (!parsed.success) return { blad: "Sprawdź treść komentarza." };
 
+  const user = await pobierzUzytkownikaDoAkcji();
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
   if (!user) return { blad: "Zaloguj się." };
 
   const { data: watek } = await supabase
@@ -310,10 +307,8 @@ export async function glosujWatekDyskusjiMieszkanca(
   const parsed = schemaGlos.safeParse(dane);
   if (!parsed.success) return { blad: "Niepoprawny głos." };
 
+  const user = await pobierzUzytkownikaDoAkcji();
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
   if (!user) return { blad: "Zaloguj się." };
 
   const { data: watek } = await supabase
@@ -357,10 +352,8 @@ export async function zglosTrescSpolecznosciMieszkanca(
   const parsed = schemaRaport.safeParse(dane);
   if (!parsed.success) return { blad: "Sprawdź dane zgłoszenia." };
 
+  const user = await pobierzUzytkownikaDoAkcji();
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
   if (!user) return { blad: "Zaloguj się." };
   const punktyNaruszen = await policzPunktyNaruszenAutora(supabase, user.id);
   const poziom = wyliczPoziomOgraniczen(punktyNaruszen);
@@ -482,10 +475,8 @@ export async function dodajWpisBlogaMieszkanca(
   const parsed = schemaBlogMieszkanca.safeParse(dane);
   if (!parsed.success) return { blad: "Sprawdź poprawność danych wpisu blogowego." };
 
+  const user = await pobierzUzytkownikaDoAkcji();
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
   if (!user) return { blad: "Zaloguj się." };
   if (!(await czyMaDostepDoWsi(supabase, user.id, parsed.data.villageId))) {
     return { blad: "Brak dostępu do tej wsi." };
@@ -569,10 +560,8 @@ export async function dodajWpisBlogaMieszkanca(
 export async function usunGlosWatekDyskusjiMieszkanca(threadId: string): Promise<WynikSpolecznosc> {
   const id = uuid.safeParse(threadId);
   if (!id.success) return { blad: "Niepoprawny identyfikator wątku." };
+  const user = await pobierzUzytkownikaDoAkcji();
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
   if (!user) return { blad: "Zaloguj się." };
 
   const { error } = await supabase

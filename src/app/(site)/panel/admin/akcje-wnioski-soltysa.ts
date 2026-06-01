@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { czyAdminPlatformy } from "@/lib/admin/czy-admin-platformy";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
+import { pobierzUzytkownikaDoAkcji } from "@/lib/auth/pobierz-uzytkownika-serwer";
 
 const uuid = z.string().uuid();
 
@@ -13,10 +14,8 @@ export async function adminZatwierdzWniosekSoltysa(applicationId: string): Promi
   const id = uuid.safeParse(applicationId);
   if (!id.success) return { blad: "Niepoprawny identyfikator wniosku." };
 
+  const user = await pobierzUzytkownikaDoAkcji();
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
   if (!user) return { blad: "Zaloguj się." };
   if (!(await czyAdminPlatformy(supabase))) {
     return { blad: "Brak uprawnień administratora platformy." };
@@ -49,10 +48,8 @@ export async function adminOdrzucWniosekSoltysa(
   const id = uuid.safeParse(applicationId);
   if (!id.success) return { blad: "Niepoprawny identyfikator wniosku." };
 
+  const user = await pobierzUzytkownikaDoAkcji();
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
   if (!user) return { blad: "Zaloguj się." };
   if (!(await czyAdminPlatformy(supabase))) {
     return { blad: "Brak uprawnień administratora platformy." };

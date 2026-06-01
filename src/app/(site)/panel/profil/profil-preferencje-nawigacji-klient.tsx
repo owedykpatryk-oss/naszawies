@@ -6,6 +6,7 @@ import {
   type KluczDolnejNawigacji,
   zapiszPreferencjeUiDoLocalStorage,
 } from "@/lib/uzytkownik/preferencje-ui";
+import { IkonaDolnejNawigacji } from "@/components/marka/ikony-dolnej-nawigacji";
 import { zapiszPreferencjeUi } from "./akcje";
 
 const MAX_SLOTOW = 5;
@@ -100,8 +101,8 @@ export function ProfilPreferencjeNawigacjiKlient({ zalogowany, poczatkowe }: Pro
                   disabled={!aktywny && wybrane.length >= MAX_SLOTOW}
                   onChange={() => przelacz(klucz)}
                 />
-                <span className="text-base" aria-hidden>
-                  {def.ikona}
+                <span className="inline-flex text-stone-600" aria-hidden>
+                  <IkonaDolnejNawigacji klucz={klucz} />
                 </span>
                 <span className="font-medium">{def.label}</span>
               </label>

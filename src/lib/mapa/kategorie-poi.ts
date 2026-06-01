@@ -2,6 +2,8 @@
  * Kategorie punktów POI na mapie (kolumna `pois.category` w bazie).
  * Sołtys dodaje wpisy; mapa katalogu (po zalogowaniu) pokazuje wszystkie z `pois` dla aktywnych wsi.
  */
+export const KATEGORIA_LATARNIA = "latarnia";
+
 export const ETYKIETA_KATEGORII_POI: Record<string, string> = {
   kosciol: "Kościół",
   szkola: "Szkoła",
@@ -28,6 +30,8 @@ export const ETYKIETA_KATEGORII_POI: Record<string, string> = {
   sklep_rolniczy: "Sklep rolniczy",
   sprzedaz_z_gospodarstwa: "Sprzedaż z gospodarstwa",
   spoldzielnia_rolna: "Spółdzielnia rolnicza",
+  latarnia: "Latarnia / oświetlenie drogi",
+  inwestycja: "Inwestycja / planowana budowa",
   inne: "Miejsce",
   historia_wydarzenie: "Historia wsi (wydarzenie)",
 };
@@ -57,6 +61,8 @@ const EMOJI_KATEGORII: Record<string, string> = {
   sklep_rolniczy: "🧑‍🌾",
   sprzedaz_z_gospodarstwa: "🚜",
   spoldzielnia_rolna: "🏭",
+  latarnia: "💡",
+  inwestycja: "🏗",
   inne: "📍",
   historia_wydarzenie: "📜",
 };
@@ -87,6 +93,8 @@ const KOLOR_OBRAMOWANIA: Record<string, string> = {
   sklep_rolniczy: "#65a30d",
   sprzedaz_z_gospodarstwa: "#16a34a",
   spoldzielnia_rolna: "#854d0e",
+  latarnia: "#ca8a04",
+  inwestycja: "#ea580c",
   inne: "#57534e",
 };
 

@@ -8,6 +8,7 @@ import { linkPowiadomienia } from "@/lib/tekst/bezpieczny-url";
 import { pobierzVillageIdsRoliPaneluSoltysa } from "@/lib/panel/rola-panelu-soltysa";
 import { sciezkaProfiluWsi } from "@/lib/wies/sciezka-publiczna";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
+import { pobierzUzytkownikaDoAkcji } from "@/lib/auth/pobierz-uzytkownika-serwer";
 
 export type WynikProsty = { blad: string } | { ok: true; dodano?: number };
 
@@ -28,10 +29,8 @@ export async function dodajRegulePrzypomnieniaMieszkancow(
   const parsed = schemaRegulaPrzypomnienia.safeParse(dane);
   if (!parsed.success) return { blad: "Sprawdź pola przypomnienia." };
 
+  const user = await pobierzUzytkownikaDoAkcji();
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
   if (!user) return { blad: "Zaloguj się." };
   if (!(await czyUzytkownikMozeZarzadzacWsia(supabase, user.id, parsed.data.villageId))) {
     return { blad: "Brak uprawnień do tej wsi." };
@@ -79,10 +78,8 @@ export async function usunRegulePrzypomnieniaMieszkancow(ruleId: string): Promis
   const id = uuid.safeParse(ruleId);
   if (!id.success) return { blad: "Niepoprawny identyfikator." };
 
+  const user = await pobierzUzytkownikaDoAkcji();
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
   if (!user) return { blad: "Zaloguj się." };
 
   const { data: row } = await supabase
@@ -106,10 +103,8 @@ export async function dodajDomyslneRegulyPrzypomnienWsi(villageId: string): Prom
   const vid = uuid.safeParse(villageId);
   if (!vid.success) return { blad: "Nieprawidłowa wieś." };
 
+  const user = await pobierzUzytkownikaDoAkcji();
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
   if (!user) return { blad: "Zaloguj się." };
   if (!(await czyUzytkownikMozeZarzadzacWsia(supabase, user.id, vid.data))) {
     return { blad: "Brak uprawnień." };

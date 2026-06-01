@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { redirect } from "next/navigation";
+
 import { pobierzVillageIdsRoliPaneluSoltysaDlaUzytkownikaCache } from "@/lib/panel/rola-panelu-soltysa";
 import { pobierzVillageIdsModeracjiTresciCache } from "@/lib/panel/rola-moderacji";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
+import { pobierzUzytkownikaPanelu } from "@/lib/auth/pobierz-uzytkownika-serwer";
 import { sciezkaProfiluWsi } from "@/lib/wies/sciezka-publiczna";
 import {
   SoltysModeracjaPostowKlient,
@@ -36,11 +37,7 @@ export const metadata: Metadata = {
 
 export default async function SoltysPage() {
   const supabase = utworzKlientaSupabaseSerwer();
-  const { data: { session } } = await supabase.auth.getSession();
-  const user = session?.user ?? null;
-  if (!user) {
-    redirect("/logowanie?next=/panel/soltys");
-  }
+  const user = await pobierzUzytkownikaPanelu();
 
   const villageIds = await pobierzVillageIdsRoliPaneluSoltysaDlaUzytkownikaCache(user.id);
   const moderacjaVillageIds = await pobierzVillageIdsModeracjiTresciCache(user.id);

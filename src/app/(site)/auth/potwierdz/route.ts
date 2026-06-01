@@ -2,6 +2,7 @@ import type { CookieOptions } from "@supabase/ssr";
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
 import { NextResponse } from "next/server";
+import { czyProfilMaAktualnaAkceptacjePrawna } from "@/lib/rodo/czy-ma-akceptacje-prawna";
 
 type CiasteczkaDoUstawienia = {
   name: string;
@@ -67,6 +68,22 @@ export async function GET(request: Request) {
 
     const { error } = await supabase.auth.exchangeCodeForSession(kod);
     if (!error) {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      const userId = session?.user?.id;
+      if (userId) {
+        const { data: profil } = await supabase
+          .from("users")
+          .select("legal_accepted_at, legal_bundle_version")
+          .eq("id", userId)
+          .maybeSingle();
+        if (!czyProfilMaAktualnaAkceptacjePrawna(profil)) {
+          const akceptacja = new URL("/panel/akceptacja-regulaminu", adres.origin);
+          akceptacja.searchParams.set("next", nastepny);
+          return NextResponse.redirect(akceptacja);
+        }
+      }
       return NextResponse.redirect(new URL(nastepny, adres.origin));
     }
   }

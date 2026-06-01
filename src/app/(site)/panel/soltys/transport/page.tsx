@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
-import { redirect } from "next/navigation";
 import { PanelStronaSoltysa } from "@/components/panel/panel-strona-soltysa";
 import { pobierzVillageIdsRoliPaneluSoltysaDlaUzytkownikaCache } from "@/lib/panel/rola-panelu-soltysa";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
+import { pobierzUzytkownikaPanelu } from "@/lib/auth/pobierz-uzytkownika-serwer";
 import { pobierzStanSyncTransportuDlaWsi } from "@/lib/transport/pobierz-stan-sync-transportu";
 import { epodroznikSkonfigurowany } from "@/lib/transport/epodroznik-api";
 import { gtfsCsvSkonfigurowany } from "@/lib/transport/gtfs-csv";
@@ -14,9 +14,7 @@ export const metadata: Metadata = {
 
 export default async function SoltysTransportPage() {
   const supabase = utworzKlientaSupabaseSerwer();
-  const { data: { session } } = await supabase.auth.getSession();
-  const user = session?.user ?? null;
-  if (!user) redirect("/logowanie?next=/panel/soltys/transport");
+  const user = await pobierzUzytkownikaPanelu();
 
   const villageIds = await pobierzVillageIdsRoliPaneluSoltysaDlaUzytkownikaCache(user.id);
   const wsie: { id: string; name: string }[] = [];

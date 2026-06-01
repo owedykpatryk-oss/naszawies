@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { redirect } from "next/navigation";
 import { PanelStronaSoltysa } from "@/components/panel/panel-strona-soltysa";
 import { pobierzVillageIdsModeracjiTresciCache } from "@/lib/panel/rola-moderacji";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
+import { pobierzUzytkownikaPanelu } from "@/lib/auth/pobierz-uzytkownika-serwer";
 import { SoltysModeracjaDyskusjiKlient, type RaportModeracji } from "./moderacja-klient";
 
 export const metadata: Metadata = {
@@ -13,11 +13,7 @@ export const metadata: Metadata = {
 
 export default async function SoltysModeracjaDyskusjiPage() {
   const supabase = utworzKlientaSupabaseSerwer();
-  const { data: { session } } = await supabase.auth.getSession();
-  const user = session?.user ?? null;
-  if (!user) {
-    redirect("/logowanie?next=/panel/soltys/spolecznosc/moderacja");
-  }
+  const user = await pobierzUzytkownikaPanelu();
 
   const villageIds = await pobierzVillageIdsModeracjiTresciCache(user.id);
   if (villageIds.length === 0) {

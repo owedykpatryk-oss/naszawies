@@ -43,6 +43,8 @@ const LIMITY_KATEGORII: Record<string, number> = {
   skup_zboz: 3,
   sklep_rolniczy: 3,
   osp_punkt_czerpania_wody: 35,
+  latarnia: 80,
+  inwestycja: 12,
 };
 
 const LIMITY_DOMYSLNE = {
@@ -120,6 +122,8 @@ function czyWymagaSynchronizacjiOsm(existing: PoiRow[]): boolean {
 
 function promienDuplikatuKategorii(category: string): number {
   if (category === "osp_punkt_czerpania_wody") return 35;
+  if (category === "latarnia") return 12;
+  if (category === "inwestycja") return 45;
   return 120;
 }
 
@@ -303,6 +307,9 @@ export async function synchronizujPoiOsmAutomatycznie(
         is_local_override: false,
         ...(p.category === "osp_punkt_czerpania_wody" && p.ospWaterSourceType
           ? { osp_water_source_type: p.ospWaterSourceType }
+          : {}),
+        ...(p.category === "inwestycja" && p.investmentStatus
+          ? { investment_status: p.investmentStatus }
           : {}),
       })),
     );

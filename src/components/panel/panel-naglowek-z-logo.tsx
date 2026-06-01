@@ -18,10 +18,10 @@ export function PanelNaglowekZLogo({
   kluczePanelu,
 }: Props) {
   return (
-    <div className="no-print sticky top-0 z-40 -mx-4 mb-4 space-y-3 border-b border-stone-200/80 bg-[var(--nasza-tlo-panel)]/95 px-4 py-2.5 shadow-[0_4px_24px_rgba(45,90,45,0.05)] backdrop-blur-md sm:-mx-6 sm:mb-6 sm:space-y-4 sm:px-6 sm:py-3 lg:-mx-8 lg:px-8">
+    <div className="no-print sticky top-0 z-40 -mx-4 mb-4 space-y-3 border-b border-green-900/10 bg-[#f5f1e8]/95 px-4 py-2.5 shadow-[0_4px_24px_rgba(45,90,45,0.06)] backdrop-blur-md supports-[backdrop-filter]:bg-[#f5f1e8]/90 sm:-mx-6 sm:mb-6 sm:space-y-4 sm:px-6 sm:py-3 lg:-mx-8 lg:px-8">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="shrink-0">
-          <LogoNaszawies kompakt href="/panel" />
+          <LogoNaszawies kompakt href="/mapa" />
         </div>
         <Link
           href="/wyloguj"

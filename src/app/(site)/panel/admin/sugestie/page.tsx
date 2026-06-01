@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { redirect } from "next/navigation";
 import { czyAdminPlatformy } from "@/lib/admin/czy-admin-platformy";
+import { pobierzUzytkownikaPanelu } from "@/lib/auth/pobierz-uzytkownika-serwer";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
 import { AdminSugestieKlient, type WierszOpiniiAdmin } from "./admin-sugestie-klient";
+import { redirect } from "next/navigation";
 
 export const metadata: Metadata = {
   title: "Opinie użytkowników",
@@ -11,11 +12,8 @@ export const metadata: Metadata = {
 };
 
 export default async function AdminSugestiePage() {
+  await pobierzUzytkownikaPanelu();
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { session },
-  } = await supabase.auth.getSession();
-  if (!session?.user) redirect("/logowanie?next=/panel/admin/sugestie");
   if (!(await czyAdminPlatformy(supabase))) redirect("/panel");
 
   const { data: opinie, error } = await supabase

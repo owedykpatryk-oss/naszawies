@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
+import { pobierzUzytkownikaDoAkcji } from "@/lib/auth/pobierz-uzytkownika-serwer";
 
 export type WynikProsty = { ok: true; komunikat?: string } | { blad: string };
 
@@ -22,10 +23,8 @@ export async function przestanObserwowacWies(followId: string): Promise<WynikPro
     return { blad: "Niepoprawny identyfikator obserwacji." };
   }
 
+  const user = await pobierzUzytkownikaDoAkcji();
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
   if (!user) {
     return { blad: "Zaloguj się." };
   }
@@ -53,10 +52,8 @@ export async function obserwujGmine(
     return { blad: "Podaj pełne dane gminy." };
   }
 
+  const user = await pobierzUzytkownikaDoAkcji();
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
   if (!user) {
     return { blad: "Zaloguj się." };
   }
@@ -86,10 +83,8 @@ export async function przestanObserwowacGmine(followId: string): Promise<WynikPr
     return { blad: "Niepoprawny identyfikator." };
   }
 
+  const user = await pobierzUzytkownikaDoAkcji();
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
   if (!user) {
     return { blad: "Zaloguj się." };
   }
@@ -127,10 +122,8 @@ export async function zapiszTresc(input: {
     return { blad: "Niepoprawne dane zapisu." };
   }
 
+  const user = await pobierzUzytkownikaDoAkcji();
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
   if (!user) {
     return { blad: "Zaloguj się." };
   }
@@ -183,10 +176,8 @@ export async function usunZapisanaTresc(savedId: string): Promise<WynikProsty> {
     return { blad: "Niepoprawny identyfikator." };
   }
 
+  const user = await pobierzUzytkownikaDoAkcji();
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
   if (!user) {
     return { blad: "Zaloguj się." };
   }
@@ -211,10 +202,8 @@ export async function ustawObserwacjeCenyOgloszenia(
     return { blad: "Niepoprawny identyfikator." };
   }
 
+  const user = await pobierzUzytkownikaDoAkcji();
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
   if (!user) {
     return { blad: "Zaloguj się." };
   }

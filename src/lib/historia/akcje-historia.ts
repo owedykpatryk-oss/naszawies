@@ -6,6 +6,7 @@ import { powiadomObserwujacychONowejHistorii } from "@/lib/historia/powiadomieni
 import { pobierzVillageIdsRoliPaneluSoltysa } from "@/lib/panel/rola-panelu-soltysa";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
 import { sciezkaProfiluWsi } from "@/lib/wies/sciezka-publiczna";
+import { pobierzUzytkownikaDoAkcji } from "@/lib/auth/pobierz-uzytkownika-serwer";
 
 type WynikProsty = { ok?: true; blad?: string };
 
@@ -77,10 +78,8 @@ export async function dodajWpisHistoriiWsi(dane: z.infer<typeof schemaHistoriaWp
   const parsed = schemaHistoriaWpis.safeParse(dane);
   if (!parsed.success) return { blad: "Sprawdź dane wpisu historii." };
 
+  const user = await pobierzUzytkownikaDoAkcji();
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
   if (!user) return { blad: "Zaloguj się." };
   if (!(await mozeZarzadzacWies(supabase, user.id, parsed.data.villageId))) {
     return { blad: "Brak uprawnień do tej wsi." };
@@ -150,10 +149,8 @@ export async function edytujWpisHistoriiWsi(dane: z.infer<typeof schemaEdycja>):
   const parsed = schemaEdycja.safeParse(dane);
   if (!parsed.success) return { blad: "Sprawdź dane wpisu." };
 
+  const user = await pobierzUzytkownikaDoAkcji();
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
   if (!user) return { blad: "Zaloguj się." };
   if (!(await mozeZarzadzacWies(supabase, user.id, parsed.data.villageId))) {
     return { blad: "Brak uprawnień." };
@@ -198,10 +195,8 @@ export async function usunWpisHistoriiWsi(villageId: string, id: string): Promis
   const wid = z.string().uuid().safeParse(id);
   if (!vid.success || !wid.success) return { blad: "Niepoprawne dane." };
 
+  const user = await pobierzUzytkownikaDoAkcji();
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
   if (!user) return { blad: "Zaloguj się." };
   if (!(await mozeZarzadzacWies(supabase, user.id, vid.data))) {
     return { blad: "Brak uprawnień." };
@@ -231,10 +226,8 @@ export async function zatwierdzWpisHistoriiWsi(
   const parsed = schemaIdWsi.safeParse(dane);
   if (!parsed.success) return { blad: "Niepoprawne dane." };
 
+  const user = await pobierzUzytkownikaDoAkcji();
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
   if (!user) return { blad: "Zaloguj się." };
   if (!(await mozeZarzadzacWies(supabase, user.id, parsed.data.villageId))) {
     return { blad: "Brak uprawnień." };
@@ -298,10 +291,8 @@ export async function przelaczWyroznienieWpisuHistorii(
   const parsed = schemaIdWsi.safeParse(dane);
   if (!parsed.success) return { blad: "Niepoprawne dane." };
 
+  const user = await pobierzUzytkownikaDoAkcji();
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
   if (!user) return { blad: "Zaloguj się." };
   if (!(await mozeZarzadzacWies(supabase, user.id, parsed.data.villageId))) {
     return { blad: "Brak uprawnień." };
@@ -344,10 +335,8 @@ export async function odrzucWpisHistoriiWsi(
   const parsed = schemaIdWsi.safeParse(dane);
   if (!parsed.success) return { blad: "Niepoprawne dane." };
 
+  const user = await pobierzUzytkownikaDoAkcji();
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
   if (!user) return { blad: "Zaloguj się." };
   if (!(await mozeZarzadzacWies(supabase, user.id, parsed.data.villageId))) {
     return { blad: "Brak uprawnień." };

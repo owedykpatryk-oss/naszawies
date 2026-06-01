@@ -40,10 +40,8 @@ export async function zlozWniosekRoleOrganizacyjnej(
   if (!ROLE_ORG_WNIOSKI.includes(rola)) {
     return { blad: "Nieobsługiwany typ wniosku." };
   }
+  const user = await pobierzUzytkownikaDoAkcji();
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
   if (!user) {
     return { blad: "Zaloguj się." };
   }
@@ -182,10 +180,8 @@ export async function aktualizujPreferencjeObserwacjiWsi(formData: FormData): Pr
     return { blad: sparsowane.error.issues[0]?.message ?? "Niepoprawne dane." };
   }
 
+  const user = await pobierzUzytkownikaDoAkcji();
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
   if (!user) {
     return { blad: "Zaloguj się." };
   }
@@ -254,10 +250,8 @@ export async function anulujRezerwacjeSwietlicy(bookingId: string): Promise<Wyni
     return { blad: "Niepoprawny identyfikator rezerwacji." };
   }
 
+  const user = await pobierzUzytkownikaDoAkcji();
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
   if (!user) {
     return { blad: "Zaloguj się." };
   }
@@ -388,10 +382,8 @@ export async function dodajUrlDokumentacjiZniszczen(
     return { blad: "Niepoprawny identyfikator rezerwacji lub adres zdjęcia." };
   }
 
+  const user = await pobierzUzytkownikaDoAkcji();
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
   if (!user) {
     return { blad: "Zaloguj się." };
   }
@@ -436,10 +428,8 @@ export async function usunUrlDokumentacjiZniszczen(
     return { blad: "Niepoprawny identyfikator lub adres zdjęcia." };
   }
 
+  const user = await pobierzUzytkownikaDoAkcji();
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
   if (!user) {
     return { blad: "Zaloguj się." };
   }
@@ -500,10 +490,8 @@ export async function zapiszOpisPoWydarzeniuSwietlica(
     return { blad: `Sprawdź treść uwag (maks. ${MAX_ZNAKOW_OPISU_PO_WYDARZENIU} znaków).` };
   }
 
+  const user = await pobierzUzytkownikaDoAkcji();
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
   if (!user) {
     return { blad: "Zaloguj się." };
   }
@@ -569,10 +557,8 @@ export async function dodajPozycjeListyZakupowWsi(
   if (!parsed.success) {
     return { blad: "Sprawdź nazwę pozycji na liście." };
   }
+  const user = await pobierzUzytkownikaDoAkcji();
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
   if (!user) return { blad: "Zaloguj się." };
   if (!(await czyMaDostepDoListyZakupowKgw(supabase, user.id, parsed.data.villageId))) {
     return { blad: "Lista zakupów jest dostępna tylko dla KGW oraz sołtysa." };
@@ -605,10 +591,8 @@ export async function dodajPozycjeListyZakupowWsi(
 export async function przelaczPozycjeListyZakupow(itemId: string): Promise<WynikProsty> {
   const id = uuid.safeParse(itemId);
   if (!id.success) return { blad: "Niepoprawny identyfikator pozycji." };
+  const user = await pobierzUzytkownikaDoAkcji();
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
   if (!user) return { blad: "Zaloguj się." };
 
   const { data: row, error: readErr } = await supabase
@@ -647,10 +631,8 @@ export async function przelaczPozycjeListyZakupow(itemId: string): Promise<Wynik
 export async function usunPozycjeListyZakupowWsi(itemId: string): Promise<WynikProsty> {
   const id = uuid.safeParse(itemId);
   if (!id.success) return { blad: "Niepoprawny identyfikator pozycji." };
+  const user = await pobierzUzytkownikaDoAkcji();
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
   if (!user) return { blad: "Zaloguj się." };
 
   const { data: row, error: readErr } = await supabase
@@ -693,10 +675,8 @@ export async function wczytajSzablonListyZakupowWsi(
   if (!szablon) {
     return { blad: "Nieznany szablon listy." };
   }
+  const user = await pobierzUzytkownikaDoAkcji();
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
   if (!user) return { blad: "Zaloguj się." };
   if (!(await czyMaDostepDoListyZakupowKgw(supabase, user.id, v.data))) {
     return { blad: "Lista zakupów jest dostępna tylko dla KGW oraz sołtysa." };

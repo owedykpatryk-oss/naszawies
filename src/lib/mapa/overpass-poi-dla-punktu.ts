@@ -14,11 +14,14 @@ export type SugerowanyPoiZOsm = {
   osmId: number;
   /** Dla `osp_punkt_czerpania_wody` — typ źródła z tagów OSM. */
   ospWaterSourceType?: "hydrant" | "staw" | "zbiornik" | "rzeka" | "inne";
+  /** Dla `inwestycja` — status z tagów OSM (construction / proposed). */
+  investmentStatus?: "planowana" | "w_budowie";
 };
 
 export type MapowaniePoiZOsm = {
   category: string;
   ospWaterSourceType?: SugerowanyPoiZOsm["ospWaterSourceType"];
+  investmentStatus?: "planowana" | "w_budowie";
 };
 
 /** Pomniki, rezerwaty i czysta przyroda — nie importujemy automatycznie na mapę wsi. */
@@ -129,6 +132,7 @@ export function mapujPoiZOsmTagow(tags: Record<string, string>): MapowaniePoiZOs
   }
   if (a === "bus_station") return { category: "przystanek" };
   if (h === "bus_stop") return { category: "przystanek" };
+  if (h === "street_lamp" || mm === "street_lamp") return { category: "latarnia" };
   if ((pt === "platform" || pt === "stop_position") && (bus === "yes" || bus === "designated")) {
     return { category: "przystanek" };
   }
@@ -140,6 +144,16 @@ export function mapujPoiZOsmTagow(tags: Record<string, string>): MapowaniePoiZOs
   if (mm === "silo" && (content === "grain" || content === "maize")) return { category: "skup_zboz" };
   if (coop === "agricultural") return { category: "spoldzielnia_rolna" };
   if (tags.produce === "yes" || tags["produce:crops"] === "yes") return { category: "sprzedaz_z_gospodarstwa" };
+
+  const building = tags.building?.trim();
+  const construction = tags.construction?.trim();
+  if (building === "construction" || lu === "construction" || construction) {
+    return { category: "inwestycja", investmentStatus: "w_budowie" };
+  }
+  if (tags["proposed:building"] || tags["planned:building"] || tags["proposed:landuse"]) {
+    return { category: "inwestycja", investmentStatus: "planowana" };
+  }
+
   return null;
 }
 
@@ -203,6 +217,10 @@ function etykietaDomyslna(kategoria: string, ospWaterSourceType?: SugerowanyPoiZ
       return "Sprzedaż z gospodarstwa (OpenStreetMap)";
     case "spoldzielnia_rolna":
       return "Spółdzielnia rolnicza (OpenStreetMap, brak nazwy)";
+    case "latarnia":
+      return "Latarnia uliczna (OpenStreetMap, brak nazwy)";
+    case "inwestycja":
+      return "Budowa / inwestycja (OpenStreetMap, brak nazwy)";
     default:
       return "Miejsce (OpenStreetMap)";
   }
@@ -281,6 +299,13 @@ function zbudujZapytanieOverpass(lat: number, lon: number, promienM: number): st
   nwr["natural"="water"]["water"="pond"](around:${r},${lat},${lon});
   nwr["natural"="water"]["water"="reservoir"](around:${r},${lat},${lon});
   nwr["landuse"="reservoir"](around:${r},${lat},${lon});
+  node["highway"="street_lamp"](around:${r},${lat},${lon});
+  node["man_made"="street_lamp"](around:${r},${lat},${lon});
+  nwr["building"="construction"](around:${r},${lat},${lon});
+  nwr["landuse"="construction"](around:${r},${lat},${lon});
+  nwr["construction"](around:${r},${lat},${lon});
+  nwr["proposed:building"](around:${r},${lat},${lon});
+  nwr["planned:building"](around:${r},${lat},${lon});
 );
 out center tags;
 `;
@@ -344,6 +369,7 @@ export async function pobierzPoiZOsmWokolPunktu(
       osmType,
       osmId: el.id,
       ospWaterSourceType: mapa.ospWaterSourceType,
+      investmentStatus: mapa.investmentStatus,
     });
   }
 

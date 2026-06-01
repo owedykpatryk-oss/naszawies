@@ -1,8 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { redirect } from "next/navigation";
+
 import { etykietaRoliWsi } from "@/lib/panel/role-definicje";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
+import { pobierzUzytkownikaPanelu } from "@/lib/auth/pobierz-uzytkownika-serwer";
 import { pojedynczaWies } from "@/lib/supabase/wies-z-zapytania";
 import { sciezkaProfiluWsi } from "@/lib/wies/sciezka-publiczna";
 import { MieszkaniecKlient } from "./mieszkaniec-klient";
@@ -25,11 +26,7 @@ export const metadata: Metadata = {
 
 export default async function MieszkaniecPage() {
   const supabase = utworzKlientaSupabaseSerwer();
-  const { data: { session } } = await supabase.auth.getSession();
-  const user = session?.user ?? null;
-  if (!user) {
-    redirect("/logowanie?next=/panel/mieszkaniec");
-  }
+  const user = await pobierzUzytkownikaPanelu();
 
   await utworzWniosekMieszkaniecZRejestracji();
 

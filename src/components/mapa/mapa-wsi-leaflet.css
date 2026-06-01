@@ -53,6 +53,14 @@
   box-shadow: 0 3px 10px rgba(0, 0, 0, 0.18);
 }
 
+.naszawies-marker-latarnia {
+  width: 20px !important;
+  height: 20px !important;
+  min-width: 20px;
+  min-height: 20px;
+  box-shadow: 0 1px 6px rgba(202, 138, 4, 0.35);
+}
+
 @media (prefers-reduced-motion: no-preference) {
   .naszawies-marker-poi-wow {
     animation: mapaPoiWowPulse 2.4s ease-in-out infinite;
@@ -69,6 +77,48 @@
       transform: scale(1.06);
     }
   }
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .naszawies-marker-inwestycja-budowa {
+    animation: mapaInwestycjaBudowaPulse 2s ease-in-out infinite;
+  }
+
+  .naszawies-marker-inwestycja-plan {
+    animation: mapaInwestycjaPlanPulse 2.8s ease-in-out infinite;
+  }
+
+  @keyframes mapaInwestycjaBudowaPulse {
+    0%,
+    100% {
+      box-shadow: 0 3px 12px rgba(234, 88, 12, 0.45);
+      transform: scale(1);
+    }
+    50% {
+      box-shadow: 0 4px 20px rgba(234, 88, 12, 0.65), 0 0 0 5px rgba(251, 146, 60, 0.28);
+      transform: scale(1.07);
+    }
+  }
+
+  @keyframes mapaInwestycjaPlanPulse {
+    0%,
+    100% {
+      box-shadow: 0 3px 10px rgba(217, 119, 6, 0.35);
+    }
+    50% {
+      box-shadow: 0 4px 16px rgba(217, 119, 6, 0.5), 0 0 0 4px rgba(253, 186, 116, 0.22);
+    }
+  }
+}
+
+.mapa-wsi-popup-inwestycja-status {
+  display: inline-block;
+  margin: 0.25rem 0 0.5rem;
+  padding: 0.2rem 0.55rem;
+  border-radius: 999px;
+  border: 1.5px solid;
+  font-size: 0.75rem;
+  background: linear-gradient(135deg, #fff7ed 0%, #ffedd5 100%);
 }
 
 .mapa-wsi-popup-foto {

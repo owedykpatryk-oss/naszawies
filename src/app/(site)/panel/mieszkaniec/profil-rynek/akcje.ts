@@ -5,6 +5,7 @@ import { z } from "zod";
 import { schemaMarketplaceProfil } from "@/lib/marketplace/schema-profil";
 import { sciezkaProfiluWsi } from "@/lib/wies/sciezka-publiczna";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
+import { pobierzUzytkownikaDoAkcji } from "@/lib/auth/pobierz-uzytkownika-serwer";
 
 export type WynikProsty = { blad: string } | { ok: true };
 
@@ -14,10 +15,8 @@ export async function zapiszProfilUslugodawcyMieszkanca(
   const parsed = schemaMarketplaceProfil.safeParse(dane);
   if (!parsed.success) return { blad: "Sprawdź pola profilu." };
 
+  const user = await pobierzUzytkownikaDoAkcji();
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
   if (!user) return { blad: "Zaloguj się." };
 
   const { data: rola } = await supabase

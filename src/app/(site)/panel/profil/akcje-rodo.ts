@@ -1,9 +1,9 @@
 "use server";
 
 import { createAdminSupabaseClient } from "@/lib/supabase/admin-client";
-import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
 import { usunDaneOsobowePrzedUsunieciemKonta } from "@/lib/rodo/usun-dane-osobowe-przed-kontem";
 import { zbierzPakietEksportuRodo } from "@/lib/rodo/zbierz-eksport-danych-uzytkownika";
+import { pobierzUzytkownikaDoAkcji } from "@/lib/auth/pobierz-uzytkownika-serwer";
 
 const TEKST_POTWIERDZENIA_USUNIECIA = "USUN KONTO";
 
@@ -11,10 +11,7 @@ export type WynikEksportuRodo = { blad: string } | { ok: true; json: string; naz
 
 /** Pakiet JSON z danymi osobowymi (prawo dostępu RODO). Wymaga `SUPABASE_SERVICE_ROLE_KEY` na serwerze. */
 export async function pobierzJsonEksportuRodo(): Promise<WynikEksportuRodo> {
-  const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await pobierzUzytkownikaDoAkcji();
   if (!user) {
     return { blad: "Brak sesji — zaloguj się ponownie." };
   }
@@ -44,10 +41,7 @@ export async function usunKontoNaZawsze(potwierdzenie: string): Promise<WynikUsu
     };
   }
 
-  const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await pobierzUzytkownikaDoAkcji();
   if (!user) {
     return { blad: "Brak sesji — zaloguj się ponownie." };
   }

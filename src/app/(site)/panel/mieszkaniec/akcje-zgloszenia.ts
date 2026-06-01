@@ -6,6 +6,7 @@ import { powiadomSoltysowIObserwujacychONowymZgloszeniu } from "@/lib/powiadomie
 import { SZYBKIE_OZNACZENIA, type KluczSzybkiegoOznaczenia } from "@/lib/zgloszenia/szybkie-etykiety";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin-client";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
+import { pobierzUzytkownikaDoAkcji } from "@/lib/auth/pobierz-uzytkownika-serwer";
 
 const uuid = z.string().uuid();
 
@@ -55,10 +56,8 @@ export async function dodajZgloszenieProblemu(body: z.infer<typeof schemaDodaj>)
     return { blad: "Uzupełnij tytuł, opis (min. 10 znaków) i wybierz kategorię." };
   }
 
+  const user = await pobierzUzytkownikaDoAkcji();
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
   if (!user) {
     return { blad: "Zaloguj się." };
   }

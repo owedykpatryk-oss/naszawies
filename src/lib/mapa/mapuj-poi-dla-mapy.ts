@@ -22,6 +22,9 @@ export type WierszPoiMapy = {
   osp_note: string | null;
   photo_url: string | null;
   photo_caption: string | null;
+  investment_status: string | null;
+  planned_completion_at: string | null;
+  document_url: string | null;
 };
 
 const KATEGORIE_WYMAGAJACE_WERYFIKACJI = new Set(["szkola", "kosciol"]);
@@ -48,7 +51,7 @@ export function czyPoiPubliczny(r: WierszPoiMapy): boolean {
 }
 
 export const POLE_SELECT_POI_MAPY =
-  "id, village_id, category, name, description, latitude, longitude, source, confidence, verified_at, is_local_override, phone, opening_hours, linked_entity_id, osp_water_source_type, osp_water_capacity_lpm, osp_winter_access, osp_heavy_truck_access, osp_note, photo_url, photo_caption";
+  "id, village_id, category, name, description, latitude, longitude, source, confidence, verified_at, is_local_override, phone, opening_hours, linked_entity_id, osp_water_source_type, osp_water_capacity_lpm, osp_winter_access, osp_heavy_truck_access, osp_note, photo_url, photo_caption, investment_status, planned_completion_at, document_url";
 
 export function mapujPoiDlaMapy(
   wiersze: WierszPoiMapy[] | null,
@@ -83,6 +86,9 @@ export function mapujPoiDlaMapy(
       ospNote: r.osp_note,
       photoUrl: r.photo_url,
       photoCaption: r.photo_caption,
+      investmentStatus: r.investment_status,
+      plannedCompletionAt: r.planned_completion_at,
+      documentUrl: r.document_url,
     });
   }
   return out;

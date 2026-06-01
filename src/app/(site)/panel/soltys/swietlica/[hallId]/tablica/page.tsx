@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
-import { notFound, redirect } from "next/navigation";
+import { notFound } from "next/navigation";
 import { TablicaCyfrowaKlient } from "@/components/grafika/tablica-cyfrowa-klient";
 import { pobierzPlakatyTablicyCyfrowejWsi } from "@/app/(site)/panel/grafika/akcje";
 import { PanelStronaSoltysa } from "@/components/panel/panel-strona-soltysa";
 import { czyUzytkownikJestSoltysemDlaSali } from "@/lib/panel/rola-panelu-soltysa";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
+import { pobierzUzytkownikaPanelu } from "@/lib/auth/pobierz-uzytkownika-serwer";
 import { NawigacjaSali } from "@/components/swietlica/nawigacja-sali";
 import { pojedynczaWies } from "@/lib/supabase/wies-z-zapytania";
 
@@ -20,11 +21,7 @@ export default async function SoltysTablicaCyfrowaPage({ params }: Props) {
   if (!uuidOk) notFound();
 
   const supabase = utworzKlientaSupabaseSerwer();
-  const { data: { session } } = await supabase.auth.getSession();
-  const user = session?.user ?? null;
-  if (!user) {
-    redirect(`/logowanie?next=/panel/soltys/swietlica/${hallId}/tablica`);
-  }
+  const user = await pobierzUzytkownikaPanelu();
 
   const { data: sala } = await supabase
     .from("halls")

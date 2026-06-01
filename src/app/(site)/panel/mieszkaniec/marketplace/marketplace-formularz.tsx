@@ -150,8 +150,9 @@ export function MarketplaceFormularzMieszkanca({
       if (pliki.length > 0) {
         const supabase = utworzKlientaSupabasePrzegladarka();
         const {
-          data: { user },
-        } = await supabase.auth.getUser();
+          data: { session },
+        } = await supabase.auth.getSession();
+        const user = session?.user;
         if (!user) {
           ustawBlad("Zaloguj się ponownie.");
           return;

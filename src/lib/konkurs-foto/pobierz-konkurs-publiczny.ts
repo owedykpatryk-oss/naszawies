@@ -1,5 +1,6 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import type { KonkursFotoPubliczny, ZdjecieKonkursu } from "./fazy-konkursu";
+import { pobierzUzytkownikaDoAkcji } from "@/lib/auth/pobierz-uzytkownika-serwer";
 
 type WierszKonkurs = {
   id: string;
@@ -71,9 +72,7 @@ export async function pobierzKonkursFotoDlaProfiluWsi(
   }
 
   let mojGlosPhotoId: string | null = null;
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await pobierzUzytkownikaDoAkcji();
   if (user) {
     const { data: glos } = await supabase
       .from("village_photo_votes")

@@ -6,6 +6,7 @@ import type { IntencjaOnboardingu } from "@/lib/auth/onboarding-uzytkownika";
 import { zlozWniosekSoltysa } from "@/lib/soltys/wniosek-soltysa";
 import { zlozWniosekMieszkaniec } from "@/app/(site)/panel/mieszkaniec/akcje";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
+import { pobierzUzytkownikaDoAkcji } from "@/lib/auth/pobierz-uzytkownika-serwer";
 
 export type WynikPowiazania = { blad: string } | { ok: true; komunikat: string };
 
@@ -32,10 +33,8 @@ export async function zmienPowiazanieKonta(dane: z.infer<typeof schema>): Promis
     return { blad: parsed.error.issues[0]?.message ?? "Sprawdź formularz." };
   }
 
+  const user = await pobierzUzytkownikaDoAkcji();
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
   if (!user) return { blad: "Zaloguj się." };
 
   const p = parsed.data;

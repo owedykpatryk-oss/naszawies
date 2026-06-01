@@ -5,6 +5,7 @@ import { z } from "zod";
 import { pobierzVillageIdsRoliPaneluSoltysaDlaUzytkownikaCache } from "@/lib/panel/rola-panelu-soltysa";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
 import { KATEGORIA_LADNE_MIEJSCE } from "@/lib/mapa/kategorie-poi";
+import { pobierzUzytkownikaDoAkcji } from "@/lib/auth/pobierz-uzytkownika-serwer";
 
 export type WynikPoiMiejsca = { ok: true } | { blad: string };
 
@@ -23,10 +24,8 @@ export async function dodajLadneMiejsceNaMapie(dane: z.infer<typeof schemaLadne>
   const p = schemaLadne.safeParse(dane);
   if (!p.success) return { blad: "Uzupełnij poprawnie pola (w tym zdjęcie i współrzędne)." };
 
+  const user = await pobierzUzytkownikaDoAkcji();
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
   if (!user) return { blad: "Zaloguj się." };
 
   const vids = await pobierzVillageIdsRoliPaneluSoltysaDlaUzytkownikaCache(user.id);
@@ -75,10 +74,8 @@ export async function aktualizujKontaktPoiSoltysa(
   const p = schemaKontaktPoi.safeParse(dane);
   if (!p.success) return { blad: "Sprawdź telefon i godziny (max 500 znaków)." };
 
+  const user = await pobierzUzytkownikaDoAkcji();
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
   if (!user) return { blad: "Zaloguj się." };
 
   const { data: poi } = await supabase
@@ -137,10 +134,8 @@ export async function dodajKomentarzPodPoi(dane: z.infer<typeof schemaKomentarz>
   const p = schemaKomentarz.safeParse(dane);
   if (!p.success) return { blad: "Napisz krótki komentarz (do 600 znaków)." };
 
+  const user = await pobierzUzytkownikaDoAkcji();
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
   if (!user) return { blad: "Zaloguj się, aby komentować." };
 
   const { data: poi } = await supabase.from("pois").select("id, village_id").eq("id", p.data.poiId).maybeSingle();

@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
-import { redirect } from "next/navigation";
 import { PanelStronaModulu } from "@/components/panel/panel-strona-modulu";
 import { pobierzVillageIdsRoliPaneluSoltysaDlaUzytkownikaCache } from "@/lib/panel/rola-panelu-soltysa";
 import { utworzWniosekSoltysaZRejestracji } from "@/lib/soltys/wniosek-soltysa";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
+import { pobierzUzytkownikaPanelu } from "@/lib/auth/pobierz-uzytkownika-serwer";
 import { WniosekSoltysaKlient } from "./wniosek-soltysa-klient";
 
 export const metadata: Metadata = {
@@ -12,9 +12,7 @@ export const metadata: Metadata = {
 
 export default async function WniosekSoltysaPage() {
   const supabase = utworzKlientaSupabaseSerwer();
-  const { data: { session } } = await supabase.auth.getSession();
-  const user = session?.user ?? null;
-  if (!user) redirect("/logowanie?next=/panel/wniosek-soltysa");
+  const user = await pobierzUzytkownikaPanelu();
 
   await utworzWniosekSoltysaZRejestracji();
 

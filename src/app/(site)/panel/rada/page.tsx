@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { redirect } from "next/navigation";
 import { PanelStronaModulu } from "@/components/panel/panel-strona-modulu";
 import { pobierzVillageIdsModeracjiTresci } from "@/lib/panel/rola-moderacji";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
+import { pobierzUzytkownikaPanelu } from "@/lib/auth/pobierz-uzytkownika-serwer";
 
 export const metadata: Metadata = {
   title: "Panel rady sołeckiej — moderacja",
@@ -11,9 +11,7 @@ export const metadata: Metadata = {
 
 export default async function RadaPanelPage() {
   const supabase = utworzKlientaSupabaseSerwer();
-  const { data: { session } } = await supabase.auth.getSession();
-  const user = session?.user ?? null;
-  if (!user) redirect("/logowanie?next=/panel/rada");
+  const user = await pobierzUzytkownikaPanelu();
 
   const villageIds = await pobierzVillageIdsModeracjiTresci(supabase, user.id);
   if (villageIds.length === 0) {

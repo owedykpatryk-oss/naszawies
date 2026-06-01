@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { pobierzVillageIdsModeracjiTresciCache } from "@/lib/panel/rola-moderacji";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
+import { pobierzUzytkownikaDoAkcji } from "@/lib/auth/pobierz-uzytkownika-serwer";
 
 const uuid = z.string().uuid();
 
@@ -23,10 +24,8 @@ export async function utworzAlbumFotokroniki(dane: z.infer<typeof schemaAlbum>):
   if (!p.success) {
     return { blad: "Sprawdź tytuł i widoczność albumu." };
   }
+  const user = await pobierzUzytkownikaDoAkcji();
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
   if (!user) {
     return { blad: "Zaloguj się." };
   }
@@ -70,10 +69,8 @@ export async function zmoderujZdjecieFotokroniki(dane: z.infer<typeof schemaMod>
   if (!p.success) {
     return { blad: "Niepoprawne dane." };
   }
+  const user = await pobierzUzytkownikaDoAkcji();
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
   if (!user) {
     return { blad: "Zaloguj się." };
   }
@@ -116,10 +113,8 @@ export async function ustawOkladkeAlbumu(dane: z.infer<typeof schemaOkladka>): P
   if (!p.success) {
     return { blad: "Niepoprawne dane." };
   }
+  const user = await pobierzUzytkownikaDoAkcji();
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
   if (!user) {
     return { blad: "Zaloguj się." };
   }

@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { czyUzytkownikJestSoltysemDlaSali } from "@/lib/panel/rola-panelu-soltysa";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
+import { pobierzUzytkownikaDoAkcji } from "@/lib/auth/pobierz-uzytkownika-serwer";
 
 const uuid = z.string().uuid();
 
@@ -29,10 +30,8 @@ export async function dodajZajetoscKalendarzaSaliSoltysa(
     return { blad: "Godzina zakończenia musi być późniejsza niż rozpoczęcia." };
   }
 
+  const user = await pobierzUzytkownikaDoAkcji();
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
   if (!user) return { blad: "Zaloguj się." };
 
   const moze = await czyUzytkownikJestSoltysemDlaSali(supabase, user.id, p.data.hallId);
@@ -84,10 +83,8 @@ export async function usunZajetoscKalendarzaSaliSoltysa(
   const hId = uuid.safeParse(hallId);
   if (!id.success || !hId.success) return { blad: "Niepoprawny identyfikator." };
 
+  const user = await pobierzUzytkownikaDoAkcji();
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
   if (!user) return { blad: "Zaloguj się." };
 
   const moze = await czyUzytkownikJestSoltysemDlaSali(supabase, user.id, hId.data);

@@ -22,6 +22,9 @@ export const KATEGORIE_POI_BAZOWE = [
   "osp_punkt_czerpania_wody",
 ] as const;
 
+/** Opcjonalne — import OSM / ręcznie sołtys, nie wpływają na % kompletności mapy. */
+export const KATEGORIE_POI_OPCJONALNE = ["latarnia", "inwestycja"] as const;
+
 /** Kategorie, dla których cron OSM może dodawać kolejne punkty (nie tylko pierwszy brak). */
 export const KATEGORIE_POI_WIELOKROTNE = [
   "przystanek",
@@ -30,9 +33,15 @@ export const KATEGORIE_POI_WIELOKROTNE = [
   "boisko",
   "skup_zboz",
   "sklep_rolniczy",
+  "latarnia",
+  "inwestycja",
 ] as const;
 
 export type KategoriaPoiBazowa = (typeof KATEGORIE_POI_BAZOWE)[number];
 
 /** Kategorie, które mieszkaniec może zaproponować sołtysowi. */
-export const KATEGORIE_PROPONOWALNE_POI = [...KATEGORIE_POI_BAZOWE, "inne"] as const;
+export const KATEGORIE_PROPONOWALNE_POI = [
+  ...KATEGORIE_POI_BAZOWE,
+  ...KATEGORIE_POI_OPCJONALNE,
+  "inne",
+] as const;

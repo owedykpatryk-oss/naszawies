@@ -2,48 +2,42 @@
 
 import type { AuthChangeEvent } from "@supabase/supabase-js";
 import { useRouter } from "next/navigation";
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { utworzKlientaSupabasePrzegladarka } from "@/lib/supabase/przegladarka";
 
 /**
- * Po powrocie do karty / okna odświeża sesję Supabase z ciasteczek (refresh token),
- * żeby nawigacja między panel / mapa / rynek nie kończyła się ponownym logowaniem.
+ * Synchronizuje UI po zmianie sesji Supabase (np. wylogowanie w innej karcie).
+ * Nie odświeża przy każdym focusie — to powodowało fałszywe przekierowania na logowanie.
  */
 export function OdswiezSesjeKlient() {
   const router = useRouter();
+  const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   useEffect(() => {
     let aktywny = true;
 
+    const odswiez = () => {
+      if (!aktywny) return;
+      if (timerRef.current) clearTimeout(timerRef.current);
+      timerRef.current = setTimeout(() => {
+        if (aktywny) router.refresh();
+      }, 300);
+    };
+
     try {
       const supabase = utworzKlientaSupabasePrzegladarka();
-
-      const odswiezSesje = () => {
-        if (!aktywny) return;
-        void supabase.auth.getSession().then(() => {
-          if (aktywny) router.refresh();
-        });
-      };
-
-      const onVisibility = () => {
-        if (document.visibilityState === "visible") odswiezSesje();
-      };
-
-      window.addEventListener("focus", odswiezSesje);
-      document.addEventListener("visibilitychange", onVisibility);
 
       const {
         data: { subscription },
       } = supabase.auth.onAuthStateChange((event: AuthChangeEvent) => {
         if (event === "TOKEN_REFRESHED" || event === "SIGNED_IN" || event === "SIGNED_OUT") {
-          odswiezSesje();
+          odswiez();
         }
       });
 
       return () => {
         aktywny = false;
-        window.removeEventListener("focus", odswiezSesje);
-        document.removeEventListener("visibilitychange", onVisibility);
+        if (timerRef.current) clearTimeout(timerRef.current);
         subscription.unsubscribe();
       };
     } catch {

@@ -12,6 +12,7 @@ import { parsujPlanCmentarza, schemaPlanCmentarza, szablonPlanuCmentarzaStartowy
 import { pobierzVillageIdsRoliPaneluSoltysa } from "@/lib/panel/rola-panelu-soltysa";
 import { sciezkaProfiluWsi } from "@/lib/wies/sciezka-publiczna";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
+import { pobierzUzytkownikaDoAkcji } from "@/lib/auth/pobierz-uzytkownika-serwer";
 
 type Wynik = { ok: true } | { blad: string };
 
@@ -50,10 +51,8 @@ export async function utworzLubPobierzPlanCmentarza(villageId: string): Promise<
   const vid = uuid.safeParse(villageId);
   if (!vid.success) return { blad: "Niepoprawna wieś." };
 
+  const user = await pobierzUzytkownikaDoAkcji();
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
   if (!user) return { blad: "Zaloguj się." };
 
   const vids = await pobierzVillageIdsRoliPaneluSoltysa(supabase, user.id);
@@ -103,10 +102,8 @@ export async function zapiszPlanCmentarza(
   const parsed = schemaPlanCmentarza.safeParse(planData);
   if (!id.success || !parsed.success) return { blad: "Niepoprawne dane planu." };
 
+  const user = await pobierzUzytkownikaDoAkcji();
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
   if (!user) return { blad: "Zaloguj się." };
 
   const { data: row } = await supabase
@@ -170,10 +167,8 @@ export async function importujObrysCmentarzaZOsm(
   const id = uuid.safeParse(planId);
   if (!id.success) return { blad: "Niepoprawny plan." };
 
+  const user = await pobierzUzytkownikaDoAkcji();
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
   if (!user) return { blad: "Zaloguj się." };
 
   const { data: row } = await supabase
@@ -229,10 +224,8 @@ export async function dodajRekordGrobu(dane: z.infer<typeof schemaGrob>): Promis
   const p = schemaGrob.safeParse(dane);
   if (!p.success) return { blad: "Sprawdź dane grobu (nazwisko jest wymagane)." };
 
+  const user = await pobierzUzytkownikaDoAkcji();
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
   if (!user) return { blad: "Zaloguj się." };
 
   const { data: plan } = await supabase
@@ -276,10 +269,8 @@ export async function importujGrobyCsv(
   const id = uuid.safeParse(cemeteryPlanId);
   if (!id.success) return { blad: "Niepoprawny plan." };
 
+  const user = await pobierzUzytkownikaDoAkcji();
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
   if (!user) return { blad: "Zaloguj się." };
 
   const { data: plan } = await supabase
@@ -337,10 +328,8 @@ export async function zatwierdzGrobyCsv(cemeteryPlanId: string): Promise<Wynik &
   const id = uuid.safeParse(cemeteryPlanId);
   if (!id.success) return { blad: "Niepoprawny plan." };
 
+  const user = await pobierzUzytkownikaDoAkcji();
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
   if (!user) return { blad: "Zaloguj się." };
 
   const { data: plan } = await supabase

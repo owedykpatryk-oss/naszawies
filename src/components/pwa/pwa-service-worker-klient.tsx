@@ -71,7 +71,10 @@ export function PwaServiceWorkerKlient() {
 
   return (
     <div
-      className="no-print fixed inset-x-0 bottom-0 z-[110] border-t border-stone-200 bg-white/95 px-3 py-2 shadow-[0_-8px_30px_rgba(0,0,0,0.08)] backdrop-blur-sm sm:px-4 sm:py-3 [bottom:var(--pwa-bottom-bar-offset,0px)]"
+      className="no-print fixed inset-x-0 z-[110] border-t border-stone-200 bg-white/95 px-3 py-2 shadow-[0_-8px_30px_rgba(0,0,0,0.08)] backdrop-blur-sm sm:px-4 sm:py-3"
+      style={{
+        bottom: "calc(var(--dolna-naw-offset, 0px) + var(--pwa-bottom-bar-offset, 0px) + env(safe-area-inset-bottom))",
+      }}
       role="dialog"
       aria-label="Instalacja aplikacji"
     >

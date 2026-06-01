@@ -5,6 +5,7 @@ import { z } from "zod";
 import { walidujObszarPolowania } from "@/lib/lowiectwo/geojson-obszar";
 import { pobierzVillageIdsRoliPaneluSoltysaDlaUzytkownikaCache } from "@/lib/panel/rola-panelu-soltysa";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
+import { pobierzUzytkownikaDoAkcji } from "@/lib/auth/pobierz-uzytkownika-serwer";
 
 const uuid = z.string().uuid();
 
@@ -31,10 +32,8 @@ export async function dodajOstrzezenieLowieckieSoltys(dane: z.infer<typeof schem
   const p = schemaDodaj.safeParse(dane);
   if (!p.success) return { blad: "Uzupełnij poprawnie pola." };
 
+  const user = await pobierzUzytkownikaDoAkcji();
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
   if (!user) return { blad: "Zaloguj się." };
   if (!(await czySoltysWsi(user.id, p.data.villageId))) return { blad: "Brak uprawnień." };
 
@@ -90,10 +89,8 @@ export async function aktualizujObszarOstrzezeniaLowieckiego(
   const areaGeojson = walidujObszarPolowania(p.data.areaGeojson);
   if (!areaGeojson) return { blad: "Zaznacz poprawny obszar na mapie." };
 
+  const user = await pobierzUzytkownikaDoAkcji();
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
   if (!user) return { blad: "Zaloguj się." };
 
   const { data: row } = await supabase
@@ -125,10 +122,8 @@ export async function zmienStatusOstrzezeniaLowieckiego(dane: z.infer<typeof sch
   const p = schemaStatus.safeParse(dane);
   if (!p.success) return { blad: "Niepoprawne dane." };
 
+  const user = await pobierzUzytkownikaDoAkcji();
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
   if (!user) return { blad: "Zaloguj się." };
 
   const { data: row } = await supabase

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { IkonaPanelNawigacji } from "@/components/marka/ikony-panel-nawigacji";
 import {
   ETYKIETY_PANEL_NAWIGACJI,
   type KluczPanelNawigacji,
@@ -106,8 +107,8 @@ export function ProfilPreferencjePanelKlient({ poczatkowe, pokazSoltysa, pokazAd
                   disabled={!aktywny && wybrane.length >= MAX_SLOTOW}
                   onChange={() => przelacz(klucz)}
                 />
-                <span className="text-base" aria-hidden>
-                  {def.ikona}
+                <span className="inline-flex text-stone-600" aria-hidden>
+                  <IkonaPanelNawigacji klucz={klucz} />
                 </span>
                 <span className="font-medium">{def.label}</span>
               </label>

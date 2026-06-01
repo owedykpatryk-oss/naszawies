@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
+import { pobierzUzytkownikaDoAkcji } from "@/lib/auth/pobierz-uzytkownika-serwer";
 
 export const dynamic = "force-dynamic";
 
@@ -33,10 +34,8 @@ export async function POST(request: Request) {
     return NextResponse.json({ blad: "Sprawdź dane subskrypcji." }, { status: 400 });
   }
 
+  const user = await pobierzUzytkownikaDoAkcji();
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
   if (!user) {
     return NextResponse.json({ blad: "Zaloguj się." }, { status: 401 });
   }

@@ -43,6 +43,7 @@ import {
 import { schemaPlanSali, parsujPresetyPlanu, type PlanSaliJson } from "@/lib/swietlica/plan-sali";
 import { schemaRzutParteruSali, type RzutParteruSaliJson } from "@/lib/swietlica/rzut-parteru-sali";
 import { schemaPolaRezerwacjiSali } from "@/lib/swietlica/pola-rezerwacji";
+import { pobierzUzytkownikaDoAkcji } from "@/lib/auth/pobierz-uzytkownika-serwer";
 
 const uuid = z.string().uuid();
 
@@ -72,10 +73,8 @@ export async function zatwierdzWniosekMieszkanca(rolaId: string): Promise<WynikP
     return { blad: "Niepoprawny identyfikator." };
   }
 
+  const user = await pobierzUzytkownikaDoAkcji();
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
   if (!user) {
     return { blad: "Zaloguj się." };
   }
@@ -180,10 +179,8 @@ export async function odrzucWniosekMieszkanca(rolaId: string): Promise<WynikPros
     return { blad: "Niepoprawny identyfikator." };
   }
 
+  const user = await pobierzUzytkownikaDoAkcji();
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
   if (!user) {
     return { blad: "Zaloguj się." };
   }
@@ -287,10 +284,8 @@ export async function dodajWyposazenieSwietlicy(
     return { blad: "Sprawdź poprawność pól formularza." };
   }
 
+  const user = await pobierzUzytkownikaDoAkcji();
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
   if (!user) {
     return { blad: "Zaloguj się." };
   }
@@ -336,10 +331,8 @@ export async function dodajPakietWyposazeniaSwietlicy(
     return { blad: "Niepoprawny pakiet wyposażenia." };
   }
 
+  const user = await pobierzUzytkownikaDoAkcji();
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
   if (!user) {
     return { blad: "Zaloguj się." };
   }
@@ -454,10 +447,8 @@ export async function usunWyposazenieSwietlicy(
     return { blad: "Niepoprawny identyfikator." };
   }
 
+  const user = await pobierzUzytkownikaDoAkcji();
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
   if (!user) {
     return { blad: "Zaloguj się." };
   }
@@ -523,10 +514,8 @@ export async function aktualizujWyposazenieSwietlicy(
     return { blad: "Sprawdź poprawność pól formularza." };
   }
 
+  const user = await pobierzUzytkownikaDoAkcji();
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
   if (!user) {
     return { blad: "Zaloguj się." };
   }
@@ -586,10 +575,8 @@ export async function ustawZdjecieWyposazeniaSwietlicy(
     return { blad: "Niepoprawny adres URL zdjęcia." };
   }
 
+  const user = await pobierzUzytkownikaDoAkcji();
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
   if (!user) {
     return { blad: "Zaloguj się." };
   }
@@ -644,10 +631,8 @@ export async function zatwierdzRezerwacjeSwietlicy(bookingId: string): Promise<W
     return { blad: "Niepoprawny identyfikator." };
   }
 
+  const user = await pobierzUzytkownikaDoAkcji();
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
   if (!user) {
     return { blad: "Zaloguj się." };
   }
@@ -793,10 +778,8 @@ export async function odrzucRezerwacjeSwietlicy(bookingId: string, powod: string
     return { blad: "Podaj powód odrzucenia (3–500 znaków)." };
   }
 
+  const user = await pobierzUzytkownikaDoAkcji();
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
   if (!user) {
     return { blad: "Zaloguj się." };
   }
@@ -882,10 +865,8 @@ export async function oznaczRezerwacjeJakoZakonczonaSwietlicy(bookingId: string)
     return { blad: "Niepoprawny identyfikator." };
   }
 
+  const user = await pobierzUzytkownikaDoAkcji();
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
   if (!user) {
     return { blad: "Zaloguj się." };
   }
@@ -940,10 +921,8 @@ export async function zapiszProtokolOdbioruSali(
     return { blad: "Sprawdź dane protokołu odbioru." };
   }
 
+  const user = await pobierzUzytkownikaDoAkcji();
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
   if (!user) {
     return { blad: "Zaloguj się." };
   }
@@ -1052,10 +1031,8 @@ export async function dodajPakietWowWyposazeniaSwietlicy(
     return { blad: "Niepoprawny identyfikator sali." };
   }
 
+  const user = await pobierzUzytkownikaDoAkcji();
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
   if (!user) {
     return { blad: "Zaloguj się." };
   }
@@ -1112,10 +1089,8 @@ export async function aktualizujProfilBudynkuSwietlicy(
     return { blad: "Sprawdź poprawność danych budynku." };
   }
 
+  const user = await pobierzUzytkownikaDoAkcji();
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
   if (!user) {
     return { blad: "Zaloguj się." };
   }
@@ -1160,10 +1135,8 @@ export async function zapiszPlanSali(hallId: string, plan: PlanSaliJson): Promis
     return { blad: "Niepoprawna struktura planu (zbyt wiele elementów lub złe wartości)." };
   }
 
+  const user = await pobierzUzytkownikaDoAkcji();
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
   if (!user) {
     return { blad: "Zaloguj się." };
   }
@@ -1198,10 +1171,8 @@ export async function zapiszRzutParteruSali(
     return { blad: "Niepoprawna struktura rzutu parteru (sprawdź pola i zakresy %)." };
   }
 
+  const user = await pobierzUzytkownikaDoAkcji();
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
   if (!user) {
     return { blad: "Zaloguj się." };
   }
@@ -1235,10 +1206,8 @@ export async function zapiszPresetPlanuSali(
   const parsed = schemaPlanSali.safeParse(plan);
   if (!parsed.success) return { blad: "Niepoprawna struktura planu." };
 
+  const user = await pobierzUzytkownikaDoAkcji();
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
   if (!user) return { blad: "Zaloguj się." };
 
   const { data: sala } = await supabase.from("halls").select("layout_presets").eq("id", idHall.data).maybeSingle();
@@ -1266,10 +1235,8 @@ export async function usunPresetPlanuSali(hallId: string, presetId: string): Pro
   const idPreset = uuid.safeParse(presetId);
   if (!idHall.success || !idPreset.success) return { blad: "Niepoprawny identyfikator." };
 
+  const user = await pobierzUzytkownikaDoAkcji();
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
   if (!user) return { blad: "Zaloguj się." };
 
   const { data: sala } = await supabase.from("halls").select("layout_presets").eq("id", idHall.data).maybeSingle();
@@ -1292,10 +1259,8 @@ export async function zapiszPlanRezerwacjiSoltys(
   const parsed = schemaPlanSali.safeParse(plan);
   if (!parsed.success) return { blad: "Niepoprawna struktura planu." };
 
+  const user = await pobierzUzytkownikaDoAkcji();
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
   if (!user) return { blad: "Zaloguj się." };
 
   const { error } = await supabase
@@ -1341,10 +1306,8 @@ export async function zapiszRegulaminIKaucjeSali(
     return { blad: "Sprawdź wprowadzone kwoty i tekst regulaminu." };
   }
 
+  const user = await pobierzUzytkownikaDoAkcji();
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
   if (!user) {
     return { blad: "Zaloguj się." };
   }
@@ -1388,10 +1351,8 @@ export async function zapiszPlikRegulaminuSali(
     return { blad: "Niepoprawne dane pliku regulaminu." };
   }
 
+  const user = await pobierzUzytkownikaDoAkcji();
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
   if (!user) {
     return { blad: "Zaloguj się." };
   }
@@ -1439,10 +1400,8 @@ export async function usunPlikRegulaminuSali(hallId: string): Promise<WynikProst
     return { blad: "Niepoprawny identyfikator sali." };
   }
 
+  const user = await pobierzUzytkownikaDoAkcji();
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
   if (!user) {
     return { blad: "Zaloguj się." };
   }
@@ -1493,10 +1452,8 @@ export async function zapiszRegulaminPlacuZabawWsi(
     return { blad: "Niepoprawne dane regulaminu placu zabaw." };
   }
 
+  const user = await pobierzUzytkownikaDoAkcji();
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
   if (!user) {
     return { blad: "Zaloguj się." };
   }
@@ -1532,10 +1489,8 @@ export async function zatwierdzPostSoltysa(postId: string): Promise<WynikProsty>
     return { blad: "Niepoprawny identyfikator posta." };
   }
 
+  const user = await pobierzUzytkownikaDoAkcji();
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
   if (!user) {
     return { blad: "Zaloguj się." };
   }
@@ -1659,10 +1614,8 @@ export async function odrzucPostSoltysa(postId: string, notatka: string): Promis
     return { blad: "Krótka notatka dla autora (3–500 znaków) jest wymagana przy odrzuceniu." };
   }
 
+  const user = await pobierzUzytkownikaDoAkcji();
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
   if (!user) {
     return { blad: "Zaloguj się." };
   }
@@ -1767,10 +1720,8 @@ export async function zapiszProfilPublicznyWsi(
   if (!p.success) {
     return { blad: "Nieprawidłowe dane formularza." };
   }
+  const user = await pobierzUzytkownikaDoAkcji();
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
   if (!user) {
     return { blad: "Zaloguj się." };
   }
@@ -1826,10 +1777,8 @@ export async function zapiszBannerRynkuWsi(dane: z.infer<typeof schemaBannerRynk
   const p = schemaBannerRynkuWsi.safeParse(dane);
   if (!p.success) return { blad: "Nieprawidłowe dane bannera." };
 
+  const user = await pobierzUzytkownikaDoAkcji();
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
   if (!user) return { blad: "Zaloguj się." };
 
   const vids = await pobierzVillageIdsRoliPaneluSoltysa(supabase, user.id);
@@ -1942,10 +1891,8 @@ export async function zapiszUstawieniaWygladuWsi(dane: z.infer<typeof schemaWygl
   const p = schemaWygladWsi.safeParse(dane);
   if (!p.success) return { blad: "Nieprawidłowe ustawienia wyglądu." };
 
+  const user = await pobierzUzytkownikaDoAkcji();
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
   if (!user) return { blad: "Zaloguj się." };
 
   const vids = await pobierzVillageIdsRoliPaneluSoltysa(supabase, user.id);
@@ -2080,10 +2027,8 @@ export async function zapiszPolaRezerwacjiSali(dane: z.infer<typeof schemaPolaRe
   const p = schemaPolaRezerwacji.safeParse(dane);
   if (!p.success) return { blad: "Nieprawidłowa definicja pól formularza." };
 
+  const user = await pobierzUzytkownikaDoAkcji();
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
   if (!user) return { blad: "Zaloguj się." };
 
   const wolno = await czyUzytkownikJestSoltysemDlaSali(supabase, user.id, p.data.hallId);
@@ -2113,10 +2058,8 @@ export async function oznaczKonfiguracjeWsiUkonczona(villageId: string): Promise
   const id = uuid.safeParse(villageId);
   if (!id.success) return { blad: "Niepoprawny identyfikator wsi." };
 
+  const user = await pobierzUzytkownikaDoAkcji();
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
   if (!user) return { blad: "Zaloguj się." };
 
   const vids = await pobierzVillageIdsRoliPaneluSoltysa(supabase, user.id);
@@ -2177,10 +2120,8 @@ export async function dodajProfilBlogeraWsi(dane: z.infer<typeof schemaBlogger>)
   if (!parsed.success) {
     return { blad: "Sprawdź dane profilu blogera." };
   }
+  const user = await pobierzUzytkownikaDoAkcji();
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
   if (!user) return { blad: "Zaloguj się." };
 
   if (!(await czyUzytkownikMozeZarzadzacWsia(supabase, user.id, parsed.data.villageId))) {
@@ -2230,10 +2171,8 @@ export async function dodajWpisBlogaWsi(dane: z.infer<typeof schemaBlogWpis>): P
   if (!parsed.success) {
     return { blad: "Sprawdź poprawność pól wpisu blogowego." };
   }
+  const user = await pobierzUzytkownikaDoAkcji();
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
   if (!user) return { blad: "Zaloguj się." };
   if (!(await czyUzytkownikMozeZarzadzacWsia(supabase, user.id, parsed.data.villageId))) {
     return { blad: "Brak uprawnień do tej wsi." };
@@ -2301,10 +2240,8 @@ const schemaMarketplaceProfil = z.object({
 export async function zapiszMarketplaceProfil(dane: z.infer<typeof schemaMarketplaceProfil>): Promise<WynikProsty> {
   const parsed = schemaMarketplaceProfil.safeParse(dane);
   if (!parsed.success) return { blad: "Sprawdź pola profilu usług." };
+  const user = await pobierzUzytkownikaDoAkcji();
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
   if (!user) return { blad: "Zaloguj się." };
   if (!(await czyUzytkownikMozeZarzadzacWsia(supabase, user.id, parsed.data.villageId))) {
     return { blad: "Brak uprawnień do tej wsi." };
@@ -2358,10 +2295,8 @@ const schemaMarketplaceOferta = z.object({
 export async function dodajMarketplaceOferte(dane: z.infer<typeof schemaMarketplaceOferta>): Promise<WynikProsty> {
   const parsed = schemaMarketplaceOferta.safeParse(dane);
   if (!parsed.success) return { blad: "Sprawdź dane ogłoszenia marketplace." };
+  const user = await pobierzUzytkownikaDoAkcji();
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
   if (!user) return { blad: "Zaloguj się." };
   if (!(await czyUzytkownikMozeZarzadzacWsia(supabase, user.id, parsed.data.villageId))) {
     return { blad: "Brak uprawnień do tej wsi." };
@@ -2419,10 +2354,8 @@ const schemaWiadomoscLokalna = z.object({
 export async function dodajWiadomoscLokalna(dane: z.infer<typeof schemaWiadomoscLokalna>): Promise<WynikProsty> {
   const parsed = schemaWiadomoscLokalna.safeParse(dane);
   if (!parsed.success) return { blad: "Sprawdź dane wiadomości lokalnej." };
+  const user = await pobierzUzytkownikaDoAkcji();
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
   if (!user) return { blad: "Zaloguj się." };
   if (!(await czyUzytkownikMozeZarzadzacWsia(supabase, user.id, parsed.data.villageId))) {
     return { blad: "Brak uprawnień do tej wsi." };
@@ -2460,10 +2393,8 @@ export async function uruchomAutomatyzacjeWsi(dane: z.infer<typeof schemaVillage
   if (!parsed.success) {
     return { blad: "Nieprawidłowe dane." };
   }
+  const user = await pobierzUzytkownikaDoAkcji();
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
   if (!user) return { blad: "Zaloguj się." };
   if (!(await czyUzytkownikMozeZarzadzacWsia(supabase, user.id, parsed.data.villageId))) {
     return { blad: "Brak uprawnień do uruchomienia automatyzacji dla tej wsi." };
@@ -2597,10 +2528,8 @@ export async function dodajOrganizacjeWsi(dane: z.infer<typeof schemaOrganizacja
   if (!parsed.success) {
     return { blad: "Sprawdź dane organizacji (nazwa, typ)." };
   }
+  const user = await pobierzUzytkownikaDoAkcji();
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
   if (!user) return { blad: "Zaloguj się." };
   if (!(await czyUzytkownikMozeZarzadzacWsia(supabase, user.id, parsed.data.villageId))) {
     return { blad: "Brak uprawnień do tej wsi." };
@@ -2646,10 +2575,8 @@ export async function aktualizujOrganizacjeWsi(
   if (!parsed.success) {
     return { blad: "Sprawdź dane organizacji." };
   }
+  const user = await pobierzUzytkownikaDoAkcji();
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
   if (!user) return { blad: "Zaloguj się." };
   if (!(await czyUzytkownikMozeZarzadzacWsia(supabase, user.id, parsed.data.villageId))) {
     return { blad: "Brak uprawnień do tej wsi." };
@@ -2699,10 +2626,8 @@ export async function dezaktywujOrganizacjeWsi(groupId: string, villageId: strin
   const vOk = uuid.safeParse(villageId);
   if (!idOk.success || !vOk.success) return { blad: "Niepoprawny identyfikator." };
 
+  const user = await pobierzUzytkownikaDoAkcji();
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
   if (!user) return { blad: "Zaloguj się." };
   if (!(await czyUzytkownikMozeZarzadzacWsia(supabase, user.id, vOk.data))) {
     return { blad: "Brak uprawnień." };
@@ -2744,10 +2669,8 @@ export async function dodajKontaktUrzedowyWsi(
   if (!parsed.success) {
     return { blad: "Sprawdź dane kontaktu urzędowego." };
   }
+  const user = await pobierzUzytkownikaDoAkcji();
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
   if (!user) return { blad: "Zaloguj się." };
   if (!(await czyUzytkownikMozeZarzadzacWsia(supabase, user.id, parsed.data.villageId))) {
     return { blad: "Brak uprawnień do tej wsi." };
@@ -2805,10 +2728,8 @@ export async function dodajKadencjeFunkcyjnaWsi(
   if (!parsed.success) {
     return { blad: "Sprawdź dane kadencji." };
   }
+  const user = await pobierzUzytkownikaDoAkcji();
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
   if (!user) return { blad: "Zaloguj się." };
   if (!(await czyUzytkownikMozeZarzadzacWsia(supabase, user.id, parsed.data.villageId))) {
     return { blad: "Brak uprawnień do tej wsi." };
@@ -2891,10 +2812,8 @@ export async function dodajWydarzenieSpolecznosciWsi(
   if (!parsed.success) {
     return { blad: "Sprawdź daty i tytuł wydarzenia." };
   }
+  const user = await pobierzUzytkownikaDoAkcji();
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
   if (!user) return { blad: "Zaloguj się." };
   if (!(await czyUzytkownikMozeZarzadzacWsia(supabase, user.id, parsed.data.villageId))) {
     return { blad: "Brak uprawnień do tej wsi." };
@@ -3032,10 +2951,8 @@ export async function dodajSlotHarmonogramuTygodniaWsi(
   if (!parsed.success) {
     return { blad: "Sprawdź dzień tygodnia, godziny i tytuł zajęć." };
   }
+  const user = await pobierzUzytkownikaDoAkcji();
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
   if (!user) return { blad: "Zaloguj się." };
   if (!(await czyUzytkownikMozeZarzadzacWsia(supabase, user.id, parsed.data.villageId))) {
     return { blad: "Brak uprawnień do tej wsi." };
@@ -3094,10 +3011,8 @@ export async function dodajSlotHarmonogramuTygodniaWsi(
 export async function usunSlotHarmonogramuTygodniaWsi(slotId: string): Promise<WynikProsty> {
   const id = uuid.safeParse(slotId);
   if (!id.success) return { blad: "Niepoprawny identyfikator." };
+  const user = await pobierzUzytkownikaDoAkcji();
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
   if (!user) return { blad: "Zaloguj się." };
 
   const { data: row, error: readErr } = await supabase
@@ -3144,10 +3059,8 @@ export async function dodajZrodloDotacjiWsi(dane: z.infer<typeof schemaZrodloDot
   if (!parsed.success) {
     return { blad: "Sprawdź tytuł i kategorię źródła dofinansowania." };
   }
+  const user = await pobierzUzytkownikaDoAkcji();
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
   if (!user) return { blad: "Zaloguj się." };
   if (!(await czyUzytkownikMozeZarzadzacWsia(supabase, user.id, parsed.data.villageId))) {
     return { blad: "Brak uprawnień do tej wsi." };
@@ -3188,10 +3101,8 @@ export async function dodajZrodloDotacjiWsi(dane: z.infer<typeof schemaZrodloDot
 export async function usunZrodloDotacjiWsi(sourceId: string): Promise<WynikProsty> {
   const id = uuid.safeParse(sourceId);
   if (!id.success) return { blad: "Niepoprawny identyfikator." };
+  const user = await pobierzUzytkownikaDoAkcji();
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
   if (!user) return { blad: "Zaloguj się." };
 
   const { data: row, error: readErr } = await supabase
@@ -3238,10 +3149,8 @@ export async function zapiszPrzewodnikSamorzadowyWsi(
   if (!parsed.success) {
     return { blad: "Sprawdź długość pól (maks. ok. 8000 znaków na blok)." };
   }
+  const user = await pobierzUzytkownikaDoAkcji();
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
   if (!user) return { blad: "Zaloguj się." };
   if (!(await czyUzytkownikMozeZarzadzacWsia(supabase, user.id, parsed.data.villageId))) {
     return { blad: "Brak uprawnień do tej wsi." };
@@ -3271,10 +3180,8 @@ export async function zapiszPrzewodnikSamorzadowyWsi(
 export async function zatwierdzWiadomoscLokalnaSoltys(newsId: string): Promise<WynikProsty> {
   const id = uuid.safeParse(newsId);
   if (!id.success) return { blad: "Niepoprawny identyfikator." };
+  const user = await pobierzUzytkownikaDoAkcji();
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
   if (!user) return { blad: "Zaloguj się." };
   const { data: row, error: rErr } = await supabase
     .from("local_news_items")
@@ -3311,10 +3218,8 @@ export async function odrzucWiadomoscLokalnaSoltys(newsId: string, notatka: stri
   const id = uuid.safeParse(newsId);
   if (!id.success) return { blad: "Niepoprawny identyfikator." };
   const note = notatka.trim().slice(0, 500);
+  const user = await pobierzUzytkownikaDoAkcji();
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
   if (!user) return { blad: "Zaloguj się." };
   const { data: row, error: rErr } = await supabase
     .from("local_news_items")
@@ -3360,10 +3265,8 @@ const schemaKanalRss = z.object({
 export async function dodajKanalRssWsi(dane: z.infer<typeof schemaKanalRss>): Promise<WynikProsty> {
   const parsed = schemaKanalRss.safeParse(dane);
   if (!parsed.success) return { blad: "Sprawdź nazwę i adres URL kanału RSS." };
+  const user = await pobierzUzytkownikaDoAkcji();
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
   if (!user) return { blad: "Zaloguj się." };
   if (!(await czyUzytkownikMozeZarzadzacWsia(supabase, user.id, parsed.data.villageId))) {
     return { blad: "Brak uprawnień." };
@@ -3386,10 +3289,8 @@ export async function dodajKanalRssWsi(dane: z.infer<typeof schemaKanalRss>): Pr
 export async function usunKanalRssWsi(sourceId: string): Promise<WynikProsty> {
   const id = uuid.safeParse(sourceId);
   if (!id.success) return { blad: "Niepoprawny identyfikator." };
+  const user = await pobierzUzytkownikaDoAkcji();
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
   if (!user) return { blad: "Zaloguj się." };
   const { data: row, error: rErr } = await supabase
     .from("village_news_feed_sources")
@@ -3412,10 +3313,8 @@ export async function usunKanalRssWsi(sourceId: string): Promise<WynikProsty> {
 export async function ustawTrybImportuRssKanalu(sourceId: string, tylkoTytuly: boolean): Promise<WynikProsty> {
   const id = uuid.safeParse(sourceId);
   if (!id.success) return { blad: "Niepoprawny identyfikator." };
+  const user = await pobierzUzytkownikaDoAkcji();
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
   if (!user) return { blad: "Zaloguj się." };
   const { data: row, error: rErr } = await supabase
     .from("village_news_feed_sources")
@@ -3443,10 +3342,8 @@ export type WynikSyncRssAkcja =
   | { ok: true; zrodlaPrzetworzone: number; noweWpisy: number; bledy: string[] };
 
 export async function uruchomSynchronizacjeRssDlaMoichWsi(): Promise<WynikSyncRssAkcja> {
+  const user = await pobierzUzytkownikaDoAkcji();
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
   if (!user) return { blad: "Zaloguj się." };
   const vids = await pobierzVillageIdsRoliPaneluSoltysa(supabase, user.id);
   if (vids.length === 0) return { blad: "Brak wsi w panelu sołtysa." };
@@ -3503,10 +3400,8 @@ export async function zapiszLinkPrzydatnyWsi(dane: z.infer<typeof schemaLinkPrzy
   if (!parsed.success) {
     return { blad: "Sprawdź tytuł (1–200 znaków) i pozostałe pola." };
   }
+  const user = await pobierzUzytkownikaDoAkcji();
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
   if (!user) return { blad: "Zaloguj się." };
   if (!(await czyUzytkownikMozeZarzadzacWsia(supabase, user.id, parsed.data.villageId))) {
     return { blad: "Brak uprawnień do tej wsi." };
@@ -3551,10 +3446,8 @@ export async function usunLinkPrzydatnyWsi(linkId: string, villageId: string): P
   const id = uuid.safeParse(linkId);
   const vid = uuid.safeParse(villageId);
   if (!id.success || !vid.success) return { blad: "Niepoprawny identyfikator." };
+  const user = await pobierzUzytkownikaDoAkcji();
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
   if (!user) return { blad: "Zaloguj się." };
   if (!(await czyUzytkownikMozeZarzadzacWsia(supabase, user.id, vid.data))) {
     return { blad: "Brak uprawnień." };
@@ -3583,10 +3476,8 @@ export async function dodajPakietLinkowPrzydatnych(
   const pakiet = PAKIETY_LINKOW_PRZYDATNYCH.find((p) => p.id === pakietId);
   if (!pakiet) return { blad: "Nieznany pakiet." };
 
+  const user = await pobierzUzytkownikaDoAkcji();
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
   if (!user) return { blad: "Zaloguj się." };
   if (!(await czyUzytkownikMozeZarzadzacWsia(supabase, user.id, vid.data))) {
     return { blad: "Brak uprawnień." };
@@ -3626,10 +3517,8 @@ export async function dodajPakietLinkowPrzydatnych(
 export async function zatwierdzMarketplaceOferteMieszkanca(listingId: string): Promise<WynikProsty> {
   const id = uuid.safeParse(listingId);
   if (!id.success) return { blad: "Niepoprawny identyfikator." };
+  const user = await pobierzUzytkownikaDoAkcji();
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
   if (!user) return { blad: "Zaloguj się." };
   const { data: row } = await supabase
     .from("marketplace_listings")
@@ -3751,10 +3640,8 @@ export async function odrzucMarketplaceOferteMieszkanca(
   const note = z.string().trim().min(3).max(500).safeParse(notatka);
   if (!id.success || !note.success) return { blad: "Podaj powód odrzucenia (min. 3 znaki)." };
 
+  const user = await pobierzUzytkownikaDoAkcji();
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
   if (!user) return { blad: "Zaloguj się." };
 
   const { data: row } = await supabase
@@ -3806,10 +3693,8 @@ export async function ustawWeryfikacjeProfiluRynek(
   const id = uuid.safeParse(profileId);
   if (!id.success) return { blad: "Niepoprawny identyfikator profilu." };
 
+  const user = await pobierzUzytkownikaDoAkcji();
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
   if (!user) return { blad: "Zaloguj się." };
 
   const { data: profil } = await supabase
@@ -3841,10 +3726,8 @@ export async function ustawWeryfikacjeProfiluRynek(
 export async function zatwierdzOfertePomocySasiedzkiej(offerId: string): Promise<WynikProsty> {
   const id = uuid.safeParse(offerId);
   if (!id.success) return { blad: "Niepoprawny identyfikator." };
+  const user = await pobierzUzytkownikaDoAkcji();
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
   if (!user) return { blad: "Zaloguj się." };
   const { data: row } = await supabase
     .from("neighbor_help_offers")
@@ -3873,10 +3756,8 @@ export async function odrzucOfertePomocySasiedzkiej(
   const note = z.string().trim().min(3).max(500).safeParse(notatka);
   if (!id.success || !note.success) return { blad: "Podaj powód odrzucenia (min. 3 znaki)." };
 
+  const user = await pobierzUzytkownikaDoAkcji();
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
   if (!user) return { blad: "Zaloguj się." };
 
   const { data: row } = await supabase

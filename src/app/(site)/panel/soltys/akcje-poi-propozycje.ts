@@ -9,6 +9,7 @@ import { powiadomSoltysowOPropozycjiPoi } from "@/lib/powiadomienia/powiadom-sol
 import { createAdminSupabaseClient } from "@/lib/supabase/admin-client";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
 import { sciezkaProfiluWsi } from "@/lib/wies/sciezka-publiczna";
+import { pobierzUzytkownikaDoAkcji } from "@/lib/auth/pobierz-uzytkownika-serwer";
 
 export type WynikPropozycjiPoi = { ok: true } | { blad: string };
 
@@ -42,10 +43,8 @@ export async function zlozPropozycjePoi(niesprawdzone: unknown): Promise<WynikPr
   const p = schemaPropozycja.safeParse(niesprawdzone);
   if (!p.success) return { blad: "Uzupełnij poprawnie nazwę, kategorię i lokalizację." };
 
+  const user = await pobierzUzytkownikaDoAkcji();
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
   if (!user) return { blad: "Zaloguj się." };
 
   const maDostep = await uzytkownikMaDostepDoWsi(user.id, p.data.villageId);
@@ -97,10 +96,8 @@ export async function zatwierdzPropozycjePoi(niesprawdzone: unknown): Promise<Wy
   const p = schemaReview.safeParse(niesprawdzone);
   if (!p.success) return { blad: "Niepoprawne dane." };
 
+  const user = await pobierzUzytkownikaDoAkcji();
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
   if (!user) return { blad: "Zaloguj się." };
 
   const { data: prop, error: errProp } = await supabase
@@ -197,10 +194,8 @@ export async function odrzucPropozycjePoi(niesprawdzone: unknown): Promise<Wynik
   const p = schemaReview.safeParse(niesprawdzone);
   if (!p.success) return { blad: "Niepoprawne dane." };
 
+  const user = await pobierzUzytkownikaDoAkcji();
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
   if (!user) return { blad: "Zaloguj się." };
 
   const { data: prop } = await supabase

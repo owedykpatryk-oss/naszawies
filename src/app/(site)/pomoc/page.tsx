@@ -4,7 +4,7 @@ import { HeroModuluPublicznego } from "@/components/wspolne/hero-modulu-publiczn
 import { CentrumPomocyKlient } from "@/components/pomoc/centrum-pomocy-klient";
 import { ETYKIETA_ROLI, type RolaPrzewodnika } from "@/lib/pomoc/przewodniki";
 import { pobierzVillageIdsRoliPaneluSoltysaDlaUzytkownikaCache } from "@/lib/panel/rola-panelu-soltysa";
-import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
+import { pobierzUzytkownikaSerwer } from "@/lib/auth/pobierz-uzytkownika-serwer";
 
 export const metadata: Metadata = {
   title: "Centrum pomocy",
@@ -23,10 +23,7 @@ export default async function PomocPage({ searchParams }: Props) {
   const rola = rolaZParam(searchParams?.rola);
   let pokazLinkSoltys = false;
   try {
-    const supabase = utworzKlientaSupabaseSerwer();
-    const {
-      data: { user },
-    } = await supabase.auth.getUser();
+    const user = await pobierzUzytkownikaSerwer();
     if (user) {
       const ids = await pobierzVillageIdsRoliPaneluSoltysaDlaUzytkownikaCache(user.id);
       pokazLinkSoltys = ids.length > 0;

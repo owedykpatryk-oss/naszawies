@@ -6,6 +6,7 @@ import { powiadomOGlosowaniuWKonkursieFoto } from "@/lib/powiadomienia/powiadom-
 import { pobierzVillageIdsRoliPaneluSoltysaDlaUzytkownikaCache } from "@/lib/panel/rola-panelu-soltysa";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
 import { sciezkaProfiluWsi } from "@/lib/wies/sciezka-publiczna";
+import { pobierzUzytkownikaDoAkcji } from "@/lib/auth/pobierz-uzytkownika-serwer";
 
 const uuid = z.string().uuid();
 const statusKonkursu = z.enum(["draft", "submissions", "voting", "closed", "cancelled"]);
@@ -32,10 +33,8 @@ export async function utworzKonkursFotoSoltys(dane: z.infer<typeof schemaUtworz>
   const p = schemaUtworz.safeParse(dane);
   if (!p.success) return { blad: "Uzupełnij poprawnie pola konkursu." };
 
+  const user = await pobierzUzytkownikaDoAkcji();
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
   if (!user) return { blad: "Zaloguj się." };
   if (!(await czySoltysWsi(user.id, p.data.villageId))) return { blad: "Brak uprawnień we wsi." };
 
@@ -87,10 +86,8 @@ export async function zmienStatusKonkursuFotoSoltys(dane: z.infer<typeof schemaS
   const p = schemaStatus.safeParse(dane);
   if (!p.success) return { blad: "Niepoprawne dane." };
 
+  const user = await pobierzUzytkownikaDoAkcji();
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
   if (!user) return { blad: "Zaloguj się." };
 
   const { data: konkurs } = await supabase

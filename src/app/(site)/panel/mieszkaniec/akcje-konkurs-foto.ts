@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
+import { pobierzUzytkownikaDoAkcji } from "@/lib/auth/pobierz-uzytkownika-serwer";
 
 const uuid = z.string().uuid();
 
@@ -17,10 +18,8 @@ export async function glosujWKonkursieFoto(dane: z.infer<typeof schemaGlos>): Pr
   const p = schemaGlos.safeParse(dane);
   if (!p.success) return { blad: "Niepoprawny głos." };
 
+  const user = await pobierzUzytkownikaDoAkcji();
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
   if (!user) return { blad: "Zaloguj się, aby oddać głos." };
 
   const { data: konkurs } = await supabase

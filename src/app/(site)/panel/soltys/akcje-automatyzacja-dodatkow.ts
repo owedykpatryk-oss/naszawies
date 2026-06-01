@@ -5,8 +5,8 @@ import { dodajBrakujacePoiZOpenStreetMap } from "@/app/(site)/panel/soltys/akcje
 import { odswiezTransportWsiSoltysa } from "@/app/(site)/panel/soltys/akcje-transport";
 import { pobierzVillageIdsRoliPaneluSoltysaDlaUzytkownikaCache } from "@/lib/panel/rola-panelu-soltysa";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin-client";
-import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
 import { synchronizujGranicePrgAutomatycznie } from "@/lib/mapa/synchronizuj-granice-prg-automatycznie";
+import { pobierzUzytkownikaDoAkcji } from "@/lib/auth/pobierz-uzytkownika-serwer";
 
 export type WynikAutomatyzacjiDodatkow =
   | {
@@ -18,10 +18,7 @@ export type WynikAutomatyzacjiDodatkow =
 
 /** Jednym kliknięciem: granice PRG + OSM + transport dla wszystkich wsi sołtysa. */
 export async function uruchomAutomatyczneDodatkiSoltysa(): Promise<WynikAutomatyzacjiDodatkow> {
-  const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await pobierzUzytkownikaDoAkcji();
   if (!user) return { ok: false, blad: "Zaloguj się." };
 
   const villageIds = await pobierzVillageIdsRoliPaneluSoltysaDlaUzytkownikaCache(user.id);

@@ -1,12 +1,12 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { redirect } from "next/navigation";
 import { LogoNaszawiesWycentrowane } from "@/components/marka/logo-naszawies";
 import { bezpiecznaSciezkaNastepna } from "@/lib/auth/bezpieczna-sciezka-nastepna";
-import { pobierzUzytkownikaSerwer } from "@/lib/auth/pobierz-uzytkownika-serwer";
+import { pobierzUzytkownikaPanelu } from "@/lib/auth/pobierz-uzytkownika-serwer";
 import { czyProfilMaAktualnaAkceptacjePrawna } from "@/lib/rodo/czy-ma-akceptacje-prawna";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
 import { AkceptacjaRegulaminuKlient } from "./akceptacja-regulaminu-klient";
+import { redirect } from "next/navigation";
 
 export const metadata: Metadata = {
   title: "Akceptacja regulaminu",
@@ -18,8 +18,7 @@ type Props = {
 };
 
 export default async function AkceptacjaRegulaminuPage({ searchParams }: Props) {
-  const user = await pobierzUzytkownikaSerwer();
-  if (!user) redirect("/logowanie?next=/panel");
+  const user = await pobierzUzytkownikaPanelu();
 
   const supabase = utworzKlientaSupabaseSerwer();
   const { data: profil } = await supabase
@@ -29,7 +28,7 @@ export default async function AkceptacjaRegulaminuPage({ searchParams }: Props) 
     .maybeSingle();
 
   const nextParam = searchParams.next;
-  const nastepna = typeof nextParam === "string" ? bezpiecznaSciezkaNastepna(nextParam) : "/panel";
+  const nastepna = typeof nextParam === "string" ? bezpiecznaSciezkaNastepna(nextParam) : "/mapa";
 
   if (czyProfilMaAktualnaAkceptacjePrawna(profil)) {
     redirect(nastepna);

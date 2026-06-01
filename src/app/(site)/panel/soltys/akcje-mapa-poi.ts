@@ -6,6 +6,7 @@ import { pobierzCmentarzeZOsmWokolPunktu, pobierzKosciolZOsmWokolPunktu, pobierz
 import { pobierzVillageIdsRoliPaneluSoltysa } from "@/lib/panel/rola-panelu-soltysa";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
 import { sciezkaProfiluWsi } from "@/lib/wies/sciezka-publiczna";
+import { pobierzUzytkownikaDoAkcji } from "@/lib/auth/pobierz-uzytkownika-serwer";
 
 const schemaOsmPoi = z.object({
   villageId: z.string().uuid(),
@@ -150,10 +151,8 @@ export async function dodajBrakujacePoiZOpenStreetMap(niesprawdzone: unknown): P
     return { blad: "Niepoprawne parametry zapytania." };
   }
 
+  const user = await pobierzUzytkownikaDoAkcji();
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
   if (!user) {
     return { blad: "Zaloguj się." };
   }
@@ -212,10 +211,8 @@ export async function dodajCmentarzeZOsm(niesprawdzone: unknown): Promise<WynikO
     return { blad: "Niepoprawne parametry zapytania." };
   }
 
+  const user = await pobierzUzytkownikaDoAkcji();
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
   if (!user) {
     return { blad: "Zaloguj się." };
   }
@@ -266,10 +263,8 @@ export async function dodajKosciolZOsm(niesprawdzone: unknown): Promise<WynikOsm
     return { blad: "Niepoprawne parametry zapytania." };
   }
 
+  const user = await pobierzUzytkownikaDoAkcji();
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
   if (!user) {
     return { blad: "Zaloguj się." };
   }
@@ -320,10 +315,8 @@ export async function dodajOspZOsm(niesprawdzone: unknown): Promise<WynikOsmPoi>
     return { blad: "Niepoprawne parametry zapytania." };
   }
 
+  const user = await pobierzUzytkownikaDoAkcji();
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
   if (!user) {
     return { blad: "Zaloguj się." };
   }
@@ -369,10 +362,8 @@ export async function dodajCmentarzRecznie(niesprawdzone: unknown): Promise<Wyni
     return { blad: "Sprawdź nazwę i punkt na mapie." };
   }
 
+  const user = await pobierzUzytkownikaDoAkcji();
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
   if (!user) {
     return { blad: "Zaloguj się." };
   }
@@ -427,10 +418,8 @@ export async function dodajPunktCzerpaniaWodyOsp(
     return { blad: "Sprawdź dane punktu czerpania wody OSP." };
   }
 
+  const user = await pobierzUzytkownikaDoAkcji();
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
   if (!user) {
     return { blad: "Zaloguj się." };
   }
@@ -505,10 +494,8 @@ const schemaWeryfikacjaPoi = z.object({
 export type WynikWeryfikacjiPoi = { ok: true } | { blad: string };
 
 async function wymagajUprawnienDoPoi(poiId: string) {
+  const user = await pobierzUzytkownikaDoAkcji();
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
   if (!user) return { ok: false as const, blad: "Zaloguj się." };
 
   const { data: poi, error } = await supabase
@@ -604,10 +591,8 @@ export async function zatwierdzWszystkiePoiAutomatyczne(villageId: string): Prom
   const p = schemaVillageId.safeParse({ villageId });
   if (!p.success) return { blad: "Niepoprawna wieś." };
 
+  const user = await pobierzUzytkownikaDoAkcji();
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
   if (!user) return { blad: "Zaloguj się." };
 
   const vids = await pobierzVillageIdsRoliPaneluSoltysa(supabase, user.id);

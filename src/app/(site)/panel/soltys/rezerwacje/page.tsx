@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { redirect } from "next/navigation";
 import { PanelStronaSoltysa } from "@/components/panel/panel-strona-soltysa";
 import { DokumentacjaZniszczenRezerwacji } from "@/components/swietlica/dokumentacja-zniszczen-rezerwacji";
 import {
@@ -10,6 +9,7 @@ import {
 import { czyWymagaOdbioru } from "@/lib/swietlica/protokol-odbioru";
 import { pobierzVillageIdsRoliPaneluSoltysaDlaUzytkownikaCache } from "@/lib/panel/rola-panelu-soltysa";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
+import { pobierzUzytkownikaPanelu } from "@/lib/auth/pobierz-uzytkownika-serwer";
 import { SoltysRezerwacjeKalendarzEksport } from "./soltys-rezerwacje-kalendarz-eksport";
 import { SoltysRezerwacjeKlient, type WierszRezerwacji } from "./soltys-rezerwacje-klient";
 
@@ -19,11 +19,7 @@ export const metadata: Metadata = {
 
 export default async function SoltysRezerwacjePage() {
   const supabase = utworzKlientaSupabaseSerwer();
-  const { data: { session } } = await supabase.auth.getSession();
-  const user = session?.user ?? null;
-  if (!user) {
-    redirect("/logowanie?next=/panel/soltys/rezerwacje");
-  }
+  const user = await pobierzUzytkownikaPanelu();
 
   const villageIds = await pobierzVillageIdsRoliPaneluSoltysaDlaUzytkownikaCache(user.id);
 

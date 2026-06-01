@@ -7,6 +7,7 @@ import { createAdminSupabaseClient } from "@/lib/supabase/admin-client";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
 import { synchronizujAutobusyAutomatycznie } from "@/lib/transport/synchronizuj-autobusy-automatycznie";
 import { synchronizujTransportAutomatycznie } from "@/lib/transport/synchronizuj-transport-automatycznie";
+import { pobierzUzytkownikaDoAkcji } from "@/lib/auth/pobierz-uzytkownika-serwer";
 
 const schemaMapowanie = z.object({
   villageId: z.string().uuid(),
@@ -21,10 +22,8 @@ export async function ustawRecznaStacjePkpSoltys(dane: z.infer<typeof schemaMapo
   const parsed = schemaMapowanie.safeParse(dane);
   if (!parsed.success) return { ok: false, blad: parsed.error.issues[0]?.message ?? "Sprawdź pola." };
 
+  const user = await pobierzUzytkownikaDoAkcji();
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
   if (!user) return { ok: false, blad: "Zaloguj się." };
 
   const ids = await pobierzVillageIdsRoliPaneluSoltysaDlaUzytkownikaCache(user.id);
@@ -60,10 +59,8 @@ export async function ustawRecznaStacjePkpSoltys(dane: z.infer<typeof schemaMapo
 }
 
 export async function usunRecznaStacjePkpSoltys(args: { id: string }): Promise<WynikTransport> {
+  const user = await pobierzUzytkownikaDoAkcji();
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
   if (!user) return { ok: false, blad: "Zaloguj się." };
 
   const { data: row } = await supabase
@@ -104,10 +101,7 @@ export async function odswiezTransportWsiSoltysa(
   const parsed = schemaOdswiez.safeParse(dane);
   if (!parsed.success) return { ok: false, blad: "Nieprawidłowa wieś." };
 
-  const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await pobierzUzytkownikaDoAkcji();
   if (!user) return { ok: false, blad: "Zaloguj się." };
 
   const ids = await pobierzVillageIdsRoliPaneluSoltysaDlaUzytkownikaCache(user.id);

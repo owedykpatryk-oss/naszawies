@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { redirect } from "next/navigation";
 import { PanelStronaSoltysa } from "@/components/panel/panel-strona-soltysa";
 import { PlanCmentarzaEdytor } from "@/components/cmentarz/plan-cmentarza-edytor";
 import { parsujPlanCmentarza, szablonPlanuCmentarzaStartowy } from "@/lib/cmentarz/plan-cmentarza";
@@ -8,6 +7,7 @@ import { centroidPolygon } from "@/lib/cmentarz/overpass-cmentarz-obrys";
 import { pobierzVillageIdsRoliPaneluSoltysaDlaUzytkownikaCache } from "@/lib/panel/rola-panelu-soltysa";
 import { sciezkaProfiluWsi } from "@/lib/wies/sciezka-publiczna";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
+import { pobierzUzytkownikaPanelu } from "@/lib/auth/pobierz-uzytkownika-serwer";
 
 export const metadata: Metadata = {
   title: "Plan cmentarza (sołtys)",
@@ -15,11 +15,7 @@ export const metadata: Metadata = {
 
 export default async function SoltysCmentarzPage() {
   const supabase = utworzKlientaSupabaseSerwer();
-  const { data: { session } } = await supabase.auth.getSession();
-  const user = session?.user ?? null;
-  if (!user) {
-    redirect("/logowanie?next=/panel/soltys/cmentarz");
-  }
+  const user = await pobierzUzytkownikaPanelu();
 
   const villageIds = await pobierzVillageIdsRoliPaneluSoltysaDlaUzytkownikaCache(user.id);
 

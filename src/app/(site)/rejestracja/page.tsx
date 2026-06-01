@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
 import { bezpiecznaSciezkaNastepna } from "@/lib/auth/bezpieczna-sciezka-nastepna";
-import { pobierzSesjeSerwer } from "@/lib/auth/pobierz-uzytkownika-serwer";
+import { pobierzUzytkownikaSerwer } from "@/lib/auth/pobierz-uzytkownika-serwer";
 import { pobierzPochodzeniePubliczne } from "@/lib/zadanie/pochodzenie-publiczne";
 import { LogowanieProwiderzy } from "../logowanie/logowanie-prowiderzy";
 import { RejestracjaFormularz } from "./rejestracja-formularz";
@@ -34,8 +34,8 @@ export default async function RejestracjaPage({ searchParams }: Props) {
   const wiesPrefill = wiesId ? await pobierzWiesPoIdDlaRejestracji(wiesId) : null;
 
   try {
-    const session = await pobierzSesjeSerwer();
-    if (session?.user) {
+    const user = await pobierzUzytkownikaSerwer();
+    if (user) {
       redirect(nastepna);
     }
   } catch {

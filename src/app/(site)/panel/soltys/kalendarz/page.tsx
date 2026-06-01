@@ -1,10 +1,10 @@
 import type { Metadata } from "next";
-import { redirect } from "next/navigation";
 import { PanelStronaSoltysa } from "@/components/panel/panel-strona-soltysa";
 import { SoltysKalendarzKlient } from "@/components/panel/soltys-kalendarz-klient";
 import { pobierzKalendarzSoltysa } from "@/lib/kalendarz/pobierz-kalendarz-soltysa";
 import { pobierzVillageIdsRoliPaneluSoltysaDlaUzytkownikaCache } from "@/lib/panel/rola-panelu-soltysa";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
+import { pobierzUzytkownikaPanelu } from "@/lib/auth/pobierz-uzytkownika-serwer";
 
 export const metadata: Metadata = {
   title: "Kalendarz organizacyjny",
@@ -29,9 +29,7 @@ function zakresMiesiaca(ym: string): { od: Date; doDaty: Date } {
 
 export default async function SoltysKalendarzPage({ searchParams }: Props) {
   const supabase = utworzKlientaSupabaseSerwer();
-  const { data: { session } } = await supabase.auth.getSession();
-  const user = session?.user ?? null;
-  if (!user) redirect("/logowanie?next=/panel/soltys/kalendarz");
+  const user = await pobierzUzytkownikaPanelu();
 
   const villageIds = await pobierzVillageIdsRoliPaneluSoltysaDlaUzytkownikaCache(user.id);
   const miesiac = miesiacZParam(searchParams?.miesiac);

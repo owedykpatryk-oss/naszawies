@@ -7,6 +7,7 @@ import { powiadomObserwujacychISoltysowOZmianieStatusuZgloszenia } from "@/lib/p
 import { wyslijWebPushDlaUzytkownika } from "@/lib/pwa/wyslij-web-push";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin-client";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
+import { pobierzUzytkownikaDoAkcji } from "@/lib/auth/pobierz-uzytkownika-serwer";
 
 const uuid = z.string().uuid();
 
@@ -43,10 +44,8 @@ export async function zaktualizujZgloszenieSoltys(
     return { blad: "Niepoprawne dane formularza." };
   }
 
+  const user = await pobierzUzytkownikaDoAkcji();
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
   if (!user) {
     return { blad: "Zaloguj się." };
   }
@@ -146,10 +145,8 @@ export async function oznaczPismoDoGminyWyslane(issueId: string): Promise<WynikA
   const id = uuid.safeParse(issueId);
   if (!id.success) return { blad: "Niepoprawny identyfikator zgłoszenia." };
 
+  const user = await pobierzUzytkownikaDoAkcji();
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
   if (!user) return { blad: "Zaloguj się." };
 
   const villageIds = await pobierzVillageIdsRoliPaneluSoltysaDlaUzytkownikaCache(user.id);

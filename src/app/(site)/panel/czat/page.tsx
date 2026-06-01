@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
-import { redirect } from "next/navigation";
 import { NaglowekModuluPanelu } from "@/components/pomoc/naglowek-modulu-panelu";
 import { etykietaPresetu } from "@/lib/czat/grupy-preset";
 import { pobierzNieprzeczytanePoKonwersacji } from "@/lib/czat/pobierz-nieprzeczytane";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
+import { pobierzUzytkownikaPanelu } from "@/lib/auth/pobierz-uzytkownika-serwer";
 import { CzatListaGrupKlient } from "./czat-lista-grup-klient";
 import { CzatListaKonwersacjiKlient, type WierszKonwersacjiCzat } from "./czat-lista-konwersacji-klient";
 
@@ -11,9 +11,7 @@ export const metadata: Metadata = { title: "Wiadomości" };
 
 export default async function CzatPage() {
   const supabase = utworzKlientaSupabaseSerwer();
-  const { data: { session } } = await supabase.auth.getSession();
-  const user = session?.user ?? null;
-  if (!user) redirect("/logowanie?next=/panel/czat");
+  const user = await pobierzUzytkownikaPanelu();
 
   const { data: czlonkostwa } = await supabase
     .from("chat_members")

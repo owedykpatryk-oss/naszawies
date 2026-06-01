@@ -2,13 +2,12 @@
 
 import { zapiszZgodyUzytkownika, zgodaBaneruCookies } from "@/lib/rodo/zapisz-zgody-uzytkownika";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
+import { pobierzUzytkownikaDoAkcji } from "@/lib/auth/pobierz-uzytkownika-serwer";
 
 /** Zapis informacji o zapoznaniu się z banerem cookies (zalogowany użytkownik). */
 export async function zapiszZgodeBaneruCookies(): Promise<{ ok?: true; blad?: string }> {
+  const user = await pobierzUzytkownikaDoAkcji();
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
   if (!user) return { ok: true };
 
   const wynik = await zapiszZgodyUzytkownika(supabase, user.id, [zgodaBaneruCookies()], "banner_cookies", {

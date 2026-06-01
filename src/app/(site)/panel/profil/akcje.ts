@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { wyciagnijBucketIKluczZUrlaR2 } from "@/lib/cloudflare/r2-url-pomoc";
 import { usunObiektR2JesliUrlNasz } from "@/lib/storage/usun-plik-r2-po-url";
+import { pobierzUzytkownikaDoAkcji } from "@/lib/auth/pobierz-uzytkownika-serwer";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
 import {
   KLUCZE_DOLNEJ_NAWIGACJI,
@@ -39,10 +40,8 @@ export async function aktualizujProfilZFormularza(formData: FormData): Promise<W
     return { blad: pierwszy };
   }
 
+  const user = await pobierzUzytkownikaDoAkcji();
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
   if (!user) {
     return { blad: "Brak sesji — zaloguj się ponownie." };
   }
@@ -87,10 +86,8 @@ export async function zapiszPreferencjeUi(prefs: PreferencjeUi): Promise<WynikAk
     return { blad: parsed.error.issues[0]?.message ?? "Nieprawidłowe ustawienia nawigacji." };
   }
 
+  const user = await pobierzUzytkownikaDoAkcji();
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
   if (!user) return { blad: "Zaloguj się." };
 
   const meta = (user.user_metadata ?? {}) as Record<string, unknown>;
@@ -117,10 +114,8 @@ export async function zapiszPreferencjeUi(prefs: PreferencjeUi): Promise<WynikAk
 
 /** URL z publicznego bucketa `avatars` (Supabase lub R2) po uploadzie. */
 export async function aktualizujAvatarZWeryfikowanegoUrl(publicUrl: string): Promise<WynikAkcjiProfilu> {
+  const user = await pobierzUzytkownikaDoAkcji();
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
   if (!user) {
     return { blad: "Brak sesji." };
   }
@@ -152,10 +147,8 @@ export async function aktualizujAvatarZWeryfikowanegoUrl(publicUrl: string): Pro
 }
 
 export async function usunAvatar(): Promise<WynikAkcjiProfilu> {
+  const user = await pobierzUzytkownikaDoAkcji();
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
   if (!user) {
     return { blad: "Brak sesji." };
   }

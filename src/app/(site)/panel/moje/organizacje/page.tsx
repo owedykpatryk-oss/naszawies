@@ -1,23 +1,18 @@
 import Link from "next/link";
-import { redirect } from "next/navigation";
 import { PanelStronaMoje } from "@/components/panel/panel-strona-moje";
 import {
   etykietaRodzajuWydarzenia,
   etykietaSekcjiOrganizacji,
   pobierzMojeOrganizacje,
 } from "@/lib/panel/pobierz-moje-organizacje";
-import { pobierzMojePowiazania } from "@/lib/panel/pobierz-moje-powiazania";
+import { pobierzMojePowiazaniaPanelu } from "@/lib/panel/pobierz-moje-powiazania";
 
 export const metadata = { title: "Parafia / KGW / OSP — Moje" };
 
 const KOLEJNOSC = ["parafia", "kgw", "lowiectwo", "osp", "sport"] as const;
 
 export default async function MojeOrganizacjePage() {
-  const dane = await pobierzMojePowiazania();
-  if (!dane) {
-    redirect("/logowanie?next=/panel/moje/organizacje");
-  }
-
+  const dane = await pobierzMojePowiazaniaPanelu();
   const { organizacje, wydarzenia } = await pobierzMojeOrganizacje(dane.villageIdsFeed);
   const maTresc = organizacje.length > 0 || wydarzenia.length > 0;
 

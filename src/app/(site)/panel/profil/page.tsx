@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { redirect } from "next/navigation";
+
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
+import { pobierzUzytkownikaPanelu } from "@/lib/auth/pobierz-uzytkownika-serwer";
 import { NaglowekModuluPanelu } from "@/components/pomoc/naglowek-modulu-panelu";
 import { ProfilFormularz } from "./profil-formularz";
 import { ProfilSekcjaRodo } from "./profil-sekcja-rodo";
@@ -21,12 +22,7 @@ export const metadata: Metadata = {
 
 export default async function PanelProfilPage() {
   const supabase = utworzKlientaSupabaseSerwer();
-  const { data: { session } } = await supabase.auth.getSession();
-  const user = session?.user ?? null;
-
-  if (!user) {
-    redirect("/logowanie?next=/panel/profil");
-  }
+  const user = await pobierzUzytkownikaPanelu();
 
   const { data: profil, error } = await supabase
     .from("users")

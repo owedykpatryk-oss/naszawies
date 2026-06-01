@@ -6,6 +6,7 @@ import { sciezkaProfiluWsi } from "@/lib/wies/sciezka-publiczna";
 import { AUDIENCJE_OGLOSZEN_SZKOLY } from "@/lib/szkola/teksty-szkoly";
 import { pobierzVillageIdsRoliPaneluSoltysa } from "@/lib/panel/rola-panelu-soltysa";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
+import { pobierzUzytkownikaDoAkcji } from "@/lib/auth/pobierz-uzytkownika-serwer";
 
 export type WynikSzkola = { blad: string } | { ok: true };
 
@@ -62,10 +63,8 @@ export async function dodajOgloszenieSzkoly(dane: z.infer<typeof schemaOgloszeni
   const p = schemaOgloszenie.safeParse(dane);
   if (!p.success) return { blad: "Sprawdź dane ogłoszenia." };
 
+  const user = await pobierzUzytkownikaDoAkcji();
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
   if (!user) return { blad: "Zaloguj się." };
   if (!(await mozeZarzadzacWies(supabase, user.id, p.data.villageId))) {
     return { blad: "Brak uprawnień." };
@@ -108,10 +107,8 @@ export async function edytujOgloszenieSzkoly(dane: z.infer<typeof schemaEdycja>)
   const p = schemaEdycja.safeParse(dane);
   if (!p.success) return { blad: "Sprawdź dane ogłoszenia." };
 
+  const user = await pobierzUzytkownikaDoAkcji();
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
   if (!user) return { blad: "Zaloguj się." };
   if (!(await mozeZarzadzacWies(supabase, user.id, p.data.villageId))) {
     return { blad: "Brak uprawnień." };
@@ -154,10 +151,8 @@ export async function przedluzOgloszenieSzkoly(dane: z.infer<typeof schemaPrzedl
   const p = schemaPrzedluz.safeParse(dane);
   if (!p.success) return { blad: "Niepoprawne dane." };
 
+  const user = await pobierzUzytkownikaDoAkcji();
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
   if (!user) return { blad: "Zaloguj się." };
   if (!(await mozeZarzadzacWies(supabase, user.id, p.data.villageId))) {
     return { blad: "Brak uprawnień." };
@@ -201,10 +196,8 @@ export async function przypnijOgloszenieSzkoly(dane: z.infer<typeof schemaPrzypn
   const p = schemaPrzypnij.safeParse(dane);
   if (!p.success) return { blad: "Niepoprawne dane." };
 
+  const user = await pobierzUzytkownikaDoAkcji();
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
   if (!user) return { blad: "Zaloguj się." };
   if (!(await mozeZarzadzacWies(supabase, user.id, p.data.villageId))) {
     return { blad: "Brak uprawnień." };
@@ -229,10 +222,8 @@ export async function usunOgloszenieSzkoly(dane: z.infer<typeof schemaId>): Prom
   const p = schemaId.safeParse(dane);
   if (!p.success) return { blad: "Niepoprawne dane." };
 
+  const user = await pobierzUzytkownikaDoAkcji();
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
   if (!user) return { blad: "Zaloguj się." };
   if (!(await mozeZarzadzacWies(supabase, user.id, p.data.villageId))) {
     return { blad: "Brak uprawnień." };

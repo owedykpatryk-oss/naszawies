@@ -5,7 +5,8 @@
 :root {
   --nasza-zielen: #2d5a2d;
   --nasza-zielen-jasna: #5a9c3e;
-  --nasza-tlo-panel: #f4f0e6;
+  --nasza-tlo-app: #faf9f7;
+  --nasza-tlo-panel: #faf9f7;
   --nasza-szklo: rgba(255, 255, 255, 0.72);
   --site-header-offset: 3.75rem;
   --site-header-height: 3.5rem;
@@ -88,26 +89,35 @@ body {
 }
 
 .profil-wies-motyw .wies-zakladka {
-  border-color: color-mix(in srgb, var(--wies-ramka, #86efac) 45%, #e7e5e4);
+  border-color: color-mix(in srgb, var(--wies-ramka, #86efac) 35%, #e7e5e4);
   color: var(--wies-tekst, #14532d);
-  background: color-mix(in srgb, white 92%, var(--wies-tlo, #f0fdf4));
+  background: color-mix(in srgb, white 94%, var(--wies-tlo, #f0fdf4));
+  box-shadow: 0 1px 2px rgba(0, 0, 0, 0.04);
 }
 
 .profil-wies-motyw .wies-zakladka:hover {
-  border-color: color-mix(in srgb, var(--wies-akcent, #166534) 35%, #e7e5e4);
-  background: color-mix(in srgb, var(--wies-tlo, #f0fdf4) 55%, white);
+  border-color: color-mix(in srgb, var(--wies-akcent, #166534) 40%, #e7e5e4);
+  background: color-mix(in srgb, var(--wies-tlo, #f0fdf4) 45%, white);
 }
 
 .profil-wies-motyw .wies-zakladka--aktywna {
   border-color: var(--wies-akcent, #166534);
   background: var(--wies-akcent, #166534);
   color: #fff;
-  box-shadow: 0 2px 10px color-mix(in srgb, var(--wies-akcent, #166534) 35%, transparent);
+  box-shadow:
+    0 2px 10px color-mix(in srgb, var(--wies-akcent, #166534) 35%, transparent),
+    0 0 0 1px color-mix(in srgb, var(--wies-akcent, #166534) 20%, transparent);
 }
 
 .profil-wies-motyw .wies-zakladki-nav {
-  border-color: color-mix(in srgb, var(--wies-ramka, #86efac) 40%, #e7e5e4);
-  background: color-mix(in srgb, white 88%, var(--wies-tlo, #f0fdf4));
+  border-color: color-mix(in srgb, var(--wies-ramka, #86efac) 35%, #e7e5e4);
+  background: color-mix(in srgb, white 92%, var(--wies-tlo, #f0fdf4));
+  box-shadow: 0 4px 16px rgba(45, 90, 45, 0.06);
+}
+
+.profil-wies-motyw .wies-sekcja-obudowa {
+  border-color: color-mix(in srgb, var(--wies-ramka, #86efac) 28%, #e7e5e4);
+  background: color-mix(in srgb, white 96%, var(--wies-tlo, #f0fdf4));
 }
 
 .profil-wies-motyw .wies-skrot-kafelek {
@@ -359,11 +369,49 @@ html.tryb-senior textarea {
   }
 
   .site-tlo-aplikacji {
-    background-color: #faf9f7;
+    background-color: var(--nasza-tlo-app);
     background-image:
       radial-gradient(ellipse 70% 45% at 0% 0%, rgba(90, 156, 62, 0.07), transparent 55%),
       radial-gradient(ellipse 50% 35% at 100% 0%, rgba(45, 90, 45, 0.05), transparent 50%),
       linear-gradient(180deg, #faf9f7 0%, #f5f4f2 100%);
+  }
+
+  .tytul-strony-app {
+    @apply font-serif font-normal leading-tight tracking-tight text-green-950;
+    font-size: clamp(1.75rem, 3.5vw, 2.5rem);
+  }
+
+  .tytul-strony-hero {
+    @apply font-serif font-normal leading-tight tracking-tight text-green-950;
+    font-size: clamp(2rem, 5vw, 3.5rem);
+  }
+
+  .mapa-strona-glowna {
+    min-height: calc(100dvh - var(--site-header-offset, 3.75rem) - var(--dolna-naw-offset, 0px));
+  }
+
+  .mapa-widget-pelny {
+    min-height: calc(100dvh - var(--site-header-offset, 3.75rem) - var(--dolna-naw-offset, 0px) - 3rem);
+  }
+
+  @media (min-width: 1024px) {
+    .mapa-widget-pelny {
+      min-height: calc(100dvh - var(--site-header-offset, 6.75rem) - 3rem);
+    }
+  }
+
+  .mapa-strona-glowna--immersive {
+    min-height: calc(100dvh - var(--dolna-naw-offset, 0px));
+  }
+
+  .mapa-strona-glowna--immersive .mapa-widget-pelny {
+    min-height: calc(100dvh - var(--dolna-naw-offset, 0px) - 2.75rem);
+  }
+
+  @media (min-width: 1024px) {
+    .mapa-strona-glowna--immersive .mapa-widget-pelny {
+      min-height: calc(100dvh - var(--dolna-naw-offset, 0px) - 2.75rem);
+    }
   }
 
   .hero-publiczny {
@@ -451,15 +499,47 @@ html.tryb-senior textarea {
   }
 
   .dolna-naw-link {
-    @apply flex min-h-[46px] flex-1 flex-col items-center justify-center gap-0.5 rounded-lg px-0.5 py-1 text-[10px] font-semibold text-stone-600 transition;
+    @apply flex min-h-[48px] flex-1 flex-col items-center justify-center gap-0.5 rounded-xl px-0.5 py-1 text-[10px] font-semibold text-stone-500 transition duration-150;
+  }
+
+  .dolna-naw-ikona-wrap {
+    @apply flex h-7 w-7 items-center justify-center rounded-lg text-stone-600 transition duration-150;
+  }
+
+  .dolna-naw-ikona-wrap--mapa {
+    @apply h-9 w-9 rounded-full bg-green-800/10 text-green-900;
+  }
+
+  .dolna-naw-ikona {
+    @apply h-[1.125rem] w-[1.125rem];
+  }
+
+  .dolna-naw-link--mapa {
+    @apply -mt-1.5 min-h-[54px] flex-[1.12];
+  }
+
+  .dolna-naw-link--mapa .dolna-naw-ikona {
+    @apply h-5 w-5;
   }
 
   .dolna-naw-link--aktywny {
-    @apply bg-green-800/10 text-green-950;
+    @apply text-green-950;
+  }
+
+  .dolna-naw-link--aktywny .dolna-naw-ikona-wrap {
+    @apply bg-green-800 text-white shadow-md shadow-green-900/20;
+  }
+
+  .dolna-naw-link--aktywny .dolna-naw-etykieta {
+    @apply font-bold text-green-900;
+  }
+
+  .dolna-naw-link:not(.dolna-naw-link--aktywny):hover .dolna-naw-ikona-wrap {
+    @apply bg-white/80 text-green-900;
   }
 
   .dolna-naw-link:not(.dolna-naw-link--aktywny):hover {
-    @apply bg-white/60 text-green-900;
+    @apply text-green-900;
   }
 
   .profil-wies-strona {
@@ -559,11 +639,11 @@ html.tryb-senior textarea {
   .panel-tlo {
     @apply relative isolate min-h-screen overflow-x-hidden;
     --sticky-nav-offset: var(--panel-header-offset);
-    background-color: var(--nasza-tlo-panel);
+    background-color: var(--nasza-tlo-app);
     background-image:
-      radial-gradient(ellipse 80% 50% at 10% -10%, rgba(90, 156, 62, 0.14), transparent 55%),
-      radial-gradient(ellipse 60% 40% at 95% 5%, rgba(45, 90, 45, 0.08), transparent 50%),
-      linear-gradient(180deg, #f4f0e6 0%, #faf9f7 38%, #f5f4f2 100%);
+      radial-gradient(ellipse 70% 45% at 0% 0%, rgba(90, 156, 62, 0.07), transparent 55%),
+      radial-gradient(ellipse 50% 35% at 100% 0%, rgba(45, 90, 45, 0.05), transparent 50%),
+      linear-gradient(180deg, #faf9f7 0%, #f5f4f2 100%);
   }
 
   .panel-tlo::before {
@@ -572,7 +652,7 @@ html.tryb-senior textarea {
     inset: 0;
     z-index: -1;
     pointer-events: none;
-    opacity: 0.35;
+    opacity: 0.2;
     background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.04'/%3E%3C/svg%3E");
   }
 
@@ -745,6 +825,20 @@ html.tryb-senior textarea {
 
   .mapa-pill-warstwa--on {
     @apply border-green-700/30 bg-gradient-to-br from-green-50 to-emerald-50/80 text-green-950 shadow-sm;
+  }
+
+  .mapa-fab-filtry {
+    @apply fixed z-[44] flex min-h-[44px] items-center gap-1.5 rounded-full border border-green-800/20 bg-green-800 px-4 py-2.5 text-sm font-semibold text-white shadow-lg ring-2 ring-white/90 transition active:scale-[0.98];
+    left: max(0.75rem, env(safe-area-inset-left));
+    bottom: calc(0.75rem + var(--dolna-naw-offset, 0px) + env(safe-area-inset-bottom));
+  }
+
+  .mapa-panel-filtry-sheet {
+    bottom: calc(var(--dolna-naw-offset, 0px) + env(safe-area-inset-bottom));
+  }
+
+  .mapa-panel-filtry-sheet__uchwyt {
+    @apply mx-auto block h-1 w-10 rounded-full bg-stone-300;
   }
 
   .btn-panel-primary {

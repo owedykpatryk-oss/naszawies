@@ -11,7 +11,7 @@ import { FinalizujPowiazanieRejestracji } from "@/components/panel/finalizuj-pow
 import { BramkaZgodPrawnych } from "@/components/panel/bramka-zgod-prawnych";
 import { FeedbackPromptPanelKlient } from "@/components/feedback/feedback-prompt-panel-klient";
 
-import { pobierzUzytkownikaSerwer } from "@/lib/auth/pobierz-uzytkownika-serwer";
+import { pobierzUzytkownikaPanelu, pobierzUzytkownikaSerwer } from "@/lib/auth/pobierz-uzytkownika-serwer";
 
 import { pobierzMetadaneNaglowkaPaneluCache } from "@/lib/panel/metadane-naglowka-panelu";
 
@@ -89,10 +89,9 @@ function NaglowekPaneluSzkielet() {
 
 
 
-export default function PanelLayout({ children }: { children: React.ReactNode }) {
-
+export default async function PanelLayout({ children }: { children: React.ReactNode }) {
+  await pobierzUzytkownikaPanelu();
   const sciezka = headers().get("x-pathname") ?? "/panel";
-
   const ekranOnboardingu =
 
     sciezka === "/panel/onboarding" || sciezka.startsWith("/panel/onboarding/");

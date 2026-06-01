@@ -16,25 +16,42 @@ export type KluczDolnejNawigacji = (typeof KLUCZE_DOLNEJ_NAWIGACJI)[number];
 
 export const ETYKIETY_DOLNEJ_NAWIGACJI: Record<
   KluczDolnejNawigacji,
-  { href: string; label: string; ikona: string; tylkoZalogowany?: boolean; tylkoPubliczny?: boolean }
+  { href: string; label: string; tylkoZalogowany?: boolean; tylkoPubliczny?: boolean }
 > = {
-  panel: { href: "/panel", label: "Panel", ikona: "🏠", tylkoZalogowany: true },
-  rynek: { href: "/rynek", label: "Rynek", ikona: "🛒" },
-  mapa: { href: "/mapa", label: "Mapa", ikona: "🗺️" },
-  szukaj: { href: "/szukaj", label: "Szukaj", ikona: "🔍" },
-  moje: { href: "/panel/moje", label: "Moje", ikona: "★", tylkoZalogowany: true },
-  czat: { href: "/panel/czat", label: "Czat", ikona: "💬", tylkoZalogowany: true },
-  powiadomienia: { href: "/panel/powiadomienia", label: "Alerty", ikona: "🔔", tylkoZalogowany: true },
-  pomoc: { href: "/pomoc", label: "Pomoc", ikona: "💡", tylkoPubliczny: true },
-  logowanie: { href: "/logowanie", label: "Login", ikona: "👤", tylkoPubliczny: true },
+  panel: { href: "/panel", label: "Konto", tylkoZalogowany: true },
+  rynek: { href: "/rynek", label: "Rynek" },
+  mapa: { href: "/mapa", label: "Mapa" },
+  szukaj: { href: "/szukaj", label: "Szukaj" },
+  moje: { href: "/panel/moje", label: "Moje", tylkoZalogowany: true },
+  czat: { href: "/panel/czat", label: "Czat", tylkoZalogowany: true },
+  powiadomienia: { href: "/panel/powiadomienia", label: "Alerty", tylkoZalogowany: true },
+  pomoc: { href: "/pomoc", label: "Pomoc", tylkoPubliczny: true },
+  logowanie: { href: "/logowanie", label: "Login", tylkoPubliczny: true },
 };
 
+export type ZakladkaDolnejNawigacji = {
+  href: string;
+  label: string;
+  klucz: KluczDolnejNawigacji;
+};
+
+/** Mapa zawsze na środku paska (wizualny hub aplikacji). */
+export function uporzadkujDolnaNawDoWyswietlenia(tabs: ZakladkaDolnejNawigacji[]): ZakladkaDolnejNawigacji[] {
+  if (tabs.length < 3) return tabs;
+  const idx = tabs.findIndex((t) => t.klucz === "mapa");
+  if (idx === -1) return tabs;
+  const mapa = tabs[idx];
+  const reszta = tabs.filter((t) => t.klucz !== "mapa");
+  const srodek = Math.floor(tabs.length / 2);
+  return [...reszta.slice(0, srodek), mapa, ...reszta.slice(srodek)];
+}
+
 export const DOMYSLNA_DOLNA_NAW_ZALOGOWANY: KluczDolnejNawigacji[] = [
-  "panel",
-  "rynek",
   "mapa",
+  "rynek",
   "szukaj",
   "moje",
+  "panel",
 ];
 
 export const DOMYSLNA_DOLNA_NAW_PUBLICZNY: KluczDolnejNawigacji[] = [
@@ -87,6 +104,11 @@ const schemaPreferencjeUi = z.object({
 
 export type PreferencjeUi = z.infer<typeof schemaPreferencjeUi>;
 
+/** Domyślne preferencje UI zapisywane przy pierwszym onboardingu / rejestracji. */
+export function domyslnePreferencjeUiNowegoUzytkownika(): PreferencjeUi {
+  return { dolna_nawigacja: [...DOMYSLNA_DOLNA_NAW_ZALOGOWANY] };
+}
+
 export function parsujPreferencjeUiZMeta(meta: Record<string, unknown> | undefined): PreferencjeUi {
   const raw = meta?.ui_preferences;
   const w = schemaPreferencjeUi.safeParse(raw ?? {});
@@ -115,23 +137,23 @@ export function pobierzKluczeDolnejNawigacjiZMeta(
 export function dolnaNawigacjaZKluczy(
   klucze: KluczDolnejNawigacji[] | undefined,
   zalogowany: boolean,
-): { href: string; label: string; ikona: string }[] {
+): ZakladkaDolnejNawigacji[] {
   const domysl = zalogowany ? DOMYSLNA_DOLNA_NAW_ZALOGOWANY : DOMYSLNA_DOLNA_NAW_PUBLICZNY;
   const wybrane = (klucze?.length ? klucze : domysl).slice(0, 5);
 
-  const out: { href: string; label: string; ikona: string }[] = [];
+  const out: ZakladkaDolnejNawigacji[] = [];
   for (const k of wybrane) {
     const def = ETYKIETY_DOLNEJ_NAWIGACJI[k];
     if (!def) continue;
     if (zalogowany && def.tylkoPubliczny) continue;
     if (!zalogowany && def.tylkoZalogowany) continue;
-    out.push({ href: def.href, label: def.label, ikona: def.ikona });
+    out.push({ href: def.href, label: def.label, klucz: k });
   }
 
   if (out.length < 3) {
-    return dolnaNawigacjaZKluczy(undefined, zalogowany);
+    return uporzadkujDolnaNawDoWyswietlenia(dolnaNawigacjaZKluczy(undefined, zalogowany));
   }
-  return out;
+  return uporzadkujDolnaNawDoWyswietlenia(out);
 }
 
 export function pobierzKluczePanelNawigacjiZMeta(
@@ -163,23 +185,29 @@ export function pobierzKluczePanelNawigacjiZMeta(
   return domysl.slice(0, 8);
 }
 
+export type ZakladkaPanelNawigacji = {
+  href: string;
+  label: string;
+  klucz: KluczPanelNawigacji;
+};
+
 export function panelNawigacjaZKluczy(
   klucze: KluczPanelNawigacji[] | undefined,
   opcje: { pokazSoltysa: boolean; pokazAdmin: boolean },
-): { href: string; label: string; ikona: string }[] {
+): ZakladkaPanelNawigacji[] {
   const wybrane = (
     klucze?.length
       ? klucze
       : pobierzKluczePanelNawigacjiZMeta(undefined, opcje)
   ).slice(0, 8);
 
-  const out: { href: string; label: string; ikona: string }[] = [];
+  const out: ZakladkaPanelNawigacji[] = [];
   for (const k of wybrane) {
     const def = ETYKIETY_PANEL_NAWIGACJI[k];
     if (!def) continue;
     if (def.wymagaSoltysa && !opcje.pokazSoltysa) continue;
     if (def.wymagaAdmina && !opcje.pokazAdmin) continue;
-    out.push({ href: def.href, label: def.label, ikona: def.ikona });
+    out.push({ href: def.href, label: def.label, klucz: k });
   }
   if (out.length < 3) {
     return panelNawigacjaZKluczy(undefined, opcje);

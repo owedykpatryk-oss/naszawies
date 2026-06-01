@@ -1,10 +1,11 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { notFound, redirect } from "next/navigation";
+import { notFound } from "next/navigation";
 import { etykietaPresetu } from "@/lib/czat/grupy-preset";
 import { sciezkaProfiluWsi } from "@/lib/wies/sciezka-publiczna";
 import { zaufanieZLiczby } from "@/lib/marketplace/zaufanie-sprzedawcy";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
+import { pobierzUzytkownikaPanelu } from "@/lib/auth/pobierz-uzytkownika-serwer";
 import { PasekOdznakSprzedawcy } from "@/components/wies/rynek-ui";
 import { oznaczPrzeczytane } from "../akcje";
 import { CzatKontekstOgloszenia, type KontekstOgloszeniaCzat } from "../czat-kontekst-ogloszenia";
@@ -36,9 +37,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
 
 export default async function CzatKonwersacjaPage({ params }: Props) {
   const supabase = utworzKlientaSupabaseSerwer();
-  const { data: { session } } = await supabase.auth.getSession();
-  const user = session?.user ?? null;
-  if (!user) redirect(`/logowanie?next=/panel/czat/${params.conversationId}`);
+  const user = await pobierzUzytkownikaPanelu();
 
   const [{ data: profilJa }, { data: conv }] = await Promise.all([
     supabase.from("users").select("display_name").eq("id", user.id).maybeSingle(),

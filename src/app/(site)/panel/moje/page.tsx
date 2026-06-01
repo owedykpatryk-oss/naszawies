@@ -1,20 +1,16 @@
+import { NaglowekModuluPanelu } from "@/components/pomoc/naglowek-modulu-panelu";
 import Link from "next/link";
-import { redirect } from "next/navigation";
 import { MojeFeedCoNowego } from "@/components/panel/moje/moje-feed-co-nowego";
 import { MojeKartaWsi } from "@/components/panel/moje/moje-karta-wsi";
 import { MojeSkrotPowiadomien } from "@/components/panel/moje/moje-skrot-powiadomien";
 import { MojeSkrotTransportu } from "@/components/panel/moje/moje-skrot-transportu";
 import { pobierzMojFeedCoNowego } from "@/lib/panel/pobierz-moj-feed-co-nowego";
 import { pobierzOstatniePowiadomienia } from "@/lib/panel/pobierz-ostatnie-powiadomienia";
-import { pobierzMojePowiazania } from "@/lib/panel/pobierz-moje-powiazania";
+import { pobierzMojePowiazaniaPanelu } from "@/lib/panel/pobierz-moje-powiazania";
 import { pobierzSkrotTransportuMoje } from "@/lib/panel/pobierz-skrot-transportu-moje";
 
 export default async function MojePrzegladPage() {
-  const dane = await pobierzMojePowiazania();
-  if (!dane) {
-    redirect("/logowanie?next=/panel/moje");
-  }
-
+  const dane = await pobierzMojePowiazaniaPanelu();
   const pierwszeWies = dane.wies.slice(0, 4);
   const pierwszaGminaHub = dane.gminy[0]?.sciezkaHub ?? dane.gminyObserwowane[0]?.sciezkaHub ?? "/panel/moje/samorzad";
   const pierwszaGminaNazwa = dane.gminy[0]?.gmina ?? dane.gminyObserwowane[0]?.gmina ?? "Huby i obserwacja gminy";
@@ -26,17 +22,20 @@ export default async function MojePrzegladPage() {
 
   return (
     <main>
-      <header className="panel-informacji-hero mb-8">
-        <p className="etykieta-modulu">Twój skrót</p>
-        <h1 className="mt-1 font-serif text-3xl text-green-950">Obserwowane</h1>
-        <p className="mt-2 max-w-prose text-sm leading-relaxed text-stone-600">
-          Warstwa „co mnie interesuje” — wsie, gminy i ulubione. Działania (ogłoszenia, świetlica, zgłoszenia) są w{" "}
-          <Link href="/panel/mieszkaniec" className="font-medium text-green-800 underline">
-            Moja wieś
-          </Link>
-          .
-        </p>
-      </header>
+      <NaglowekModuluPanelu
+        etykieta="Twój skrót"
+        tytul="Obserwowane"
+        hrefPomocy="/pomoc"
+        opis={
+          <>
+            Warstwa „co mnie interesuje” — wsie, gminy i ulubione. Działania (ogłoszenia, świetlica, zgłoszenia) są w{" "}
+            <Link href="/panel/mieszkaniec" className="font-medium text-green-800 underline">
+              Moja wieś
+            </Link>
+            .
+          </>
+        }
+      />
 
       <dl className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
         <div className="kpi-kafel">

@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
 import { sciezkaProfiluWsi } from "@/lib/wies/sciezka-publiczna";
+import { pobierzUzytkownikaDoAkcji } from "@/lib/auth/pobierz-uzytkownika-serwer";
 
 type Wynik = { ok?: true; blad?: string; candle_count?: number; zapalona?: boolean };
 
@@ -11,10 +12,8 @@ export async function zapalSwieczkeHistorii(entryId: string): Promise<Wynik> {
   const id = z.string().uuid().safeParse(entryId);
   if (!id.success) return { blad: "Niepoprawny wpis." };
 
+  const user = await pobierzUzytkownikaDoAkcji();
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
   if (!user) return { blad: "Zaloguj się, aby zapalić świeczkę pamięci." };
 
   const { data: wpis } = await supabase

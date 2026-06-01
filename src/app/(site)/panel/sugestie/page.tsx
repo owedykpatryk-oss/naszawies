@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
+import { NaglowekModuluPanelu } from "@/components/pomoc/naglowek-modulu-panelu";
 import Link from "next/link";
-import { redirect } from "next/navigation";
 import { FeedbackAnkietaKlient } from "@/components/feedback/feedback-ankieta-klient";
 import { pobierzStanPromptuAnkiety } from "@/lib/feedback/stan-promptu-ankiety";
-import { pobierzUzytkownikaSerwer } from "@/lib/auth/pobierz-uzytkownika-serwer";
+import { pobierzUzytkownikaPanelu } from "@/lib/auth/pobierz-uzytkownika-serwer";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
 
 export const metadata: Metadata = {
@@ -13,15 +13,11 @@ export const metadata: Metadata = {
 };
 
 export default async function PanelSugestiePage() {
-  const user = await pobierzUzytkownikaSerwer();
-  if (!user) redirect("/logowanie?next=/panel/sugestie");
+  const user = await pobierzUzytkownikaPanelu();
 
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user: pelny },
-  } = await supabase.auth.getUser();
-
-  const stan = await pobierzStanPromptuAnkiety(supabase, user.id, pelny?.created_at);
+  const createdAt = user.created_at?.trim() ? user.created_at : undefined;
+  const stan = await pobierzStanPromptuAnkiety(supabase, user.id, createdAt);
 
   const { data: ostatnie } = await supabase
     .from("platform_user_feedback")
@@ -32,25 +28,19 @@ export default async function PanelSugestiePage() {
 
   return (
     <main className="max-w-2xl">
-      <p className="mb-4 text-sm text-stone-500">
-        <Link href="/panel" className="text-green-800 underline">
-          ← Panel
-        </Link>
-      </p>
-      <header className="mb-6">
-        <p className="text-xs font-semibold uppercase tracking-wide text-green-800">Twój głos</p>
-        <h1 className="font-serif text-2xl text-green-950 sm:text-3xl">Sugestie i opinia</h1>
-        <p className="mt-2 text-sm leading-relaxed text-stone-600">
-          Pomagasz nam budować lepszy serwis dla wsi. Opinie czytamy regularnie — dziękujemy za konkret (ekran, funkcja,
-          co było mylące).
+      <NaglowekModuluPanelu
+        etykieta="Twój głos"
+        tytul="Sugestie i opinia"
+        hrefPowrotu="/panel"
+        etykietaPowrotu="← Panel"
+        opis="Pomagasz nam budować lepszy serwis dla wsi. Opinie czytamy regularnie — dziękujemy za konkret (ekran, funkcja, co było mylące)."
+      />
+      {stan.dniOdRejestracji != null ? (
+        <p className="-mt-4 mb-6 text-xs text-stone-500">
+          Konto od {stan.dniOdRejestracji} dni
+          {stan.juzWyslanoAnkiete14d ? " · wysłałeś już ankietę powitalną" : ""}.
         </p>
-        {stan.dniOdRejestracji != null ? (
-          <p className="mt-2 text-xs text-stone-500">
-            Konto od {stan.dniOdRejestracji} dni
-            {stan.juzWyslanoAnkiete14d ? " · wysłałeś już ankietę powitalną" : ""}.
-          </p>
-        ) : null}
-      </header>
+      ) : null}
 
       <FeedbackAnkietaKlient surveyKind="voluntary" tryb="strona" dniOdRejestracji={stan.dniOdRejestracji} />
 

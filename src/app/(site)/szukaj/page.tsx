@@ -24,39 +24,34 @@ export default async function SzukajPage({ searchParams }: Props) {
   const qPoczatkowe = Array.isArray(qParam) ? qParam[0] : qParam;
 
   return (
-    <main className="page-shell px-4 py-8 sm:px-6 sm:py-12">
-      <p className="mb-6 text-sm text-stone-500">
-        <Link href="/" className="font-medium text-green-800 underline decoration-emerald-600/40 underline-offset-2">
-          ← Strona główna
+    <main className="page-shell px-4 py-6 sm:px-6 sm:py-10">
+      <div className="mb-4 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-stone-500">
+        <Link href="/mapa" className="font-medium text-green-800 underline decoration-emerald-600/40 underline-offset-2">
+          Mapa wsi
         </Link>
-        {" · "}
+        <span aria-hidden>·</span>
         <Link href="/rynek" className="font-medium text-green-800 underline decoration-emerald-600/40 underline-offset-2">
           Rynek lokalny
         </Link>
-      </p>
+      </div>
 
       <HeroModuluPublicznego
         etykieta="Katalog TERYT"
         tytul="Szukaj wsi"
         wariant="szukaj"
-        opis="Wpisz nazwę wsi albo fragment gminy, powiatu czy województwa — pokażemy miejscowości z katalogu serwisu. Przy wielu wynikach z tej samej gminy pojawi się skrót do listy wszystkich miejscowości w gminie."
+        opis="Nazwa wsi, gminy, powiatu lub województwa — wyniki z katalogu serwisu."
         dzieci={
           <div className="rounded-xl border border-emerald-300/50 bg-white/80 px-4 py-3 text-sm text-emerald-950 shadow-sm backdrop-blur-sm">
             Znalazłeś swoją wieś?{" "}
             <Link href="/rejestracja?intencja=mieszkaniec" className="font-semibold text-green-900 underline">
               Załóż konto
             </Link>{" "}
-            i dołącz do społeczności — za darmo.
+            — za darmo.
           </div>
         }
       />
 
-      <p className="mt-6 text-xs text-stone-500">
-        Liczba przy województwie to wpisy w bazie naszawies.pl — jeśli w regionie widać mało miejscowości, administrator
-        może uzupełnić katalog importem SIMC.
-      </p>
-
-      <div className="mt-8">
+      <div className="mt-6">
         <SzukajKatalog key={qPoczatkowe ?? ""} poczatkoweZapytanie={qPoczatkowe} />
       </div>
     </main>

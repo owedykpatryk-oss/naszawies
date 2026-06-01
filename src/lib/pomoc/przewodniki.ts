@@ -71,6 +71,51 @@ export const PRZEWODNIKI: Record<RolaPrzewodnika, SekcjaPrzewodnika[]> = {
       ],
     },
     {
+      id: "mapa",
+      tytul: "Mapa wsi — warstwy i filtry",
+      kroki: [
+        {
+          tytul: "Katalog i wyszukiwanie",
+          opis: "Wybierz województwo → powiat → gmina albo wpisz nazwę wsi. Lista sortuje się też wg odległości po włączeniu GPS.",
+          link: { href: "/mapa", label: "Otwórz mapę" },
+        },
+        {
+          tytul: "Warstwy POI",
+          opis: "Pills u góry listy: transport, sklepy, inwestycje 🏗, oświetlenie. Latarnie domyślnie ukryte przy widoku „Wszystkie POI”.",
+          link: { href: "/mapa?warstwa=inwestycje", label: "Warstwa inwestycji" },
+        },
+        {
+          tytul: "Inwestycje i planowane budowy",
+          opis: "Sołtys oznacza miejsca typu „tu powstanie…”, budowy w toku i link do uchwały. Część punktów importuje się z OpenStreetMap (tagi construction).",
+          link: { href: "/panel/soltys/mapa", label: "Edytor mapy sołtysa" },
+        },
+        {
+          tytul: "Zagospodarowanie (OSM)",
+          opis: "Warstwa polygonów landuse z OpenStreetMap: lasy, grunty rolne, zabudowa — orientacyjnie, obok granic PRG. Nie zastępuje MPZP gminy.",
+          link: { href: "/mapa?zagospodarowanie=1", label: "Warstwa zagospodarowania" },
+        },
+        {
+          tytul: "Oświetlenie drogi",
+          opis: "Latarnie z OSM lub dodane ręcznie — osobna warstwa.",
+          link: { href: "/mapa?warstwa=oswietlenie", label: "Warstwa oświetlenia" },
+        },
+        {
+          tytul: "Zgłoszenia na mapie",
+          opis: "Aktywne zgłoszenia mieszkańców (np. uszkodzona latarnia) widać jako żółte markery — po zalogowaniu we wsi, której dotyczą.",
+          link: { href: "/panel/mieszkaniec/zgloszenia?category=oswietlenie", label: "Zgłoś problem" },
+        },
+        {
+          tytul: "Link z filtrami",
+          opis: "Adres URL zapamiętuje filtry (woj, powiat, gmina, warstwa) — możesz wysłać link sąsiadowi lub sołtysowi.",
+        },
+      ],
+      wskazowki: [
+        "Sołtys uzupełnia brakujące pinezki w Panel → Mapa POI; część punktów importuje się z OpenStreetMap (w tym budowy oznaczone w OSM).",
+        "Inwestycje: status planowana / w budowie, termin i link do BIP gminy — widoczne na mapie z animowaną pinezką 🏗.",
+        "Transport na mapie: filtr „Transport” pokazuje przystanki i stacje powiązane z wsią.",
+      ],
+    },
+    {
       id: "gdzie-co",
       tytul: "Gdzie co znajdę?",
       kroki: [
@@ -87,7 +132,7 @@ export const PRZEWODNIKI: Record<RolaPrzewodnika, SekcjaPrzewodnika[]> = {
         {
           tytul: "Mapa i szukanie wsi",
           opis: "Katalog miejscowości i mapa POI — wymaga konta.",
-          link: { href: "/szukaj", label: "Szukaj wsi" },
+          link: { href: "/mapa", label: "Mapa wsi" },
         },
         {
           tytul: "Pełna mapa pomocy",

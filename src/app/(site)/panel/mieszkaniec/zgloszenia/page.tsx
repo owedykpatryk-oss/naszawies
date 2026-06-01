@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { redirect } from "next/navigation";
 import { NaglowekModuluMieszkaniec } from "@/components/pomoc/naglowek-modulu-panelu";
 import { roleDlaUprawnienia } from "@/lib/panel/uprawnienia-wsi";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
+import { pobierzUzytkownikaPanelu } from "@/lib/auth/pobierz-uzytkownika-serwer";
 import { pojedynczaWies } from "@/lib/supabase/wies-z-zapytania";
 import { etykietkiSzybkich, etykietaStanuZgloszenia, kategorieZgloszen } from "@/lib/zgloszenia/szybkie-etykiety";
 import { ZgloszeniaFormularzKlient } from "./zgloszenia-formularz-klient";
@@ -18,11 +18,7 @@ export default async function MieszkaniecZgloszeniaPage({
   searchParams?: { [key: string]: string | string[] | undefined };
 }) {
   const supabase = utworzKlientaSupabaseSerwer();
-  const { data: { session } } = await supabase.auth.getSession();
-  const user = session?.user ?? null;
-  if (!user) {
-    redirect("/logowanie?next=/panel/mieszkaniec/zgloszenia");
-  }
+  const user = await pobierzUzytkownikaPanelu();
 
   const { data: roleRows } = await supabase
     .from("user_village_roles")

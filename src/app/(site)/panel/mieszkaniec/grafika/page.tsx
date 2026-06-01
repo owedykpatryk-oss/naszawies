@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { redirect } from "next/navigation";
 import { KreatorGrafikiKlient } from "@/components/grafika/kreator-grafiki-klient";
 import { NaglowekModuluMieszkaniec } from "@/components/pomoc/naglowek-modulu-panelu";
 import {
@@ -9,6 +8,7 @@ import {
 } from "@/lib/grafika/prefill-rezerwacja";
 import { pobierzVillageIdsMieszkanca } from "@/lib/panel/grafika-uprawnienia";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
+import { pobierzUzytkownikaPanelu } from "@/lib/auth/pobierz-uzytkownika-serwer";
 
 export const metadata: Metadata = {
   title: "Kreator grafiki",
@@ -21,11 +21,7 @@ type Props = {
 
 export default async function MieszkaniecGrafikaPage({ searchParams }: Props) {
   const supabase = utworzKlientaSupabaseSerwer();
-  const { data: { session } } = await supabase.auth.getSession();
-  const user = session?.user ?? null;
-  if (!user) {
-    redirect("/logowanie?next=/panel/mieszkaniec/grafika");
-  }
+  const user = await pobierzUzytkownikaPanelu();
 
   const villageIds = await pobierzVillageIdsMieszkanca(supabase, user.id);
   const wiesParam = searchParams?.wies;

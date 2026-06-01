@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { Suspense } from "react";
 import { MapaAutomatyzacjaKlient } from "@/components/mapa/mapa-automatyzacja-klient";
+import { LinkPomocyKontekstowej } from "@/components/pomoc/link-pomocy-kontekstowej";
+import { MapaWsiStronaDynamic, MapaWsiStronaSkeleton } from "@/components/mapa/mapa-wsi-strona-dynamic";
 import type { StatystykiMapy } from "@/components/mapa/mapa-statystyki-banner";
 import {
   obliczStatystykiMapy,
@@ -9,7 +10,6 @@ import {
   wybierzWsiBezTransportuNaMapie,
   wybierzWsiZMalymPoi,
 } from "@/lib/mapa/wybierz-wsi-do-uzupelnienia";
-import { MapaWsiStronaDynamic } from "@/components/mapa/mapa-wsi-strona-dynamic";
 import type {
   ZnacznikAdres,
   ZnacznikGeoKontekst,
@@ -20,8 +20,9 @@ import { centroidObszaruPolowania } from "@/lib/lowiectwo/geojson-obszar";
 import { pobierzPubliczneDaneMapy } from "@/lib/mapa/pobierz-publiczne-dane-mapy";
 import { createPublicSupabaseClient } from "@/lib/supabase/public-client";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
-import { wymagajLogowaniaStrona } from "@/lib/auth/wymagaj-logowania-strona";
-import { wymagajOnboardinguJesliTrzeba } from "@/app/(site)/panel/onboarding/akcje-onboarding";
+import { pobierzUzytkownikaSerwer } from "@/lib/auth/pobierz-uzytkownika-serwer";
+import { urlLogowaniaZPowrotem } from "@/lib/auth/sciezki-chronione";
+import { redirect } from "next/navigation";
 
 export const metadata: Metadata = {
   title: "Mapa wsi",
@@ -44,8 +45,8 @@ function etykietaLiczbyWsi(n: number): string {
 }
 
 export default async function MapaPage() {
-  const user = await wymagajLogowaniaStrona("/mapa");
-  await wymagajOnboardinguJesliTrzeba("/mapa", "/mapa");
+  const user = await pobierzUzytkownikaSerwer();
+  if (!user) redirect(urlLogowaniaZPowrotem("/mapa"));
 
   const { znaczniki, punktyPoi, punktyRynek, punktyRynekDzialki, obrysyCmentarzy, bladZapytania } =
     await pobierzPubliczneDaneMapy();
@@ -69,7 +70,7 @@ export default async function MapaPage() {
         const wiesPoId = new Map(znaczniki.map((z) => [z.id, z.name]));
         const { data: issues } = await sbAuth
           .from("issues")
-          .select("id, title, status, latitude, longitude, village_id")
+          .select("id, title, status, category, latitude, longitude, village_id")
           .in("village_id", vids)
           .in("status", ["nowe", "w_trakcie"])
           .not("latitude", "is", null)
@@ -83,9 +84,11 @@ export default async function MapaPage() {
             id: iss.id,
             title: iss.title,
             status: iss.status,
+            category: typeof iss.category === "string" ? iss.category : undefined,
             lat,
             lon,
             villageName: wiesPoId.get(iss.village_id) ?? "Wieś",
+            villageId: iss.village_id,
           });
         }
       }
@@ -129,137 +132,60 @@ export default async function MapaPage() {
   ).slice(0, 10);
 
   return (
-    <main className="relative min-h-[100dvh] overflow-hidden bg-stone-50 text-stone-800">
-      <div
-        className="pointer-events-none absolute inset-0 bg-[radial-gradient(ellipse_120%_80%_at_50%_-20%,rgba(22,101,52,0.14),transparent_55%),radial-gradient(ellipse_70%_50%_at_100%_0%,rgba(180,83,9,0.08),transparent_45%)]"
-        aria-hidden="true"
-      />
-      <div
-        className="pointer-events-none absolute -left-32 top-1/3 h-72 w-72 rounded-full bg-emerald-400/15 blur-3xl motion-reduce:hidden md:animate-mapa-float"
-        aria-hidden="true"
-      />
-      <div
-        className="pointer-events-none absolute -right-20 bottom-24 h-64 w-64 rounded-full bg-amber-300/20 blur-3xl motion-reduce:hidden md:animate-mapa-float md:[animation-delay:1.2s]"
-        aria-hidden="true"
-      />
-
-      <div className="relative mx-auto w-full max-w-[min(100%,1600px)] px-4 pb-12 pt-8 md:px-6 md:pb-16 md:pt-10">
-        <p className="mb-5 text-sm text-stone-500 opacity-0 animate-mapa-reveal motion-reduce:animate-none motion-reduce:opacity-100">
-          <Link href="/" className="rounded text-green-900 underline decoration-green-800/40 underline-offset-2 transition hover:decoration-green-800">
-            ← Strona główna
-          </Link>
-          {" · "}
-          <Link href="/szukaj" className="rounded text-green-900 underline decoration-green-800/40 underline-offset-2 transition hover:decoration-green-800">
-            Szukaj wsi
-          </Link>
-        </p>
-
-        <header className="max-w-4xl opacity-0 animate-mapa-reveal motion-reduce:animate-none motion-reduce:opacity-100 [animation-delay:0.06s]">
-          <div className="mb-3 flex flex-wrap items-center gap-2">
-            <span className="rounded-full border border-green-900/15 bg-white/80 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-green-900 shadow-sm backdrop-blur-sm">
-              Atlas
-            </span>
-            {!bladZapytania && liczbaWsi > 0 ? (
-              <span className="rounded-full border border-amber-900/10 bg-amber-50/90 px-3 py-1 text-xs font-medium text-amber-950 shadow-sm">
-                {etykietaLiczbyWsi(liczbaWsi)}
-              </span>
-            ) : null}
-          </div>
-          <h1 className="font-serif text-4xl leading-tight tracking-tight text-green-950 md:text-5xl md:leading-[1.08]">
-            <span className="bg-gradient-to-br from-green-950 via-emerald-800 to-green-900 bg-clip-text text-transparent">
-              Mapa wiosek
-            </span>
-          </h1>
-          <div
-            className="mt-4 h-1 w-24 origin-left rounded-full bg-gradient-to-r from-green-700 via-emerald-500 to-amber-500 animate-mapa-hero-line motion-reduce:animate-none motion-reduce:scale-x-100 motion-reduce:opacity-100"
-            aria-hidden="true"
+    <main className="mapa-strona-glowna mapa-strona-glowna--immersive flex min-h-0 flex-col">
+      <header className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-b border-stone-200/80 bg-white/90 px-3 py-2 backdrop-blur-sm sm:px-4">
+        <div className="flex min-w-0 flex-wrap items-center gap-2">
+          <h1 className="font-serif text-lg font-medium leading-tight text-green-950 sm:text-xl">Mapa wiosek</h1>
+          <LinkPomocyKontekstowej
+            href="/pomoc#mapa"
+            label="Pomoc: mapa wsi"
+            tytul="Katalog administracyjny, warstwy POI, GPS, filtry w adresie URL"
           />
-          <p className="mt-5 max-w-2xl text-sm leading-relaxed text-stone-600">
-            Wybierz wsi z <strong>katalogu</strong> (województwo → powiat → gmina) albo wyszukaj po nazwie.{" "}
-            <strong>Kliknij pinezkę POI</strong> — świetlica pokaże kalendarz zajętości sal, przystanek lub stacja
-            najbliższe odjazdy, kościół / sklep / szkoła telefon i godziny otwarcia (gdy sołtys je uzupełni). Obrysy
-            cmentarzy (z OSM) i link do planu grobów, gdy sołtys opublikuje plan. Przy każdej wsi:
-            obrys z PRG, punkt GPS oraz miejsca w sołectwie. Włącz <strong>lokalizację</strong>, żeby sortować listę w promieniu km.
-            Sołtys w panelu{" "}
-            <Link href="/panel/soltys/moja-wies" className="font-medium text-green-900 underline decoration-green-800/35 underline-offset-2">
-              Profil wsi
-            </Link>{" "}
-            dopisać brakujące miejsca z{" "}
-            <a
-              href="https://www.openstreetmap.org/"
-              className="font-medium text-green-900 underline decoration-green-800/35 underline-offset-2"
-              target="_blank"
-              rel="noreferrer"
-            >
-              OpenStreetMap
-            </a>{" "}
-            (import pomocniczy — warto zweryfikować na miejscu).
-          </p>
-        </header>
+          {!bladZapytania && liczbaWsi > 0 ? (
+            <span className="rounded-full border border-green-900/10 bg-green-50/90 px-2.5 py-0.5 text-[11px] font-medium text-green-900">
+              {etykietaLiczbyWsi(liczbaWsi)}
+            </span>
+          ) : null}
+        </div>
+      </header>
 
-        {bladZapytania ? (
-          <p
-            className={`mt-6 rounded-xl px-4 py-3 text-sm ${znaczniki.length > 0 ? "border border-amber-200 bg-amber-50 text-amber-950" : "bg-red-50 text-red-800"}`}
-            role="alert"
-          >
-            {bladZapytania}
-          </p>
-        ) : null}
+      {bladZapytania ? (
+        <p
+          className={`mx-3 mt-3 rounded-xl px-4 py-3 text-sm sm:mx-4 ${znaczniki.length > 0 ? "border border-amber-200 bg-amber-50 text-amber-950" : "bg-red-50 text-red-800"}`}
+          role="alert"
+        >
+          {bladZapytania}
+        </p>
+      ) : null}
 
-        {!bladZapytania && znaczniki.length === 0 ? (
-          <p className="mt-8 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-950">
-            Brak aktywnych wsi z uzupełnionymi współrzędnymi. Po dodaniu wsi w bazie mapa się wypełni.
-          </p>
-        ) : null}
+      {!bladZapytania && znaczniki.length === 0 ? (
+        <p className="mx-3 mt-3 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-950 sm:mx-4">
+          Brak aktywnych wsi z uzupełnionymi współrzędnymi. Po dodaniu wsi w bazie mapa się wypełni.
+        </p>
+      ) : null}
 
-        {!bladZapytania && znaczniki.length > 0 ? (
-          <div className="mt-10 overflow-hidden rounded-2xl border border-stone-200/70 bg-white/95 shadow-xl shadow-green-950/10 ring-1 ring-green-950/[0.06] opacity-0 animate-mapa-card-lift motion-reduce:animate-none motion-reduce:opacity-100 [animation-delay:0.12s]">
-            <Suspense
-              fallback={
-                <div className="space-y-4 p-6 md:p-8">
-                  <div className="flex items-center gap-3">
-                    <div className="h-10 w-10 shrink-0 rounded-full bg-gradient-to-br from-green-200 to-emerald-100" />
-                    <div className="h-4 w-40 rounded-full bg-stone-200" />
-                  </div>
-                  <div
-                    className="h-12 max-w-xl rounded-xl bg-gradient-to-r from-stone-200 from-30% via-stone-100 via-50% to-stone-200 to-70% bg-[length:220%_100%] animate-mapa-shimmer motion-reduce:animate-none"
-                    role="status"
-                    aria-label="Ładowanie mapy"
-                  />
-                  <div className="grid gap-3 md:grid-cols-[min(100%,280px)_1fr]">
-                    <div className="space-y-2 rounded-xl border border-stone-100 bg-stone-50/80 p-4">
-                      {[1, 2, 3, 4].map((i) => (
-                        <div key={i} className="h-10 rounded-lg bg-stone-200/80" style={{ opacity: 1 - i * 0.12 }} />
-                      ))}
-                    </div>
-                    <div className="flex min-h-[280px] items-center justify-center rounded-xl border border-dashed border-green-900/15 bg-gradient-to-b from-stone-50 to-emerald-50/30 p-6 text-sm font-medium text-green-900/80">
-                      Ładowanie mapy…
-                    </div>
-                  </div>
-                </div>
-              }
-            >
-              <MapaAutomatyzacjaKlient
-                znaczniki={znaczniki}
-                villageIdsDoUzupelnienia={villageIdsDoUzupelnienia}
-                statystyki={statystykiMapy}
-              />
-              <MapaWsiStronaDynamic
-                znaczniki={znaczniki}
-                punktyPoi={punktyPoi}
-                punktyAdresy={punktyAdresy}
-                punktyRynek={punktyRynek}
-                punktyRynekDzialki={punktyRynekDzialki}
-                punktyZgloszenia={punktyZgloszenia}
-                punktyPolowania={punktyPolowania}
-                punktyCmentarze={obrysyCmentarzy}
-                punktyGeoKontekst={punktyGeoKontekst}
-                statystykiMapy={statystykiMapy}
-              />
-            </Suspense>
-          </div>
-        ) : null}
-      </div>
+      {!bladZapytania && znaczniki.length > 0 ? (
+        <div className="mapa-widget-pelny min-h-0 flex-1">
+          <Suspense fallback={<MapaWsiStronaSkeleton />}>
+            <MapaAutomatyzacjaKlient
+              znaczniki={znaczniki}
+              villageIdsDoUzupelnienia={villageIdsDoUzupelnienia}
+              statystyki={statystykiMapy}
+            />
+            <MapaWsiStronaDynamic
+              znaczniki={znaczniki}
+              punktyPoi={punktyPoi}
+              punktyAdresy={punktyAdresy}
+              punktyRynek={punktyRynek}
+              punktyRynekDzialki={punktyRynekDzialki}
+              punktyZgloszenia={punktyZgloszenia}
+              punktyPolowania={punktyPolowania}
+              punktyCmentarze={obrysyCmentarzy}
+              punktyGeoKontekst={punktyGeoKontekst}
+            />
+          </Suspense>
+        </div>
+      ) : null}
     </main>
   );
 }

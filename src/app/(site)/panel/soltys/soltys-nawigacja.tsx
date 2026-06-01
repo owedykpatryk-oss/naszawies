@@ -1,6 +1,5 @@
-import { redirect } from "next/navigation";
 import { NawigacjaPaneluGrupowana } from "@/components/panel/nawigacja-panelu-grupowana";
-import { pobierzUzytkownikaSerwer } from "@/lib/auth/pobierz-uzytkownika-serwer";
+import { pobierzUzytkownikaPanelu } from "@/lib/auth/pobierz-uzytkownika-serwer";
 import { pobierzLicznikiOczekujacychSoltysa, lacznaLiczbaZadanSoltysa } from "@/lib/panel/liczniki-oczekujacych-soltysa";
 import {
   grupyNawigacjiSoltysa,
@@ -10,9 +9,7 @@ import { pobierzVillageIdsRoliPaneluSoltysaDlaUzytkownikaCache } from "@/lib/pan
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
 
 export async function SoltysNawigacja() {
-  const user = await pobierzUzytkownikaSerwer();
-  if (!user) redirect("/logowanie?next=/panel/soltys");
-
+  const user = await pobierzUzytkownikaPanelu();
   const supabase = utworzKlientaSupabaseSerwer();
   const villageIds = await pobierzVillageIdsRoliPaneluSoltysaDlaUzytkownikaCache(user.id);
   const liczniki =

@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { pobierzVillageIdsRoliPaneluSoltysa } from "@/lib/panel/rola-panelu-soltysa";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
+import { pobierzUzytkownikaDoAkcji } from "@/lib/auth/pobierz-uzytkownika-serwer";
 
 const uuid = z.string().uuid();
 const teryt = z.string().trim().min(4).max(20);
@@ -34,10 +35,8 @@ export async function zlozWniosekSoltysa(dane: {
     return { blad: p.error.issues[0]?.message ?? "Sprawdź dane wniosku." };
   }
 
+  const user = await pobierzUzytkownikaDoAkcji();
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
   if (!user) {
     return { blad: "Zaloguj się." };
   }
@@ -113,10 +112,8 @@ export async function zlozWniosekSoltysa(dane: {
 
 /** Po rejestracji z intencją „sołtys” — jednorazowo tworzy wniosek z metadanych konta. */
 export async function utworzWniosekSoltysaZRejestracji(): Promise<void> {
+  const user = await pobierzUzytkownikaDoAkcji();
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
   if (!user?.user_metadata || typeof user.user_metadata !== "object") return;
 
   const meta = user.user_metadata as Record<string, unknown>;
@@ -167,10 +164,8 @@ export async function cofnijWniosekSoltysa(applicationId: string): Promise<Wynik
   const id = uuid.safeParse(applicationId);
   if (!id.success) return { blad: "Niepoprawny identyfikator wniosku." };
 
+  const user = await pobierzUzytkownikaDoAkcji();
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
   if (!user) return { blad: "Zaloguj się." };
 
   const { error } = await supabase

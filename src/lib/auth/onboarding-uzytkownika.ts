@@ -17,6 +17,9 @@ export function sciezkaPomijaOnboarding(pathname: string): boolean {
 export function sciezkaWymagaOnboardingu(pathname: string): boolean {
   if (sciezkaPomijaOnboarding(pathname)) return false;
   if (pathname === "/mapa" || pathname.startsWith("/mapa/")) return true;
+  if (pathname === "/transport" || pathname.startsWith("/transport/")) return true;
+  if (pathname === "/grafika" || pathname.startsWith("/grafika/")) return true;
+  if (pathname === "/wybierz-wies" || pathname.startsWith("/wybierz-wies/")) return true;
   if (pathname === "/panel" || pathname.startsWith("/panel/")) return true;
   return false;
 }

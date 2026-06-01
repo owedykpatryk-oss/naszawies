@@ -17,8 +17,18 @@ import {
   emojiKategoriiPoi,
   kolorObramowaniaPoi,
   KATEGORIA_LADNE_MIEJSCE,
+  KATEGORIA_LATARNIA,
 } from "@/lib/mapa/kategorie-poi";
+import {
+  bezpiecznyUrlDokumentu,
+  etykietaStatusuInwestycji,
+  formatujTerminInwestycji,
+  KATEGORIA_INWESTYCJA,
+  KOLOR_STATUSU_INWESTYCJI,
+  normalizujStatusInwestycji,
+} from "@/lib/mapa/inwestycje-poi";
 import { formatujGodzinyOtwarcia } from "@/lib/mapa/formatuj-godziny-otwarcia";
+import { etykietaLanduseOsm, stylLanduseOsm } from "@/lib/mapa/landuse-osm";
 import { bezpiecznyHref } from "@/lib/tekst/bezpieczny-url";
 import {
   CZY_KIEG_WMS_DOSTEPNY,
@@ -73,6 +83,9 @@ export type ZnacznikPoi = {
   linkedEntityId?: string | null;
   /** Link do interaktywnego planu cmentarza (gdy opublikowany). */
   linkPlanuCmentarza?: string | null;
+  investmentStatus?: string | null;
+  plannedCompletionAt?: string | null;
+  documentUrl?: string | null;
 };
 
 /** Opublikowany obrys cmentarza z planu wsi (polygon OSM). */
@@ -84,6 +97,14 @@ export type ZnacznikCmentarzObrys = {
   sciezkaWsi: string;
   hrefPlan: string;
   boundaryGeojson: unknown;
+};
+
+/** Obrys landuse z OSM (warstwa zagospodarowania — orientacyjna). */
+export type ObrysLanduseMapy = {
+  id: string;
+  landuse: string;
+  name: string | null;
+  geojson: GeoJSON.Polygon;
 };
 
 /** Nazwy geograficzne (PRNG) i instytucje PRG z Geoportalu — warstwa referencyjna. */
@@ -105,9 +126,11 @@ export type ZnacznikZgloszenie = {
   id: string;
   title: string;
   status: string;
+  category?: string;
   lat: number;
   lon: number;
   villageName: string;
+  villageId?: string;
 };
 
 /** Aktywne ostrzeżenie polowania — obszar (GeoJSON) lub pinezka w centrum wsi. */
@@ -425,6 +448,7 @@ type InstancjaLeaflet = {
   egibWmsLayer: import("leaflet").TileLayer.WMS | null;
   adresyGroup: import("leaflet").LayerGroup;
   geoKontekstGroup: import("leaflet").LayerGroup;
+  landuseGroup: import("leaflet").LayerGroup;
   markersById: Map<string, import("leaflet").Marker>;
   polowaniaById: Map<string, import("leaflet").Layer>;
   rynekDzialkiById: Map<string, import("leaflet").Layer>;
@@ -507,17 +531,30 @@ function zbudujIkone(L: LeafletNs) {
 function zbudujIkonePoi(L: LeafletNs, z: ZnacznikPoi) {
   const emoji = emojiKategoriiPoi(z.category);
   const kolor = kolorObramowaniaPoi(z.category);
+  const kat = z.category.trim().toLowerCase();
+  const jestLatarnia = kat === KATEGORIA_LATARNIA;
+  const jestInwestycja = kat === KATEGORIA_INWESTYCJA;
+  const statusInv = jestInwestycja ? normalizujStatusInwestycji(z.investmentStatus) : null;
   const wow =
-    z.category.trim().toLowerCase() === KATEGORIA_LADNE_MIEJSCE && z.photoUrl
-      ? " naszawies-marker-poi-wow"
+    kat === KATEGORIA_LADNE_MIEJSCE && z.photoUrl ? " naszawies-marker-poi-wow" : "";
+  const pulseInv =
+    jestInwestycja && statusInv !== "zakonczona" && statusInv !== "wstrzymana"
+      ? statusInv === "w_budowie"
+        ? " naszawies-marker-inwestycja-budowa"
+        : " naszawies-marker-inwestycja-plan"
       : "";
-  const html = `<div class="naszawies-marker-poi-inner${wow}" style="border-color:${kolor}">${escapeHtml(emoji)}</div>`;
+  const rozmiar = jestLatarnia ? 22 : jestInwestycja ? 38 : 36;
+  const anchor = jestLatarnia ? 11 : jestInwestycja ? 19 : 18;
+  const fontSize = jestLatarnia ? "11px" : jestInwestycja ? "17px" : undefined;
+  const kolorOstateczny =
+    jestInwestycja && statusInv ? KOLOR_STATUSU_INWESTYCJI[statusInv] : kolor;
+  const html = `<div class="naszawies-marker-poi-inner${wow}${pulseInv}${jestLatarnia ? " naszawies-marker-latarnia" : ""}${jestInwestycja ? " naszawies-marker-inwestycja" : ""}" style="border-color:${kolorOstateczny}${fontSize ? `;font-size:${fontSize}` : ""}">${escapeHtml(emoji)}</div>`;
   return L.divIcon({
     className: "naszawies-leaflet-divicon",
     html,
-    iconSize: [36, 36],
-    iconAnchor: [18, 20],
-    popupAnchor: [0, -20],
+    iconSize: [rozmiar, rozmiar],
+    iconAnchor: [anchor, jestLatarnia ? 11 : jestInwestycja ? 19 : 20],
+    popupAnchor: [0, jestLatarnia ? -10 : jestInwestycja ? -20 : -20],
   });
 }
 
@@ -778,6 +815,16 @@ function htmlPopupPoi(z: ZnacznikPoi): string {
   const czyCmentarz = katNorm === "cmentarz";
   const czyStacja = katNorm === "stacja_kolejowa";
   const czyPrzystanek = katNorm === "przystanek";
+  const czyLatarnia = katNorm === KATEGORIA_LATARNIA;
+  const czyInwestycja = katNorm === KATEGORIA_INWESTYCJA;
+  const statusInv = czyInwestycja ? normalizujStatusInwestycji(z.investmentStatus) : null;
+  const etykietaStatusu = statusInv ? etykietaStatusuInwestycji(statusInv) : null;
+  const terminInv = formatujTerminInwestycji(z.plannedCompletionAt);
+  const docUrl = bezpiecznyUrlDokumentu(z.documentUrl);
+  const badgeStatus =
+    czyInwestycja && etykietaStatusu
+      ? `<p class="mapa-wsi-popup-inwestycja-status" style="border-color:${escapeHtml(KOLOR_STATUSU_INWESTYCJI[statusInv!])}"><strong>${escapeHtml(etykietaStatusu)}</strong>${terminInv ? ` · plan: ${escapeHtml(terminInv)}` : ""}</p>`
+      : "";
   const stacjaLink = `/transport/rozklad?stacja=${encodeURIComponent(z.name)}`;
   const epodroznikLink = `https://www.e-podroznik.pl/public/search?from=${encodeURIComponent(`${z.name}, ${z.villageName}`)}`;
   const typZrodlaMap: Record<string, string> = {
@@ -803,12 +850,23 @@ function htmlPopupPoi(z: ZnacznikPoi): string {
     <div class="mapa-wsi-popup">
       <p class="mapa-wsi-popup-meta">${escapeHtml(kat)}${z.villageName ? ` · ${escapeHtml(z.villageName)}` : ""}</p>
       <h3>${escapeHtml(z.name)}</h3>
+      ${badgeStatus}
       ${miniatura}
       ${opis ? `<p>${escapeHtml(opis)}</p>` : ""}
       ${kontaktHtml}
       ${z.photoCaption ? `<p class="text-xs">${escapeHtml(z.photoCaption)}</p>` : ""}
       ${slotOdjazdy}
       ${slotSzczegoly}
+      ${
+        czyLatarnia
+          ? `<p class="text-xs text-stone-600">Punkt oświetlenia drogowego. Nie świeci? <a href="/panel/mieszkaniec/zgloszenia?category=oswietlenie&villageId=${encodeURIComponent(z.villageId)}&title=${encodeURIComponent("Uszkodzona latarnia")}&location=${encodeURIComponent(`${z.villageName}: ${z.name}`)}">Zgłoś sołtysowi →</a></p>`
+          : ""
+      }
+      ${
+        czyInwestycja
+          ? `<p class="text-xs text-stone-600">${statusInv === "planowana" ? "Tu planowana jest inwestycja lub budowa." : statusInv === "w_budowie" ? "Trwają prace budowlane w tym miejscu." : "Informacja o rozwoju wsi — szczegóły u sołtysa lub w dokumentacji gminy."}${docUrl ? ` <a href="${escapeHtml(docUrl)}" target="_blank" rel="noopener noreferrer">Dokument / uchwała ↗</a>` : ""}</p>`
+          : ""
+      }
       ${
         czyOspWoda
           ? `<p>${
@@ -857,6 +915,8 @@ export const MapaWsiLeaflet = forwardRef<
     punktyPolowania?: ZnacznikPolowanie[];
     punktyCmentarze?: ZnacznikCmentarzObrys[];
     punktyGeoKontekst?: ZnacznikGeoKontekst[];
+    obrysyLanduse?: ObrysLanduseMapy[];
+    pokazLanduse?: boolean;
     punktyAdresy?: ZnacznikAdres[];
     /** Obrysy wszystkich wsi w wybranej gminie (pomarańczowy kontur). */
     obrysyGminy?: ZnacznikWsi[];
@@ -879,6 +939,8 @@ export const MapaWsiLeaflet = forwardRef<
     punktyPolowania = [],
     punktyCmentarze = [],
     punktyGeoKontekst = [],
+    obrysyLanduse = [],
+    pokazLanduse = false,
     punktyAdresy = [],
     obrysyGminy = [],
     pozycjaUzytkownika = null,
@@ -922,6 +984,10 @@ export const MapaWsiLeaflet = forwardRef<
     punktyCmentarzeRef.current = punktyCmentarze;
     const punktyGeoKontekstRef = useRef(punktyGeoKontekst);
     punktyGeoKontekstRef.current = punktyGeoKontekst;
+    const obrysyLanduseRef = useRef(obrysyLanduse);
+    obrysyLanduseRef.current = obrysyLanduse;
+    const pokazLanduseRef = useRef(pokazLanduse);
+    pokazLanduseRef.current = pokazLanduse;
     const punktyAdresyRef = useRef(punktyAdresy);
     punktyAdresyRef.current = punktyAdresy;
     const obrysyGminyRef = useRef(obrysyGminy);
@@ -1084,6 +1150,7 @@ export const MapaWsiLeaflet = forwardRef<
         const boundaryGroup = L.layerGroup().addTo(map);
         const adresyGroup = L.layerGroup();
         const geoKontekstGroup = L.layerGroup();
+        const landuseGroup = L.layerGroup();
         const userLayer = L.layerGroup().addTo(map);
         map.addLayer(cluster);
 
@@ -1121,6 +1188,7 @@ export const MapaWsiLeaflet = forwardRef<
           egibWmsLayer,
           adresyGroup,
           geoKontekstGroup,
+          landuseGroup,
           markersById: new Map(),
           polowaniaById: new Map(),
           rynekDzialkiById: new Map(),
@@ -1223,6 +1291,13 @@ export const MapaWsiLeaflet = forwardRef<
       if (!inst || !L) return;
       syncWarstwaGeoKontekst(L, inst, pokazGeoKontekstStan ? punktyGeoKontekstRef.current : []);
     }, [pokazGeoKontekstStan, punktyGeoKontekst]);
+
+    useEffect(() => {
+      const inst = instancja.current;
+      const L = leafletRef.current;
+      if (!inst || !L) return;
+      syncWarstwaLanduse(L, inst, pokazLanduse ? obrysyLanduse : []);
+    }, [pokazLanduse, obrysyLanduse]);
 
     useEffect(() => {
       const inst = instancja.current;
@@ -1423,6 +1498,10 @@ export const MapaWsiLeaflet = forwardRef<
               <span className="font-medium text-[#5a9c3e]">Pinezka (chałupa)</span> — środek wsi (GPS w profilu)
             </li>
             <li>
+              <span className="font-medium text-amber-600">Mała pinezka 💡</span> — latarnie / oświetlenie drogi
+              (warstwa opcjonalna)
+            </li>
+            <li>
               <span className="font-medium text-stone-800">Kolorowa pinezka (emoji)</span> — miejsca w sołectwie: kościół,
               szkoła, świetlica, OSP…
             </li>
@@ -1552,6 +1631,44 @@ function syncWarstwaGeoKontekst(L: LeafletNs, inst: InstancjaLeaflet, punkty: Zn
       </div>`,
     );
     geoKontekstGroup.addLayer(pin);
+  }
+}
+
+function syncWarstwaLanduse(L: LeafletNs, inst: InstancjaLeaflet, obrysy: ObrysLanduseMapy[]) {
+  const { map, landuseGroup } = inst;
+  landuseGroup.clearLayers();
+  if (obrysy.length === 0) {
+    if (map.hasLayer(landuseGroup)) map.removeLayer(landuseGroup);
+    return;
+  }
+  if (!map.hasLayer(landuseGroup)) landuseGroup.addTo(map);
+  for (const o of obrysy) {
+    const styl = stylLanduseOsm(o.landuse);
+    try {
+      const warstwa = L.geoJSON(o.geojson as GeoJSON.GeoJsonObject, {
+        interactive: true,
+        style: {
+          color: styl.color,
+          weight: 1.5,
+          fillColor: styl.fillColor,
+          fillOpacity: styl.fillOpacity,
+          opacity: 0.85,
+        },
+      });
+      const etykieta = etykietaLanduseOsm(o.landuse);
+      const tytul = o.name ? escapeHtml(o.name) : etykieta;
+      warstwa.bindPopup(
+        `<div class="mapa-wsi-popup">
+          <p class="mapa-wsi-popup-meta">Zagospodarowanie · OSM</p>
+          <h3>${tytul}</h3>
+          <p class="text-xs text-stone-600">${escapeHtml(etykieta)}</p>
+          <p class="text-[11px] text-stone-500 mt-1">Orientacyjnie — nie zastępuje MPZP gminy.</p>
+        </div>`,
+      );
+      landuseGroup.addLayer(warstwa);
+    } catch {
+      /* pomijamy uszkodzoną geometrię */
+    }
   }
 }
 
@@ -1738,15 +1855,22 @@ function syncWarstwy(
   }
 
   for (const zg of punktyZgloszenia) {
+    const katZg = zg.category?.trim().toLowerCase() ?? "";
+    const oswietlenie = katZg === "oswietlenie";
     const pin = L.circleMarker([zg.lat, zg.lon], {
-      radius: 8,
-      color: "#b45309",
+      radius: oswietlenie ? 9 : 8,
+      color: oswietlenie ? "#ca8a04" : "#b45309",
       weight: 2,
-      fillColor: "#f59e0b",
-      fillOpacity: 0.85,
+      fillColor: oswietlenie ? "#fde047" : "#f59e0b",
+      fillOpacity: 0.9,
     });
+    const etykietaKat = oswietlenie ? "Oświetlenie · " : "";
+    const linkZgl =
+      zg.villageId && zg.id
+        ? `<br/><a href="/panel/mieszkaniec/zgloszenia">Szczegóły zgłoszenia →</a>`
+        : "";
     pin.bindPopup(
-      `<strong>Zgłoszenie</strong><br/>${escapeHtml(zg.title)}<br/><span class="text-xs">${escapeHtml(zg.villageName)} · ${escapeHtml(zg.status)}</span>`,
+      `<strong>${etykietaKat}Zgłoszenie</strong><br/>${escapeHtml(zg.title)}<br/><span class="text-xs">${escapeHtml(zg.villageName)} · ${escapeHtml(zg.status)}</span>${linkZgl}`,
     );
     (cluster as import("leaflet").LayerGroup).addLayer(pin);
   }

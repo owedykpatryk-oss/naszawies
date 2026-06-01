@@ -1,18 +1,15 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { ipZRequestu, sprawdzLimitApi } from "@/lib/rate-limit/sprawdz-limit-upstash";
-import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
 import { wyszukajStacjePkpPoNazwie } from "@/lib/transport/pkp-plk-api";
+import { pobierzUzytkownikaDoAkcji } from "@/lib/auth/pobierz-uzytkownika-serwer";
 
 const schema = z.object({
   q: z.string().trim().min(2).max(80),
 });
 
 export async function GET(request: Request) {
-  const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await pobierzUzytkownikaDoAkcji();
   if (!user) {
     return NextResponse.json({ stacje: [], blad: "Zaloguj się, aby wyszukiwać stacje PKP." }, { status: 401 });
   }

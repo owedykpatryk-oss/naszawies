@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { redirect } from "next/navigation";
 import { pobierzVillageIdsRoliPaneluSoltysaDlaUzytkownikaCache } from "@/lib/panel/rola-panelu-soltysa";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
+import { pobierzUzytkownikaPanelu } from "@/lib/auth/pobierz-uzytkownika-serwer";
 import { PanelStronaSoltysa } from "@/components/panel/panel-strona-soltysa";
 import { SoltysKanalyRssKlient, type KanalRssWiersz, type WiesDoRss } from "./kanaly-rss-klient";
 
@@ -12,11 +12,7 @@ export const metadata: Metadata = {
 
 export default async function SoltysKanalyRssPage() {
   const supabase = utworzKlientaSupabaseSerwer();
-  const { data: { session } } = await supabase.auth.getSession();
-  const user = session?.user ?? null;
-  if (!user) {
-    redirect("/logowanie?next=/panel/soltys/kanaly-rss");
-  }
+  const user = await pobierzUzytkownikaPanelu();
   const villageIds = await pobierzVillageIdsRoliPaneluSoltysaDlaUzytkownikaCache(user.id);
   if (villageIds.length === 0) {
     return (

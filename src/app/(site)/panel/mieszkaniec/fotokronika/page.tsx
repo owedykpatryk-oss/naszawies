@@ -1,8 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { redirect } from "next/navigation";
 import { NaglowekModuluMieszkaniec } from "@/components/pomoc/naglowek-modulu-panelu";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
+import { pobierzUzytkownikaPanelu } from "@/lib/auth/pobierz-uzytkownika-serwer";
 import { pojedynczaWies } from "@/lib/supabase/wies-z-zapytania";
 import { pobierzOtwarteKonkursyDlaWsi } from "@/lib/konkurs-foto/pobierz-konkurs-publiczny";
 import { FotokronikaDodajKlient } from "./fotokronika-dodaj-klient";
@@ -22,11 +22,7 @@ const ETYKIETA_STATUSU: Record<string, string> = {
 
 export default async function MieszkaniecFotokronikaPage() {
   const supabase = utworzKlientaSupabaseSerwer();
-  const { data: { session } } = await supabase.auth.getSession();
-  const user = session?.user ?? null;
-  if (!user) {
-    redirect("/logowanie?next=/panel/mieszkaniec/fotokronika");
-  }
+  const user = await pobierzUzytkownikaPanelu();
 
   const { data: roleRows } = await supabase
     .from("user_village_roles")

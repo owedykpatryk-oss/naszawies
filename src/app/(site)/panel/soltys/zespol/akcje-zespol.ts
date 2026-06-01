@@ -5,6 +5,7 @@ import { z } from "zod";
 import { pobierzVillageIdsRoliPaneluSoltysaDlaUzytkownikaCache } from "@/lib/panel/rola-panelu-soltysa";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin-client";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
+import { pobierzUzytkownikaDoAkcji } from "@/lib/auth/pobierz-uzytkownika-serwer";
 
 const uuid = z.string().uuid();
 const emailZ = z.string().trim().email();
@@ -16,10 +17,7 @@ export async function nadajWspoladmina(villageId: string, email: string): Promis
   const em = emailZ.safeParse(email);
   if (!v.success || !em.success) return { blad: "Podaj poprawną wieś i e-mail użytkownika." };
 
-  const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
+  const user = await pobierzUzytkownikaDoAkcji();
   if (!user) return { blad: "Zaloguj się." };
 
   const vids = await pobierzVillageIdsRoliPaneluSoltysaDlaUzytkownikaCache(user.id);
@@ -85,10 +83,8 @@ export async function cofnijWspoladmina(rolaId: string): Promise<WynikZespol> {
   const id = uuid.safeParse(rolaId);
   if (!id.success) return { blad: "Niepoprawny identyfikator." };
 
+  const user = await pobierzUzytkownikaDoAkcji();
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
   if (!user) return { blad: "Zaloguj się." };
 
   const { data: wiersz } = await supabase

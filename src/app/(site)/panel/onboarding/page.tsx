@@ -1,14 +1,14 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { redirect } from "next/navigation";
 import { LogoNaszawiesWycentrowane } from "@/components/marka/logo-naszawies";
 import { bezpiecznaSciezkaNastepna } from "@/lib/auth/bezpieczna-sciezka-nastepna";
 import { czyUzytkownikUknczylOnboarding } from "@/lib/auth/onboarding-uzytkownika";
-import { pobierzUzytkownikaSerwer } from "@/lib/auth/pobierz-uzytkownika-serwer";
+import { pobierzUzytkownikaPanelu } from "@/lib/auth/pobierz-uzytkownika-serwer";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
 import { pobierzWiesPoIdDlaRejestracji } from "@/app/(site)/rejestracja/akcje-katalog-wsi";
 import { OnboardingKlient } from "./onboarding-klient";
 import type { IntencjaOnboardingu } from "@/lib/auth/onboarding-uzytkownika";
+import { redirect } from "next/navigation";
 
 export const metadata: Metadata = {
   title: "Wybór wsi i roli",
@@ -20,15 +20,12 @@ type Props = {
 };
 
 export default async function PanelOnboardingPage({ searchParams }: Props) {
-  const user = await pobierzUzytkownikaSerwer();
-  if (!user) {
-    redirect("/logowanie?next=/panel/onboarding");
-  }
+  const user = await pobierzUzytkownikaPanelu();
 
   const supabase = utworzKlientaSupabaseSerwer();
   const ukonczony = await czyUzytkownikUknczylOnboarding(supabase, user);
   const nextParam = searchParams.next;
-  const nastepna = typeof nextParam === "string" ? bezpiecznaSciezkaNastepna(nextParam) : "/panel";
+  const nastepna = typeof nextParam === "string" ? bezpiecznaSciezkaNastepna(nextParam) : "/mapa";
 
   if (ukonczony) {
     redirect(nastepna);

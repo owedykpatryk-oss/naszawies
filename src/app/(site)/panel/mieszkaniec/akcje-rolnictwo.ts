@@ -5,6 +5,7 @@ import { z } from "zod";
 import { PRODUKTY_ROLNE } from "@/lib/rolnictwo/produkty-rolne";
 import { sciezkaProfiluWsi } from "@/lib/wies/sciezka-publiczna";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
+import { pobierzUzytkownikaDoAkcji } from "@/lib/auth/pobierz-uzytkownika-serwer";
 
 const uuid = z.string().uuid();
 
@@ -53,10 +54,8 @@ export async function zglosCeneSkupuLokalna(dane: z.infer<typeof schemaZgloszeni
   const parsed = schemaZgloszenia.safeParse(dane);
   if (!parsed.success) return { blad: "Sprawdź produkt, cenę i miejsce odbioru." };
 
+  const user = await pobierzUzytkownikaDoAkcji();
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
   if (!user) return { blad: "Zaloguj się, aby zgłosić cenę." };
 
   if (!(await czyMieszkaniecWsi(user.id, parsed.data.villageId))) {
@@ -119,10 +118,8 @@ export async function potwierdzCeneSkupuLokalna(dane: z.infer<typeof schemaPotwi
   const parsed = schemaPotwierdzenia.safeParse(dane);
   if (!parsed.success) return { blad: "Niepoprawne dane potwierdzenia." };
 
+  const user = await pobierzUzytkownikaDoAkcji();
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
   if (!user) return { blad: "Zaloguj się, aby potwierdzić cenę." };
 
   const { data: raport } = await supabase

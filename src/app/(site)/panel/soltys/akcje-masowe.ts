@@ -10,6 +10,7 @@ import {
   zatwierdzWniosekMieszkanca,
 } from "./akcje";
 import { zmoderujZdjecieFotokroniki } from "./akcje-fotokronika";
+import { pobierzUzytkownikaDoAkcji } from "@/lib/auth/pobierz-uzytkownika-serwer";
 
 const schemaIds = z.array(z.string().uuid()).min(1).max(25);
 
@@ -60,10 +61,8 @@ export async function zatwierdzZdjeciaMasowoSoltys(ids: string[]): Promise<Wynik
   const parsed = schemaIds.safeParse(ids);
   if (!parsed.success) return { blad: "Wybierz od 1 do 25 zdjęć." };
 
+  const user = await pobierzUzytkownikaDoAkcji();
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
   if (!user) return { blad: "Zaloguj się." };
 
   const vids = await pobierzVillageIdsModeracjiTresciCache(user.id);

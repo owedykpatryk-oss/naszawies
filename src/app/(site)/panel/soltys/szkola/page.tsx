@@ -1,12 +1,13 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { redirect } from "next/navigation";
 import { PanelStronaSoltysa } from "@/components/panel/panel-strona-soltysa";
 import { SzkolaPanelKlient } from "@/components/panel/soltys/szkola-panel-klient";
 import { pobierzOgloszeniaSzkolyDlaPanelu } from "@/lib/szkola/pobierz-ogloszenia-szkoly";
 import { czyOrganizacjaSzkola } from "@/lib/wies/profil-organizacji";
 import { pobierzVillageIdsRoliPaneluSoltysa } from "@/lib/panel/rola-panelu-soltysa";
+import { pobierzUzytkownikaPanelu } from "@/lib/auth/pobierz-uzytkownika-serwer";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
+import { redirect } from "next/navigation";
 
 export const metadata: Metadata = {
   title: "Szkoła — tablica ogłoszeń",
@@ -14,11 +15,8 @@ export const metadata: Metadata = {
 };
 
 export default async function PanelSzkolaPage() {
+  const user = await pobierzUzytkownikaPanelu();
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) redirect("/logowanie?next=/panel/soltys/szkola");
 
   const villageIds = await pobierzVillageIdsRoliPaneluSoltysa(supabase, user.id);
   if (villageIds.length === 0) redirect("/panel");

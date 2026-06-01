@@ -35,10 +35,7 @@ export async function pobierzStanAnkietyFeedback(): Promise<StanPromptuAnkiety &
     };
   }
 
-  const {
-    data: { user: pelny },
-  } = await supabase.auth.getUser();
-  const createdAt = pelny?.created_at ?? user.created_at;
+  const createdAt = user.created_at?.trim() ? user.created_at : undefined;
 
   const stan = await pobierzStanPromptuAnkiety(supabase, user.id, createdAt);
   return { ...stan, zalogowany: true };

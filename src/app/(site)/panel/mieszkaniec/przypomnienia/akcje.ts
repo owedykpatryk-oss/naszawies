@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { schemaPreferencjePrzypomnien } from "@/lib/przypomnienia/schema-regula";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
+import { pobierzUzytkownikaDoAkcji } from "@/lib/auth/pobierz-uzytkownika-serwer";
 
 export type WynikProsty = { blad: string } | { ok: true };
 
@@ -12,10 +13,8 @@ export async function zapiszPreferencjePrzypomnienMieszkanca(
   const parsed = schemaPreferencjePrzypomnien.safeParse(dane);
   if (!parsed.success) return { blad: "Sprawdź ustawienia." };
 
+  const user = await pobierzUzytkownikaDoAkcji();
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
   if (!user) return { blad: "Zaloguj się." };
 
   const { data: rola } = await supabase

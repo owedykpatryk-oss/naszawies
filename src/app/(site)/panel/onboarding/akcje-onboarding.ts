@@ -6,11 +6,13 @@ import { z } from "zod";
 import type { IntencjaOnboardingu } from "@/lib/auth/onboarding-uzytkownika";
 import { bezpiecznaSciezkaNastepna } from "@/lib/auth/bezpieczna-sciezka-nastepna";
 import { pobierzUzytkownikaSerwer } from "@/lib/auth/pobierz-uzytkownika-serwer";
+import { domyslnePreferencjeUiNowegoUzytkownika } from "@/lib/uzytkownik/preferencje-ui";
 import { etykietaRoliWsi } from "@/lib/panel/role-definicje";
 import { powiadomSoltysowONowymWnioskuRoli } from "@/lib/powiadomienia/powiadom-soltysow-o-wniosku-roli";
 import { zlozWniosekSoltysa } from "@/lib/soltys/wniosek-soltysa";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin-client";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
+import { pobierzUzytkownikaDoAkcji } from "@/lib/auth/pobierz-uzytkownika-serwer";
 
 export type WynikOnboardingu = { blad: string } | { ok: true; next: string };
 
@@ -58,6 +60,7 @@ async function zapiszMetadaneOnboardingu(
       signup_village_id: villageId ?? "",
       signup_village_label: label,
       signup_village_teryt: terytId,
+      ui_preferences: domyslnePreferencjeUiNowegoUzytkownika(),
     },
   });
   if (error) {
@@ -72,10 +75,8 @@ export async function zakonczOnboarding(dane: z.infer<typeof schema>): Promise<W
     return { blad: parsed.error.issues[0]?.message ?? "Sprawdź formularz." };
   }
 
+  const user = await pobierzUzytkownikaDoAkcji();
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
   if (!user) return { blad: "Zaloguj się ponownie." };
 
   const p = parsed.data;

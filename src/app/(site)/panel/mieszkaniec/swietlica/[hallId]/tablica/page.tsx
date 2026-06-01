@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
-import { notFound, redirect } from "next/navigation";
+import { notFound } from "next/navigation";
 import { TablicaCyfrowaKlient } from "@/components/grafika/tablica-cyfrowa-klient";
 import { pobierzPublicznePlakatyWsi } from "@/app/(site)/panel/grafika/akcje";
 import { PanelStronaMieszkaneca } from "@/components/panel/panel-strona-mieszkaneca";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
+import { pobierzUzytkownikaPanelu } from "@/lib/auth/pobierz-uzytkownika-serwer";
 import { NawigacjaSali } from "@/components/swietlica/nawigacja-sali";
 import { pojedynczaWies } from "@/lib/supabase/wies-z-zapytania";
 
@@ -19,11 +20,7 @@ export default async function MieszkaniecTablicaCyfrowaPage({ params }: Props) {
   if (!uuidOk) notFound();
 
   const supabase = utworzKlientaSupabaseSerwer();
-  const { data: { session } } = await supabase.auth.getSession();
-  const user = session?.user ?? null;
-  if (!user) {
-    redirect(`/logowanie?next=/panel/mieszkaniec/swietlica/${hallId}/tablica`);
-  }
+  await pobierzUzytkownikaPanelu();
 
   const { data: sala, error } = await supabase
     .from("halls")

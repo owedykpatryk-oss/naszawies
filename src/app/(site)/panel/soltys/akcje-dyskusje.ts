@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { pobierzVillageIdsModeracjiTresci } from "@/lib/panel/rola-moderacji";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
+import { pobierzUzytkownikaDoAkcji } from "@/lib/auth/pobierz-uzytkownika-serwer";
 
 const uuid = z.string().uuid();
 
@@ -13,10 +14,8 @@ export async function zamknijWatekDyskusjiSoltys(threadId: string): Promise<Wyni
   const id = uuid.safeParse(threadId);
   if (!id.success) return { blad: "Niepoprawny identyfikator wątku." };
 
+  const user = await pobierzUzytkownikaDoAkcji();
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
   if (!user) return { blad: "Zaloguj się." };
 
   const { data: row } = await supabase
@@ -49,10 +48,8 @@ export async function ukryjWatekDyskusjiSoltys(threadId: string, notatka = ""): 
   const id = uuid.safeParse(threadId);
   if (!id.success) return { blad: "Niepoprawny identyfikator wątku." };
 
+  const user = await pobierzUzytkownikaDoAkcji();
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
   if (!user) return { blad: "Zaloguj się." };
 
   const { data: row } = await supabase
@@ -86,10 +83,8 @@ export async function ukryjKomentarzDyskusjiSoltys(commentId: string, notatka = 
   const id = uuid.safeParse(commentId);
   if (!id.success) return { blad: "Niepoprawny identyfikator komentarza." };
 
+  const user = await pobierzUzytkownikaDoAkcji();
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
   if (!user) return { blad: "Zaloguj się." };
 
   const { data: row } = await supabase
@@ -130,10 +125,8 @@ export async function rozpatrzRaportSpolecznosciSoltys(
   const parsed = schemaRaportDecyzja.safeParse(dane);
   if (!parsed.success) return { blad: "Niepoprawne dane decyzji." };
 
+  const user = await pobierzUzytkownikaDoAkcji();
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
   if (!user) return { blad: "Zaloguj się." };
 
   const { data: raport } = await supabase

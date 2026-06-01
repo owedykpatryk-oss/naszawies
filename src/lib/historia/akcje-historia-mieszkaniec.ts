@@ -7,6 +7,7 @@ import { powiadomSoltysowOWspomnieniuHistorii } from "@/lib/historia/powiadomien
 import { createAdminSupabaseClient } from "@/lib/supabase/admin-client";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
 import { sciezkaProfiluWsi } from "@/lib/wies/sciezka-publiczna";
+import { pobierzUzytkownikaDoAkcji } from "@/lib/auth/pobierz-uzytkownika-serwer";
 
 export type WynikHistoriaMieszkanca = { blad: string } | { ok: true; komunikat?: string };
 
@@ -33,10 +34,8 @@ export async function zglosWspomnienieHistorii(
   const parsed = schemaWspomnienie.safeParse(dane);
   if (!parsed.success) return { blad: "Sprawdź tytuł i opis wspomnienia." };
 
+  const user = await pobierzUzytkownikaDoAkcji();
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
   if (!user) return { blad: "Zaloguj się." };
   if (!(await czyMaDostepMieszkancaDoWsi(supabase, user.id, parsed.data.villageId))) {
     return { blad: "Dołącz do wsi lub obserwuj ją, aby zgłosić wspomnienie." };

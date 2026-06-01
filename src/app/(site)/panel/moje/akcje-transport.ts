@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { uzupelnijRelacjeTransportoweUzytkownika } from "@/lib/transport/uzupelnij-relacje-transportowe";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
+import { pobierzUzytkownikaDoAkcji } from "@/lib/auth/pobierz-uzytkownika-serwer";
 
 const schemaAktualizacji = z.object({
   id: z.string().uuid(),
@@ -19,10 +20,8 @@ export async function aktualizujRelacjeTransportowa(dane: z.infer<typeof schemaA
   const parsed = schemaAktualizacji.safeParse(dane);
   if (!parsed.success) return { ok: false, blad: "Nieprawidłowe dane." };
 
+  const user = await pobierzUzytkownikaDoAkcji();
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
   if (!user) return { ok: false, blad: "Zaloguj się." };
 
   const { error } = await supabase
@@ -44,10 +43,8 @@ export async function aktualizujRelacjeTransportowa(dane: z.infer<typeof schemaA
 }
 
 export async function odswiezStacjeDoceloweRelacji(): Promise<WynikMojeTransport & { zaktualizowano?: number }> {
+  const user = await pobierzUzytkownikaDoAkcji();
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
   if (!user) return { ok: false, blad: "Zaloguj się." };
 
   const { zaktualizowano } = await uzupelnijRelacjeTransportoweUzytkownika(supabase, user.id);

@@ -5,6 +5,7 @@ import { z } from "zod";
 import { proponujKanalyRssDlaWsi } from "@/lib/rss/odkryj-kanaly-rss";
 import { pobierzVillageIdsRoliPaneluSoltysaDlaUzytkownikaCache } from "@/lib/panel/rola-panelu-soltysa";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
+import { pobierzUzytkownikaDoAkcji } from "@/lib/auth/pobierz-uzytkownika-serwer";
 
 export type WynikOdkryciaRss =
   | { blad: string }
@@ -14,10 +15,8 @@ export async function odkryjRssDlaWsiSoltys(villageId: string): Promise<WynikOdk
   const vid = z.string().uuid().safeParse(villageId);
   if (!vid.success) return { blad: "Nieprawidłowa wieś." };
 
+  const user = await pobierzUzytkownikaDoAkcji();
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
   if (!user) return { blad: "Zaloguj się." };
 
   const vids = await pobierzVillageIdsRoliPaneluSoltysaDlaUzytkownikaCache(user.id);
@@ -58,10 +57,8 @@ export async function dodajWieleKanalowRss(
   const vid = z.string().uuid().safeParse(villageId);
   if (!vid.success) return { blad: "Nieprawidłowa wieś." };
 
+  const user = await pobierzUzytkownikaDoAkcji();
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
   if (!user) return { blad: "Zaloguj się." };
 
   const vids = await pobierzVillageIdsRoliPaneluSoltysaDlaUzytkownikaCache(user.id);

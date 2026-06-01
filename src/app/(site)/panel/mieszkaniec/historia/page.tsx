@@ -1,9 +1,9 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { redirect } from "next/navigation";
 import { HistoriaMieszkaniecKlient } from "@/components/panel/mieszkaniec/historia-mieszkaniec-klient";
 import { PanelStronaMieszkaneca } from "@/components/panel/panel-strona-mieszkaneca";
 import { pojedynczaWies } from "@/lib/supabase/wies-z-zapytania";
+import { pobierzUzytkownikaPanelu } from "@/lib/auth/pobierz-uzytkownika-serwer";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
 
 export const metadata: Metadata = {
@@ -12,11 +12,8 @@ export const metadata: Metadata = {
 };
 
 export default async function MieszkaniecHistoriaPage() {
+  const user = await pobierzUzytkownikaPanelu();
   const supabase = utworzKlientaSupabaseSerwer();
-  const {
-    data: { user },
-  } = await supabase.auth.getUser();
-  if (!user) redirect("/logowanie?next=/panel/mieszkaniec/historia");
 
   const { data: roleRows } = await supabase
     .from("user_village_roles")

@@ -1,18 +1,13 @@
 import Link from "next/link";
-import { redirect } from "next/navigation";
 import { PanelStronaMoje } from "@/components/panel/panel-strona-moje";
 import { MojeDodajGmineKlient } from "@/components/panel/moje/moje-dodaj-gmine-klient";
 import { MojeGminyObserwowaneLista } from "@/components/panel/moje/moje-gminy-obserwowane-lista";
-import { pobierzMojePowiazania } from "@/lib/panel/pobierz-moje-powiazania";
+import { pobierzMojePowiazaniaPanelu } from "@/lib/panel/pobierz-moje-powiazania";
 
 export const metadata = { title: "Gmina i powiat — Moje" };
 
 export default async function MojeSamorzadPage() {
-  const dane = await pobierzMojePowiazania();
-  if (!dane) {
-    redirect("/logowanie?next=/panel/moje/samorzad");
-  }
-
+  const dane = await pobierzMojePowiazaniaPanelu();
   const juzObserwowane = dane.gminyObserwowane.map((g) => ({
     wojewodztwo: g.wojewodztwo,
     powiat: g.powiat,

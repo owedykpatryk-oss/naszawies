@@ -1,17 +1,15 @@
-import { redirect } from "next/navigation";
 import { PanelStronaMoje } from "@/components/panel/panel-strona-moje";
 import { MojeTransportUstawieniaKlient } from "@/components/panel/moje/moje-transport-ustawienia-klient";
 import { uzupelnijRelacjeTransportoweUzytkownika } from "@/lib/transport/uzupelnij-relacje-transportowe";
 import { sciezkaProfiluWsi } from "@/lib/wies/sciezka-publiczna";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
+import { pobierzUzytkownikaPanelu } from "@/lib/auth/pobierz-uzytkownika-serwer";
 
 export const metadata = { title: "Transport — Moje" };
 
 export default async function MojeTransportPage() {
   const supabase = utworzKlientaSupabaseSerwer();
-  const { data: { session } } = await supabase.auth.getSession();
-  const user = session?.user ?? null;
-  if (!user) redirect("/logowanie?next=/panel/moje/transport");
+  const user = await pobierzUzytkownikaPanelu();
 
   await uzupelnijRelacjeTransportoweUzytkownika(supabase, user.id);
 
