@@ -144,14 +144,24 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
     const wies = await znajdzWiesPoSciezce(supabase, s[0], s[1], s[2], s[3]);
     if (wies) {
       const { sciezkaProfiluWsi } = await import("@/lib/wies/sciezka-publiczna");
+      const { pobierzUstawieniaWsi } = await import("@/lib/wies/pobierz-ustawienia-wsi");
       const sciezka = sciezkaProfiluWsi(wies);
+      const ustawienia = await pobierzUstawieniaWsi(supabase, wies.id);
       const opis =
         wies.description?.replace(/\s+/g, " ").trim().slice(0, 160) ||
+        ustawienia.hero_podtytul?.slice(0, 160) ||
         `Profil wsi ${wies.name} — ogłoszenia, mapa, świetlica i społeczność lokalna na naszawies.pl. Dołącz za darmo.`;
       return {
         title: `${wies.name} — profil wsi`,
         description: opis,
         alternates: { canonical: sciezka },
+        manifest: `/api/wies/${wies.id}/manifest`,
+        themeColor: ustawienia.motyw.akcent,
+        appleWebApp: {
+          capable: true,
+          title: wies.name,
+          statusBarStyle: "default" as const,
+        },
         openGraph: {
           title: `${wies.name} na naszawies.pl`,
           description: opis,

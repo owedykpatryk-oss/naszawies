@@ -1868,7 +1868,43 @@ const schemaWygladWsi = z.object({
   logo_url: z.string().max(2048).optional().nullable(),
   moduly: z.record(z.enum(KLUCZE_SEKCJI_WSI), z.boolean()).optional(),
   kolejnosc_sekcji: z.array(z.enum(KLUCZE_SEKCJI_WSI)).max(32).optional(),
+  hero_naglowek: z.string().max(120).optional().nullable(),
   hero_podtytul: z.string().max(280).optional().nullable(),
+  hero_cta: z
+    .array(
+      z.object({
+        label: z.string().trim().min(1).max(48),
+        href: z.string().trim().min(1).max(500),
+        wariant: z.enum(["primary", "secondary"]).optional(),
+      }),
+    )
+    .max(3)
+    .optional(),
+  skroty: z
+    .array(
+      z.object({
+        label: z.string().trim().min(1).max(40),
+        href: z.string().trim().min(1).max(500),
+        emoji: z.string().max(8).optional().nullable(),
+        opis: z.string().max(80).optional().nullable(),
+      }),
+    )
+    .max(6)
+    .optional(),
+  bloki: z
+    .array(
+      z.object({
+        id: z.string().trim().min(1).max(64),
+        typ: z.enum(["tekst", "link", "obraz"]),
+        tytul: z.string().max(120).optional().nullable(),
+        tresc: z.string().max(2000).optional().nullable(),
+        url: z.string().max(500).optional().nullable(),
+        obraz_url: z.string().max(2048).optional().nullable(),
+      }),
+    )
+    .max(8)
+    .optional(),
+  domyslny_tryb_seniora: z.boolean().optional(),
 });
 
 export async function zapiszUstawieniaWygladuWsi(dane: z.infer<typeof schemaWygladWsi>): Promise<WynikProsty> {
@@ -1894,16 +1930,72 @@ export async function zapiszUstawieniaWygladuWsi(dane: z.infer<typeof schemaWygl
   }
   kolejnosc = kolejnosc.filter((k, i, a) => a.indexOf(k) === i);
 
+  for (const cta of p.data.hero_cta ?? []) {
+    if (cta.href.startsWith("http")) {
+      try {
+        new URL(cta.href);
+      } catch {
+        return { blad: `Nieprawidłowy adres przycisku: ${cta.label}` };
+      }
+    }
+  }
+  for (const s of p.data.skroty ?? []) {
+    if (s.href.startsWith("http")) {
+      try {
+        new URL(s.href);
+      } catch {
+        return { blad: `Nieprawidłowy skrót: ${s.label}` };
+      }
+    }
+  }
+  for (const b of p.data.bloki ?? []) {
+    if (b.url?.startsWith("http")) {
+      try {
+        new URL(b.url);
+      } catch {
+        return { blad: "Nieprawidłowy adres w bloku treści." };
+      }
+    }
+    if (b.obraz_url?.trim()) {
+      const img = czyPustyLubUrlHttp(b.obraz_url);
+      if (!img.ok) return { blad: img.blad };
+    }
+  }
+
   const settingsJson = schemaUstawieniaWsiJson.parse({
     wersja: 1,
     moduly,
     kolejnosc_sekcji: kolejnosc,
     hero: {
+      naglowek:
+        p.data.hero_naglowek != null && p.data.hero_naglowek.trim().length > 0
+          ? p.data.hero_naglowek.trim()
+          : null,
       podtytul:
         p.data.hero_podtytul != null && p.data.hero_podtytul.trim().length > 0
           ? p.data.hero_podtytul.trim()
           : null,
+      cta: (p.data.hero_cta ?? []).map((c) => ({
+        label: c.label.trim(),
+        href: c.href.trim(),
+        wariant: c.wariant ?? "primary",
+      })),
     },
+    skroty: (p.data.skroty ?? []).map((s) => ({
+      label: s.label.trim(),
+      href: s.href.trim(),
+      emoji: s.emoji?.trim() || null,
+      opis: s.opis?.trim() || null,
+    })),
+    bloki: (p.data.bloki ?? []).map((b) => ({
+      id: b.id.trim(),
+      typ: b.typ,
+      tytul: b.tytul?.trim() || null,
+      tresc: b.tresc?.trim() || null,
+      url: b.url?.trim() || null,
+      obraz_url: b.obraz_url?.trim() || null,
+    })),
+    domyslny_tryb_seniora: p.data.domyslny_tryb_seniora === true,
   });
 
   const { error } = await supabase.from("village_settings").upsert(

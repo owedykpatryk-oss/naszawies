@@ -40,6 +40,52 @@ export const ETYKIETY_SEKCJI_WSI: Record<KluczSekcjiWsi, string> = {
   grafika: "Plakaty i grafika",
 };
 
+export type HeroCtaWsi = {
+  label: string;
+  href: string;
+  wariant: "primary" | "secondary";
+};
+
+export type SkrotWsiPubliczny = {
+  label: string;
+  href: string;
+  emoji: string | null;
+  opis: string | null;
+};
+
+export type BlokTresciWsiPubliczny = {
+  id: string;
+  typ: "tekst" | "link" | "obraz";
+  tytul: string | null;
+  tresc: string | null;
+  url: string | null;
+  obraz_url: string | null;
+};
+
+export type PresetWygladuWsi = "standard" | "parafia_osp" | "turystyczna";
+
+const schemaHeroCta = z.object({
+  label: z.string().trim().min(1).max(48),
+  href: z.string().trim().min(1).max(500),
+  wariant: z.enum(["primary", "secondary"]).optional().default("primary"),
+});
+
+const schemaSkrot = z.object({
+  label: z.string().trim().min(1).max(40),
+  href: z.string().trim().min(1).max(500),
+  emoji: z.string().trim().max(8).nullable().optional(),
+  opis: z.string().trim().max(80).nullable().optional(),
+});
+
+const schemaBlok = z.object({
+  id: z.string().trim().min(1).max(64),
+  typ: z.enum(["tekst", "link", "obraz"]),
+  tytul: z.string().trim().max(120).nullable().optional(),
+  tresc: z.string().trim().max(2000).nullable().optional(),
+  url: z.string().trim().max(500).nullable().optional(),
+  obraz_url: z.string().trim().max(2048).nullable().optional(),
+});
+
 const schemaModulow = z.record(z.enum(KLUCZE_SEKCJI_WSI), z.boolean()).optional();
 
 export const schemaUstawieniaWsiJson = z.object({
@@ -48,9 +94,14 @@ export const schemaUstawieniaWsiJson = z.object({
   kolejnosc_sekcji: z.array(z.enum(KLUCZE_SEKCJI_WSI)).max(32).optional(),
   hero: z
     .object({
+      naglowek: z.string().trim().max(120).nullable().optional(),
       podtytul: z.string().trim().max(280).nullable().optional(),
+      cta: z.array(schemaHeroCta).max(3).optional(),
     })
     .optional(),
+  skroty: z.array(schemaSkrot).max(6).optional(),
+  bloki: z.array(schemaBlok).max(8).optional(),
+  domyslny_tryb_seniora: z.boolean().optional(),
 });
 
 export type UstawieniaWsiJson = z.infer<typeof schemaUstawieniaWsiJson>;
@@ -61,7 +112,12 @@ export type UstawieniaWsiPubliczne = {
   motyw: MotywGrafiki;
   moduly: Record<KluczSekcjiWsi, boolean>;
   kolejnosc_sekcji: KluczSekcjiWsi[];
+  hero_naglowek: string | null;
   hero_podtytul: string | null;
+  hero_cta: HeroCtaWsi[];
+  skroty: SkrotWsiPubliczny[];
+  bloki: BlokTresciWsiPubliczny[];
+  domyslny_tryb_seniora: boolean;
 };
 
 export function domyslneModulyWsi(): Record<KluczSekcjiWsi, boolean> {
@@ -76,6 +132,74 @@ export function parsujUstawieniaWsiJson(raw: unknown): UstawieniaWsiJson {
   const w = schemaUstawieniaWsiJson.safeParse(raw ?? {});
   if (!w.success) return { wersja: 1 };
   return w.data;
+}
+
+function normalizujSkroty(raw: UstawieniaWsiJson["skroty"]): SkrotWsiPubliczny[] {
+  return (raw ?? []).map((s) => ({
+    label: s.label,
+    href: s.href,
+    emoji: s.emoji?.trim() || null,
+    opis: s.opis?.trim() || null,
+  }));
+}
+
+function normalizujBloki(raw: UstawieniaWsiJson["bloki"]): BlokTresciWsiPubliczny[] {
+  return (raw ?? [])
+    .filter((b) => {
+      if (b.typ === "tekst") return Boolean(b.tytul?.trim() || b.tresc?.trim());
+      if (b.typ === "link") return Boolean(b.url?.trim());
+      if (b.typ === "obraz") return Boolean(b.obraz_url?.trim());
+      return false;
+    })
+    .map((b) => ({
+      id: b.id,
+      typ: b.typ,
+      tytul: b.tytul?.trim() || null,
+      tresc: b.tresc?.trim() || null,
+      url: b.url?.trim() || null,
+      obraz_url: b.obraz_url?.trim() || null,
+    }));
+}
+
+function normalizujHeroCta(raw: UstawieniaWsiJson["hero"]): HeroCtaWsi[] {
+  return (raw?.cta ?? []).map((c) => ({
+    label: c.label,
+    href: c.href,
+    wariant: c.wariant ?? "primary",
+  }));
+}
+
+/** Skróty domyślne gdy sołtys nie skonfigurował własnych. */
+export function domyslneSkrotyProfilu(
+  sciezka: string,
+  moduly: Record<KluczSekcjiWsi, boolean>,
+  ctx: { maRynek: boolean; maPlanCmentarza: boolean },
+): SkrotWsiPubliczny[] {
+  const out: SkrotWsiPubliczny[] = [];
+  if (moduly.rynek !== false && ctx.maRynek) {
+    out.push({ label: "Rynek", href: "#sekcja-rynek-lokalny", emoji: "🛒", opis: null });
+  }
+  if (moduly.mapa !== false) {
+    out.push({ label: "Mapa", href: "#sekcja-mapa", emoji: "🗺️", opis: null });
+  }
+  if (moduly.swietlica !== false) {
+    out.push({ label: "Świetlica", href: "#swietlice-wsi", emoji: "🏛️", opis: null });
+  }
+  if (moduly.cmentarz !== false && ctx.maPlanCmentarza) {
+    out.push({ label: "Cmentarz", href: `${sciezka}/cmentarz`, emoji: "🕯️", opis: null });
+  }
+  out.push({ label: "Dołącz", href: "/rejestracja", emoji: "👋", opis: "Mieszkańcy" });
+  return out.slice(0, 6);
+}
+
+export function zbudujSkrotyPubliczne(
+  skroty: SkrotWsiPubliczny[],
+  sciezka: string,
+  moduly: Record<KluczSekcjiWsi, boolean>,
+  ctx: { maRynek: boolean; maPlanCmentarza: boolean },
+): SkrotWsiPubliczny[] {
+  if (skroty.length > 0) return skroty.slice(0, 6);
+  return domyslneSkrotyProfilu(sciezka, moduly, ctx);
 }
 
 export function zbudujUstawieniaWsiPubliczne(wiersz: {
@@ -98,7 +222,12 @@ export function zbudujUstawieniaWsiPubliczne(wiersz: {
     motyw: znajdzMotyw(themeId),
     moduly,
     kolejnosc_sekcji: kolejnosc,
+    hero_naglowek: parsed.hero?.naglowek?.trim() || null,
     hero_podtytul: parsed.hero?.podtytul?.trim() || null,
+    hero_cta: normalizujHeroCta(parsed.hero),
+    skroty: normalizujSkroty(parsed.skroty),
+    bloki: normalizujBloki(parsed.bloki),
+    domyslny_tryb_seniora: parsed.domyslny_tryb_seniora === true,
   };
 }
 
@@ -114,6 +243,47 @@ export function styleMotywuProfiluWsi(motyw: MotywGrafiki): CSSProperties {
     ["--wies-tekst" as string]: motyw.tekst,
     ["--wies-tekst-muted" as string]: motyw.tekstDrugorzedny,
     ["--wies-ramka" as string]: motyw.ramka,
+  };
+}
+
+export function presetWygladuWsi(preset: PresetWygladuWsi): {
+  moduly: Partial<Record<KluczSekcjiWsi, boolean>>;
+  theme_id: string;
+  skroty: SkrotWsiPubliczny[];
+} {
+  if (preset === "parafia_osp") {
+    return {
+      theme_id: "parafia-granat",
+      moduly: { rolnictwo: false, dotacje: false },
+      skroty: [
+        { label: "Parafia", href: "#sekcja-organizacje", emoji: "⛪", opis: null },
+        { label: "OSP", href: "#sekcja-organizacje", emoji: "🚒", opis: null },
+        { label: "Świetlica", href: "#swietlice-wsi", emoji: "🏛️", opis: null },
+        { label: "Ogłoszenia", href: "#sekcja-aktualnosci-laczone", emoji: "📢", opis: null },
+      ],
+    };
+  }
+  if (preset === "turystyczna") {
+    return {
+      theme_id: "turkusowy-letni",
+      moduly: { rolnictwo: false, dotacje: false, pomoc: false },
+      skroty: [
+        { label: "Mapa", href: "#sekcja-mapa", emoji: "🗺️", opis: "Miejsca" },
+        { label: "Atrakcje", href: "#sekcja-organizacje", emoji: "📍", opis: null },
+        { label: "Rynek", href: "#sekcja-rynek-lokalny", emoji: "🛒", opis: "Lokalnie" },
+        { label: "Foto", href: "#fotokronika-wsi", emoji: "📷", opis: null },
+      ],
+    };
+  }
+  return {
+    theme_id: "zielony-wies",
+    moduly: {},
+    skroty: [
+      { label: "Rynek", href: "#sekcja-rynek-lokalny", emoji: "🛒", opis: null },
+      { label: "Mapa", href: "#sekcja-mapa", emoji: "🗺️", opis: null },
+      { label: "Aktualności", href: "#sekcja-aktualnosci-laczone", emoji: "📢", opis: null },
+      { label: "Dołącz", href: "/rejestracja", emoji: "👋", opis: "Mieszkańcy" },
+    ],
   };
 }
 

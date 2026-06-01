@@ -44,9 +44,13 @@ import { WiesTransportLazy } from "@/components/wies/wies-transport-lazy";
 import { WiesRolnictwoLazy } from "@/components/wies/wies-rolnictwo-lazy";
 import { linkChroniony } from "@/lib/auth/sciezki-chronione";
 import { SwietliceWsiLazy } from "@/components/wies/swietlice-wsi-lazy";
+import { WiesSkrotyProfilu } from "@/components/wies/wies-skroty-profilu";
+import { WiesBlokiTresci } from "@/components/wies/wies-bloki-tresci";
+import { TrybSeniorDomyslnyWsiKlient } from "@/components/wies/tryb-senior-domyslny-wsi-klient";
 import {
   czyModulWsiWlaczony,
   styleMotywuProfiluWsi,
+  zbudujSkrotyPubliczne,
   zbudujUstawieniaWsiPubliczne,
   type UstawieniaWsiPubliczne,
 } from "@/lib/wies/ustawienia-wsi";
@@ -365,11 +369,19 @@ export function WiesProfilPubliczny({
     ustawieniaWsi,
   );
 
+  const skrotyPubliczne = zbudujSkrotyPubliczne(ustawieniaWsi.skroty, sciezka, ustawieniaWsi.moduly, {
+    maRynek,
+    maPlanCmentarza,
+  });
+
+  const tytulWsi = ustawieniaWsi.hero_naglowek || wies.name;
+
   return (
     <article
       className="profil-wies-motyw"
       style={styleMotywuProfiluWsi(ustawieniaWsi.motyw)}
     >
+      <TrybSeniorDomyslnyWsiKlient wlaczony={ustawieniaWsi.domyslny_tryb_seniora} />
       <a
         href="#informacje-mieszkancow"
         className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:rounded-lg focus:bg-green-900 focus:px-4 focus:py-2 focus:text-sm focus:font-medium focus:text-white"
@@ -427,7 +439,7 @@ export function WiesProfilPubliczny({
               height={56}
             />
           ) : null}
-          <h1 className="wies-naglowek-tytul font-serif text-3xl sm:text-4xl">{wies.name}</h1>
+          <h1 className="wies-naglowek-tytul font-serif text-3xl sm:text-4xl">{tytulWsi}</h1>
           {wies.is_active ? (
             <span className="mt-1 rounded-full bg-emerald-100 px-2.5 py-0.5 text-[11px] font-semibold text-emerald-900 ring-1 ring-emerald-200/80">
               Aktywny profil
@@ -442,6 +454,39 @@ export function WiesProfilPubliczny({
         {ustawieniaWsi.hero_podtytul ? (
           <p className="mt-2 max-w-2xl text-base leading-relaxed text-stone-700">{ustawieniaWsi.hero_podtytul}</p>
         ) : null}
+        {ustawieniaWsi.hero_cta.length > 0 ? (
+          <div className="mt-4 flex flex-wrap gap-2">
+            {ustawieniaWsi.hero_cta.map((cta, i) => {
+              const zewnetrzny = cta.href.startsWith("http");
+              const klasa =
+                cta.wariant === "secondary"
+                  ? "rounded-xl border px-4 py-2 text-sm font-semibold shadow-sm transition hover:opacity-90"
+                  : "rounded-xl px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:opacity-90";
+              const style =
+                cta.wariant === "secondary"
+                  ? {
+                      borderColor: "var(--wies-ramka, #86efac)",
+                      color: "var(--wies-tekst, #14532d)",
+                      background: "white",
+                    }
+                  : { background: "var(--wies-akcent, #166534)" };
+
+              if (zewnetrzny) {
+                return (
+                  <a key={i} href={cta.href} className={klasa} style={style} target="_blank" rel="noopener noreferrer">
+                    {cta.label}
+                  </a>
+                );
+              }
+              return (
+                <Link key={i} href={cta.href} className={klasa} style={style}>
+                  {cta.label}
+                </Link>
+              );
+            })}
+          </div>
+        ) : null}
+        <WiesSkrotyProfilu skroty={skrotyPubliczne} />
         <SpolecznyDowodWsi
           liczbaMieszkancow={liczbaMieszkancowAktywnych}
           liczbaOgloszen={rynek.length}
@@ -522,6 +567,8 @@ export function WiesProfilPubliczny({
           <PrzelacznikTrybuSeniora />
         </div>
       </header>
+
+      <WiesBlokiTresci bloki={ustawieniaWsi.bloki} />
 
       <WiesPilneAlerty alerty={pilneAlerty} sciezkaOgloszenia={prefixOgloszenia} />
       <OstrzezeniaLowieckieWsi
