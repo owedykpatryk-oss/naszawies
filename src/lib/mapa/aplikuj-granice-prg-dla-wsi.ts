@@ -43,10 +43,18 @@ export async function aplikujGranicePrgDlaWsi(
   const wynik = await pobierzGraniceWsiZPrgWfs(village.teryt_id, {
     lat,
     lon,
-    gminaTerytKod: village.gmina_teryt_kod ?? null,
   });
   if (!wynik.ok) {
     return { ok: false, reason: wynik.reason, retryable: wynik.retryable };
+  }
+
+  if (wynik.sourceTypeName.toLowerCase().includes("obrys gminy")) {
+    return {
+      ok: false,
+      reason:
+        "Odrzucono granicę: pobrany obrys obejmuje całą gminę, a nie obręb ewidencyjny wsi. Użyj synchronizacji z punktem GPS.",
+      retryable: false,
+    };
   }
 
   if (lat != null && lon != null && !czyPunktWGranicyGeojson(wynik.boundaryGeojson as GeoJsonGeometry, lon, lat)) {

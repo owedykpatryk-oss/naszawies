@@ -21,6 +21,8 @@ type WierszRpc = {
   county: string;
   commune: string;
   teryt_id: string;
+  gmina_teryt_kod?: string | null;
+  powiat_teryt_kod?: string | null;
   latitude: string | number | null;
   longitude: string | number | null;
   population: number | null;
@@ -65,12 +67,14 @@ function mapujZnacznikiRpc(wiersze: WierszRpc[]): ZnacznikWsi[] {
         lat,
         lon,
         population: w.population,
-        boundary_geojson: null,
+        boundary_geojson: w.boundary_geojson ?? null,
         public_offers_count: doLiczbyCalkowitej(w.public_offers_count),
         commune: w.commune,
         county: w.county,
         voivodeship: w.voivodeship,
         teryt_id: w.teryt_id,
+        gmina_teryt_kod: w.gmina_teryt_kod ?? undefined,
+        powiat_teryt_kod: w.powiat_teryt_kod ?? undefined,
       },
     ];
   });

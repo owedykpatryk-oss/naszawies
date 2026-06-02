@@ -2,7 +2,9 @@
 
 import Link from "next/link";
 import { FormEvent, useState } from "react";
-import { utworzKlientaSupabasePrzegladarka } from "@/lib/supabase/przegladarka";
+import { TurnstileAntybot } from "@/components/turnstile/TurnstileAntybot";
+
+const TURNSTILE_SITE_KEY = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY?.trim() ?? "";
 
 type Props = {
   nastepnaSciezka: string;
@@ -17,16 +19,11 @@ const OPISY_BLEDOW: Record<string, string> = {
   konfiguracja: "Logowanie jest chwilowo niedostępne. Spróbuj ponownie później.",
 };
 
-function mapujBladLogowania(msg: string): string {
-  if (msg === "Invalid login credentials") return "Nieprawidłowy e-mail lub hasło.";
-  if (msg === "Email not confirmed") return "Najpierw potwierdź adres e-mail (sprawdź skrzynkę).";
-  if (msg.toLowerCase().includes("too many requests")) return "Za dużo prób logowania. Odczekaj chwilę i spróbuj ponownie.";
-  return msg;
-}
-
 export function LogowanieFormularz({ nastepnaSciezka, kodBledu, szczegolBledu, emailStartowy = "" }: Props) {
   const [laduje, ustawLaduje] = useState(false);
   const [pokazHaslo, ustawPokazHaslo] = useState(false);
+  const [turnstileToken, ustawTurnstileToken] = useState<string | null>(null);
+  const [turnstileKey, ustawTurnstileKey] = useState(0);
   const [blad, ustawBlad] = useState(() => {
     if (!kodBledu) return "";
     const podstawa = OPISY_BLEDOW[kodBledu] ?? "Wystąpił problem z logowaniem.";
@@ -41,17 +38,34 @@ export function LogowanieFormularz({ nastepnaSciezka, kodBledu, szczegolBledu, e
     const fd = new FormData(e.currentTarget);
     const email = String(fd.get("email") || "").trim();
     const haslo = String(fd.get("haslo") || "");
+    if (TURNSTILE_SITE_KEY && !turnstileToken) {
+      ustawBlad("Potwierdź weryfikację antyspamową (Cloudflare) przed logowaniem.");
+      return;
+    }
+
     ustawLaduje(true);
     ustawBlad("");
 
     try {
-      const supabase = utworzKlientaSupabasePrzegladarka();
-      const { error } = await supabase.auth.signInWithPassword({ email, password: haslo });
-      if (error) {
-        ustawBlad(mapujBladLogowania(error.message));
+      const res = await fetch("/api/logowanie", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        credentials: "include",
+        body: JSON.stringify({
+          email,
+          haslo,
+          nastepnaSciezka: nastepnaSciezka.startsWith("/") ? nastepnaSciezka : "/panel",
+          ...(turnstileToken ? { cfTurnstileResponse: turnstileToken } : {}),
+        }),
+      });
+      const d = (await res.json().catch(() => ({}))) as { error?: string; redirect?: string };
+      if (!res.ok) {
+        ustawBlad(d.error || "Nie udało się zalogować.");
+        ustawTurnstileToken(null);
+        ustawTurnstileKey((k) => k + 1);
         return;
       }
-      const cel = nastepnaSciezka.startsWith("/") ? nastepnaSciezka : "/panel";
+      const cel = typeof d.redirect === "string" && d.redirect.startsWith("/") ? d.redirect : "/panel";
       window.location.assign(cel);
     } catch {
       ustawBlad("Nie udało się połączyć z serwerem.");
@@ -111,9 +125,15 @@ export function LogowanieFormularz({ nastepnaSciezka, kodBledu, szczegolBledu, e
           </button>
         </div>
       </div>
+      {TURNSTILE_SITE_KEY ? (
+        <div className="rounded-xl border border-stone-200/80 bg-white/90 px-3 py-3">
+          <p className="mb-2 text-xs text-stone-600">Weryfikacja antyspamowa (Cloudflare)</p>
+          <TurnstileAntybot key={turnstileKey} siteKey={TURNSTILE_SITE_KEY} onToken={ustawTurnstileToken} />
+        </div>
+      ) : null}
       <button
         type="submit"
-        disabled={laduje}
+        disabled={laduje || (Boolean(TURNSTILE_SITE_KEY) && !turnstileToken)}
         className="w-full min-h-[44px] rounded-xl bg-gradient-to-b from-green-800 to-green-900 px-4 py-2.5 font-medium text-white shadow-md transition hover:from-green-900 hover:to-green-950 disabled:opacity-60"
       >
         {laduje ? "Logowanie…" : "Zaloguj się"}

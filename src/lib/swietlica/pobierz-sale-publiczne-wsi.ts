@@ -1,4 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
+import { parsujZdjeciaProfiluSali } from "@/lib/swietlica/zdjecia-profilu-sali";
+
+import type { ZdjecieProfiluSali } from "@/lib/swietlica/zdjecia-profilu-sali";
 
 export type SalaPublicznaWsi = {
   id: string;
@@ -8,6 +11,8 @@ export type SalaPublicznaWsi = {
   max_capacity: number | null;
   parking_spaces: number | null;
   description: string | null;
+  cover_image_url: string | null;
+  profile_photos: ZdjecieProfiluSali[];
 };
 
 export async function pobierzSalePubliczneDlaWsi(
@@ -31,5 +36,7 @@ export async function pobierzSalePubliczneDlaWsi(
     max_capacity: r.max_capacity,
     parking_spaces: r.parking_spaces,
     description: r.description,
+    cover_image_url: r.cover_image_url ?? null,
+    profile_photos: parsujZdjeciaProfiluSali(r.profile_photos),
   }));
 }

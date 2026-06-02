@@ -1,6 +1,7 @@
 "use client";
 
 import { odliczanieZywHms, formatujDatePolowania } from "@/lib/mapa/formatuj-polowanie";
+import { useKlientGotowy } from "@/lib/ui/use-klient-gotowy";
 import type { ZnacznikPolowanie } from "./mapa-wsi-leaflet";
 
 type Props = {
@@ -12,6 +13,7 @@ type Props = {
 };
 
 export function MapaLowiectwoOverlay({ widoczne, polowania, liczbaKol, liczbaRewirow, onPokazAktywne }: Props) {
+  const klientGotowy = useKlientGotowy();
   if (!widoczne) return null;
 
   const aktywne = polowania.filter((p) => p.faza === "aktywne");
@@ -20,7 +22,10 @@ export function MapaLowiectwoOverlay({ widoczne, polowania, liczbaKol, liczbaRew
     .sort((a, b) => new Date(a.startsAt).getTime() - new Date(b.startsAt).getTime())
     .slice(0, 3);
   const pierwszeAktywne = aktywne[0];
-  const zywe = pierwszeAktywne ? odliczanieZywHms(pierwszeAktywne.startsAt, pierwszeAktywne.endsAt) : null;
+  const zywe =
+    klientGotowy && pierwszeAktywne
+      ? odliczanieZywHms(pierwszeAktywne.startsAt, pierwszeAktywne.endsAt)
+      : null;
 
   return (
     <div className="mapa-lowiectwo-overlay pointer-events-none absolute inset-x-0 top-0 z-[420] flex flex-col gap-2 p-2 sm:p-3">
@@ -35,7 +40,7 @@ export function MapaLowiectwoOverlay({ widoczne, polowania, liczbaKol, liczbaRew
               {aktywne.length === 1 ? pierwszeAktywne?.title : `${aktywne.length} aktywnych polowań w regionie`}
             </p>
             {zywe ? (
-              <p className="font-mono text-xs tabular-nums text-red-50">
+              <p className="font-mono text-xs tabular-nums text-red-50" suppressHydrationWarning>
                 {zywe.etykieta}: <span className="text-base font-bold">{zywe.hms}</span>
               </p>
             ) : null}

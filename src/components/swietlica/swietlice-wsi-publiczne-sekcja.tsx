@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { KartaBudynkuSwietlicy } from "@/components/swietlica/karta-budynku-swietlicy";
+import { GaleriaProfiluSwietlicyPubliczna } from "@/components/swietlica/galeria-profilu-swietlicy-publiczna";
 import { linkChroniony } from "@/lib/auth/sciezki-chronione";
 import type { SalaPublicznaWsi } from "@/lib/swietlica/pobierz-sale-publiczne-wsi";
 import { KARTA_LISTY_WIES, OslonaSekcjiWies } from "@/components/wies/oslona-sekcji-wies";
@@ -32,6 +33,7 @@ export function SwietliceWsiPubliczneSekcja({ nazwaWsi, sale, zalogowany = false
               parkingSpaces={s.parking_spaces}
               opis={s.description}
             />
+            <GaleriaProfiluSwietlicyPubliczna nazwaSali={s.name} zdjecia={s.profile_photos} />
             <div className="mt-4 flex flex-wrap gap-2">
               <Link
                 href={linkChroniony(`/panel/mieszkaniec/swietlica/${s.id}`, zalogowany)}

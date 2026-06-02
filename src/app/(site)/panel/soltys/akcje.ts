@@ -43,6 +43,12 @@ import {
 import { schemaPlanSali, parsujPresetyPlanu, type PlanSaliJson } from "@/lib/swietlica/plan-sali";
 import { schemaRzutParteruSali, type RzutParteruSaliJson } from "@/lib/swietlica/rzut-parteru-sali";
 import { schemaPolaRezerwacjiSali } from "@/lib/swietlica/pola-rezerwacji";
+import {
+  MAX_ZDJEC_PROFILU_SALI,
+  okladkaZeZdjecProfilu,
+  parsujZdjeciaProfiluSali,
+  walidujZdjeciaProfiluSali,
+} from "@/lib/swietlica/zdjecia-profilu-sali";
 import { pobierzUzytkownikaDoAkcji } from "@/lib/auth/pobierz-uzytkownika-serwer";
 
 const uuid = z.string().uuid();
@@ -1122,6 +1128,127 @@ export async function aktualizujProfilBudynkuSwietlicy(
   revalidatePath("/panel/mieszkaniec/swietlica");
   revalidatePath(`/panel/soltys/swietlica/${p.hallId}/dokument`);
   revalidatePath(`/panel/mieszkaniec/swietlica/${p.hallId}/dokument`);
+  return { ok: true };
+}
+
+function czyUrlZdjeciaProfiluSwietlicy(publicUrl: string, hallId: string): boolean {
+  const base = process.env.NEXT_PUBLIC_SUPABASE_URL?.replace(/\/$/, "");
+  if (base) {
+    const pref = `${base}/storage/v1/object/public/hall_inventory/${hallId}/profil/`;
+    if (publicUrl.startsWith(pref)) return true;
+  }
+  const r2 = wyciagnijBucketIKluczZUrlaR2(publicUrl);
+  return r2?.bucket === R2_BUCKET_HALL_INVENTORY && r2.key.startsWith(`${hallId}/profil/`);
+}
+
+async function usunPlikZdjeciaProfiluSwietlicy(
+  supabase: ReturnType<typeof utworzKlientaSupabaseSerwer>,
+  publicUrl: string,
+  hallId: string,
+): Promise<void> {
+  await usunObiektR2JesliUrlNasz(publicUrl);
+  const baza = process.env.NEXT_PUBLIC_SUPABASE_URL?.replace(/\/$/, "");
+  if (baza && publicUrl.startsWith(`${baza}/storage/v1/object/public/hall_inventory/`)) {
+    const marker = "/hall_inventory/";
+    const i = publicUrl.indexOf(marker);
+    if (i !== -1) {
+      const sciezka = publicUrl.slice(i + marker.length);
+      if (sciezka.startsWith(`${hallId}/profil/`)) {
+        const { error: rmErr } = await supabase.storage.from("hall_inventory").remove([sciezka]);
+        if (rmErr) console.warn("[galeriaProfiluSwietlicy] Supabase Storage:", rmErr.message);
+      }
+    }
+  }
+}
+
+const schemaGaleriaProfiluSwietlicy = z.object({
+  hallId: z.string().uuid(),
+  zdjecia: z
+    .array(
+      z.object({
+        id: z.string().uuid(),
+        url: z.string().url().max(2048),
+        etykieta: z.string().trim().min(1).max(80),
+      }),
+    )
+    .max(MAX_ZDJEC_PROFILU_SALI),
+});
+
+export async function zapiszGalerieProfiluSwietlicy(
+  dane: z.infer<typeof schemaGaleriaProfiluSwietlicy>,
+): Promise<WynikProsty> {
+  const parsed = schemaGaleriaProfiluSwietlicy.safeParse(dane);
+  if (!parsed.success) {
+    return { blad: "Sprawdź listę zdjęć profilu (maks. 10)." };
+  }
+
+  const user = await pobierzUzytkownikaDoAkcji();
+  const supabase = utworzKlientaSupabaseSerwer();
+  if (!user) {
+    return { blad: "Zaloguj się." };
+  }
+
+  const p = parsed.data;
+  const moze = await czyUzytkownikJestSoltysemDlaSali(supabase, user.id, p.hallId);
+  if (!moze) {
+    return { blad: "Brak uprawnień do edycji tej świetlicy." };
+  }
+
+  for (const z of p.zdjecia) {
+    if (!czyUrlZdjeciaProfiluSwietlicy(z.url, p.hallId)) {
+      return { blad: "Adres zdjęcia musi pochodzić z wgrania w serwisie dla tej świetlicy." };
+    }
+  }
+
+  const ids = new Set(p.zdjecia.map((z) => z.id));
+  if (ids.size !== p.zdjecia.length) {
+    return { blad: "Duplikaty identyfikatorów zdjęć." };
+  }
+
+  const { data: sala, error: readErr } = await supabase
+    .from("halls")
+    .select("village_id, profile_photos")
+    .eq("id", p.hallId)
+    .maybeSingle();
+
+  if (readErr || !sala) {
+    return { blad: "Nie znaleziono sali." };
+  }
+
+  const poprzednie = parsujZdjeciaProfiluSali(sala.profile_photos);
+  const noweUrl = new Set(p.zdjecia.map((z) => z.url));
+  for (const st of poprzednie) {
+    if (!noweUrl.has(st.url)) {
+      await usunPlikZdjeciaProfiluSwietlicy(supabase, st.url, p.hallId);
+    }
+  }
+
+  const walidowane = walidujZdjeciaProfiluSali(p.zdjecia);
+  if (!walidowane) {
+    return { blad: "Niepoprawna struktura galerii." };
+  }
+
+  const { error } = await supabase
+    .from("halls")
+    .update({
+      profile_photos: walidowane,
+      cover_image_url: okladkaZeZdjecProfilu(walidowane),
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", p.hallId);
+
+  if (error) {
+    console.error("[zapiszGalerieProfiluSwietlicy]", error.message);
+    return { blad: "Nie udało się zapisać galerii profilu." };
+  }
+
+  revalidatePath(`/panel/soltys/swietlica/${p.hallId}`);
+  revalidatePath(`/panel/mieszkaniec/swietlica/${p.hallId}`);
+  revalidatePath("/panel/soltys/swietlica");
+  revalidatePath("/panel/mieszkaniec/swietlica");
+  revalidatePath(`/panel/soltys/swietlica/${p.hallId}/dokument`);
+  revalidatePath(`/panel/mieszkaniec/swietlica/${p.hallId}/dokument`);
+  await revalidateProfilWsiDlaWioski(supabase, sala.village_id);
   return { ok: true };
 }
 

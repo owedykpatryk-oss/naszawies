@@ -35,6 +35,8 @@ yarn-error.log*
 # lokalne / przypadkowe (nie commituj)
 .tmp/
 tmp-*.xml
+tmp-*.json
+sync-*.log
 __q.sql
 _apply_m1.json
 _mcp/

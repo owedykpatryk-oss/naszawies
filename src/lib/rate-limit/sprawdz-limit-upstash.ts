@@ -4,6 +4,7 @@ import { Redis } from "@upstash/redis";
 export type NazwaLimituApi =
   | "waitlist"
   | "kontakt"
+  | "rejestracja"
   | "zglos_naruszenie"
   | "szukaj_wies"
   | "logowanie"
@@ -63,6 +64,12 @@ function pobierzLubUtworzLimitery(): SlownikLimitow | null {
       prefix: "rl:kontakt",
       analytics: true,
     }),
+    rejestracja: new Ratelimit({
+      redis,
+      limiter: Ratelimit.slidingWindow(5, "1 h"),
+      prefix: "rl:rejestracja",
+      analytics: true,
+    }),
     zglos_naruszenie: new Ratelimit({
       redis,
       limiter: Ratelimit.slidingWindow(10, "24 h"),
@@ -104,6 +111,7 @@ function pobierzLubUtworzLimitery(): SlownikLimitow | null {
 const LIMITY_PAMIEC: Record<NazwaLimituApi, { limit: number; oknoMs: number }> = {
   waitlist: { limit: 3, oknoMs: 60 * 60 * 1000 },
   kontakt: { limit: 5, oknoMs: 60 * 60 * 1000 },
+  rejestracja: { limit: 5, oknoMs: 60 * 60 * 1000 },
   zglos_naruszenie: { limit: 10, oknoMs: 24 * 60 * 60 * 1000 },
   szukaj_wies: { limit: 60, oknoMs: 60 * 1000 },
   logowanie: { limit: 30, oknoMs: 10 * 60 * 1000 },

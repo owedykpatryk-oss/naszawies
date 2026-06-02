@@ -61,6 +61,10 @@ export type ZnacznikWsi = {
   county?: string;
   voivodeship?: string;
   teryt_id?: string;
+  /** Kod TERC gminy (7 cyfr) — do urzędowej granicy z PRG. */
+  gmina_teryt_kod?: string;
+  /** Kod TERC powiatu (4 cyfry). */
+  powiat_teryt_kod?: string;
 };
 
 /** Punkt z tabeli `pois` (kościół, szkoła, świetlica, sołtys…) — publiczne na mapie. */
@@ -112,6 +116,13 @@ export type ObrysLanduseMapy = {
   landuse: string;
   name: string | null;
   geojson: GeoJSON.Polygon;
+};
+
+/** Granica nadleśnictwa LP z PRG U06. */
+export type ObrysNadlesnictwaMapy = {
+  id: string;
+  name: string;
+  geojson: GeoJsonObject;
 };
 
 /** Nazwy geograficzne (PRNG) i instytucje PRG z Geoportalu — warstwa referencyjna. */
@@ -437,7 +448,33 @@ type InstancjaLeaflet = {
   poiMarkersById: Map<string, import("leaflet").Marker>;
   resizeHandler: () => void;
   wheelHandlers: { enter: () => void; leave: () => void };
+  initInvalidateTimeoutId: ReturnType<typeof setTimeout> | null;
+  /** Ostatni bbox, dla którego wykonano fitBounds — unika resetu widoku przy każdym zoomie. */
+  ostatniFitBboxKlucz: string | null;
 };
+
+function czyMapaLeafletOperacyjna(map: import("leaflet").Map | null | undefined): map is import("leaflet").Map {
+  if (!map) return false;
+  const container = map.getContainer?.();
+  if (!container?.isConnected) return false;
+  const pane = (map as unknown as { _mapPane?: HTMLElement })._mapPane;
+  return Boolean(pane?.isConnected);
+}
+
+function bezpieczneInvalidateSize(map: import("leaflet").Map): void {
+  if (!czyMapaLeafletOperacyjna(map)) return;
+  try {
+    map.invalidateSize({ animate: false, pan: false });
+  } catch {
+    /* mapa w trakcie niszczenia lub przejścia zoomu */
+  }
+}
+
+function kluczBboxMapy(bbox: [[number, number], [number, number]] | null): string | null {
+  if (!bbox) return null;
+  const fmt = (n: number) => n.toFixed(5);
+  return `${fmt(bbox[0][0])},${fmt(bbox[0][1])},${fmt(bbox[1][0])},${fmt(bbox[1][1])}`;
+}
 
 const GEO_WMS_URL = process.env.NEXT_PUBLIC_GEOPORTAL_WMS_URL?.trim() ?? "";
 const GEO_WMS_LAYERS = process.env.NEXT_PUBLIC_GEOPORTAL_WMS_LAYERS?.trim() ?? "";
@@ -946,16 +983,23 @@ export const MapaWsiLeaflet = forwardRef<
     obrysyLanduse?: ObrysLanduseMapy[];
     pokazLanduse?: boolean;
     punktyAdresy?: ZnacznikAdres[];
-    /** Obrysy wszystkich wsi w wybranej gminie (pomarańczowy kontur). */
+    /** Obrysy wsi w gminie (fallback gdy brak urzędowej granicy PRG). */
     obrysyGminy?: ZnacznikWsi[];
-    /** Otulina powiatu (szacunek z granic wsi) — fioletowy kontur. */
+    /** Urzędowa granica gminy z PRG A04 (TERC). */
+    obrysGminyUrzedowy?: GeoJsonObject | null;
+    /** Otulina powiatu (fallback) lub urzędowa granica PRG A03. */
     obrysPowiatu?: GeoJsonObject | null;
+    /** Urzędowa granica województwa z PRG A02. */
+    obrysWojewodztwa?: GeoJsonObject | null;
+    /** Granice nadleśnictw LP (PRG U06). */
+    nadlesnictwaObrysy?: ObrysNadlesnictwaMapy[];
     punktyKola?: ZnacznikKoloLowieckie[];
     rewiryLowieckie?: ZnacznikRewirLowiecki[];
     trybLowiectwo?: boolean;
     pozycjaUzytkownika?: { lat: number; lon: number } | null;
     promienKm?: number | null;
     pokazGranice?: boolean;
+    onPokazGraniceChange?: (v: boolean) => void;
     /** Warstwa EGiB (obręby + działki) z Geoportalu — domyślnie włączona. */
     pokazEgib?: boolean;
     pokazPoi?: boolean;
@@ -976,13 +1020,17 @@ export const MapaWsiLeaflet = forwardRef<
     pokazLanduse = false,
     punktyAdresy = [],
     obrysyGminy = [],
+    obrysGminyUrzedowy = null,
     obrysPowiatu = null,
+    obrysWojewodztwa = null,
+    nadlesnictwaObrysy = [],
     punktyKola = [],
     rewiryLowieckie = [],
     trybLowiectwo = false,
     pozycjaUzytkownika = null,
     promienKm = null,
     pokazGranice = true,
+    onPokazGraniceChange,
     pokazEgib = true,
     pokazPoi = true,
     pokazRynek = true,
@@ -998,7 +1046,13 @@ export const MapaWsiLeaflet = forwardRef<
     pozycjaRef.current = pozycjaUzytkownika;
     const [rodzajPodkladu, setRodzajPodkladu] = useState<RodzajPodkladuMapy>("mapa");
     const [pokazGraniceStan, setPokazGraniceStan] = useState(pokazGranice);
-    const [pokazEgibStan, setPokazEgibStan] = useState(() => pokazEgib && wczytajZapisanyEgib());
+    useEffect(() => {
+      setPokazGraniceStan(pokazGranice);
+    }, [pokazGranice]);
+    const [pokazEgibStan, setPokazEgibStan] = useState(pokazEgib);
+    useEffect(() => {
+      setPokazEgibStan(pokazEgib && wczytajZapisanyEgib());
+    }, [pokazEgib]);
     const [zoomMapy, setZoomMapy] = useState(7);
     const [pokazPoiStan, setPokazPoiStan] = useState(pokazPoi);
     const [pokazRynekStan, setPokazRynekStan] = useState(pokazRynek);
@@ -1029,8 +1083,14 @@ export const MapaWsiLeaflet = forwardRef<
     punktyAdresyRef.current = punktyAdresy;
     const obrysyGminyRef = useRef(obrysyGminy);
     obrysyGminyRef.current = obrysyGminy;
+    const obrysGminyUrzedowyRef = useRef(obrysGminyUrzedowy);
+    obrysGminyUrzedowyRef.current = obrysGminyUrzedowy;
     const obrysPowiatuRef = useRef(obrysPowiatu);
     obrysPowiatuRef.current = obrysPowiatu;
+    const obrysWojewodztwaRef = useRef(obrysWojewodztwa);
+    obrysWojewodztwaRef.current = obrysWojewodztwa;
+    const nadlesnictwaRef = useRef(nadlesnictwaObrysy);
+    nadlesnictwaRef.current = nadlesnictwaObrysy;
     const punktyKolaRef = useRef(punktyKola);
     punktyKolaRef.current = punktyKola;
     const rewiryRef = useRef(rewiryLowieckie);
@@ -1206,9 +1266,11 @@ export const MapaWsiLeaflet = forwardRef<
 
         const container = map.getContainer();
         const enter = () => {
+          if (!czyMapaLeafletOperacyjna(map)) return;
           map.scrollWheelZoom.enable();
         };
         const leave = () => {
+          if (!czyMapaLeafletOperacyjna(map)) return;
           map.scrollWheelZoom.disable();
         };
         container.addEventListener("mouseenter", enter);
@@ -1221,10 +1283,10 @@ export const MapaWsiLeaflet = forwardRef<
         setZoomMapy(map.getZoom());
 
         const resizeHandler = () => {
-          map.invalidateSize();
+          bezpieczneInvalidateSize(map);
         };
         window.addEventListener("resize", resizeHandler);
-        setTimeout(resizeHandler, 120);
+        const initInvalidateTimeoutId = setTimeout(resizeHandler, 120);
 
         instancja.current = {
           map,
@@ -1245,6 +1307,8 @@ export const MapaWsiLeaflet = forwardRef<
           poiMarkersById: new Map(),
           resizeHandler,
           wheelHandlers: { enter, leave },
+          initInvalidateTimeoutId,
+          ostatniFitBboxKlucz: null,
         };
         ustawPodkladMapy(instancja.current, podkladStart);
         ustawWarstweEgib(instancja.current, pokazEgibRef.current);
@@ -1265,7 +1329,10 @@ export const MapaWsiLeaflet = forwardRef<
           punktyZgloszeniaRef.current,
           punktyPolowaniaRef.current,
           obrysyGminyRef.current,
+          obrysGminyUrzedowyRef.current,
           obrysPowiatuRef.current,
+          obrysWojewodztwaRef.current,
+          nadlesnictwaRef.current,
           punktyKolaRef.current,
           rewiryRef.current,
           punktyCmentarzeRef.current,
@@ -1284,11 +1351,20 @@ export const MapaWsiLeaflet = forwardRef<
         cancelled = true;
         const inst = instancja.current;
         if (inst) {
+          if (inst.initInvalidateTimeoutId != null) {
+            clearTimeout(inst.initInvalidateTimeoutId);
+          }
           inst.map.off("zoomend");
           window.removeEventListener("resize", inst.resizeHandler);
           const c = inst.map.getContainer();
           c.removeEventListener("mouseenter", inst.wheelHandlers.enter);
           c.removeEventListener("mouseleave", inst.wheelHandlers.leave);
+          try {
+            inst.map.scrollWheelZoom.disable();
+            inst.map.stop();
+          } catch {
+            /* ignore */
+          }
           inst.map.remove();
           instancja.current = null;
         }
@@ -1313,7 +1389,10 @@ export const MapaWsiLeaflet = forwardRef<
         punktyZgloszenia,
         punktyPolowania,
         obrysyGminy,
+        obrysGminyUrzedowy,
         obrysPowiatu,
+        obrysWojewodztwa,
+        nadlesnictwaObrysy,
         punktyKola,
         rewiryLowieckie,
         punktyCmentarze,
@@ -1330,14 +1409,16 @@ export const MapaWsiLeaflet = forwardRef<
       punktyPolowania,
       punktyCmentarze,
       obrysyGminy,
+      obrysGminyUrzedowy,
       obrysPowiatu,
+      obrysWojewodztwa,
+      nadlesnictwaObrysy,
       punktyKola,
       rewiryLowieckie,
       bboxPoczatkowy,
       pokazGraniceStan,
       pokazEgibStan,
       trybLowiectwo,
-      zoomMapy,
       pokazPoiStan,
       pokazRynekStan,
     ]);
@@ -1394,7 +1475,10 @@ export const MapaWsiLeaflet = forwardRef<
     useEffect(() => {
       const onChange = () => {
         setPelnyEkran(!!document.fullscreenElement);
-        instancja.current?.map.invalidateSize();
+        const map = instancja.current?.map;
+        if (map) {
+          requestAnimationFrame(() => bezpieczneInvalidateSize(map));
+        }
       };
       document.addEventListener("fullscreenchange", onChange);
       return () => document.removeEventListener("fullscreenchange", onChange);
@@ -1497,7 +1581,13 @@ export const MapaWsiLeaflet = forwardRef<
           </button>
           <button
             type="button"
-            onClick={() => setPokazGraniceStan((v) => !v)}
+            onClick={() => {
+              setPokazGraniceStan((v) => {
+                const next = !v;
+                onPokazGraniceChange?.(next);
+                return next;
+              });
+            }}
             className="rounded-lg border border-stone-200/80 bg-white/90 px-3 py-1.5 text-[11px] font-medium text-stone-700 shadow-sm backdrop-blur hover:bg-white"
           >
             {pokazGraniceStan ? "Ukryj obrysy wsi" : "Pokaż obrysy wsi"}
@@ -1579,7 +1669,16 @@ export const MapaWsiLeaflet = forwardRef<
               <span className="font-medium text-[#2563eb]">Niebieski punkt</span> — Twoja lokalizacja (gdy włączysz GPS)
             </li>
             <li>
-              <span className="font-medium text-violet-800">Fioletowy przerywany obrys</span> — otulina powiatu (szacunek z granic wsi)
+              <span className="font-medium text-violet-800">Fioletowy obrys</span> — granica powiatu (PRG A03)
+            </li>
+            <li>
+              <span className="font-medium text-sky-800">Niebieski obrys</span> — granica województwa (PRG A02)
+            </li>
+            <li>
+              <span className="font-medium text-amber-800">Pomarańczowy obrys</span> — granica gminy (PRG A04)
+            </li>
+            <li>
+              <span className="font-medium text-lime-800">Zielony obrys (przerywany)</span> — nadleśnictwo LP (PRG U06)
             </li>
             <li>
               <span className="font-medium text-red-800">Czerwony obszar (puls)</span> — trwające polowanie; pomarańczowy przerywany — zaplanowane
@@ -1782,7 +1881,10 @@ function syncWarstwy(
   punktyZgloszenia: ZnacznikZgloszenie[],
   punktyPolowania: ZnacznikPolowanie[],
   obrysyGminy: ZnacznikWsi[],
+  obrysGminyUrzedowy: GeoJsonObject | null,
   obrysPowiatu: GeoJsonObject | null,
+  obrysWojewodztwa: GeoJsonObject | null,
+  nadlesnictwaObrysy: ObrysNadlesnictwaMapy[],
   punktyKola: ZnacznikKoloLowieckie[],
   rewiryLowieckie: ZnacznikRewirLowiecki[],
   punktyCmentarze: ZnacznikCmentarzObrys[],
@@ -1795,6 +1897,7 @@ function syncWarstwy(
   const trybLowiectwo = opts?.trybLowiectwo === true;
   const egibWidoczny = pokazEgib && czyKiegWidocznyNaZoomie(inst.map.getZoom());
   const { map, cluster, boundaryGroup, markersById, polowaniaById, rynekDzialkiById, poiMarkersById } = inst;
+  if (!czyMapaLeafletOperacyjna(map)) return;
   ustawPaneWarstwicyGranicy(map);
 
   (cluster as import("leaflet").LayerGroup).clearLayers();
@@ -1803,6 +1906,26 @@ function syncWarstwy(
   polowaniaById.clear();
   rynekDzialkiById.clear();
   poiMarkersById.clear();
+
+  if (obrysWojewodztwa) {
+    try {
+      const warstwaWoj = L.geoJSON(obrysWojewodztwa, {
+        pane: PANE_GRANICE,
+        interactive: false,
+        style: {
+          color: "#0369a1",
+          weight: 3,
+          fillColor: "#38bdf8",
+          fillOpacity: 0.04,
+          opacity: 0.75,
+          dashArray: "14 8",
+        },
+      } as import("leaflet").GeoJSONOptions);
+      boundaryGroup.addLayer(warstwaWoj);
+    } catch {
+      /* ignore */
+    }
+  }
 
   if (obrysPowiatu) {
     try {
@@ -1824,25 +1947,44 @@ function syncWarstwy(
     }
   }
 
-  for (const z of obrysyGminy) {
-    const gj = granicaJakoGeoJson(z.boundary_geojson);
-    if (!gj) continue;
+  if (obrysGminyUrzedowy) {
     try {
-      const warstwa = L.geoJSON(gj, {
+      const warstwaGmina = L.geoJSON(obrysGminyUrzedowy, {
         pane: PANE_GRANICE,
         interactive: false,
         style: {
           color: "#b45309",
-          weight: 3,
+          weight: 4,
           fillColor: "#f59e0b",
-          fillOpacity: 0.08,
-          opacity: 0.85,
-          dashArray: "6 4",
+          fillOpacity: 0.05,
+          opacity: 0.95,
         },
       } as import("leaflet").GeoJSONOptions);
-      boundaryGroup.addLayer(warstwa);
+      boundaryGroup.addLayer(warstwaGmina);
     } catch {
       /* ignore */
+    }
+  } else {
+    for (const z of obrysyGminy) {
+      const gj = granicaJakoGeoJson(z.boundary_geojson);
+      if (!gj) continue;
+      try {
+        const warstwa = L.geoJSON(gj, {
+          pane: PANE_GRANICE,
+          interactive: false,
+          style: {
+            color: "#b45309",
+            weight: 3,
+            fillColor: "#f59e0b",
+            fillOpacity: 0.08,
+            opacity: 0.85,
+            dashArray: "6 4",
+          },
+        } as import("leaflet").GeoJSONOptions);
+        boundaryGroup.addLayer(warstwa);
+      } catch {
+        /* ignore */
+      }
     }
   }
 
@@ -1867,6 +2009,29 @@ function syncWarstwy(
         },
       } as import("leaflet").GeoJSONOptions);
       warstwa.bindPopup(htmlPopupRewir(rew));
+      boundaryGroup.addLayer(warstwa);
+    } catch {
+      /* ignore */
+    }
+  }
+
+  for (const nadl of nadlesnictwaObrysy) {
+    try {
+      const warstwa = L.geoJSON(nadl.geojson, {
+        pane: PANE_GRANICE,
+        interactive: true,
+        style: {
+          color: "#3f6212",
+          weight: 2,
+          fillColor: "#84cc16",
+          fillOpacity: 0.1,
+          opacity: 0.8,
+          dashArray: "8 5",
+        },
+      } as import("leaflet").GeoJSONOptions);
+      warstwa.bindPopup(
+        `<div class="mapa-wsi-popup"><h3>${escapeHtml(nadl.name)}</h3><p class="text-xs text-stone-600">Nadleśnictwo LP · PRG U06 (orientacyjnie)</p></div>`,
+      );
       boundaryGroup.addLayer(warstwa);
     } catch {
       /* ignore */
@@ -2133,13 +2298,27 @@ function syncWarstwy(
   }
 
   if (bbox) {
-    /** Przy jednej wsi sztywne maxZoom 12 zostawiało mapę za daleko — granica ledwo widoczna. */
-    const maxZoom =
-      znaczniki.length <= 1 ? 17 : znaczniki.length <= 4 ? 16 : znaczniki.length <= 12 ? 14 : znaczniki.length <= 40 ? 13 : 12;
-    map.fitBounds(bbox, { padding: [32, 32], maxZoom, animate: false });
-  } else {
-    map.setView([52.1, 19.3], 6);
+    const kluczBbox = kluczBboxMapy(bbox);
+    if (kluczBbox && kluczBbox !== inst.ostatniFitBboxKlucz) {
+      /** Przy jednej wsi sztywne maxZoom 12 zostawiało mapę za daleko — granica ledwo widoczna. */
+      const maxZoom =
+        znaczniki.length <= 1 ? 17 : znaczniki.length <= 4 ? 16 : znaczniki.length <= 12 ? 14 : znaczniki.length <= 40 ? 13 : 12;
+      try {
+        map.stop();
+        map.fitBounds(bbox, { padding: [32, 32], maxZoom, animate: false });
+        inst.ostatniFitBboxKlucz = kluczBbox;
+        requestAnimationFrame(() => bezpieczneInvalidateSize(map));
+      } catch {
+        /* ignore — np. mapa w trakcie zoomu kółkiem myszy */
+      }
+    }
+  } else if (inst.ostatniFitBboxKlucz == null) {
+    try {
+      map.stop();
+      map.setView([52.1, 19.3], 6);
+      inst.ostatniFitBboxKlucz = "domyslny";
+    } catch {
+      /* ignore */
+    }
   }
-
-  setTimeout(() => map.invalidateSize(), 80);
 }

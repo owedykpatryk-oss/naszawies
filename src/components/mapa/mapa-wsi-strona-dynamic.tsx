@@ -1,7 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
-import type { ComponentProps } from "react";
+import { Suspense, type ComponentProps } from "react";
 import type { MapaWsiStrona } from "./mapa-wsi-strona";
 
 export function MapaWsiStronaSkeleton() {
@@ -27,5 +27,9 @@ const MapaWsiStronaLazy = dynamic(
 );
 
 export function MapaWsiStronaDynamic(props: ComponentProps<typeof MapaWsiStrona>) {
-  return <MapaWsiStronaLazy {...props} />;
+  return (
+    <Suspense fallback={<MapaWsiStronaSkeleton />}>
+      <MapaWsiStronaLazy {...props} />
+    </Suspense>
+  );
 }

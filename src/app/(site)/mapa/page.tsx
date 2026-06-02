@@ -109,6 +109,16 @@ export default async function MapaPage() {
     wybierzWsiZMalymPoi(znaczniki, punktyPoi, 8),
   ).slice(0, 10);
 
+  /** Lekkie znaczniki bez GeoJSON — obrysy dociąga klient (/api/mapa/granice-wsi). */
+  const znacznikiDoMapy = znaczniki.map((z) => ({
+    ...z,
+    boundary_geojson: null,
+  }));
+  const znacznikiDoSync = znaczniki.map((z) => ({
+    id: z.id,
+    boundary_geojson: z.boundary_geojson,
+  }));
+
   return (
     <main className="mapa-strona-glowna mapa-strona-glowna--immersive flex min-h-0 flex-col">
       <header className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-b border-stone-200/80 bg-white/90 px-3 py-2 backdrop-blur-sm sm:px-4">
@@ -146,12 +156,12 @@ export default async function MapaPage() {
         <div className="mapa-widget-pelny min-h-0 flex-1">
           <Suspense fallback={<MapaWsiStronaSkeleton />}>
             <MapaAutomatyzacjaKlient
-              znaczniki={znaczniki}
+              znaczniki={znacznikiDoSync}
               villageIdsDoUzupelnienia={villageIdsDoUzupelnienia}
               statystyki={statystykiMapy}
             />
             <MapaWsiStronaDynamic
-              znaczniki={znaczniki}
+              znaczniki={znacznikiDoMapy}
               punktyPoi={punktyPoi}
               punktyAdresy={punktyAdresy}
               punktyRynek={punktyRynek}

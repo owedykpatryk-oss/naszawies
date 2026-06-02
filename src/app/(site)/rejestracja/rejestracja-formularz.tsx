@@ -3,22 +3,20 @@
 import Link from "next/link";
 import { FormEvent, useState } from "react";
 import type { WpisWsi } from "@/components/wies/wyszukiwarka-wsi";
-import { czyPelneImieINazwisko } from "@/lib/rejestracja/validate-imie-soltysa";
-import { utworzKlientaSupabasePrzegladarka } from "@/lib/supabase/przegladarka";
+import { TurnstileAntybot } from "@/components/turnstile/TurnstileAntybot";
+import { walidujWyswietlanaNazwaRejestracji } from "@/lib/rejestracja/waliduj-wyswietlana-nazwa";
 import { PolaZgodyRejestracji, czyZaznaczoneZgodyRejestracji } from "@/components/rodo/pola-zgody-rejestracji";
-import { AKTUALNY_BUNDLE_WERSJI_PRAWNYCH } from "@/lib/rodo/wersje-dokumentow";
 import { RejestracjaWyborWsi } from "./rejestracja-wybor-wsi";
 
+const TURNSTILE_SITE_KEY = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY?.trim() ?? "";
+
 type Props = {
-  /** Publiczny adres strony (np. https://naszawies.pl) używany w linku z e-maila potwierdzającego. */
-  pochodzeniePubliczne: string;
   nastepnaSciezka?: string;
   domyslnaIntencja?: "mieszkaniec" | "soltys";
   domyslnaWies?: WpisWsi | null;
 };
 
 export function RejestracjaFormularz({
-  pochodzeniePubliczne,
   nastepnaSciezka = "/panel",
   domyslnaIntencja,
   domyslnaWies = null,
@@ -36,6 +34,8 @@ export function RejestracjaFormularz({
     intencja: string;
     nazwaWsi: string | null;
   } | null>(null);
+  const [turnstileToken, ustawTurnstileToken] = useState<string | null>(null);
+  const [turnstileKey, ustawTurnstileKey] = useState(0);
 
   async function onSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -57,10 +57,9 @@ export function RejestracjaFormularz({
       ustawBlad("Hasło powinno mieć co najmniej 8 znaków.");
       return;
     }
-    if (intencja === "soltys" && !czyPelneImieINazwisko(wyswietlanaNazwa)) {
-      ustawBlad(
-        "Jako osoba deklarująca sołtysa podaj pełne imię i nazwisko: co najmniej dwa wyrazy (np. Jan Kowalski), każde po min. 2 znaki — zgodnie z wymogiem: jeden aktywny sołtys na sołectwo, identyfikacja musi być czytelna."
-      );
+    const nazwaW = walidujWyswietlanaNazwaRejestracji(wyswietlanaNazwa, intencjaDoMetadanych);
+    if (!nazwaW.ok) {
+      ustawBlad(nazwaW.blad);
       return;
     }
     if ((intencja === "mieszkaniec" || intencja === "soltys") && !wybranaWies) {
@@ -71,39 +70,36 @@ export function RejestracjaFormularz({
       ustawBlad("Zaakceptuj regulamin, politykę prywatności i potwierdź wiek (16 lat).");
       return;
     }
+    if (TURNSTILE_SITE_KEY && !turnstileToken) {
+      ustawBlad("Potwierdź weryfikację antyspamową (Cloudflare) przed wysłaniem formularza.");
+      return;
+    }
 
-    const legalAt = new Date().toISOString();
     ustawLaduje(true);
     try {
-      const supabase = utworzKlientaSupabasePrzegladarka();
-      const nastepnyPoPotwierdzeniu = encodeURIComponent(
-        nastepnaSciezka.startsWith("/") ? nastepnaSciezka : "/panel",
-      );
-      const { error } = await supabase.auth.signUp({
-        email,
-        password: haslo,
-        options: {
-          emailRedirectTo: `${pochodzeniePubliczne}/auth/potwierdz?next=${nastepnyPoPotwierdzeniu}`,
-          data: {
-            display_name: wyswietlanaNazwa || email.split("@")[0] || "Użytkownik",
-            /** Orientacyjnie: nie nadaje roli w bazie — tylko metadane konta (np. do triażu). */
-            signup_intent: intencjaDoMetadanych,
-            signup_village_id: wybranaWies?.id ?? "",
-            signup_village_label: wybranaWies
-              ? `${wybranaWies.nazwa} · ${wybranaWies.gmina}, ${wybranaWies.powiat}, ${wybranaWies.wojewodztwo}`
-              : "",
-            signup_village_teryt: wybranaWies?.terytId ?? "",
-            legal_accepted_at: legalAt,
-            legal_bundle_version: AKTUALNY_BUNDLE_WERSJI_PRAWNYCH,
-          },
-        },
+      const res = await fetch("/api/rejestracja", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email,
+          haslo,
+          wyswietlanaNazwa: nazwaW.nazwa,
+          intencja: intencjaDoMetadanych,
+          signupVillageId: wybranaWies?.id ?? "",
+          signupVillageLabel: wybranaWies
+            ? `${wybranaWies.nazwa} · ${wybranaWies.gmina}, ${wybranaWies.powiat}, ${wybranaWies.wojewodztwo}`
+            : "",
+          signupVillageTeryt: wybranaWies?.terytId ?? "",
+          nastepnaSciezka: nastepnaSciezka.startsWith("/") ? nastepnaSciezka : "/panel",
+          bottrap: String(fd.get("bottrap") || ""),
+          ...(turnstileToken ? { cfTurnstileResponse: turnstileToken } : {}),
+        }),
       });
-      if (error) {
-        ustawBlad(
-          error.message.includes("already registered")
-            ? "Ten adres jest już zarejestrowany — spróbuj się zalogować."
-            : error.message
-        );
+      const d = (await res.json().catch(() => ({}))) as { error?: string };
+      if (!res.ok) {
+        ustawBlad(d.error || "Nie udało się utworzyć konta.");
+        ustawTurnstileToken(null);
+        ustawTurnstileKey((k) => k + 1);
         return;
       }
       ustawPodsumowanieSukcesu({
@@ -113,6 +109,7 @@ export function RejestracjaFormularz({
       ustawSukces(true);
       ustawWybranaWies(null);
       ustawIntencje("");
+      ustawTurnstileToken(null);
       form.reset();
     } catch {
       ustawBlad("Nie udało się połączyć z serwerem.");
@@ -170,6 +167,10 @@ export function RejestracjaFormularz({
       className="mt-8 space-y-4 rounded-2xl border border-stone-200 bg-white p-6 shadow-sm"
       onSubmit={onSubmit}
     >
+      <div className="sr-only" aria-hidden="true">
+        <label htmlFor="reg-bottrap">Pozostaw puste</label>
+        <input type="text" id="reg-bottrap" name="bottrap" tabIndex={-1} autoComplete="off" />
+      </div>
       {blad ? (
         <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-800" role="alert">
           {blad}
@@ -285,6 +286,12 @@ export function RejestracjaFormularz({
         />
       </div>
       <PolaZgodyRejestracji idPrefix="reg" />
+      {TURNSTILE_SITE_KEY ? (
+        <div className="rounded-lg border border-stone-200 bg-stone-50 p-3">
+          <p className="mb-2 text-xs text-stone-600">Weryfikacja antyspamowa (Cloudflare)</p>
+          <TurnstileAntybot key={turnstileKey} siteKey={TURNSTILE_SITE_KEY} onToken={ustawTurnstileToken} />
+        </div>
+      ) : null}
       <div>
         <label htmlFor="reg-haslo2" className="mb-1 block text-sm font-medium text-stone-700">
           Powtórz hasło
@@ -301,7 +308,7 @@ export function RejestracjaFormularz({
       </div>
       <button
         type="submit"
-        disabled={laduje}
+        disabled={laduje || (Boolean(TURNSTILE_SITE_KEY) && !turnstileToken)}
         className="w-full rounded-lg bg-green-800 px-4 py-2.5 font-medium text-white transition hover:bg-green-900 disabled:opacity-60"
       >
         {laduje ? "Wysyłanie…" : "Zarejestruj się"}

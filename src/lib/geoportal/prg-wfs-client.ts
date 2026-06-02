@@ -359,8 +359,8 @@ function warstwyPrgDoProby(): { typeName: string; terytField: string }[] {
   const typeNameRaw = env("GEOPORTAL_PRG_WFS_TYPENAME");
   const terytField = env("GEOPORTAL_PRG_WFS_TERYT_FIELD") ?? "JPT_KOD_JE";
   const domyslne = [
-    { typeName: "A05_Granice_jednostek_ewidencyjnych", terytField },
     { typeName: "A06_Granice_obrebow_ewidencyjnych", terytField },
+    { typeName: "A05_Granice_jednostek_ewidencyjnych", terytField },
   ];
   if (typeNameRaw) {
     const typeName = normalizujTypeName(typeNameRaw);
@@ -607,7 +607,6 @@ export async function pobierzGraniceWsiZPrgWfs(
   const wfsVersion = env("GEOPORTAL_PRG_WFS_VERSION") ?? "1.1.0";
   const lat = typeof opts?.lat === "number" ? opts.lat : undefined;
   const lon = typeof opts?.lon === "number" ? opts.lon : undefined;
-  const gminaKod = opts?.gminaTerytKod?.trim() || null;
   const warstwy = warstwyPrgDoProby();
   const bledy: string[] = [];
   const mamyPunkt = Number.isFinite(lat) && Number.isFinite(lon);
@@ -617,10 +616,6 @@ export async function pobierzGraniceWsiZPrgWfs(
       if (mamyPunkt) {
         const zBbox = await probujWarstwePrgBbox(wfsUrl, wfsVersion, warstwa.typeName, lat as number, lon as number);
         if (zBbox?.ok) return zBbox;
-      }
-      if (gminaKod) {
-        const zGminy = await probujWarstwePrgCql(wfsUrl, wfsVersion, warstwa, gminaKod, lat, lon);
-        if (zGminy?.ok) return zGminy;
       }
       if (mamyPunkt) {
         const wynik = await probujWarstwePrgCql(wfsUrl, wfsVersion, warstwa, cleanTeryt, lat, lon);
@@ -653,5 +648,65 @@ export async function pobierzGraniceWsiZPrgWfs(
     reason:
       "Nie znaleziono granicy zawierającej punkt wsi. Sprawdź, czy źródło WFS zawiera ten poziom podziału (np. sołectwo vs obręb).",
     retryable: false,
+  };
+}
+
+export type PoziomGranicyAdministracyjnej = "woj" | "powiat" | "gmina";
+
+const WARSTWY_ADMIN: Record<
+  PoziomGranicyAdministracyjnej,
+  { typeName: string; dlugoscKodu: number; envKey: string }
+> = {
+  woj: { typeName: "A02_Granice_wojewodztw", dlugoscKodu: 2, envKey: "GEOPORTAL_PRG_LAYER_WOJ" },
+  powiat: { typeName: "A03_Granice_powiatow", dlugoscKodu: 4, envKey: "GEOPORTAL_PRG_LAYER_POWIAT" },
+  gmina: { typeName: "A04_Granice_gmin", dlugoscKodu: 7, envKey: "GEOPORTAL_PRG_LAYER_GMINA" },
+};
+
+/** Urzędowa granica administracyjna z PRG (A02/A03/A04) po kodzie TERC. */
+export async function pobierzGraniceAdministracyjnePrg(
+  poziom: PoziomGranicyAdministracyjnej,
+  kodTeryt: string,
+): Promise<PrgBoundaryFetchResult> {
+  const cfg = WARSTWY_ADMIN[poziom];
+  const kod = kodTeryt.trim();
+  if (!kod) {
+    return { ok: false, reason: "Pusty kod TERC.", retryable: false };
+  }
+  if (kod.length < cfg.dlugoscKodu) {
+    return {
+      ok: false,
+      reason: `Kod TERC „${kod}” jest za krótki dla poziomu „${poziom}” (wymagane ${cfg.dlugoscKodu} cyfr).`,
+      retryable: false,
+    };
+  }
+
+  const kodNorm = kod.slice(0, cfg.dlugoscKodu);
+  const wfsUrl = env("GEOPORTAL_PRG_WFS_URL") ?? DEFAULT_WFS_URL;
+  const wfsVersion = env("GEOPORTAL_PRG_WFS_VERSION") ?? "1.1.0";
+  const terytField = env("GEOPORTAL_PRG_WFS_TERYT_FIELD") ?? "JPT_KOD_JE";
+  const typeName = normalizujTypeName(env(cfg.envKey) ?? cfg.typeName);
+
+  try {
+    const wynik = await probujWarstwePrgCql(
+      wfsUrl,
+      wfsVersion,
+      { typeName, terytField },
+      kodNorm,
+    );
+    if (wynik?.ok) {
+      return {
+        ...wynik,
+        sourceTypeName: `${typeName} (${poziom}, TERC ${kodNorm})`,
+      };
+    }
+  } catch (e) {
+    const msg = e instanceof Error ? e.message : String(e);
+    return { ok: false, reason: `Błąd WFS PRG (${poziom}): ${msg}`, retryable: true };
+  }
+
+  return {
+    ok: false,
+    reason: `Brak granicy PRG dla ${poziom}=${kodNorm} (warstwa ${typeName}).`,
+    retryable: true,
   };
 }

@@ -142,6 +142,27 @@ export async function wgrajObrazDoMagazynuR2(formData: FormData): Promise<WynikW
     return { ok: true, publicUrl };
   }
 
+  if (typ === "hall_profile") {
+    if (buf.length > 4 * 1024 * 1024) {
+      return { blad: "Maksymalnie 4 MB na zdjęcie profilu świetlicy." };
+    }
+    const hallId = String(formData.get("hallId") ?? "");
+    if (!uuid.safeParse(hallId).success) {
+      return { blad: "Niepoprawny identyfikator sali." };
+    }
+    const moze = await czySoltysLubWspoladminSwietlicy(supabase, user.id, hallId);
+    if (!moze) {
+      return { blad: "Brak uprawnień do galerii profilu tej świetlicy." };
+    }
+    const ext = plik.type === "image/png" ? "png" : plik.type === "image/webp" ? "webp" : "jpg";
+    const klucz = `${hallId}/profil/${crypto.randomUUID()}.${ext}`;
+    const w = await wgrajBuforDoR2(R2_BUCKET_HALL_INVENTORY, klucz, buf, plik.type);
+    if (!w.ok) return { blad: w.blad };
+    const publicUrl = zbudujPublicznyUrlObiektuR2(R2_BUCKET_HALL_INVENTORY, klucz);
+    if (!publicUrl) return { blad: "Nie udało się zbudować publicznego adresu pliku." };
+    return { ok: true, publicUrl };
+  }
+
   if (typ === "damage") {
     if (buf.length > 3 * 1024 * 1024) {
       return { blad: "Maksymalnie 3 MB." };

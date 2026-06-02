@@ -197,11 +197,8 @@ export function StudzienkiProjektSwietlicy({
                 <div>
                   <h2 className="font-serif text-2xl text-green-950 sm:text-3xl">Rzut parteru</h2>
                   <p className="mt-2 max-w-prose text-sm leading-relaxed text-stone-600">
-                    Poniżej: to samo zdjęcie rzutu z półprzezroczystymi strefami pomieszczeń. Włącz
-                    <strong> planowanie stołów w sali głównej</strong> (przeciąganie) — orientacyjnie, względem
-                    rysunku, nie w skali 1:1. Strefy możesz dopasować do rysunku, edytując tablicę
-                    w plikach <code className="rounded bg-stone-100 px-1 text-[11px]">studzienki-rzut-metre.ts</code> /{" "}
-                    <code className="rounded bg-stone-100 px-1 text-[11px]">studzienki-rzut-dane.ts</code>.
+                    Poniżej rzut parteru z przekazanej dokumentacji projektowej (skala 1:100). Układ pomieszczeń i
+                    metraże — w tabeli niżej.
                   </p>
                 </div>
                 <span className="hidden rounded-md border border-stone-200 bg-stone-50 px-2 py-1 font-mono text-[10px] text-stone-500 sm:inline-block">
@@ -211,8 +208,8 @@ export function StudzienkiProjektSwietlicy({
               <figure className="mt-8">
                 <StudzienkiRzutInteraktywny />
                 <figcaption className="mt-3 text-center text-xs text-stone-500">
-                  Źródło: materiały projektowe przekazane do serwisu (rzut parteru) — interakcja to warstwa
-                  poglądowa, nie odbija dokładnie linii rysunku (dopasuj współrzędne stref, jeśli trzeba).
+                  Źródło: materiały projektowe przekazane do serwisu (rzut parteru). W sprawach wiążących obowiązuje
+                  oryginał z BIP gminy.
                 </figcaption>
               </figure>
             </section>

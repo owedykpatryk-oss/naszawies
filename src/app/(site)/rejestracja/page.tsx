@@ -63,7 +63,6 @@ export default async function RejestracjaPage({ searchParams }: Props) {
       <LogowanieProwiderzy pochodzeniePubliczne={pochodzenie} nastepnaSciezka={nastepna} />
       <p className="mt-8 text-center text-sm text-stone-500">lub zarejestruj się e-mailem</p>
       <RejestracjaFormularz
-        pochodzeniePubliczne={pochodzenie}
         nastepnaSciezka={nastepna}
         domyslnaIntencja={domyslnaIntencja ?? (wiesPrefill ? "mieszkaniec" : undefined)}
         domyslnaWies={wiesPrefill}

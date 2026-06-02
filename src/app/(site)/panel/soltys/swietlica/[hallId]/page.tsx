@@ -7,7 +7,8 @@ import { pobierzUzytkownikaPanelu } from "@/lib/auth/pobierz-uzytkownika-serwer"
 import { NawigacjaSali } from "@/components/swietlica/nawigacja-sali";
 import { KartaBudynkuSwietlicy } from "@/components/swietlica/karta-budynku-swietlicy";
 import { ProfilBudynkuSwietlicyKlient } from "@/components/swietlica/profil-budynku-swietlicy-klient";
-import { EdytorRzutuParteruSaliKlient } from "@/components/swietlica/edytor-rzutu-parteru-sali-klient";
+import { GaleriaProfiluSwietlicyEdytorKlient } from "@/components/swietlica/galeria-profilu-swietlicy-edytor-klient";
+import { parsujZdjeciaProfiluSali } from "@/lib/swietlica/zdjecia-profilu-sali";
 import { PlanSaliEdytor } from "@/components/swietlica/plan-sali-edytor";
 import { StatystykiSwietlicyKlient } from "@/components/swietlica/statystyki-swietlicy-klient";
 import { SoltysOnboardingSwietlicyKlient } from "@/components/swietlica/soltys-onboarding-swietlicy-klient";
@@ -41,7 +42,7 @@ export default async function SoltysSwietlicaHallPage({ params }: Props) {
   const { data: sala, error: salaErr } = await supabase
     .from("halls")
     .select(
-      "id, name, description, address, area_m2, max_capacity, parking_spaces, village_id, layout_data, layout_presets, floor_plan_data, rules_text, rules_file_url, rules_file_name, deposit, price_resident, price_external, contact_phone, contact_email, contact_duty_hours, caretaker_name, booking_form_fields, villages(id, name, playground_rules_text)"
+      "id, name, description, address, area_m2, max_capacity, parking_spaces, village_id, layout_data, layout_presets, floor_plan_data, rules_text, rules_file_url, rules_file_name, deposit, price_resident, price_external, contact_phone, contact_email, contact_duty_hours, caretaker_name, booking_form_fields, profile_photos, villages(id, name, playground_rules_text)"
     )
     .eq("id", hallId)
     .maybeSingle();
@@ -140,9 +141,11 @@ export default async function SoltysSwietlicaHallPage({ params }: Props) {
   const polaRezerwacji = parsujPolaRezerwacjiSali(
     (sala as { booking_form_fields?: unknown }).booking_form_fields,
   );
+  const zdjeciaProfilu = parsujZdjeciaProfiluSali((sala as { profile_photos?: unknown }).profile_photos);
 
   const krokiOnboarding = [
     { id: "profil", label: "Uzupełnij profil budynku (adres, kontakt)", href: `#profil-budynku`, gotowe: Boolean(sala.address?.trim() && sala.contact_phone?.trim()) },
+    { id: "zdjecia", label: "Dodaj zdjęcia budynku (sala, kuchnia, plac zabaw…)", href: "#galeria-profilu-swietlicy", gotowe: zdjeciaProfilu.length > 0 },
     { id: "rzut", label: "Zapisz rzut parteru z wejściami/oknami", href: "#rzut-parteru-sali", gotowe: rzutParteru != null },
     { id: "plan", label: "Ustaw plan stołów", href: "#plan-sali-edytor", gotowe: plan.elementy.length > 0 },
     { id: "regulamin", label: "Opublikuj regulamin i ceny", href: "#regulamin-sali", gotowe: Boolean(sala.rules_text?.trim() || sala.rules_file_url) },
@@ -196,9 +199,8 @@ export default async function SoltysSwietlicaHallPage({ params }: Props) {
             caretaker_name: sala.caretaker_name,
           }}
         />
+        <GaleriaProfiluSwietlicyEdytorKlient hallId={hallId} poczatkowe={zdjeciaProfilu} />
       </div>
-
-      <EdytorRzutuParteruSaliKlient hallId={hallId} poczatkowyRzut={rzutParteru} />
 
       <div id="plan-sali-edytor">
         <PlanSaliEdytor

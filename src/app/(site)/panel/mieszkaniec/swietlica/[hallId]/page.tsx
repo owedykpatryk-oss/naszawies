@@ -6,6 +6,8 @@ import { pobierzUzytkownikaPanelu } from "@/lib/auth/pobierz-uzytkownika-serwer"
 import { PanelStronaMieszkaneca } from "@/components/panel/panel-strona-mieszkaneca";
 import { NawigacjaSali } from "@/components/swietlica/nawigacja-sali";
 import { KartaBudynkuSwietlicy } from "@/components/swietlica/karta-budynku-swietlicy";
+import { GaleriaProfiluSwietlicyPubliczna } from "@/components/swietlica/galeria-profilu-swietlicy-publiczna";
+import { parsujZdjeciaProfiluSali } from "@/lib/swietlica/zdjecia-profilu-sali";
 import { PlanSaliRysunek } from "@/components/swietlica/plan-sali-rysunek";
 import { RzutParteruSaliSvg } from "@/components/swietlica/rzut-parteru-sali-svg";
 import { parsujPlanZJsonb } from "@/lib/swietlica/plan-sali";
@@ -54,7 +56,7 @@ export default async function MieszkaniecSwietlicaHallPage({ params }: Props) {
   const { data: sala, error: salaErr } = await supabase
     .from("halls")
     .select(
-      "id, name, description, address, area_m2, max_capacity, parking_spaces, village_id, layout_data, floor_plan_data, rules_text, rules_file_url, deposit, price_resident, price_external, villages(name, playground_rules_text)"
+      "id, name, description, address, area_m2, max_capacity, parking_spaces, village_id, layout_data, floor_plan_data, rules_text, rules_file_url, deposit, price_resident, price_external, profile_photos, villages(name, playground_rules_text)"
     )
     .eq("id", hallId)
     .maybeSingle();
@@ -129,6 +131,8 @@ export default async function MieszkaniecSwietlicaHallPage({ params }: Props) {
     return { txt: "Nie podano", cls: "bg-stone-50 text-stone-700 border-stone-200" };
   }
 
+  const zdjeciaProfilu = parsujZdjeciaProfiluSali((sala as { profile_photos?: unknown }).profile_photos);
+
   return (
     <PanelStronaMieszkaneca
       tytul={sala.name}
@@ -148,6 +152,7 @@ export default async function MieszkaniecSwietlicaHallPage({ params }: Props) {
           parkingSpaces={sala.parking_spaces != null ? Number(sala.parking_spaces) : null}
           opis={sala.description}
         />
+        <GaleriaProfiluSwietlicyPubliczna nazwaSali={sala.name} zdjecia={zdjeciaProfilu} />
       </div>
 
       {regulaminPlacu ? (

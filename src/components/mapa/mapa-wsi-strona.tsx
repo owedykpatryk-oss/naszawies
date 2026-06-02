@@ -18,12 +18,14 @@ import {
 } from "@/lib/mapa/kategorie-poi";
 import { czyKategoriaPoiLowiecka } from "@/lib/mapa/poi-lowieckie-widocznosc";
 import { obrysPowiatuZznacznikow } from "@/lib/mapa/obrys-administracyjny";
+import type { GeoJsonObject } from "geojson";
 import { MapaLowiectwoOverlay } from "@/components/mapa/mapa-lowiectwo-overlay";
 import { odliczanieZywHms, tekstOdliczaniaPolowania } from "@/lib/mapa/formatuj-polowanie";
 import type { ZnacznikRewirLowiecki } from "./mapa-wsi-leaflet";
 import { slugCzesciZBazy } from "@/lib/wies/slug-administracyjny";
 import { etykietaStatusuInwestycji, KATEGORIA_INWESTYCJA } from "@/lib/mapa/inwestycje-poi";
 import { ETYKIETA_LANDUSE, KOLOR_LANDUSE } from "@/lib/mapa/landuse-osm";
+import { useKlientGotowy } from "@/lib/ui/use-klient-gotowy";
 import {
   filtrujZnacznikiAdministracyjnie,
   MapaFiltrAdministracyjny,
@@ -34,6 +36,7 @@ import {
   MapaWsiLeaflet,
   type MapaWsiLeafletRef,
   type ObrysLanduseMapy,
+  type ObrysNadlesnictwaMapy,
   type ZnacznikAdres,
   type ZnacznikCmentarzObrys,
   type ZnacznikGeoKontekst,
@@ -45,6 +48,54 @@ import {
   type ZnacznikWsi,
   type ZnacznikZgloszenie,
 } from "./mapa-wsi-leaflet";
+
+function kodTerytGminy(wsi: ZnacznikWsi[]): string | null {
+  for (const z of wsi) {
+    const k = z.gmina_teryt_kod?.trim();
+    if (k && k.length >= 7) return k.slice(0, 7);
+  }
+  return null;
+}
+
+function kodTerytPowiatu(wsi: ZnacznikWsi[]): string | null {
+  for (const z of wsi) {
+    const p = z.powiat_teryt_kod?.trim();
+    if (p && p.length >= 4) return p.slice(0, 4);
+    const g = z.gmina_teryt_kod?.trim();
+    if (g && g.length >= 4) return g.slice(0, 4);
+  }
+  return null;
+}
+
+function kodTerytWoj(wsi: ZnacznikWsi[]): string | null {
+  for (const z of wsi) {
+    const g = z.gmina_teryt_kod?.trim();
+    if (g && g.length >= 2) return g.slice(0, 2);
+    const p = z.powiat_teryt_kod?.trim();
+    if (p && p.length >= 2) return p.slice(0, 2);
+  }
+  return null;
+}
+
+async function pobierzGraniceWsiApi(ids: string[]): Promise<Record<string, unknown>> {
+  if (ids.length === 0) return {};
+  const res = await fetch(`/api/mapa/granice-wsi?ids=${encodeURIComponent(ids.join(","))}`);
+  if (!res.ok) return {};
+  const data = (await res.json()) as { granice?: Record<string, unknown> };
+  return data.granice ?? {};
+}
+
+async function pobierzGraniceAdminApi(
+  poziom: "gmina" | "powiat" | "woj",
+  teryt: string,
+): Promise<GeoJsonObject | null> {
+  const res = await fetch(
+    `/api/mapa/granice-admin?poziom=${encodeURIComponent(poziom)}&teryt=${encodeURIComponent(teryt)}`,
+  );
+  if (!res.ok) return null;
+  const data = (await res.json()) as { geojson?: GeoJsonObject };
+  return data.geojson ?? null;
+}
 
 function normalizuj(tekst: string): string {
   return tekst.trim().toLowerCase().replace(/\s+/g, " ");
@@ -126,6 +177,7 @@ export function MapaWsiStrona({
   const pathname = usePathname();
   const router = useRouter();
   const mapRef = useRef<MapaWsiLeafletRef>(null);
+  const klientGotowy = useKlientGotowy();
 
   const [tryb, ustawTryb] = useState<TrybSidebara>(() =>
     searchParams.get("q")?.trim() ? "szukaj" : "katalog",
@@ -183,6 +235,15 @@ export function MapaWsiStrona({
   const [pokazObrysPowiatu, ustawPokazObrysPowiatu] = useState(
     () => searchParams.get("powiat_obrys") === "1" || Boolean(searchParams.get("pow")),
   );
+  const [pokazObrysWojewodztwa, ustawPokazObrysWojewodztwa] = useState(
+    () => searchParams.get("woj_obrys") === "1" || Boolean(searchParams.get("woj")),
+  );
+  const [pokazGraniceWsi, ustawPokazGraniceWsi] = useState(
+    () => searchParams.get("granice_wsi") !== "0",
+  );
+  const [pokazNadlesnictwa, ustawPokazNadlesnictwa] = useState(
+    () => searchParams.get("nadlesnictwa") === "1" || searchParams.get("warstwa") === "lowiectwo",
+  );
   const [odliczanieTick, ustawOdliczanieTick] = useState(0);
   const [tylkoAktywnePolowania, ustawTylkoAktywnePolowania] = useState(false);
   const [promienKm, ustawPromienKm] = useState<number>(() => {
@@ -204,10 +265,24 @@ export function MapaWsiStrona({
   const [obrysyLanduse, ustawObrysyLanduse] = useState<ObrysLanduseMapy[]>([]);
   const [statusLanduse, ustawStatusLanduse] = useState<"idle" | "wczytuje" | "ok" | "blad">("idle");
   const [bladLanduse, ustawBladLanduse] = useState("");
+  const [obrysGminyUrzedowy, ustawObrysGminyUrzedowy] = useState<GeoJsonObject | null>(null);
+  const [obrysPowiatuUrzedowy, ustawObrysPowiatuUrzedowy] = useState<GeoJsonObject | null>(null);
+  const [obrysWojewodztwaUrzedowy, ustawObrysWojewodztwaUrzedowy] = useState<GeoJsonObject | null>(null);
+  const [graniceLazy, ustawGraniceLazy] = useState<Record<string, unknown>>({});
+  const [nadlesnictwaObrysy, ustawNadlesnictwaObrysy] = useState<ObrysNadlesnictwaMapy[]>([]);
+
+  const znacznikiEnriched = useMemo(
+    () =>
+      znaczniki.map((z) => ({
+        ...z,
+        boundary_geojson: z.boundary_geojson ?? graniceLazy[z.id] ?? null,
+      })),
+    [znaczniki, graniceLazy],
+  );
 
   const poAdministracji = useMemo(
-    () => filtrujZnacznikiAdministracyjnie(znaczniki, filtrAdmin),
-    [znaczniki, filtrAdmin],
+    () => filtrujZnacznikiAdministracyjnie(znacznikiEnriched, filtrAdmin),
+    [znacznikiEnriched, filtrAdmin],
   );
 
   const obrysyGminy = useMemo(() => {
@@ -217,17 +292,87 @@ export function MapaWsiStrona({
 
   const poPowiacie = useMemo(() => {
     if (!filtrAdmin.powSlug || !filtrAdmin.wojSlug) return [];
-    return znaczniki.filter(
+    return znacznikiEnriched.filter(
       (z) =>
         slugCzesciZBazy(z.voivodeship ?? "") === filtrAdmin.wojSlug &&
         slugCzesciZBazy(z.county ?? "") === filtrAdmin.powSlug,
     );
-  }, [znaczniki, filtrAdmin.powSlug, filtrAdmin.wojSlug]);
+  }, [znacznikiEnriched, filtrAdmin.powSlug, filtrAdmin.wojSlug]);
+
+  const poWojewodztwie = useMemo(() => {
+    if (!filtrAdmin.wojSlug) return [];
+    return znacznikiEnriched.filter(
+      (z) => slugCzesciZBazy(z.voivodeship ?? "") === filtrAdmin.wojSlug,
+    );
+  }, [znacznikiEnriched, filtrAdmin.wojSlug]);
 
   const obrysPowiatu = useMemo(() => {
     if (!pokazObrysPowiatu || !filtrAdmin.powSlug) return null;
     return obrysPowiatuZznacznikow(poPowiacie);
   }, [poPowiacie, pokazObrysPowiatu, filtrAdmin.powSlug]);
+
+  const obrysPowiatuDoMapy = pokazObrysPowiatu ? obrysPowiatuUrzedowy ?? obrysPowiatu : null;
+  const obrysWojewodztwaDoMapy = pokazObrysWojewodztwa ? obrysWojewodztwaUrzedowy : null;
+
+  useEffect(() => {
+    if (!pokazObrysGminy || !filtrAdmin.gminaSlug) {
+      ustawObrysGminyUrzedowy(null);
+      return;
+    }
+    const kod = kodTerytGminy(poAdministracji);
+    if (!kod) {
+      ustawObrysGminyUrzedowy(null);
+      return;
+    }
+    let anuluj = false;
+    void pobierzGraniceAdminApi("gmina", kod).then((gj) => {
+      if (anuluj) return;
+      ustawObrysGminyUrzedowy(gj);
+    });
+    return () => {
+      anuluj = true;
+    };
+  }, [pokazObrysGminy, filtrAdmin.gminaSlug, poAdministracji]);
+
+  useEffect(() => {
+    if (!pokazObrysPowiatu || !filtrAdmin.powSlug) {
+      ustawObrysPowiatuUrzedowy(null);
+      return;
+    }
+    const kod = kodTerytPowiatu(poPowiacie);
+    if (!kod) {
+      ustawObrysPowiatuUrzedowy(null);
+      return;
+    }
+    let anuluj = false;
+    void pobierzGraniceAdminApi("powiat", kod).then((gj) => {
+      if (anuluj) return;
+      ustawObrysPowiatuUrzedowy(gj);
+    });
+    return () => {
+      anuluj = true;
+    };
+  }, [pokazObrysPowiatu, filtrAdmin.powSlug, poPowiacie]);
+
+  useEffect(() => {
+    if (!pokazObrysWojewodztwa || !filtrAdmin.wojSlug) {
+      ustawObrysWojewodztwaUrzedowy(null);
+      return;
+    }
+    const kod = kodTerytWoj(poWojewodztwie);
+    if (!kod) {
+      ustawObrysWojewodztwaUrzedowy(null);
+      return;
+    }
+    let anuluj = false;
+    void pobierzGraniceAdminApi("woj", kod).then((gj) => {
+      if (anuluj) return;
+      ustawObrysWojewodztwaUrzedowy(gj);
+    });
+    return () => {
+      anuluj = true;
+    };
+  }, [pokazObrysWojewodztwa, filtrAdmin.wojSlug, poWojewodztwie]);
 
   const linkHubGminy = useMemo(() => {
     const z = poAdministracji[0];
@@ -280,6 +425,60 @@ export function MapaWsiStrona({
     pozycjaUzytkownika,
     promienKm,
   ]);
+
+  const srodekObszaruMapy = useMemo(() => {
+    const zrodlo = odfiltrowane.length > 0 ? odfiltrowane : znacznikiEnriched;
+    if (zrodlo.length === 0) return null;
+    const lat = zrodlo.reduce((s, z) => s + z.lat, 0) / zrodlo.length;
+    const lon = zrodlo.reduce((s, z) => s + z.lon, 0) / zrodlo.length;
+    return { lat, lon };
+  }, [odfiltrowane, znacznikiEnriched]);
+
+  const promienNadlesnictwaM = useMemo(() => {
+    if (filtrAdmin.gminaSlug) return 18_000;
+    if (filtrAdmin.powSlug) return 45_000;
+    if (filtrAdmin.wojSlug) return 90_000;
+    return 35_000;
+  }, [filtrAdmin.gminaSlug, filtrAdmin.powSlug, filtrAdmin.wojSlug]);
+
+  useEffect(() => {
+    const brakujace = odfiltrowane
+      .filter((z) => !z.boundary_geojson)
+      .map((z) => z.id)
+      .slice(0, 50);
+    if (brakujace.length === 0) return;
+    let anuluj = false;
+    void pobierzGraniceWsiApi(brakujace).then((granice) => {
+      if (anuluj || Object.keys(granice).length === 0) return;
+      ustawGraniceLazy((prev) => ({ ...prev, ...granice }));
+    });
+    return () => {
+      anuluj = true;
+    };
+  }, [odfiltrowane]);
+
+  useEffect(() => {
+    if (!pokazNadlesnictwa || !srodekObszaruMapy) {
+      ustawNadlesnictwaObrysy([]);
+      return;
+    }
+    const { lat, lon } = srodekObszaruMapy;
+    let anuluj = false;
+    void fetch(
+      `/api/mapa/nadlesnictwa?lat=${encodeURIComponent(String(lat))}&lon=${encodeURIComponent(String(lon))}&radiusM=${promienNadlesnictwaM}`,
+    )
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (anuluj || !data?.obrysy) return;
+        ustawNadlesnictwaObrysy(data.obrysy as ObrysNadlesnictwaMapy[]);
+      })
+      .catch(() => {
+        if (!anuluj) ustawNadlesnictwaObrysy([]);
+      });
+    return () => {
+      anuluj = true;
+    };
+  }, [pokazNadlesnictwa, srodekObszaruMapy, promienNadlesnictwaM]);
 
   const kategoriePoi = useMemo(
     () => Array.from(new Set(punktyPoi.map((p) => p.category))).sort((a, b) => a.localeCompare(b, "pl")),
@@ -409,10 +608,11 @@ export function MapaWsiStrona({
   const frazaDoPodswietlenia = tryb === "szukaj" ? szukajOdroczone.trim() : filtrNazwaOdroczony.trim();
 
   useEffect(() => {
+    if (!klientGotowy) return;
     const ms = trybLowiectwo || pokazPolowania ? 1000 : 60_000;
     const t = window.setInterval(() => ustawOdliczanieTick((n) => n + 1), ms);
     return () => window.clearInterval(t);
-  }, [trybLowiectwo, pokazPolowania]);
+  }, [klientGotowy, trybLowiectwo, pokazPolowania]);
 
   useEffect(() => {
     if (!trybLowiectwo) return;
@@ -450,6 +650,9 @@ export function MapaWsiStrona({
       if (tylkoOferty) params.set("oferty", "1");
       if (pokazObrysGminy) params.set("gmina_obrys", "1");
       if (pokazObrysPowiatu) params.set("powiat_obrys", "1");
+      if (pokazObrysWojewodztwa) params.set("woj_obrys", "1");
+      if (!pokazGraniceWsi) params.set("granice_wsi", "0");
+      if (pokazNadlesnictwa) params.set("nadlesnictwa", "1");
       if (promienKm > 0) params.set("km", String(promienKm));
       const url = params.toString() ? `${pathname}?${params.toString()}` : pathname;
       router.replace(url, { scroll: false });
@@ -470,6 +673,9 @@ export function MapaWsiStrona({
     tylkoOferty,
     pokazObrysGminy,
     pokazObrysPowiatu,
+    pokazObrysWojewodztwa,
+    pokazGraniceWsi,
+    pokazNadlesnictwa,
     promienKm,
     pokazOswietlenie,
     pokazZagospodarowanie,
@@ -635,6 +841,19 @@ export function MapaWsiStrona({
   }, []);
 
   const kluczListy = `${frazaDoPodswietlenia}|${pozycjaUzytkownika ? "gps" : "nogps"}|${filtrAdmin.gminaSlug}`;
+
+  if (!klientGotowy) {
+    return (
+      <div
+        className="flex h-full min-h-0 flex-1 flex-col items-center justify-center bg-stone-50/80"
+        role="status"
+        aria-live="polite"
+        aria-label="Ładowanie mapy"
+      >
+        <p className="text-sm font-medium text-green-900/80">Ładowanie mapy…</p>
+      </div>
+    );
+  }
 
   return (
     <div className="flex h-full min-h-0 flex-col">
@@ -824,6 +1043,16 @@ export function MapaWsiStrona({
             <button
               type="button"
               role="switch"
+              aria-checked={pokazGraniceWsi}
+              onClick={() => ustawPokazGraniceWsi((v) => !v)}
+              className={`mapa-pill-warstwa ${pokazGraniceWsi ? "border-green-800/50 bg-gradient-to-br from-green-50 to-emerald-50 font-semibold text-green-950 shadow-sm" : "mapa-pill-warstwa--off"}`}
+            >
+              <span aria-hidden>🌾</span>
+              Granice wsi (PRG)
+            </button>
+            <button
+              type="button"
+              role="switch"
               aria-checked={tylkoObrysPrg}
               onClick={() => ustawTylkoObrysPrg((v) => !v)}
               className={`mapa-pill-warstwa ${tylkoObrysPrg ? "mapa-pill-warstwa--on" : "mapa-pill-warstwa--off"}`}
@@ -841,6 +1070,18 @@ export function MapaWsiStrona({
               <span aria-hidden>🛒</span>
               Tylko z ofertami targu
             </button>
+            {filtrAdmin.wojSlug && !filtrAdmin.powSlug ? (
+              <button
+                type="button"
+                role="switch"
+                aria-checked={pokazObrysWojewodztwa}
+                onClick={() => ustawPokazObrysWojewodztwa((v) => !v)}
+                className={`mapa-pill-warstwa ${pokazObrysWojewodztwa ? "border-sky-300/80 bg-gradient-to-br from-sky-50 to-blue-50 text-sky-950 shadow-sm" : "mapa-pill-warstwa--off"}`}
+              >
+                <span aria-hidden>🗺️</span>
+                Granica województwa (PRG)
+              </button>
+            ) : null}
             {filtrAdmin.powSlug && !filtrAdmin.gminaSlug ? (
               <button
                 type="button"
@@ -850,7 +1091,7 @@ export function MapaWsiStrona({
                 className={`mapa-pill-warstwa ${pokazObrysPowiatu ? "border-violet-300/80 bg-gradient-to-br from-violet-50 to-purple-50 text-violet-950 shadow-sm" : "mapa-pill-warstwa--off"}`}
               >
                 <span aria-hidden>🗺️</span>
-                Obrys powiatu
+                Granica powiatu (PRG)
               </button>
             ) : null}
             {filtrAdmin.gminaSlug ? (
@@ -862,9 +1103,19 @@ export function MapaWsiStrona({
                 className={`mapa-pill-warstwa ${pokazObrysGminy ? "border-amber-300/80 bg-gradient-to-br from-amber-50 to-stone-50 text-amber-950 shadow-sm" : "mapa-pill-warstwa--off"}`}
               >
                 <span aria-hidden>🏛️</span>
-                Obrysy wsi w gminie
+                Granica gminy (PRG)
               </button>
             ) : null}
+            <button
+              type="button"
+              role="switch"
+              aria-checked={pokazNadlesnictwa}
+              onClick={() => ustawPokazNadlesnictwa((v) => !v)}
+              className={`mapa-pill-warstwa ${pokazNadlesnictwa ? "border-lime-800/35 bg-gradient-to-br from-lime-50 to-green-50 text-lime-950 shadow-sm" : "mapa-pill-warstwa--off"}`}
+            >
+              <span aria-hidden>🌲</span>
+              Nadleśnictwa (LP)
+            </button>
             <button
               type="button"
               role="switch"
@@ -1083,8 +1334,8 @@ export function MapaWsiStrona({
           {punktyPolowaniaPosortowane.length > 0 ? (
             <ul className="mt-2 max-h-44 space-y-1 overflow-y-auto rounded-lg border border-red-200/80 bg-red-50/50 p-2">
               {punktyPolowaniaPosortowane.map((p) => {
-                const odlicz = tekstOdliczaniaPolowania(p.startsAt, p.endsAt);
-                const zywe = odliczanieZywHms(p.startsAt, p.endsAt);
+                const odlicz = klientGotowy ? tekstOdliczaniaPolowania(p.startsAt, p.endsAt) : null;
+                const zywe = klientGotowy ? odliczanieZywHms(p.startsAt, p.endsAt) : null;
                 void odliczanieTick;
                 return (
                   <li key={p.id}>
@@ -1101,11 +1352,16 @@ export function MapaWsiStrona({
                       </span>
                       <span className="block text-[11px] text-red-900/80">{p.villageName}</span>
                       {zywe ? (
-                        <span className="mt-0.5 block font-mono text-[11px] font-bold tabular-nums text-red-800">
+                        <span
+                          suppressHydrationWarning
+                          className="mt-0.5 block font-mono text-[11px] font-bold tabular-nums text-red-800"
+                        >
                           {zywe.etykieta}: {zywe.hms}
                         </span>
                       ) : odlicz ? (
-                        <span className="block text-[10px] font-semibold text-red-800">{odlicz}</span>
+                        <span suppressHydrationWarning className="block text-[10px] font-semibold text-red-800">
+                          {odlicz}
+                        </span>
                       ) : null}
                     </button>
                   </li>
@@ -1311,8 +1567,13 @@ export function MapaWsiStrona({
               trybLowiectwo={trybLowiectwo}
               punktyCmentarze={punktyCmentarzeFiltrowane}
               punktyGeoKontekst={punktyGeoKontekstFiltrowane}
-              obrysyGminy={pokazObrysGminy ? obrysyGminy : []}
-              obrysPowiatu={pokazObrysPowiatu ? obrysPowiatu : null}
+              obrysyGminy={pokazObrysGminy && !obrysGminyUrzedowy ? obrysyGminy : []}
+              obrysGminyUrzedowy={pokazObrysGminy ? obrysGminyUrzedowy : null}
+              obrysPowiatu={obrysPowiatuDoMapy}
+              obrysWojewodztwa={obrysWojewodztwaDoMapy}
+              nadlesnictwaObrysy={pokazNadlesnictwa ? nadlesnictwaObrysy : []}
+              pokazGranice={pokazGraniceWsi}
+              onPokazGraniceChange={ustawPokazGraniceWsi}
               obrysyLanduse={obrysyLanduse}
               pokazLanduse={pokazZagospodarowanie}
               pozycjaUzytkownika={pozycjaUzytkownika}
