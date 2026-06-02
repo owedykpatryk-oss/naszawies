@@ -30,14 +30,18 @@ export function budujCspProdukcji(): string {
     "https://tile.openstreetmap.org",
     "https://*.tile.openstreetmap.org",
     "https://*.basemaps.cartocdn.com",
+    "https://*.gugik.gov.pl",
     "https://integracja.gugik.gov.pl",
+    "https://*.geoportal.gov.pl",
     "https://server.arcgisonline.com",
     "https://*.arcgisonline.com",
+    "https://*.googleusercontent.com",
     r2Base,
     "https://cdn.naszawies.pl",
     ...(vercelLive ? ["https://vercel.com", "https://vercel.live"] : []),
   ]
     .filter(Boolean)
+    .filter((v, i, a) => a.indexOf(v) === i)
     .join(" ");
 
   const scriptSrc = [
