@@ -205,7 +205,7 @@ async function pobierzSuroweDanePubliczneProfiluWsi(
     supabase
       .from("village_community_groups")
       .select(
-        "id, group_type, name, short_description, meeting_place, schedule_text, contact_phone, contact_email, profile_data",
+        "id, group_type, name, short_description, meeting_place, schedule_text, contact_phone, contact_email, profile_data, public_slug",
       )
       .eq("village_id", villageId)
       .eq("is_active", true)

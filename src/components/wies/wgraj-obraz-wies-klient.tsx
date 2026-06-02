@@ -12,7 +12,7 @@ type Props = {
   etykieta: string;
   aktualnyUrl: string;
   onUrl: (url: string) => void;
-  podkatalog?: "branding" | "historia";
+  podkatalog?: "branding" | "historia" | "organizacje";
 };
 
 export function WgrajObrazWiesKlient({

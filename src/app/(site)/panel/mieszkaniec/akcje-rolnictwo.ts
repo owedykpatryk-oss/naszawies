@@ -2,7 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
-import { PRODUKTY_ROLNE } from "@/lib/rolnictwo/produkty-rolne";
+import { PRODUKTY_LOKALNE, KLUCZE_PRODUKTOW_LOKALNYCH } from "@/lib/ceny/produkty-lokalne";
 import { sciezkaProfiluWsi } from "@/lib/wies/sciezka-publiczna";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
 import { pobierzUzytkownikaDoAkcji } from "@/lib/auth/pobierz-uzytkownika-serwer";
@@ -11,7 +11,7 @@ const uuid = z.string().uuid();
 
 const schemaZgloszenia = z.object({
   villageId: uuid,
-  productKey: z.enum(PRODUKTY_ROLNE.map((p) => p.key) as [string, ...string[]]),
+  productKey: z.enum(KLUCZE_PRODUKTOW_LOKALNYCH),
   priceValue: z.number().positive().max(999_999),
   placeName: z.string().trim().min(2).max(200),
   poiId: uuid.optional().nullable(),
@@ -62,7 +62,7 @@ export async function zglosCeneSkupuLokalna(dane: z.infer<typeof schemaZgloszeni
     return { blad: "Tylko mieszkańcy wsi mogą zgłaszać ceny w swojej gminie." };
   }
 
-  const produkt = PRODUKTY_ROLNE.find((p) => p.key === parsed.data.productKey);
+  const produkt = PRODUKTY_LOKALNE.find((p) => p.key === parsed.data.productKey);
   if (!produkt) return { blad: "Nieznany produkt." };
 
   let placeLat: number | null = null;

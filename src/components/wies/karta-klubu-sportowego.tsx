@@ -33,23 +33,31 @@ export function KartaKlubuSportowego({
   sciezkaProfilu,
   nadchodzaceWydarzenia = [],
   linkBoiskoNaMapie = null,
+  trybOsadzony = false,
+  sciezkaPelnejStrony,
 }: {
   klub: DaneKlubuSportowego;
   sciezkaWydarzenia: string;
   sciezkaProfilu: string;
   nadchodzaceWydarzenia?: WydarzenieSportoweSkrot[];
   linkBoiskoNaMapie?: string | null;
+  trybOsadzony?: boolean;
+  sciezkaPelnejStrony?: string;
 }) {
   const p = klub.profil ?? null;
   const wwwHref = linkZTekstu(p?.strona_www);
   const fbHref = linkZTekstu(p?.facebook);
   const igHref = linkZTekstu(p?.instagram);
 
-  return (
-    <section className="rounded-2xl border border-sky-300/60 bg-gradient-to-br from-sky-50/90 via-white to-emerald-50/30 p-5 shadow-sm sm:p-6">
-      <p className="text-xs font-semibold uppercase tracking-wide text-sky-900">Klub / sekcja</p>
-      <h3 className="mt-1 font-serif text-xl text-green-950">{klub.name}</h3>
-      {p?.dyscyplina ? <p className="mt-1 text-sm font-medium text-emerald-800">{p.dyscyplina}</p> : null}
+  const tresc = (
+    <>
+      {!trybOsadzony ? (
+        <>
+          <p className="text-xs font-semibold uppercase tracking-wide text-sky-900">Klub / sekcja</p>
+          <h3 className="mt-1 font-serif text-xl text-green-950">{klub.name}</h3>
+        </>
+      ) : null}
+      {p?.dyscyplina ? <p className={`text-sm font-medium text-emerald-800 ${trybOsadzony ? "" : "mt-1"}`}>{p.dyscyplina}</p> : null}
       {klub.short_description ? <p className="mt-2 text-sm text-stone-700">{klub.short_description}</p> : null}
       {p?.trener ? (
         <p className="mt-2 text-sm text-stone-700">
@@ -155,6 +163,23 @@ export function KartaKlubuSportowego({
             Pełny kalendarz sportowy →
           </Link>
         </div>
+      ) : null}
+    </>
+  );
+
+  if (trybOsadzony) {
+    return <div className="min-w-0 rounded-xl border border-stone-200 bg-white p-5 shadow-sm">{tresc}</div>;
+  }
+
+  return (
+    <section className="rounded-2xl border border-sky-300/60 bg-gradient-to-br from-sky-50/90 via-white to-emerald-50/30 p-5 shadow-sm sm:p-6">
+      {tresc}
+      {sciezkaPelnejStrony ? (
+        <p className="mt-4">
+          <Link href={sciezkaPelnejStrony} className="text-sm font-semibold text-sky-900 underline hover:text-sky-950">
+            Pełna strona klubu →
+          </Link>
+        </p>
       ) : null}
     </section>
   );

@@ -16,6 +16,7 @@ import {
   type OrganizacjaPelna,
   type ProfilKgwJson,
 } from "@/lib/wies/profil-organizacji";
+import { PolaOkladkiOrganizacji } from "@/components/panel/soltys/pola-okladki-organizacji";
 
 export type { OrganizacjaPelna };
 
@@ -225,6 +226,7 @@ export function ProfilKgwKlient({
 
         <PolaKgw
           key={edytowana?.id ?? "nowa"}
+          villageId={villageId}
           domyslne={{
             name: edytowana?.name ?? `KGW ${villageName}`,
             short_description: edytowana?.short_description ?? null,
@@ -284,6 +286,7 @@ function SzablonyPola({
 
 function PolaKgw({
   domyslne,
+  villageId,
 }: {
   domyslne: {
     name: string;
@@ -294,6 +297,7 @@ function PolaKgw({
     schedule_text: string | null;
     profil: ProfilKgwJson | null;
   };
+  villageId: string;
 }) {
   const p = domyslne.profil;
   const refZebrania = useRef<HTMLTextAreaElement>(null);
@@ -311,6 +315,9 @@ function PolaKgw({
             className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
           />
         </label>
+        <div className="md:col-span-2">
+          <PolaOkladkiOrganizacji prefix="kgw" villageId={villageId} okladkaUrl={p?.okladka_url} haslo={p?.haslo} />
+        </div>
         <label className="block text-sm">
           <span className="font-medium text-stone-800">Przewodnicząca</span>
           <input

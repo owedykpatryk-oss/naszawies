@@ -29,6 +29,9 @@ import {
 } from "@/lib/mapa/inwestycje-poi";
 import { formatujGodzinyOtwarcia } from "@/lib/mapa/formatuj-godziny-otwarcia";
 import { etykietaLanduseOsm, stylLanduseOsm } from "@/lib/mapa/landuse-osm";
+import { granicaJakoGeoJson } from "@/lib/mapa/granica-geojson";
+import { tekstOdliczaniaPolowania, type FazaPolowaniaMapy } from "@/lib/mapa/formatuj-polowanie";
+import { tekstPrecyzjiPoiMapy, czyKategoriaPoiLowiecka } from "@/lib/mapa/poi-lowieckie-widocznosc";
 import { bezpiecznyHref } from "@/lib/tekst/bezpieczny-url";
 import {
   CZY_KIEG_WMS_DOSTEPNY,
@@ -86,6 +89,10 @@ export type ZnacznikPoi = {
   investmentStatus?: string | null;
   plannedCompletionAt?: string | null;
   documentUrl?: string | null;
+  /** Dokładna pinezka vs strefa orientacyjna (łowiectwo). */
+  mapPrecision?: "dokladna" | "strefa";
+  /** Promień kółka strefy na mapie (m). */
+  strefaRadiusM?: number;
 };
 
 /** Opublikowany obrys cmentarza z planu wsi (polygon OSM). */
@@ -133,7 +140,7 @@ export type ZnacznikZgloszenie = {
   villageId?: string;
 };
 
-/** Aktywne ostrzeżenie polowania — obszar (GeoJSON) lub pinezka w centrum wsi. */
+/** Ostrzeżenie polowania — obszar (GeoJSON) lub pinezka w centrum wsi. */
 export type ZnacznikPolowanie = {
   id: string;
   title: string;
@@ -142,9 +149,38 @@ export type ZnacznikPolowanie = {
   endsAt: string;
   lat: number;
   lon: number;
+  villageId: string;
   villageName: string;
   villageSciezka: string;
   areaGeojson: unknown | null;
+  faza: FazaPolowaniaMapy;
+};
+
+/** Rewir łowiecki z profilu koła (`profile_data.rewir_geojson`). */
+export type ZnacznikRewirLowiecki = {
+  id: string;
+  groupId: string;
+  name: string;
+  villageId: string;
+  villageName: string;
+  sciezkaWsi: string;
+  numerKola: string | null;
+  geojson: GeoJsonObject;
+};
+
+/** Koło łowieckie z profilu wsi (pinezka przy wsi — orientacyjnie). */
+export type ZnacznikKoloLowieckie = {
+  id: string;
+  name: string;
+  villageId: string;
+  villageName: string;
+  sciezkaWsi: string;
+  lat: number;
+  lon: number;
+  contactPhone: string | null;
+  meetingPlace: string | null;
+  numerKola: string | null;
+  obszarSkrot: string | null;
 };
 
 /** Punkt adresowy KIN (Geoportal) — opcjonalna warstwa na mapie. */
@@ -192,6 +228,7 @@ export type MapaWsiLeafletRef = {
   /** Przybliża mapę do obszaru aktywnego polowania. */
   pokazPolowanie: (idPolowania: string) => boolean;
   pokazPoi: (idPoi: string) => boolean;
+  ustawPodklad: (rodzaj: RodzajPodkladuMapy) => void;
 };
 
 function escapeHtml(s: string): string {
@@ -200,61 +237,6 @@ function escapeHtml(s: string): string {
     .replace(/</g, "&lt;")
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#039;");
-}
-
-/** Zamknięty pierścień jako LineString → Polygon (czasem eksport PRG/OSM). */
-function lineStringZamknietyJakoPolygon(raw: object): GeoJsonObject | null {
-  const o = raw as { type?: string; coordinates?: unknown };
-  if (o.type !== "LineString" || !Array.isArray(o.coordinates)) return null;
-  const ring = o.coordinates as [number, number][];
-  if (ring.length < 4) return null;
-  const first = ring[0];
-  const last = ring[ring.length - 1];
-  if (
-    !first ||
-    !last ||
-    typeof first[0] !== "number" ||
-    typeof first[1] !== "number" ||
-    first[0] !== last[0] ||
-    first[1] !== last[1]
-  ) {
-    return null;
-  }
-  return { type: "Polygon", coordinates: [ring] } as GeoJsonObject;
-}
-
-function granicaJakoGeoJson(raw: unknown): GeoJsonObject | null {
-  if (raw == null) return null;
-  if (typeof raw === "string") {
-    const t = raw.trim();
-    if (!t) return null;
-    try {
-      return granicaJakoGeoJson(JSON.parse(t) as unknown);
-    } catch {
-      return null;
-    }
-  }
-  if (typeof raw !== "object") return null;
-  const o = raw as { type?: string; features?: unknown[]; geometry?: unknown };
-  if (o.type === "FeatureCollection" && Array.isArray(o.features) && o.features.length === 0) {
-    return null;
-  }
-  const jakoLinia = lineStringZamknietyJakoPolygon(raw);
-  if (jakoLinia) return jakoLinia;
-  if (o.type === "Feature" && o.geometry != null && typeof o.geometry === "object") {
-    const polyZLinii = lineStringZamknietyJakoPolygon(o.geometry as object);
-    if (polyZLinii) return { ...o, geometry: polyZLinii } as GeoJsonObject;
-  }
-  if (
-    o.type === "Polygon" ||
-    o.type === "MultiPolygon" ||
-    o.type === "GeometryCollection" ||
-    o.type === "Feature" ||
-    o.type === "FeatureCollection"
-  ) {
-    return raw as GeoJsonObject;
-  }
-  return null;
 }
 
 function lokalizacjaPopup(z: ZnacznikWsi): string {
@@ -543,12 +525,14 @@ function zbudujIkonePoi(L: LeafletNs, z: ZnacznikPoi) {
         ? " naszawies-marker-inwestycja-budowa"
         : " naszawies-marker-inwestycja-plan"
       : "";
-  const rozmiar = jestLatarnia ? 22 : jestInwestycja ? 38 : 36;
-  const anchor = jestLatarnia ? 11 : jestInwestycja ? 19 : 18;
-  const fontSize = jestLatarnia ? "11px" : jestInwestycja ? "17px" : undefined;
+  const jestLowiecki = czyKategoriaPoiLowiecka(kat);
+  const rozmiar = jestLatarnia ? 22 : jestInwestycja ? 38 : jestLowiecki ? 32 : 36;
+  const anchor = jestLatarnia ? 11 : jestInwestycja ? 19 : jestLowiecki ? 16 : 18;
+  const fontSize = jestLatarnia ? "11px" : jestInwestycja ? "17px" : jestLowiecki ? "14px" : undefined;
   const kolorOstateczny =
     jestInwestycja && statusInv ? KOLOR_STATUSU_INWESTYCJI[statusInv] : kolor;
-  const html = `<div class="naszawies-marker-poi-inner${wow}${pulseInv}${jestLatarnia ? " naszawies-marker-latarnia" : ""}${jestInwestycja ? " naszawies-marker-inwestycja" : ""}" style="border-color:${kolorOstateczny}${fontSize ? `;font-size:${fontSize}` : ""}">${escapeHtml(emoji)}</div>`;
+  const klasaLow = jestLowiecki ? " naszawies-marker-poi-lowiecki" : "";
+  const html = `<div class="naszawies-marker-poi-inner${wow}${pulseInv}${klasaLow}${jestLatarnia ? " naszawies-marker-latarnia" : ""}${jestInwestycja ? " naszawies-marker-inwestycja" : ""}" style="border-color:${kolorOstateczny}${fontSize ? `;font-size:${fontSize}` : ""}">${escapeHtml(emoji)}</div>`;
   return L.divIcon({
     className: "naszawies-leaflet-divicon",
     html,
@@ -567,6 +551,43 @@ function zbudujIkoneRynek(L: LeafletNs) {
     iconAnchor: [17, 19],
     popupAnchor: [0, -18],
   });
+}
+
+function zbudujIkoneKolo(L: LeafletNs) {
+  const html = `<div class="naszawies-marker-poi-inner naszawies-marker-kolo-lowieckie" style="border-color:#7c2d12;font-size:15px">🦌</div>`;
+  return L.divIcon({
+    className: "naszawies-leaflet-divicon",
+    html,
+    iconSize: [34, 34],
+    iconAnchor: [17, 19],
+    popupAnchor: [0, -18],
+  });
+}
+
+function htmlPopupRewir(r: ZnacznikRewirLowiecki): string {
+  const profil = r.sciezkaWsi.replace(/"/g, "");
+  return `<div class="mapa-wsi-popup">
+    <p class="mapa-wsi-popup-meta">Rewir łowiecki · ${escapeHtml(r.villageName)}</p>
+    <h3>${escapeHtml(r.name)}</h3>
+    ${r.numerKola ? `<p class="text-xs text-stone-600">Nr koła: ${escapeHtml(r.numerKola)}</p>` : ""}
+    <p class="text-xs text-emerald-800">Obszar z profilu koła — orientacyjnie na mapie katalogu.</p>
+    <p class="mapa-wsi-popup-foot"><a href="${profil}#sekcja-organizacje">Profil wsi →</a></p>
+  </div>`;
+}
+
+function htmlPopupKolo(k: ZnacznikKoloLowieckie): string {
+  const profil = k.sciezkaWsi.replace(/"/g, "");
+  const meta = [k.numerKola ? `nr ${escapeHtml(k.numerKola)}` : "", k.meetingPlace ? escapeHtml(k.meetingPlace) : ""]
+    .filter(Boolean)
+    .join(" · ");
+  return `<div class="mapa-wsi-popup">
+    <p class="mapa-wsi-popup-meta">Koło łowieckie · ${escapeHtml(k.villageName)}</p>
+    <h3>${escapeHtml(k.name)}</h3>
+    ${meta ? `<p class="text-xs text-stone-600">${meta}</p>` : ""}
+    ${k.obszarSkrot ? `<p class="text-xs text-stone-600">${escapeHtml(k.obszarSkrot)}${k.obszarSkrot.length >= 120 ? "…" : ""}</p>` : ""}
+    ${k.contactPhone ? `<p class="text-xs">Tel. ${escapeHtml(k.contactPhone)}</p>` : ""}
+    <p class="mapa-wsi-popup-foot"><a href="${profil}#sekcja-organizacje">Profil wsi →</a></p>
+  </div>`;
 }
 
 function htmlPopupRynek(z: ZnacznikRynek): string {
@@ -846,11 +867,18 @@ function htmlPopupPoi(z: ZnacznikPoi): string {
   const miniatura = z.photoUrl
     ? `<p class="mapa-wsi-popup-foto"><img src="${escapeHtml(z.photoUrl)}" alt="" width="220" height="124" style="width:100%;max-width:220px;height:auto;border-radius:8px;object-fit:cover" loading="lazy" /></p>`
     : "";
+  const precyzja = tekstPrecyzjiPoiMapy(z);
+  const badgePrecyzji = precyzja
+    ? `<p class="mapa-poi-precyzja-hint">${escapeHtml(precyzja)}</p>`
+    : z.mapPrecision === "dokladna" && (katNorm === "ambona" || katNorm === "posterunek_lowiecki")
+      ? `<p class="mapa-poi-precyzja-hint mapa-poi-precyzja-hint--dokladna">Widok dla członka wsi — lokalizacja dokładna.</p>`
+      : "";
   return `
     <div class="mapa-wsi-popup">
       <p class="mapa-wsi-popup-meta">${escapeHtml(kat)}${z.villageName ? ` · ${escapeHtml(z.villageName)}` : ""}</p>
       <h3>${escapeHtml(z.name)}</h3>
       ${badgeStatus}
+      ${badgePrecyzji}
       ${miniatura}
       ${opis ? `<p>${escapeHtml(opis)}</p>` : ""}
       ${kontaktHtml}
@@ -920,6 +948,11 @@ export const MapaWsiLeaflet = forwardRef<
     punktyAdresy?: ZnacznikAdres[];
     /** Obrysy wszystkich wsi w wybranej gminie (pomarańczowy kontur). */
     obrysyGminy?: ZnacznikWsi[];
+    /** Otulina powiatu (szacunek z granic wsi) — fioletowy kontur. */
+    obrysPowiatu?: GeoJsonObject | null;
+    punktyKola?: ZnacznikKoloLowieckie[];
+    rewiryLowieckie?: ZnacznikRewirLowiecki[];
+    trybLowiectwo?: boolean;
     pozycjaUzytkownika?: { lat: number; lon: number } | null;
     promienKm?: number | null;
     pokazGranice?: boolean;
@@ -943,6 +976,10 @@ export const MapaWsiLeaflet = forwardRef<
     pokazLanduse = false,
     punktyAdresy = [],
     obrysyGminy = [],
+    obrysPowiatu = null,
+    punktyKola = [],
+    rewiryLowieckie = [],
+    trybLowiectwo = false,
     pozycjaUzytkownika = null,
     promienKm = null,
     pokazGranice = true,
@@ -992,10 +1029,18 @@ export const MapaWsiLeaflet = forwardRef<
     punktyAdresyRef.current = punktyAdresy;
     const obrysyGminyRef = useRef(obrysyGminy);
     obrysyGminyRef.current = obrysyGminy;
+    const obrysPowiatuRef = useRef(obrysPowiatu);
+    obrysPowiatuRef.current = obrysPowiatu;
+    const punktyKolaRef = useRef(punktyKola);
+    punktyKolaRef.current = punktyKola;
+    const rewiryRef = useRef(rewiryLowieckie);
+    rewiryRef.current = rewiryLowieckie;
     const pokazGraniceRef = useRef(pokazGraniceStan);
     pokazGraniceRef.current = pokazGraniceStan;
     const pokazEgibRef = useRef(pokazEgibStan);
     pokazEgibRef.current = pokazEgibStan;
+    const trybLowiectwoRef = useRef(trybLowiectwo);
+    trybLowiectwoRef.current = trybLowiectwo;
     const pokazPoiRef = useRef(pokazPoiStan);
     pokazPoiRef.current = pokazPoiStan;
     const pokazRynekRef = useRef(pokazRynekStan);
@@ -1078,6 +1123,11 @@ export const MapaWsiLeaflet = forwardRef<
           marker.openPopup();
         }
         return true;
+      },
+      ustawPodklad(rodzaj: RodzajPodkladuMapy) {
+        setRodzajPodkladu(rodzaj);
+        const inst = instancja.current;
+        if (inst) ustawPodkladMapy(inst, rodzaj);
       },
     }));
 
@@ -1215,10 +1265,17 @@ export const MapaWsiLeaflet = forwardRef<
           punktyZgloszeniaRef.current,
           punktyPolowaniaRef.current,
           obrysyGminyRef.current,
+          obrysPowiatuRef.current,
+          punktyKolaRef.current,
+          rewiryRef.current,
           punktyCmentarzeRef.current,
           ikona,
           bb0,
-          { pokazGranice: pokazGraniceRef.current, pokazEgib: pokazEgibRef.current },
+          {
+            pokazGranice: pokazGraniceRef.current,
+            pokazEgib: pokazEgibRef.current,
+            trybLowiectwo: trybLowiectwoRef.current,
+          },
         );
         syncWarstwaUzytkownika(L, instancja.current, pozycjaRef.current, promienRef.current);
       })();
@@ -1256,10 +1313,13 @@ export const MapaWsiLeaflet = forwardRef<
         punktyZgloszenia,
         punktyPolowania,
         obrysyGminy,
+        obrysPowiatu,
+        punktyKola,
+        rewiryLowieckie,
         punktyCmentarze,
         ikona,
         bboxPoczatkowy,
-        { pokazGranice: pokazGraniceStan, pokazEgib: pokazEgibStan },
+        { pokazGranice: pokazGraniceStan, pokazEgib: pokazEgibStan, trybLowiectwo },
       );
     }, [
       znaczniki,
@@ -1270,9 +1330,13 @@ export const MapaWsiLeaflet = forwardRef<
       punktyPolowania,
       punktyCmentarze,
       obrysyGminy,
+      obrysPowiatu,
+      punktyKola,
+      rewiryLowieckie,
       bboxPoczatkowy,
       pokazGraniceStan,
       pokazEgibStan,
+      trybLowiectwo,
       zoomMapy,
       pokazPoiStan,
       pokazRynekStan,
@@ -1361,6 +1425,8 @@ export const MapaWsiLeaflet = forwardRef<
       <div
         ref={refShell}
         className={`mapa-wsi-map-shell relative w-full min-h-[320px] bg-stone-100 ${
+          trybLowiectwo ? "mapa-wsi-map-shell--lowiectwo" : ""
+        } ${
           pelnyEkran
             ? "h-[100dvh] max-h-[100dvh]"
             : wysokoscMapy === "kompakt"
@@ -1511,6 +1577,25 @@ export const MapaWsiLeaflet = forwardRef<
             </li>
             <li>
               <span className="font-medium text-[#2563eb]">Niebieski punkt</span> — Twoja lokalizacja (gdy włączysz GPS)
+            </li>
+            <li>
+              <span className="font-medium text-violet-800">Fioletowy przerywany obrys</span> — otulina powiatu (szacunek z granic wsi)
+            </li>
+            <li>
+              <span className="font-medium text-red-800">Czerwony obszar (puls)</span> — trwające polowanie; pomarańczowy przerywany — zaplanowane
+            </li>
+            <li>
+              <span className="font-medium text-amber-900">Pinezka 🦌</span> — koło łowieckie (profil wsi)
+            </li>
+            <li>
+              <span className="font-medium text-emerald-800">Zielony polygon (przerywany)</span> — rewir z profilu koła
+              (orientacyjnie)
+            </li>
+            <li>
+              <span className="font-medium text-green-800">Zielone kółko</span> — teren / obszar łowowy (orientacyjnie)
+            </li>
+            <li>
+              <span className="font-medium text-orange-800">Pomarańczowe kółko</span> — strefa ambony/posterunku (~500 m); dokładna pinezka — członek wsi
             </li>
             <li>
               <span className="font-medium text-orange-700">Pomarańczowa pinezka 🏷️</span> — ogłoszenie z rynku lokalnego
@@ -1697,13 +1782,17 @@ function syncWarstwy(
   punktyZgloszenia: ZnacznikZgloszenie[],
   punktyPolowania: ZnacznikPolowanie[],
   obrysyGminy: ZnacznikWsi[],
+  obrysPowiatu: GeoJsonObject | null,
+  punktyKola: ZnacznikKoloLowieckie[],
+  rewiryLowieckie: ZnacznikRewirLowiecki[],
   punktyCmentarze: ZnacznikCmentarzObrys[],
   ikona: import("leaflet").DivIcon,
   bbox: [[number, number], [number, number]] | null,
-  opts?: { pokazGranice?: boolean; pokazEgib?: boolean },
+  opts?: { pokazGranice?: boolean; pokazEgib?: boolean; trybLowiectwo?: boolean },
 ) {
   const pokazGranice = opts?.pokazGranice !== false;
   const pokazEgib = opts?.pokazEgib !== false;
+  const trybLowiectwo = opts?.trybLowiectwo === true;
   const egibWidoczny = pokazEgib && czyKiegWidocznyNaZoomie(inst.map.getZoom());
   const { map, cluster, boundaryGroup, markersById, polowaniaById, rynekDzialkiById, poiMarkersById } = inst;
   ustawPaneWarstwicyGranicy(map);
@@ -1714,6 +1803,26 @@ function syncWarstwy(
   polowaniaById.clear();
   rynekDzialkiById.clear();
   poiMarkersById.clear();
+
+  if (obrysPowiatu) {
+    try {
+      const warstwaPow = L.geoJSON(obrysPowiatu, {
+        pane: PANE_GRANICE,
+        interactive: false,
+        style: {
+          color: "#6d28d9",
+          weight: 4,
+          fillColor: "#a78bfa",
+          fillOpacity: 0.06,
+          opacity: 0.9,
+          dashArray: "10 6",
+        },
+      } as import("leaflet").GeoJSONOptions);
+      boundaryGroup.addLayer(warstwaPow);
+    } catch {
+      /* ignore */
+    }
+  }
 
   for (const z of obrysyGminy) {
     const gj = granicaJakoGeoJson(z.boundary_geojson);
@@ -1731,6 +1840,33 @@ function syncWarstwy(
           dashArray: "6 4",
         },
       } as import("leaflet").GeoJSONOptions);
+      boundaryGroup.addLayer(warstwa);
+    } catch {
+      /* ignore */
+    }
+  }
+
+  for (const rew of rewiryLowieckie) {
+    try {
+      const warstwa = L.geoJSON(rew.geojson, {
+        pane: PANE_GRANICE,
+        interactive: true,
+        style: {
+          color: "#14532d",
+          weight: 2.5,
+          fillColor: "#22c55e",
+          fillOpacity: 0.14,
+          opacity: 0.88,
+          dashArray: "10 6",
+          className: trybLowiectwo ? "mapa-rewir-lowiecki" : "mapa-rewir-lowiecki mapa-rewir-lowiecki--spokojny",
+        },
+        onEachFeature(_feature, layer) {
+          if (typeof (layer as import("leaflet").Path).bringToFront === "function") {
+            (layer as import("leaflet").Path).bringToFront();
+          }
+        },
+      } as import("leaflet").GeoJSONOptions);
+      warstwa.bindPopup(htmlPopupRewir(rew));
       boundaryGroup.addLayer(warstwa);
     } catch {
       /* ignore */
@@ -1794,10 +1930,27 @@ function syncWarstwy(
 
   for (const p of punktyPoi) {
     const pin = L.marker([p.lat, p.lon], { icon: zbudujIkonePoi(L, p), zIndexOffset: 450, title: p.name });
-      pin.bindPopup(htmlPopupPoi(p));
-      podlaczInterakcjeDoPopupPoi(pin, p);
+    pin.bindPopup(htmlPopupPoi(p));
+    podlaczInterakcjeDoPopupPoi(pin, p);
     (cluster as import("leaflet").LayerGroup).addLayer(pin);
     poiMarkersById.set(p.id, pin);
+
+    if (p.strefaRadiusM && p.strefaRadiusM > 0) {
+      const strefaKat = p.category.trim().toLowerCase();
+      const wrazliwa = strefaKat === "ambona" || strefaKat === "posterunek_lowiecki";
+      const kolo = L.circle([p.lat, p.lon], {
+        radius: p.strefaRadiusM,
+        pane: PANE_GRANICE,
+        interactive: false,
+        color: wrazliwa ? "#c2410c" : "#166534",
+        weight: 2,
+        opacity: p.mapPrecision === "dokladna" ? 0.5 : 0.75,
+        dashArray: p.mapPrecision === "dokladna" ? undefined : "6 5",
+        fillColor: wrazliwa ? "#fb923c" : "#4ade80",
+        fillOpacity: p.mapPrecision === "dokladna" ? 0.12 : 0.18,
+      });
+      boundaryGroup.addLayer(kolo);
+    }
   }
 
   const ikonaRynek = zbudujIkoneRynek(L);
@@ -1879,9 +2032,16 @@ function syncWarstwy(
     const fmt = new Intl.DateTimeFormat("pl-PL", { dateStyle: "short", timeStyle: "short" });
     const termin = `${fmt.format(new Date(pol.startsAt))} – ${fmt.format(new Date(pol.endsAt))}`;
     const profil = pol.villageSciezka.replace(/"/g, "");
+    const odlicz = tekstOdliczaniaPolowania(pol.startsAt, pol.endsAt);
+    const etykietaFazy =
+      pol.faza === "aktywne"
+        ? '<span class="mapa-polowanie-badge mapa-polowanie-badge--aktywne">Trwa teraz</span>'
+        : '<span class="mapa-polowanie-badge mapa-polowanie-badge--nadchodzace">Zaplanowane</span>';
     return `<div class="mapa-wsi-popup">
+      ${etykietaFazy}
       <strong>Polowanie</strong><br/>${escapeHtml(pol.title)}<br/>${escapeHtml(pol.areaDescription)}<br/>
       <span class="text-xs">${escapeHtml(pol.villageName)} · ${escapeHtml(termin)}</span>
+      ${odlicz ? `<p class="mapa-polowanie-odliczanie">${escapeHtml(odlicz)}</p>` : ""}
       <p class="mapa-wsi-popup-foot">
         <a href="${profil}">Profil wsi →</a>
         <span aria-hidden="true"> · </span>
@@ -1890,21 +2050,59 @@ function syncWarstwy(
     </div>`;
   };
 
+  const stylPolowania = (pol: ZnacznikPolowanie) =>
+    pol.faza === "aktywne"
+      ? {
+          color: "#991b1b",
+          weight: 3,
+          fillColor: "#dc2626",
+          fillOpacity: 0.42,
+          opacity: 0.95,
+        }
+      : {
+          color: "#c2410c",
+          weight: 3,
+          fillColor: "#fb923c",
+          fillOpacity: 0.22,
+          opacity: 0.9,
+          dashArray: "8 5",
+        };
+
   for (const pol of punktyPolowania) {
     const gj = granicaJakoGeoJson(pol.areaGeojson);
     if (gj) {
       try {
+        const s = stylPolowania(pol);
         const warstwa = L.geoJSON(gj, {
           pane: PANE_GRANICE,
           interactive: true,
           style: {
-            color: "#991b1b",
-            weight: 3,
-            fillColor: "#dc2626",
-            fillOpacity: 0.38,
-            opacity: 0.95,
+            color: s.color,
+            weight: s.weight,
+            fillColor: s.fillColor,
+            fillOpacity: s.fillOpacity,
+            opacity: s.opacity,
+            dashArray: s.dashArray,
           },
         } as import("leaflet").GeoJSONOptions);
+        if (pol.faza === "aktywne") {
+          try {
+            const halo = L.geoJSON(gj, {
+              pane: PANE_GRANICE,
+              interactive: false,
+              style: { color: "#fecaca", weight: 10, fill: false, opacity: 0.45 },
+            } as import("leaflet").GeoJSONOptions);
+            boundaryGroup.addLayer(halo);
+          } catch {
+            /* ignore */
+          }
+          warstwa.on("add", () => {
+            warstwa.getLayers().forEach((l) => {
+              const el = (l as import("leaflet").Path).getElement?.();
+              if (el) el.classList.add("mapa-polowanie-obszar--aktywne");
+            });
+          });
+        }
         warstwa.bindPopup(htmlPopupPolowanie(pol));
         boundaryGroup.addLayer(warstwa);
         polowaniaById.set(pol.id, warstwa);
@@ -1913,16 +2111,25 @@ function syncWarstwy(
         /* fallback pinezka */
       }
     }
+    const aktywne = pol.faza === "aktywne";
     const pin = L.circleMarker([pol.lat, pol.lon], {
-      radius: 10,
-      color: "#7f1d1d",
+      radius: aktywne ? 11 : 9,
+      color: aktywne ? "#7f1d1d" : "#c2410c",
       weight: 2,
-      fillColor: "#dc2626",
-      fillOpacity: 0.35,
+      fillColor: aktywne ? "#dc2626" : "#fb923c",
+      fillOpacity: aktywne ? 0.45 : 0.3,
+      className: aktywne ? "mapa-polowanie-pinezka--aktywne" : "",
     });
     pin.bindPopup(htmlPopupPolowanie(pol));
     (cluster as import("leaflet").LayerGroup).addLayer(pin);
     polowaniaById.set(pol.id, pin);
+  }
+
+  const ikonaKolo = zbudujIkoneKolo(L);
+  for (const k of punktyKola) {
+    const pin = L.marker([k.lat, k.lon], { icon: ikonaKolo, zIndexOffset: 440, title: k.name });
+    pin.bindPopup(htmlPopupKolo(k));
+    (cluster as import("leaflet").LayerGroup).addLayer(pin);
   }
 
   if (bbox) {

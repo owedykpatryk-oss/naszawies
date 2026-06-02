@@ -2,7 +2,7 @@ export type FiltryRynkuUrl = {
   fraza: string;
   typ: string;
   kategoria: string;
-  sortowanie: "najnowsze" | "najstarsze" | "polecane";
+  sortowanie: "najnowsze" | "najstarsze" | "polecane" | "popularne" | "cena-rosnaco" | "cena-malejaco";
   tylkoZOperatorem: boolean;
   tylkoProduktyLokalne: boolean;
   tylkoZweryfikowane: boolean;
@@ -39,7 +39,18 @@ export function filtryRynkuZUrl(params: URLSearchParams): FiltryRynkuUrl {
     fraza: params.get("q") ?? "",
     typ: params.get("typ") ?? "wszystkie",
     kategoria: params.get("kat") ?? "wszystkie",
-    sortowanie: sort === "najstarsze" || sort === "polecane" ? sort : "najnowsze",
+    sortowanie:
+      sort === "najstarsze" ||
+      sort === "polecane" ||
+      sort === "popularne" ||
+      sort === "cena_asc" ||
+      sort === "cena_desc"
+        ? sort === "cena_asc"
+          ? "cena-rosnaco"
+          : sort === "cena_desc"
+            ? "cena-malejaco"
+            : sort
+        : "najnowsze",
     tylkoZOperatorem: params.get("operator") === "1",
     tylkoProduktyLokalne: params.get("lokalne") === "1",
     tylkoZweryfikowane: params.get("zweryf") === "1",
@@ -58,7 +69,11 @@ export function urlZFiltramiRynku(f: FiltryRynkuUrl): string {
   if (f.fraza.trim()) p.set("q", f.fraza.trim());
   if (f.typ !== "wszystkie") p.set("typ", f.typ);
   if (f.kategoria !== "wszystkie") p.set("kat", f.kategoria);
-  if (f.sortowanie !== "najnowsze") p.set("sort", f.sortowanie);
+  if (f.sortowanie !== "najnowsze") {
+    const sortUrl =
+      f.sortowanie === "cena-rosnaco" ? "cena_asc" : f.sortowanie === "cena-malejaco" ? "cena_desc" : f.sortowanie;
+    p.set("sort", sortUrl);
+  }
   if (f.tylkoZOperatorem) p.set("operator", "1");
   if (f.tylkoProduktyLokalne) p.set("lokalne", "1");
   if (f.tylkoZweryfikowane) p.set("zweryf", "1");

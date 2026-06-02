@@ -179,14 +179,21 @@ export type PaczkaSezonowa = {
   opis: string;
   szablonId: string;
   emoji: string;
+  motywId?: string;
+  tytulProjektu?: string;
+  badge?: string;
 };
 
 export const PACZKI_SEZONOWE: PaczkaSezonowa[] = [
-  { id: "mikolajki", nazwa: "Mikołajki", opis: "Spotkanie dla dzieci", szablonId: "sezon-mikolajki", emoji: "🎅" },
-  { id: "dzien-kobiet", nazwa: "Dzień Kobiet", opis: "KGW, 8 marca", szablonId: "sezon-dzien-kobiet", emoji: "💐" },
-  { id: "dozynki", nazwa: "Dożynki", opis: "Plakat festynu", szablonId: "sezon-dozynki", emoji: "🌾" },
-  { id: "wielkanoc", nazwa: "Wielkanoc", opis: "Spotkanie świąteczne", szablonId: "sezon-wielkanoc", emoji: "🐣" },
-  { id: "sylwester", nazwa: "Sylwester", opis: "Zabawa w świetlicy", szablonId: "sezon-sylwester", emoji: "🎆" },
-  { id: "pozegnanie-lata", nazwa: "Pożegnanie lata", opis: "Ognisko i grill", szablonId: "sezon-pozegnanie-lata", emoji: "🔥" },
-  { id: "dni-seniora", nazwa: "Dni Seniora", opis: "Spotkanie klubu", szablonId: "sezon-dni-seniora", emoji: "👴" },
+  { id: "mikolajki", nazwa: "Mikołajki", opis: "Spotkanie dla dzieci", szablonId: "sezon-mikolajki", emoji: "🎅", motywId: "osp-czerwony", tytulProjektu: "Mikołajki w świetlicy", badge: "Grudzień" },
+  { id: "dzien-kobiet", nazwa: "Dzień Kobiet", opis: "KGW, 8 marca", szablonId: "sezon-dzien-kobiet", emoji: "💐", motywId: "kgw-rozowy", tytulProjektu: "Spotkanie KGW — 8 marca" },
+  { id: "dozynki", nazwa: "Dożynki", opis: "Plakat festynu", szablonId: "sezon-dozynki", emoji: "🌾", motywId: "zielony-wies", tytulProjektu: "Dożynki", badge: "WOW" },
+  { id: "wielkanoc", nazwa: "Wielkanoc", opis: "Spotkanie świąteczne", szablonId: "sezon-wielkanoc", emoji: "🐣", motywId: "turkusowy-letni", tytulProjektu: "Spotkanie wielkanocne" },
+  { id: "sylwester", nazwa: "Sylwester", opis: "Zabawa w świetlicy", szablonId: "sezon-sylwester", emoji: "🎆", motywId: "fioletowy-festyn", tytulProjektu: "Sylwester" },
+  { id: "pozegnanie-lata", nazwa: "Pożegnanie lata", opis: "Ognisko i grill", szablonId: "sezon-pozegnanie-lata", emoji: "🔥", motywId: "turkusowy-letni", tytulProjektu: "Pożegnanie lata" },
+  { id: "dni-seniora", nazwa: "Dni Seniora", opis: "Spotkanie klubu", szablonId: "sezon-dni-seniora", emoji: "👴", motywId: "seniorzy-cieply", tytulProjektu: "Dni Seniora" },
+  { id: "dzien-dziecka", nazwa: "Dzień Dziecka", opis: "Kolorowy plakat z animacjami", szablonId: "plakat-dzien-dziecka-kolorowy", emoji: "🎈", motywId: "dzieci-radosny", tytulProjektu: "Dzień Dziecka", badge: "1 czerwca" },
+  { id: "swietlica-zajecia", nazwa: "Zajęcia w świetlicy", opis: "Harmonogram tygodniowy", szablonId: "plakat-zajecia-swietlicy", emoji: "🏠", motywId: "swietlica-ciepla", tytulProjektu: "Harmonogram świetlicy" },
+  { id: "11-listopada", nazwa: "11 listopada", opis: "Uroczystość patriotyczna", szablonId: "plakat-11-listopada", emoji: "🇵🇱", motywId: "patriotyczny-granat", tytulProjektu: "Święto Niepodległości", badge: "Listopad" },
+  { id: "zebranie-tablica", nazwa: "Zebranie wiejskie", opis: "Ogłoszenie na tablicę", szablonId: "plakat-zebranie-tablica", emoji: "📋", motywId: "tablica-czerwony", tytulProjektu: "Zebranie sołectwa" },
 ];

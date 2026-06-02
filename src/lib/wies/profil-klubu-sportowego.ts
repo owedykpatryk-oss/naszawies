@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { metaOrganizacjiZFormularza, schemaMetaProfiluOrganizacji } from "@/lib/wies/profil-organizacji-meta";
 
 export const schemaProfilKlubuSportowego = z.object({
   wersja: z.literal(1).default(1),
@@ -11,7 +12,7 @@ export const schemaProfilKlubuSportowego = z.object({
   skladka: z.string().trim().max(300).nullable().optional(),
   stroje_kolory: z.string().trim().max(200).nullable().optional(),
   uwagi: z.string().trim().max(800).nullable().optional(),
-});
+}).merge(schemaMetaProfiluOrganizacji);
 
 export type ProfilKlubuSportowegoJson = z.infer<typeof schemaProfilKlubuSportowego>;
 
@@ -37,6 +38,7 @@ export function profilKlubuSportowegoZFormularza(fd: FormData): ProfilKlubuSport
     skladka: pole("sport_skladka"),
     stroje_kolory: pole("sport_stroje"),
     uwagi: pole("sport_uwagi"),
+    ...metaOrganizacjiZFormularza(fd, "sport"),
   };
 }
 

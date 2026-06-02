@@ -28,7 +28,7 @@ export const GRUPY_NAWIGACJI_MIESZKANIEC: GrupaNawigacjiPanelu[] = [
       { href: "/panel/mieszkaniec/marketplace", label: "Rynek lokalny", highlight: true },
       { href: "/panel/mieszkaniec/profil-rynek", label: "Profil sprzedawcy" },
       { href: "/panel/mieszkaniec/lista-zakupow", label: "Lista zakupów" },
-      { href: "/panel/mieszkaniec/rolnictwo-ceny", label: "Ceny skupu" },
+      { href: "/panel/mieszkaniec/rolnictwo-ceny", label: "Ceny w okolicy" },
     ],
   },
   {

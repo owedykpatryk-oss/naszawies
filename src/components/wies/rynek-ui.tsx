@@ -12,6 +12,12 @@ import {
   formatujAreDzialki,
   formatujPowierzchnieDzialki,
 } from "@/lib/marketplace/nieruchomosci";
+import { ikonaKategoriiRynek } from "@/lib/marketplace/ikony-kategorii-rynku";
+import {
+  czyOgloszenieNowe,
+  czyOgloszenieOddam,
+  czyOgloszeniePopularne,
+} from "@/lib/marketplace/odznaki-ogloszenia";
 import { obliczJakoscZOfertyPublicznej } from "@/lib/marketplace/jakosc-ogloszenia";
 import { formatujLiczbeWyswietlen } from "@/lib/marketplace/formatuj-liczbe-wyswietlen";
 import type { RynekOfertaPubliczna } from "@/components/wies/marketplace-lista-klient";
@@ -60,6 +66,34 @@ export function OdznakaAktywnySprzedawca() {
       title="Sprzedawca ma 5 lub więcej ogłoszeń na rynku wsi"
     >
       <span aria-hidden>⭐</span> Aktywny
+    </span>
+  );
+}
+
+export function OdznakaNowosci({ duza = false }: { duza?: boolean }) {
+  return (
+    <span
+      className={`inline-flex items-center gap-0.5 rounded-full bg-gradient-to-r from-fuchsia-500 to-violet-500 font-bold text-white shadow-sm ${
+        duza ? "px-2 py-0.5 text-[10px] uppercase tracking-wide" : "px-1.5 py-0.5 text-[10px]"
+      }`}
+    >
+      <span aria-hidden>✨</span> Nowe
+    </span>
+  );
+}
+
+export function OdznakaPopularne() {
+  return (
+    <span className="inline-flex items-center gap-0.5 rounded-full bg-gradient-to-r from-orange-500 to-amber-400 px-1.5 py-0.5 text-[10px] font-bold text-white shadow-sm">
+      <span aria-hidden>🔥</span> Popularne
+    </span>
+  );
+}
+
+export function OdznakaOddam() {
+  return (
+    <span className="inline-flex items-center gap-0.5 rounded-full bg-gradient-to-r from-emerald-500 to-lime-500 px-1.5 py-0.5 text-[10px] font-bold text-white shadow-sm">
+      <span aria-hidden>🎁</span> Oddam
     </span>
   );
 }
@@ -150,10 +184,12 @@ export function FormatujCeneOgloszenia({
 
 export function MiniaturaOgloszenia({
   url,
+  kategoria,
   rozmiar = "sredni",
   className = "",
 }: {
   url?: string | null;
+  kategoria?: string | null;
   rozmiar?: "maly" | "sredni" | "duzy";
   className?: string;
 }) {
@@ -163,6 +199,7 @@ export function MiniaturaOgloszenia({
     duzy: "h-40 w-full sm:h-48",
   };
   const klasa = `${rozmiary[rozmiar]} ${className}`;
+  const ikona = ikonaKategoriiRynek(kategoria);
 
   if (url) {
     return (
@@ -177,10 +214,12 @@ export function MiniaturaOgloszenia({
 
   return (
     <div
-      className={`flex shrink-0 items-center justify-center rounded-xl border border-dashed border-orange-200/80 bg-gradient-to-br from-orange-50 to-stone-50 text-center ${klasa}`}
+      className={`flex shrink-0 flex-col items-center justify-center rounded-xl border border-orange-200/60 bg-gradient-to-br text-center ${ikona.gradient} ${klasa}`}
       aria-hidden
     >
-      <span className="px-1 text-[10px] font-medium leading-tight text-stone-400">Brak zdjęcia</span>
+      <span className={`${rozmiar === "maly" ? "text-xl" : rozmiar === "duzy" ? "text-4xl" : "text-2xl"}`}>
+        {ikona.emoji}
+      </span>
     </div>
   );
 }
@@ -207,6 +246,10 @@ export function KartaOgloszeniaRynek({
   const jakosc = obliczJakoscZOfertyPublicznej(oferta);
   const liczbaZdjec = oferta.image_urls?.length ?? 0;
   const katEtykieta = kat ? etykietaKategoriiOgloszenia(kat) : null;
+  const ikonaKat = ikonaKategoriiRynek(kat);
+  const nowe = czyOgloszenieNowe(oferta.published_at, oferta.created_at);
+  const popularne = czyOgloszeniePopularne(oferta.view_count);
+  const oddam = czyOgloszenieOddam(oferta.listing_type, oferta.price_amount);
   const linkMapy =
     maMape && hrefMapy ? (
       <a
@@ -221,7 +264,7 @@ export function KartaOgloszeniaRynek({
     return (
       <div className="rynek-karta-wow flex h-full flex-col overflow-hidden">
         <Link href={href} className="group flex flex-1 flex-col">
-        <div className="relative aspect-[4/3] overflow-hidden bg-gradient-to-br from-orange-50 to-amber-50/60">
+        <div className={`relative aspect-[4/3] overflow-hidden bg-gradient-to-br ${ikonaKat.gradient}`}>
           {mini ? (
             <ObrazR2
               src={mini}
@@ -230,34 +273,38 @@ export function KartaOgloszeniaRynek({
               className="h-full w-full object-cover transition duration-500 group-hover:scale-[1.04]"
             />
           ) : (
-            <div className="flex h-full flex-col items-center justify-center gap-1 text-stone-400">
-              <span className="text-2xl opacity-60" aria-hidden>
-                🏷️
+            <div className="flex h-full flex-col items-center justify-center gap-2">
+              <span className="text-5xl drop-shadow-sm transition duration-500 group-hover:scale-110" aria-hidden>
+                {ikonaKat.emoji}
               </span>
-              <span className="text-xs font-medium">Brak zdjęcia</span>
+              {katEtykieta ? (
+                <span className="rounded-full bg-white/70 px-2.5 py-0.5 text-[11px] font-semibold text-stone-700 backdrop-blur-sm">
+                  {katEtykieta}
+                </span>
+              ) : null}
             </div>
           )}
           <div className="pointer-events-none absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/45 via-black/10 to-transparent" />
           <p className="absolute bottom-2.5 left-2.5 rounded-xl bg-white/95 px-2.5 py-1 text-sm font-bold text-green-900 shadow-md backdrop-blur-sm">
             <FormatujCeneOgloszenia kwota={oferta.price_amount} jednostka={oferta.price_unit} waluta={oferta.currency} />
           </p>
-          {oferta.seller_verified ? (
-            <span className="absolute left-2 top-2">
-              <OdznakaZweryfikowany />
-            </span>
-          ) : jakosc >= 70 ? (
-            <span className="absolute left-2 top-2">
-              <OdznakaJakosciKarty procent={jakosc} />
-            </span>
-          ) : null}
+          <div className="absolute left-2 top-2 flex flex-col gap-1">
+            {oddam ? <OdznakaOddam /> : null}
+            {!oddam && oferta.seller_verified ? <OdznakaZweryfikowany /> : null}
+            {!oddam && !oferta.seller_verified && jakosc >= 70 ? <OdznakaJakosciKarty procent={jakosc} /> : null}
+          </div>
+          <div className="absolute right-2 top-2 flex flex-col items-end gap-1">
+            {nowe ? <OdznakaNowosci /> : null}
+            {popularne ? <OdznakaPopularne /> : null}
+            {nieruchomosc ? (
+              <span className="rounded-full bg-amber-400/95 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-amber-950 shadow-sm">
+                {maMape ? "Działka · mapa" : "Nieruchomość"}
+              </span>
+            ) : null}
+          </div>
           {liczbaZdjec > 1 ? (
             <span className="absolute right-2 bottom-10 rounded-md bg-black/55 px-1.5 py-0.5 text-[10px] font-medium text-white backdrop-blur-sm">
               📷 {liczbaZdjec}
-            </span>
-          ) : null}
-          {nieruchomosc ? (
-            <span className="absolute right-2 top-2 rounded-full bg-amber-400/95 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wide text-amber-950 shadow-sm">
-              {maMape ? "Działka · mapa" : "Nieruchomość"}
             </span>
           ) : null}
         </div>
@@ -309,12 +356,15 @@ export function KartaOgloszeniaRynek({
   return (
     <div className="karta-wow overflow-hidden rounded-2xl border border-stone-200/90 bg-white shadow-sm">
       <Link href={href} className="group flex gap-3 p-3 sm:gap-4 sm:p-4">
-      <MiniaturaOgloszenia url={mini} rozmiar="sredni" />
+      <MiniaturaOgloszenia url={mini} kategoria={kat} rozmiar="sredni" />
       <div className="min-w-0 flex-1">
         <p className="font-medium text-stone-900 group-hover:text-green-950">
           {oferta.title}
         </p>
-        <p className="mt-1">
+        <p className="mt-1 flex flex-wrap items-center gap-1">
+          {oddam ? <OdznakaOddam /> : null}
+          {nowe ? <OdznakaNowosci /> : null}
+          {popularne ? <OdznakaPopularne /> : null}
           <PasekOdznakSprzedawcy
             sellerVerified={oferta.seller_verified ?? false}
             znanyWWsi={oferta.znanyWWsi}
@@ -413,11 +463,14 @@ export function NaglowekStronyRynku({
   opis,
   liczbaOgloszen,
   liczbaProfili,
+  etykietaProfili = "Firmy i sklepy",
 }: {
   tytul: string;
   opis: string;
   liczbaOgloszen?: number;
   liczbaProfili?: number;
+  /** Etykieta drugiej statystyki — na hubie „Wsi z rynkiem”, na stronie wsi „Firmy i sklepy”. */
+  etykietaProfili?: string;
 }) {
   return (
     <header className="rynek-hero-wow relative">
@@ -438,7 +491,7 @@ export function NaglowekStronyRynku({
             ) : null}
             {liczbaProfili != null && liczbaProfili > 0 ? (
               <div className="rounded-xl border border-white/80 bg-white/70 px-4 py-2.5 shadow-sm backdrop-blur-sm">
-                <dt className="text-[10px] font-bold uppercase tracking-wider text-stone-500">Firmy i sklepy</dt>
+                <dt className="text-[10px] font-bold uppercase tracking-wider text-stone-500">{etykietaProfili}</dt>
                 <dd className="mt-0.5 text-xl font-bold tabular-nums text-green-950">{liczbaProfili}</dd>
               </div>
             ) : null}

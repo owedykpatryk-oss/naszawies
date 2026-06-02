@@ -13,6 +13,7 @@ import { synchronizujTransportAutomatycznie } from "@/lib/transport/synchronizuj
 import { createAdminSupabaseClient } from "@/lib/supabase/admin-client";
 import { powiadomOWygasajacychOgloszeniachMarketplace } from "@/lib/marketplace/powiadom-wygasajace-ogloszenia";
 import { powiadomMieszkancowOPrzypomnieniachWsi } from "@/lib/przypomnienia/powiadom-mieszkancow";
+import { synchronizujCenyPaliw } from "@/lib/paliwa/synchronizuj-ceny-paliw";
 
 type AutomationRunRow = {
   action: string;
@@ -381,6 +382,21 @@ async function runAutomation(request: Request) {
       const msg = e instanceof Error ? e.message : String(e);
       console.error("[api/automatyzacje/run] cemetery boundaries", msg);
       rows.push({ action: "sync_auto_cemetery_boundaries_failed", affected_rows: 0 });
+    }
+
+    try {
+      const paliwa = await synchronizujCenyPaliw(supabase);
+      rows.push({
+        action: paliwa.skippedRecent ? "sync_fuel_prices_skipped" : "sync_fuel_prices",
+        affected_rows: paliwa.stationsUpserted,
+      });
+      if (paliwa.errors.length) {
+        console.warn("[api/automatyzacje/run] fuel prices", paliwa.errors.join("; "));
+      }
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      console.error("[api/automatyzacje/run] fuel prices", msg);
+      rows.push({ action: "sync_fuel_prices_failed", affected_rows: 0 });
     }
   }
 

@@ -62,9 +62,9 @@ export function PrzewodnikKreatoraGrafiki({
   const kroki =
     tryb === "dyplomy"
       ? [
-          { id: "1", tytul: "Lista imion", opis: "Wklej imiona — jedna osoba w linii albo plik CSV." },
-          { id: "2", tytul: "Uzasadnienie", opis: "Jedna wspólna treść „za co” dla wszystkich dyplomów." },
-          { id: "3", tytul: "Pobierz PDF", opis: "Przy każdej osobie kliknij „Pobierz PDF”." },
+          { id: "1", tytul: "Szablon i motyw", opis: "Wybierz typ dyplomu (pergamin, medal…) i kolorystykę." },
+          { id: "2", tytul: "Lista imion", opis: "Wklej imiona — jedna osoba w linii albo plik CSV." },
+          { id: "3", tytul: "Pobierz PDF", opis: "Pojedynczo lub „Pobierz wszystkie” — gotowe archiwum." },
         ]
       : tryb === "edytor"
         ? [

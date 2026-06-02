@@ -5,7 +5,8 @@ import { z } from "zod";
 import { pobierzVillageIdsRoliPaneluSoltysa } from "@/lib/panel/rola-panelu-soltysa";
 import { czyMozeZapisacGrafikeDlaWsi } from "@/lib/panel/grafika-uprawnienia";
 import type { PlakatPubliczny } from "@/components/grafika/galeria-plakatow-wsi";
-import type { ProjektGrafiki, WartosciPolGrafiki } from "@/lib/grafika/typy";
+import type { ProjektGrafiki, SzablonSpolecznosciGrafiki, WartosciPolGrafiki } from "@/lib/grafika/typy";
+import { normalizujBackgroundOverlay } from "@/lib/grafika/meta-tla-grafiki";
 import {
   miejsceWydarzeniaZWartosci,
   opisWydarzeniaZWartosci,
@@ -33,6 +34,7 @@ type WierszProjektu = {
   field_values: WartosciPolGrafiki;
   logo_data_url: string | null;
   background_data_url: string | null;
+  background_overlay: number | null;
   canvas_json: Record<string, unknown> | null;
   qr_url: string | null;
   booking_id: string | null;
@@ -53,12 +55,16 @@ function mapujWiersz(w: WierszProjektu): ProjektGrafiki {
     wartosci: w.field_values ?? {},
     logoDataUrl: w.logo_data_url,
     backgroundDataUrl: w.background_data_url,
+    backgroundOverlay: normalizujBackgroundOverlay(w.background_overlay ?? undefined),
     canvasJson: w.canvas_json,
     qrUrl: w.qr_url,
     isPublic: w.is_public,
     villageId: w.village_id,
     bookingId: w.booking_id,
     updatedAt: w.updated_at,
+    linkedPostId: w.linked_post_id,
+    linkedEventId: w.linked_event_id,
+    featuredOnDigitalBoard: w.featured_on_digital_board,
   };
 }
 
@@ -100,6 +106,7 @@ const schemaZapisu = z.object({
   wartosci: z.record(z.string(), z.string()),
   logoDataUrl: z.string().max(3_000_000).nullable().optional(),
   backgroundDataUrl: z.string().max(3_000_000).nullable().optional(),
+  backgroundOverlay: z.number().min(0).max(1).optional(),
   canvasJson: z.record(z.string(), z.unknown()).nullable().optional(),
   qrUrl: z.string().max(2000).nullable().optional(),
   bookingId: z.string().uuid().nullable().optional(),
@@ -123,6 +130,7 @@ export async function zapiszProjektGrafiki(
     wartosci,
     logoDataUrl,
     backgroundDataUrl,
+    backgroundOverlay,
     canvasJson,
     qrUrl,
     bookingId,
@@ -146,6 +154,7 @@ export async function zapiszProjektGrafiki(
     field_values: wartosci,
     logo_data_url: logoDataUrl ?? null,
     background_data_url: backgroundDataUrl ?? null,
+    background_overlay: normalizujBackgroundOverlay(backgroundOverlay),
     canvas_json: canvasJson ?? null,
     qr_url: qrUrl ?? null,
     booking_id: bookingId ?? null,
@@ -573,4 +582,138 @@ export async function pobierzPlakatyTablicyCyfrowejWsi(villageId: string): Promi
     qrUrl: w.qr_url,
     publishedAt: w.published_at ?? new Date().toISOString(),
   }));
+}
+
+type WierszSzablonuSpolecznosci = {
+  id: string;
+  created_by: string;
+  village_name: string | null;
+  title: string;
+  description: string | null;
+  template_id: string;
+  theme_id: string;
+  field_values: WartosciPolGrafiki;
+  logo_data_url: string | null;
+  background_data_url: string | null;
+  background_overlay: number | null;
+  qr_url: string | null;
+  created_at: string;
+};
+
+function mapujSzablonSpolecznosci(w: WierszSzablonuSpolecznosci): SzablonSpolecznosciGrafiki {
+  return {
+    id: w.id,
+    tytul: w.title,
+    opis: w.description,
+    templateId: w.template_id,
+    motywId: w.theme_id,
+    wartosci: w.field_values ?? {},
+    logoDataUrl: w.logo_data_url,
+    backgroundDataUrl: w.background_data_url,
+    backgroundOverlay: normalizujBackgroundOverlay(w.background_overlay ?? undefined),
+    qrUrl: w.qr_url,
+    villageName: w.village_name,
+    createdBy: w.created_by,
+    createdAt: w.created_at,
+  };
+}
+
+const schemaPublikacjiSzablonu = z.object({
+  tytul: z.string().min(1).max(200),
+  opis: z.string().max(500).optional(),
+  villageId: z.string().uuid().nullable().optional(),
+  villageName: z.string().max(120).optional(),
+  templateId: z.string().min(1).max(120),
+  motywId: z.string().min(1).max(80),
+  wartosci: z.record(z.string(), z.string()),
+  logoDataUrl: z.string().max(3_000_000).nullable().optional(),
+  backgroundDataUrl: z.string().max(3_000_000).nullable().optional(),
+  backgroundOverlay: z.number().min(0).max(1).optional(),
+  qrUrl: z.string().max(2000).nullable().optional(),
+});
+
+export async function wczytajSzablonySpolecznosci(): Promise<
+  { blad: string } | { szablony: SzablonSpolecznosciGrafiki[] }
+> {
+  const supabase = createPublicSupabaseClient() ?? (await utworzKlientaSupabaseSerwer());
+  const { data, error } = await supabase
+    .from("community_graphic_templates")
+    .select(
+      "id, created_by, village_name, title, description, template_id, theme_id, field_values, logo_data_url, background_data_url, background_overlay, qr_url, created_at",
+    )
+    .eq("is_public", true)
+    .order("created_at", { ascending: false })
+    .limit(40);
+
+  if (error) {
+    if (error.code === "42P01") return { szablony: [] };
+    return { blad: error.message };
+  }
+
+  return { szablony: ((data ?? []) as WierszSzablonuSpolecznosci[]).map(mapujSzablonSpolecznosci) };
+}
+
+export async function opublikujSzablonSpolecznosci(
+  dane: z.infer<typeof schemaPublikacjiSzablonu>,
+): Promise<WynikProsty & { id?: string }> {
+  const parsed = schemaPublikacjiSzablonu.safeParse(dane);
+  if (!parsed.success) return { blad: "Niepoprawne dane szablonu." };
+
+  const user = await pobierzUzytkownikaDoAkcji();
+  const supabase = utworzKlientaSupabaseSerwer();
+  if (!user) return { blad: "Zaloguj się." };
+
+  const id = crypto.randomUUID();
+  const { error } = await supabase.from("community_graphic_templates").insert({
+    id,
+    created_by: user.id,
+    village_id: parsed.data.villageId ?? null,
+    village_name: parsed.data.villageName ?? null,
+    title: parsed.data.tytul,
+    description: parsed.data.opis ?? null,
+    template_id: parsed.data.templateId,
+    theme_id: parsed.data.motywId,
+    field_values: parsed.data.wartosci,
+    logo_data_url: parsed.data.logoDataUrl ?? null,
+    background_data_url: parsed.data.backgroundDataUrl ?? null,
+    background_overlay: normalizujBackgroundOverlay(parsed.data.backgroundOverlay),
+    qr_url: parsed.data.qrUrl ?? null,
+    is_public: true,
+    updated_at: new Date().toISOString(),
+  });
+
+  if (error) {
+    if (error.code === "42P01") {
+      return { blad: "Udostępnianie szablonów wymaga migracji bazy — skontaktuj się z administratorem." };
+    }
+    return { blad: error.message };
+  }
+
+  revalidatePath("/panel/soltys/grafika");
+  revalidatePath("/panel/mieszkaniec/grafika");
+  return { ok: true, id };
+}
+
+export async function usunSzablonSpolecznosci(id: string): Promise<WynikProsty> {
+  const parsed = uuid.safeParse(id);
+  if (!parsed.success) return { blad: "Niepoprawny identyfikator." };
+
+  const user = await pobierzUzytkownikaDoAkcji();
+  const supabase = utworzKlientaSupabaseSerwer();
+  if (!user) return { blad: "Zaloguj się." };
+
+  const { error } = await supabase
+    .from("community_graphic_templates")
+    .delete()
+    .eq("id", parsed.data)
+    .eq("created_by", user.id);
+
+  if (error) {
+    if (error.code === "42P01") return { ok: true };
+    return { blad: error.message };
+  }
+
+  revalidatePath("/panel/soltys/grafika");
+  revalidatePath("/panel/mieszkaniec/grafika");
+  return { ok: true };
 }

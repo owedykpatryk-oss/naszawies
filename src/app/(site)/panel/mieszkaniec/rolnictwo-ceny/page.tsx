@@ -6,7 +6,7 @@ import { pobierzUzytkownikaPanelu } from "@/lib/auth/pobierz-uzytkownika-serwer"
 import { FormularzCenRolniczych } from "./formularz-cen-rolniczych";
 
 export const metadata: Metadata = {
-  title: "Ceny skupu — zgłoszenia",
+  title: "Ceny w okolicy — zgłoszenia",
 };
 
 export default async function RolnictwoCenyPage() {
@@ -49,8 +49,8 @@ export default async function RolnictwoCenyPage() {
 
   return (
     <PanelStronaMieszkaneca
-      tytul="Ceny skupu — społeczność"
-      opis="Zgłoś cenę z własnej transakcji. Inni mieszkańcy mogą ją potwierdzić — bez udziału sołtysa."
+      tytul="Ceny w okolicy — społeczność"
+      opis="Zgłoś cenę opału, skupu lub innych produktów. Paliwa na stacjach aktualizują się automatycznie na profilu wsi."
       dzieci={<FormularzCenRolniczych wioski={wioski} raporty={doPotwierdzenia} userId={user.id} />}
     />
   );

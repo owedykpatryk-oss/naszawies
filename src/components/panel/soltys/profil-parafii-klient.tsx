@@ -18,6 +18,7 @@ import {
   type ProfilParafiiJson,
 } from "@/lib/wies/profil-organizacji";
 import { IntencjeTygodnioweParafiaKlient } from "@/components/panel/soltys/intencje-tygodniowe-parafia-klient";
+import { PolaOkladkiOrganizacji } from "@/components/panel/soltys/pola-okladki-organizacji";
 
 export type { OrganizacjaPelna };
 
@@ -275,6 +276,7 @@ export function ProfilParafiiKlient({
 
         <PolaParafii
           key={edytowana?.id ?? "nowa"}
+          villageId={villageId}
           domyslne={{
             name: edytowana?.name ?? `Parafia ${villageName}`,
             short_description: edytowana?.short_description ?? null,
@@ -334,6 +336,7 @@ function SzablonyPola({
 
 function PolaParafii({
   domyslne,
+  villageId,
 }: {
   domyslne: {
     name: string;
@@ -344,6 +347,7 @@ function PolaParafii({
     schedule_text: string | null;
     profil: ProfilParafiiJson | null;
   };
+  villageId: string;
 }) {
   const p = domyslne.profil;
   const refMszeNd = useRef<HTMLTextAreaElement>(null);
@@ -362,6 +366,7 @@ function PolaParafii({
             className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
           />
         </label>
+        <PolaOkladkiOrganizacji prefix="parafia" villageId={villageId} okladkaUrl={p?.okladka_url} haslo={p?.haslo} />
         <label className="block text-sm">
           <span className="font-medium text-stone-800">Proboszcz</span>
           <input

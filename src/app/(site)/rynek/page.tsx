@@ -1,8 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { RynekHubJsonLd } from "@/components/wies/rynek-hub-json-ld";
-import { RynekHubOstatnieSiatka } from "@/components/wies/rynek-hub-ostatnie-siatka";
-import { RynekHubWyszukiwarka } from "@/components/wies/rynek-hub-wyszukiwarka";
+import { RynekHubKlient } from "@/components/wies/rynek-hub-klient";
 import { NaglowekStronyRynku } from "@/components/wies/rynek-ui";
 import { createPublicSupabaseClient } from "@/lib/supabase/public-client";
 import { pobierzHubRynku } from "@/lib/marketplace/pobierz-hub-rynku";
@@ -52,25 +51,9 @@ export default async function RynekHubPage() {
           opis="Hyperlokalne ogłoszenia zatwierdzane przez sołtysa: miód i nabiał z gospodarstw, maszyny rolnicze, działki z Geoportalem, usługi sąsiadów. Bez prowizji — rozliczacie się między sobą (czat, telefon, WhatsApp)."
           liczbaOgloszen={hub.lacznieOgloszen}
           liczbaProfili={hub.lacznieWsi}
+          etykietaProfili="Wsi z rynkiem"
         />
-        <section className="mt-10">
-          <h2 className="font-serif text-xl text-green-950">Wybierz wieś</h2>
-          <p className="mt-1 text-sm text-stone-600">
-            Każda wieś ma własny rynek — jak tablica ogłoszeń, tylko z mapą, czatem i powiadomieniami o nowym miodzie czy
-            serniku.
-          </p>
-          <div className="mt-4">
-            <RynekHubWyszukiwarka wsie={hub.wsie} />
-          </div>
-        </section>
-
-        {hub.ostatnie.length > 0 ? (
-          <section className="mt-10 rounded-2xl border border-orange-200/70 bg-orange-50/30 p-5 sm:p-6">
-            <h2 className="font-serif text-xl text-green-950">Ostatnio na rynkach</h2>
-            <p className="mt-1 text-sm text-stone-600">Świeże ogłoszenia z całej Polski — każde we własnej wsi.</p>
-            <RynekHubOstatnieSiatka ostatnie={hub.ostatnie} />
-          </section>
-        ) : null}
+        <RynekHubKlient hub={hub} />
 
         <section className="mt-10 grid gap-4 sm:grid-cols-2">
           <div className="rounded-2xl border border-green-200/80 bg-green-50/40 p-5">

@@ -55,6 +55,8 @@ export function KartaOspPubliczna({
   linkRemizaNaMapie,
   linkPunktyWodyNaMapie,
   nadchodzaceWydarzenia = [],
+  trybOsadzony = false,
+  sciezkaPelnejStrony,
 }: {
   osp: DaneOspPubliczne;
   sciezkaWydarzenia?: string;
@@ -62,19 +64,19 @@ export function KartaOspPubliczna({
   linkRemizaNaMapie?: string | null;
   linkPunktyWodyNaMapie?: string | null;
   nadchodzaceWydarzenia?: WydarzenieOspSkrot[];
+  trybOsadzony?: boolean;
+  sciezkaPelnejStrony?: string;
 }) {
   const p = osp.profil;
   const wwwHref = linkZTekstu(p?.strona_www);
   const fbHref = linkZTekstu(p?.facebook);
   const igHref = linkZTekstu(p?.instagram);
-  const kotwicaUdostepnij = sciezkaProfilu ? `${sciezkaProfilu}#osp` : "#osp";
+  const kotwicaUdostepnij = sciezkaPelnejStrony ?? (sciezkaProfilu ? `${sciezkaProfilu}#osp` : "#osp");
 
-  return (
-    <section
-      id="osp"
-      className="scroll-mt-24 rounded-2xl border border-red-400/50 bg-gradient-to-br from-red-50/80 via-white to-orange-50/40 p-5 shadow-sm sm:p-6"
-    >
-      <div className="flex flex-wrap items-start justify-between gap-3">
+  const tresc = (
+    <>
+      {!trybOsadzony ? (
+        <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <p className="text-xs font-bold uppercase tracking-wider text-red-800">OSP / straż pożarna</p>
           <h2 className="mt-1 font-serif text-2xl text-red-950">{osp.name}</h2>
@@ -148,6 +150,18 @@ export function KartaOspPubliczna({
           ) : null}
         </div>
       </div>
+      ) : null}
+
+      {sciezkaPelnejStrony && !trybOsadzony ? (
+        <div className="mb-4 flex justify-end">
+          <Link
+            href={sciezkaPelnejStrony}
+            className="rounded-lg bg-red-800 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-red-900"
+          >
+            Pełna strona OSP →
+          </Link>
+        </div>
+      ) : null}
 
       {osp.short_description ? (
         <p className="mt-4 text-sm leading-relaxed text-stone-700">{osp.short_description}</p>
@@ -263,6 +277,17 @@ export function KartaOspPubliczna({
           </Link>
         </p>
       ) : null}
+    </>
+  );
+
+  if (trybOsadzony) return <div className="min-w-0">{tresc}</div>;
+
+  return (
+    <section
+      id="osp"
+      className="scroll-mt-24 rounded-2xl border border-red-400/50 bg-gradient-to-br from-red-50/80 via-white to-orange-50/40 p-5 shadow-sm sm:p-6"
+    >
+      {tresc}
     </section>
   );
 }

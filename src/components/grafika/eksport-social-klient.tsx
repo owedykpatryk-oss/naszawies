@@ -16,6 +16,7 @@ type Props = {
   wartosci: WartosciPolGrafiki;
   logoDataUrl?: string | null;
   backgroundDataUrl?: string | null;
+  backgroundOverlay?: number;
   qrUrl?: string | null;
   nazwaPliku: string;
 };
@@ -26,6 +27,7 @@ export function EksportSocialKlient({
   wartosci,
   logoDataUrl,
   backgroundDataUrl,
+  backgroundOverlay,
   qrUrl,
   nazwaPliku,
 }: Props) {
@@ -79,6 +81,7 @@ export function EksportSocialKlient({
             wartosci={wartosci}
             logoDataUrl={logoDataUrl}
             backgroundDataUrl={backgroundDataUrl}
+            backgroundOverlay={backgroundOverlay}
             qrDataUrl={qrUrl}
             formatSocial={f}
             elementId={`eksport-social-${f}`}

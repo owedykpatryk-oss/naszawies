@@ -25,7 +25,13 @@ export type LayoutGrafiki =
   | "zaproszenie-dwujezyczne"
   | "dyplom-klasyczny"
   | "dyplom-ozdobny"
+  | "dyplom-pergamin"
+  | "dyplom-medal"
   | "plakat"
+  | "plakat-dzieci"
+  | "plakat-swietlica"
+  | "plakat-ogloszenie"
+  | "karta-regulamin"
   | "podziekowanie"
   | "karta-informacyjna";
 
@@ -69,12 +75,18 @@ export type ProjektGrafiki = {
   wartosci: WartosciPolGrafiki;
   logoDataUrl?: string | null;
   backgroundDataUrl?: string | null;
+  /** 0–1: siła białego overlay na zdjęciu tła (czytelność tekstu) */
+  backgroundOverlay?: number;
   canvasJson?: Record<string, unknown> | null;
   qrUrl?: string | null;
   isPublic?: boolean;
   villageId?: string | null;
   bookingId?: string | null;
   updatedAt: string;
+  /** Powiązanie z ogłoszeniem na profilu wsi */
+  linkedPostId?: string | null;
+  linkedEventId?: string | null;
+  featuredOnDigitalBoard?: boolean;
 };
 
 export type KontekstGrafiki = {
@@ -93,3 +105,20 @@ export type ProfilWsiGrafiki = {
 };
 
 export type FormatSocialGrafiki = "post" | "story";
+
+/** Szablon udostępniony publicznie przez użytkownika platformy */
+export type SzablonSpolecznosciGrafiki = {
+  id: string;
+  tytul: string;
+  opis?: string | null;
+  templateId: string;
+  motywId: string;
+  wartosci: WartosciPolGrafiki;
+  logoDataUrl?: string | null;
+  backgroundDataUrl?: string | null;
+  backgroundOverlay: number;
+  qrUrl?: string | null;
+  villageName?: string | null;
+  createdBy: string;
+  createdAt: string;
+};

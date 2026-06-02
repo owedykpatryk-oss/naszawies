@@ -7,7 +7,8 @@ export type RodzajWpisKalendarza =
   | "gmina"
   | "zadanie"
   | "ogloszenie"
-  | "lowiectwo";
+  | "lowiectwo"
+  | "harmonogram_lowiecki";
 
 export type WpisKalendarza = {
   id: string;
@@ -36,6 +37,7 @@ export const ETYKIETA_RODZAJU: Record<RodzajWpisKalendarza, string> = {
   zadanie: "Moje zadanie",
   ogloszenie: "Ogłoszenie / zebranie",
   lowiectwo: "Polowanie — ostrzeżenie",
+  harmonogram_lowiecki: "Łowiectwo — harmonogram",
 };
 
 export const KOLOR_RODZAJU: Record<RodzajWpisKalendarza, string> = {
@@ -48,4 +50,5 @@ export const KOLOR_RODZAJU: Record<RodzajWpisKalendarza, string> = {
   zadanie: "bg-orange-100 text-orange-950 border-orange-300/60",
   ogloszenie: "bg-indigo-100 text-indigo-950 border-indigo-300/60",
   lowiectwo: "bg-orange-100 text-orange-950 border-orange-400/70",
+  harmonogram_lowiecki: "bg-amber-100 text-amber-950 border-amber-500/60",
 };

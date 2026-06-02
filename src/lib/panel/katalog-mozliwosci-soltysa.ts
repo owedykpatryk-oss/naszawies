@@ -320,6 +320,17 @@ export async function pobierzKatalogMozliwosciSoltysa(
       automatyczne: false,
     },
     {
+      id: "kalendarz-lowiecki",
+      kategoria: "organizacja",
+      ikona: "📅",
+      tytul: "Kalendarz łowiecki",
+      coDostajaMieszkancy: "Harmonogram ambony i polowań (po zalogowaniu jako mieszkaniec wsi).",
+      coRobiSoltys: "Przydziel myśliwych na ambony i terminy w kalendarzu.",
+      href: "/panel/soltys/lowiectwo/kalendarz",
+      status: "do_uruchomienia",
+      automatyczne: false,
+    },
+    {
       id: "rezerwacje",
       kategoria: "organizacja",
       ikona: "🏛️",

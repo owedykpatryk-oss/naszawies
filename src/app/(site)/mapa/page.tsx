@@ -10,15 +10,12 @@ import {
   wybierzWsiBezTransportuNaMapie,
   wybierzWsiZMalymPoi,
 } from "@/lib/mapa/wybierz-wsi-do-uzupelnienia";
-import type {
-  ZnacznikAdres,
-  ZnacznikGeoKontekst,
-  ZnacznikPolowanie,
-  ZnacznikZgloszenie,
-} from "@/components/mapa/mapa-wsi-leaflet";
-import { centroidObszaruPolowania } from "@/lib/lowiectwo/geojson-obszar";
+import type { ZnacznikAdres, ZnacznikGeoKontekst, ZnacznikZgloszenie } from "@/components/mapa/mapa-wsi-leaflet";
+import { pobierzKolaLowieckieNaMape } from "@/lib/mapa/pobierz-kola-lowieckie-na-mape";
+import { pobierzRewiryNaMape } from "@/lib/mapa/pobierz-rewiry-na-mape";
+import { przygotujPoiLowieckieNaMape } from "@/lib/mapa/poi-lowieckie-widocznosc";
+import { pobierzPolowaniaNaMape } from "@/lib/mapa/pobierz-polowania-na-mape";
 import { pobierzPubliczneDaneMapy } from "@/lib/mapa/pobierz-publiczne-dane-mapy";
-import { createPublicSupabaseClient } from "@/lib/supabase/public-client";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
 import { pobierzUzytkownikaSerwer } from "@/lib/auth/pobierz-uzytkownika-serwer";
 import { urlLogowaniaZPowrotem } from "@/lib/auth/sciezki-chronione";
@@ -27,14 +24,9 @@ import { redirect } from "next/navigation";
 export const metadata: Metadata = {
   title: "Mapa wsi",
   description:
-    "Mapa katalogu wsi po zalogowaniu: granice sołectwa, punkty POI i transport — gdy sołectwo doda dane w serwisie.",
+    "Mapa katalogu wsi po zalogowaniu: granice sołectwa, punkty POI, łowiectwo, polowania i transport — gdy sołectwo doda dane w serwisie.",
   robots: { index: false, follow: false },
 };
-
-function doLiczby(v: string | number | null | undefined): number {
-  if (v == null) return NaN;
-  return typeof v === "number" ? v : Number.parseFloat(String(v));
-}
 
 function etykietaLiczbyWsi(n: number): string {
   if (n === 1) return "1 wieś na mapie";
@@ -44,18 +36,28 @@ function etykietaLiczbyWsi(n: number): string {
   return `${n} wiosek na mapie`;
 }
 
+function doLiczby(v: string | number | null | undefined): number {
+  if (v == null) return NaN;
+  return typeof v === "number" ? v : Number.parseFloat(String(v));
+}
+
 export default async function MapaPage() {
   const user = await pobierzUzytkownikaSerwer();
   if (!user) redirect(urlLogowaniaZPowrotem("/mapa"));
 
-  const { znaczniki, punktyPoi, punktyRynek, punktyRynekDzialki, obrysyCmentarzy, bladZapytania } =
+  const { znaczniki, punktyPoi: punktyPoiSurowe, punktyRynek, punktyRynekDzialki, obrysyCmentarzy, bladZapytania } =
     await pobierzPubliczneDaneMapy();
 
-  const supabase = createPublicSupabaseClient();
+  const [punktyPolowania, punktyKola, rewiryLowieckie] = await Promise.all([
+    pobierzPolowaniaNaMape(znaczniki),
+    pobierzKolaLowieckieNaMape(znaczniki),
+    pobierzRewiryNaMape(znaczniki),
+  ]);
+
   const punktyAdresy: ZnacznikAdres[] = [];
   const punktyGeoKontekst: ZnacznikGeoKontekst[] = [];
   const punktyZgloszenia: ZnacznikZgloszenie[] = [];
-  const punktyPolowania: ZnacznikPolowanie[] = [];
+  const wioskiCzlonkow = new Set<string>();
 
   try {
     if (znaczniki.length > 0) {
@@ -66,6 +68,7 @@ export default async function MapaPage() {
         .eq("user_id", user.id)
         .eq("status", "active");
       const vids = Array.from(new Set((roleRows ?? []).map((r) => r.village_id)));
+      vids.forEach((id) => wioskiCzlonkow.add(id));
       if (vids.length > 0) {
         const wiesPoId = new Map(znaczniki.map((z) => [z.id, z.name]));
         const { data: issues } = await sbAuth
@@ -93,36 +96,11 @@ export default async function MapaPage() {
         }
       }
     }
-    if (supabase && znaczniki.length > 0) {
-      const teraz = new Date().toISOString();
-      const { data: polowania } = await supabase
-        .from("village_hunting_notices")
-        .select("id, title, area_description, area_geojson, starts_at, ends_at, village_id")
-        .eq("status", "approved")
-        .lte("starts_at", teraz)
-        .gte("ends_at", teraz)
-        .limit(80);
-      for (const p of polowania ?? []) {
-        const z = znaczniki.find((w) => w.id === p.village_id);
-        if (!z) continue;
-        const srodek = centroidObszaruPolowania(p.area_geojson) ?? { lat: z.lat, lng: z.lon };
-        punktyPolowania.push({
-          id: p.id,
-          title: p.title,
-          areaDescription: p.area_description,
-          startsAt: p.starts_at as string,
-          endsAt: p.ends_at as string,
-          lat: srodek.lat,
-          lon: srodek.lng,
-          villageName: z.name,
-          villageSciezka: z.sciezka,
-          areaGeojson: p.area_geojson ?? null,
-        });
-      }
-    }
   } catch {
     /* warstwy opcjonalne */
   }
+
+  const punktyPoi = przygotujPoiLowieckieNaMape(punktyPoiSurowe, wioskiCzlonkow);
 
   const liczbaWsi = znaczniki.length;
   const statystykiMapy: StatystykiMapy = obliczStatystykiMapy(znaczniki, punktyPoi);
@@ -180,6 +158,8 @@ export default async function MapaPage() {
               punktyRynekDzialki={punktyRynekDzialki}
               punktyZgloszenia={punktyZgloszenia}
               punktyPolowania={punktyPolowania}
+              punktyKola={punktyKola}
+              rewiryLowieckie={rewiryLowieckie}
               punktyCmentarze={obrysyCmentarzy}
               punktyGeoKontekst={punktyGeoKontekst}
             />

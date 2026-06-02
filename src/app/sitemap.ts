@@ -1,11 +1,18 @@
 import type { MetadataRoute } from "next";
 import { createPublicSupabaseClient } from "@/lib/supabase/public-client";
 import { sciezkaProfiluWsi } from "@/lib/wies/sciezka-publiczna";
+import {
+  sciezkaStronyOrganizacji,
+  segmentDlaOrganizacji,
+  slugPublicznyOrganizacji,
+} from "@/lib/wies/sciezka-organizacji-publicznej";
 
 const baza = "https://naszawies.pl";
 
 const maxProfiliWMapieStrony = 800;
 const maxOgloszenRynkuWMapieStrony = 1500;
+const maxOrganizacjiWMapieStrony = 1200;
+const maxWydarzenWMapieStrony = 600;
 
 /** Odświeżanie listy wsi w sitemap (bez pełnego redeployu). */
 export const revalidate = 3600;
@@ -87,6 +94,8 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
   const supabase = createPublicSupabaseClient();
   let wsi: MetadataRoute.Sitemap = [];
   let rynek: MetadataRoute.Sitemap = [];
+  let organizacje: MetadataRoute.Sitemap = [];
+  let wydarzenia: MetadataRoute.Sitemap = [];
   if (supabase) {
     const { data, error } = await supabase
       .from("villages")
@@ -138,8 +147,70 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
             .filter(Boolean) as MetadataRoute.Sitemap,
         ];
       }
+
+      const { data: grupyOrg } = await supabase
+        .from("village_community_groups")
+        .select(
+          "id, name, group_type, public_slug, updated_at, villages!inner(voivodeship, county, commune, slug, is_active)",
+        )
+        .eq("is_active", true)
+        .eq("villages.is_active", true)
+        .order("updated_at", { ascending: false })
+        .limit(maxOrganizacjiWMapieStrony);
+
+      if (grupyOrg?.length) {
+        organizacje = grupyOrg
+          .map((g) => {
+            const surowe = g.villages as
+              | { voivodeship: string; county: string; commune: string; slug: string }
+              | { voivodeship: string; county: string; commune: string; slug: string }[]
+              | null;
+            const v = Array.isArray(surowe) ? surowe[0] : surowe;
+            if (!v) return null;
+            const segment = segmentDlaOrganizacji(g.group_type, g.name);
+            if (!segment) return null;
+            const sciezka = sciezkaStronyOrganizacji(
+              v,
+              segment,
+              slugPublicznyOrganizacji(g.name, g.id, g.public_slug),
+            );
+            return {
+              url: `${baza}${sciezka}`,
+              lastModified: g.updated_at ? new Date(g.updated_at) : teraz,
+              changeFrequency: "weekly" as const,
+              priority: 0.62,
+            };
+          })
+          .filter(Boolean) as MetadataRoute.Sitemap;
+      }
+
+      const odWydarzen = new Date(Date.now() - 14 * 24 * 60 * 60 * 1000).toISOString();
+      const { data: evWydarzenia } = await supabase
+        .from("village_community_events")
+        .select("id, village_id, starts_at, updated_at")
+        .in("village_id", idsWsi)
+        .eq("status", "approved")
+        .gte("starts_at", odWydarzen)
+        .order("starts_at", { ascending: true })
+        .limit(maxWydarzenWMapieStrony);
+
+      if (evWydarzenia?.length) {
+        wydarzenia = evWydarzenia
+          .map((ev) => {
+            const sciezka = sciezkaPoId.get(ev.village_id as string);
+            if (!sciezka) return null;
+            const mod = ev.starts_at ?? ev.updated_at;
+            return {
+              url: `${baza}${sciezka}/wydarzenia/${ev.id}`,
+              lastModified: mod ? new Date(mod) : teraz,
+              changeFrequency: "weekly" as const,
+              priority: 0.58,
+            };
+          })
+          .filter(Boolean) as MetadataRoute.Sitemap;
+      }
     }
   }
 
-  return [...statyczne, ...stuby, ...wsi, ...rynek];
+  return [...statyczne, ...stuby, ...wsi, ...rynek, ...organizacje, ...wydarzenia];
 }

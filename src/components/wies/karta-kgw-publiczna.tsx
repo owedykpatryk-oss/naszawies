@@ -56,6 +56,8 @@ export function KartaKgwPubliczna({
   sciezkaRynek,
   linkMiejsceNaMapie,
   nadchodzaceWydarzenia = [],
+  trybOsadzony = false,
+  sciezkaPelnejStrony,
 }: {
   kgw: DaneKgwPubliczne;
   sciezkaWydarzenia?: string;
@@ -64,19 +66,19 @@ export function KartaKgwPubliczna({
   sciezkaRynek?: string;
   linkMiejsceNaMapie?: string | null;
   nadchodzaceWydarzenia?: WydarzenieKgwSkrot[];
+  trybOsadzony?: boolean;
+  sciezkaPelnejStrony?: string;
 }) {
   const p = kgw.profil;
   const wwwHref = linkZTekstu(p?.strona_www);
   const fbHref = linkZTekstu(p?.facebook);
   const igHref = linkZTekstu(p?.instagram);
-  const kotwicaUdostepnij = sciezkaProfilu ? `${sciezkaProfilu}#kgw` : "#kgw";
+  const kotwicaUdostepnij = sciezkaPelnejStrony ?? (sciezkaProfilu ? `${sciezkaProfilu}#kgw` : "#kgw");
 
-  return (
-    <section
-      id="kgw"
-      className="scroll-mt-24 rounded-2xl border border-rose-300/60 bg-gradient-to-br from-rose-50/80 via-white to-fuchsia-50/30 p-5 shadow-sm sm:p-6"
-    >
-      <div className="flex flex-wrap items-start justify-between gap-3">
+  const tresc = (
+    <>
+      {!trybOsadzony ? (
+        <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <p className="text-xs font-bold uppercase tracking-wider text-rose-800">Koło Gospodyń Wiejskich</p>
           <h2 className="mt-1 font-serif text-2xl text-rose-950">{kgw.name}</h2>
@@ -146,6 +148,18 @@ export function KartaKgwPubliczna({
           ) : null}
         </div>
       </div>
+      ) : null}
+
+      {sciezkaPelnejStrony && !trybOsadzony ? (
+        <div className="mb-4 flex justify-end">
+          <Link
+            href={sciezkaPelnejStrony}
+            className="rounded-lg bg-rose-800 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-rose-900"
+          >
+            Pełna strona koła →
+          </Link>
+        </div>
+      ) : null}
 
       {kgw.short_description ? (
         <p className="mt-4 text-sm leading-relaxed text-stone-700">{kgw.short_description}</p>
@@ -270,6 +284,17 @@ export function KartaKgwPubliczna({
           </Link>
         ) : null}
       </div>
+    </>
+  );
+
+  if (trybOsadzony) return <div className="min-w-0">{tresc}</div>;
+
+  return (
+    <section
+      id="kgw"
+      className="scroll-mt-24 rounded-2xl border border-rose-300/60 bg-gradient-to-br from-rose-50/80 via-white to-fuchsia-50/30 p-5 shadow-sm sm:p-6"
+    >
+      {tresc}
     </section>
   );
 }

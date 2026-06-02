@@ -30,10 +30,26 @@ import { linkChroniony } from "@/lib/auth/sciezki-chronione";
 import { sciezkaProfiluWsi } from "@/lib/wies/sciezka-publiczna";
 import { znajdzWiesPoSciezce } from "@/lib/wies/znajdz-wies-po-sciezce";
 import { etykietaKategoriiDotacji } from "@/lib/wies/teksty-dotacji";
+import { czySegmentOrganizacji } from "@/lib/wies/sciezka-organizacji-publicznej";
+import { znajdzOrganizacjePoSegmencieISlugu } from "@/lib/wies/pobierz-strone-organizacji";
+import {
+  metadataStronyOrganizacji,
+  pobierzWydarzeniaOrganizacji,
+  StronaOrganizacjiPubliczna,
+} from "@/components/wies/organizacja/strona-organizacji-publiczna";
+import { pobierzHarmonogramLowieckiProfilWsi } from "@/lib/lowiectwo/pobierz-kalendarz-harmonogram";
+import { pobierzAktywneOstrzezeniaLowieckie } from "@/lib/lowiectwo/pobierz-ostrzezenia-publiczne";
 import { czyWydarzenieKgw, czyWydarzenieLowieckie, czyWydarzenieOsp, czyWydarzenieParafialne, etykietaRodzajuWydarzenia } from "@/lib/wies/teksty-organizacji";
 import { normalizujKategorieLinku, type LinkPrzydatnyPubliczny } from "@/lib/wies/linki-przydatne";
 import { pobierzPlanCmentarzaPubliczny } from "@/lib/cmentarz/pobierz-cmentarz-publiczny";
 import { pobierzDaneMapyWsi } from "@/lib/mapa/pobierz-dane-mapy-wsi";
+import { heroMapaOrganizacji, linkiMapyOrganizacji } from "@/lib/wies/poi-organizacji-hero";
+import { metadataWydarzeniaPublicznego } from "@/lib/wies/metadata-wydarzenia-publicznego";
+import {
+  sciezkaPelnejStronyOrganizacji,
+  segmentDlaOrganizacji,
+} from "@/lib/wies/sciezka-organizacji-publicznej";
+import { WydarzenieStronaPubliczna } from "@/components/wies/wydarzenie-strona-publiczna";
 import { CmentarzPublicznyKlient } from "@/components/cmentarz/cmentarz-publiczny-klient";
 import { MarketplaceListaKlient } from "@/components/wies/marketplace-lista-klient";
 import { KartaProfiluRynku } from "@/components/wies/karta-profilu-rynku";
@@ -161,6 +177,35 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
           title: `Powiaty i wsie — ${hub.wojewodztwo}`,
           description: `${hub.powiaty.length} powiatów, ${hub.wies.length} miejscowości w woj. ${hub.wojewodztwo}.`,
         };
+      }
+    }
+  }
+
+  if (s.length === 6 && czySegmentOrganizacji(s[4]!)) {
+    if (!supabase) return { title: "Organizacja" };
+    const wies = await znajdzWiesPoSciezce(supabase, s[0], s[1], s[2], s[3]);
+    if (!wies) return { title: "Organizacja" };
+    const znaleziona = await znajdzOrganizacjePoSegmencieISlugu(supabase, wies.id, s[4]!, s[5]!);
+    if (znaleziona) {
+      return metadataStronyOrganizacji(wies, znaleziona.org, znaleziona.segment);
+    }
+  }
+
+  if (s.length === 6 && s[4] === "wydarzenia") {
+    const idWyd = z.string().uuid().safeParse(s[5]);
+    if (idWyd.success && supabase) {
+      const wies = await znajdzWiesPoSciezce(supabase, s[0], s[1], s[2], s[3]);
+      if (wies) {
+        const { data: ev } = await supabase
+          .from("village_community_events")
+          .select("id, title, description, location_text, starts_at, event_kind, village_id")
+          .eq("id", idWyd.data)
+          .eq("status", "approved")
+          .maybeSingle();
+        if (ev && ev.village_id === wies.id) {
+          const sciezka = `${sciezkaProfiluWsi(wies)}/wydarzenia/${ev.id}`;
+          return metadataWydarzeniaPublicznego(wies, ev, sciezka);
+        }
       }
     }
   }
@@ -416,10 +461,19 @@ export default async function WiesCatchAllPage({ params, searchParams }: Props) 
   }
 
   if (reszta.length === 0) {
-    const [danePubliczne, ustawieniaWsi] = await Promise.all([
+    const [danePubliczne, ustawieniaWsi, metaRynekRow] = await Promise.all([
       pobierzDanePubliczneProfiluWsi(wies.id, wies.is_active),
       pobierzUstawieniaWsi(supabase, wies.id),
+      supabase
+        .from("villages")
+        .select("rynek_banner_text, rynek_banner_until")
+        .eq("id", wies.id)
+        .maybeSingle(),
     ]);
+    const bannerRynek = aktywnyBannerRynku(
+      metaRynekRow.data?.rynek_banner_text ?? null,
+      metaRynekRow.data?.rynek_banner_until ?? null,
+    );
 
     const posty = danePubliczne.postyRaw as {
       id: string;
@@ -456,6 +510,8 @@ export default async function WiesCatchAllPage({ params, searchParams }: Props) 
     const ogloszeniaSzkoly = danePubliczne.ogloszeniaSzkoly;
 
     let userSesji: { id: string } | null = null;
+    let mieszkaniecWsi = false;
+    let harmonogramLowiecki: import("@/lib/lowiectwo/kalendarz-lowiecki").WpisKalendarzaLowieckiego[] = [];
     let mapaZnacznik: ZnacznikWsi | null = null;
     let mapaPoi: ZnacznikPoi[] = [];
     let mozeEdytowacListeZakupow = false;
@@ -470,12 +526,18 @@ export default async function WiesCatchAllPage({ params, searchParams }: Props) 
       created_by: string | null;
     }[] = [];
 
+    let subskrybowaneKategorieRynek: (string | null)[] = [];
+
     if (maCiasteczkaSesjiSupabaseSerwer()) {
       const supabaseSerwer = utworzKlientaSupabaseSerwer();
       userSesji = await pobierzUzytkownikaSerwer();
 
       if (userSesji) {
-        const [daneMapy, uvrResult, zapisaneResult] = await Promise.all([
+        const { pobierzHarmonogramLowieckiProfilWsi } = await import(
+          "@/lib/lowiectwo/pobierz-kalendarz-harmonogram"
+        );
+        const [daneMapy, uvrResult, rolaWsiResult, zapisaneResult, harmResult, subskrypcjeRynek] =
+          await Promise.all([
           pobierzDaneMapyWsi(supabase, wies),
           supabaseSerwer
             .from("user_village_roles")
@@ -486,15 +548,27 @@ export default async function WiesCatchAllPage({ params, searchParams }: Props) 
             .in("role", [...roleDlaUprawnienia("zarzadzanie_kgw")])
             .maybeSingle(),
           supabaseSerwer
+            .from("user_village_roles")
+            .select("id")
+            .eq("user_id", userSesji.id)
+            .eq("village_id", wies.id)
+            .eq("status", "active")
+            .maybeSingle(),
+          supabaseSerwer
             .from("user_saved_content")
             .select("id, content_type, content_id")
             .eq("user_id", userSesji.id)
             .eq("village_id", wies.id),
+          pobierzHarmonogramLowieckiProfilWsi(supabaseSerwer, wies.id),
+          pobierzSubskrypcjeKategoriiRynku(supabaseSerwer, userSesji.id, wies.id),
         ]);
+        subskrybowaneKategorieRynek = subskrypcjeRynek;
         mapaZnacznik = daneMapy.znacznik;
         mapaPoi = daneMapy.pois;
         mozeZobaczycListeZakupow = !!uvrResult.data;
         mozeEdytowacListeZakupow = !!uvrResult.data;
+        mieszkaniecWsi = !!rolaWsiResult.data;
+        harmonogramLowiecki = harmResult;
         for (const row of zapisaneResult.data ?? []) {
           zapisaneTresci[`${row.content_type}:${row.content_id}`] = row.id;
         }
@@ -665,7 +739,7 @@ export default async function WiesCatchAllPage({ params, searchParams }: Props) 
 
     return (
       <main className="profil-wies-strona mx-auto min-w-0 w-full max-w-7xl px-4 py-8 text-stone-800 sm:px-6 sm:py-14">
-        <WiesJsonLd wies={wies} siteUrl={siteUrl} />
+        <WiesJsonLd wies={wies} siteUrl={siteUrl} organizacje={organizacje} />
         <p className="mb-6 text-sm text-stone-500">
           <Link href="/" className="text-green-800 underline">
             ← Strona główna
@@ -716,6 +790,8 @@ export default async function WiesCatchAllPage({ params, searchParams }: Props) 
           kontaktyUrzedowe={kontaktyUrzedowe}
           kadencjeFunkcyjne={kadencjeFunkcyjne}
           zalogowany={!!userSesji}
+          mieszkaniecWsi={mieszkaniecWsi}
+          harmonogramLowiecki={harmonogramLowiecki}
           mapaZnacznik={mapaZnacznik}
           mapaPoi={mapaPoi}
           maPlanCmentarza={maPlanCmentarza}
@@ -727,8 +803,84 @@ export default async function WiesCatchAllPage({ params, searchParams }: Props) 
           przewinDoSzkoly={przewinDoSzkoly}
           przewinDoHistorii={przewinDoHistorii}
           przewinDoSportu={przewinDoSportu}
+          bannerRynek={bannerRynek}
+          subskrybowaneKategorieRynek={subskrybowaneKategorieRynek}
         />
       </main>
+    );
+  }
+
+  if (reszta.length === 2 && czySegmentOrganizacji(reszta[0]!)) {
+    const segment = reszta[0]!;
+    const slugOrg = reszta[1]!;
+    const znaleziona = await znajdzOrganizacjePoSegmencieISlugu(supabase, wies.id, segment, slugOrg);
+    if (!znaleziona) notFound();
+
+    const { org } = znaleziona;
+    const wydarzeniaSurowe = await pobierzWydarzeniaOrganizacji(supabase, wies.id);
+
+    let zalogowany = false;
+    let mieszkaniecWsi = false;
+    let harmonogramLowiecki: Awaited<ReturnType<typeof pobierzHarmonogramLowieckiProfilWsi>> = [];
+
+    if (await maCiasteczkaSesjiSupabaseSerwer()) {
+      const user = await pobierzUzytkownikaSerwer();
+      if (user) {
+        zalogowany = true;
+        const supabaseSerwer = utworzKlientaSupabaseSerwer();
+        const { data: rola } = await supabaseSerwer
+          .from("user_village_roles")
+          .select("id")
+          .eq("user_id", user.id)
+          .eq("village_id", wies.id)
+          .eq("status", "active")
+          .maybeSingle();
+        mieszkaniecWsi = !!rola;
+        if (segment === "lowiectwo") {
+          harmonogramLowiecki = await pobierzHarmonogramLowieckiProfilWsi(supabaseSerwer, wies.id);
+        }
+      }
+    }
+
+    const ostrzezenia =
+      segment === "lowiectwo" ? await pobierzAktywneOstrzezeniaLowieckie(supabase, wies.id) : [];
+
+    const { pois: poisMapy } = await pobierzDaneMapyWsi(supabase, wies);
+    const sciezkaWsiOrg = sciezkaProfiluWsi(wies);
+    const linkiMapy = linkiMapyOrganizacji(znaleziona.segment, poisMapy);
+    const heroMapaPunkt = heroMapaOrganizacji(znaleziona.segment, poisMapy, sciezkaWsiOrg);
+
+    let linkPlanCmentarza: string | null = null;
+    if (segment === "parafia") {
+      const plan = await pobierzPlanCmentarzaPubliczny(supabase, wies.id);
+      if (plan) linkPlanCmentarza = `${sciezkaWsiOrg}/cmentarz`;
+    }
+
+    const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? "https://naszawies.pl").replace(/[\r\n]+/g, "").trim();
+
+    return (
+      <StronaOrganizacjiPubliczna
+        wies={wies}
+        org={org}
+        segment={znaleziona.segment}
+        wydarzeniaSurowe={wydarzeniaSurowe}
+        siteUrl={siteUrl}
+        kontekst={{
+          zalogowany,
+          mieszkaniecWsi,
+          harmonogramLowiecki,
+          ostrzezeniaLowieckie: ostrzezenia.map((o) => ({
+            id: o.id,
+            title: o.title,
+            startsAt: o.startsAt,
+            endsAt: o.endsAt,
+            maObszarMapy: o.maObszarMapy,
+          })),
+          heroMapaPunkt,
+          linkiMapy,
+          linkPlanCmentarza,
+        }}
+      />
     );
   }
 
@@ -938,18 +1090,28 @@ export default async function WiesCatchAllPage({ params, searchParams }: Props) 
     }
 
     const katOgl = ogl.equipment_category ?? ogl.category;
-    let zapytaniePodobne = supabase
-      .from("marketplace_listings")
-      .select("id, title, listing_type, price_amount, price_unit, equipment_category, category")
-      .eq("village_id", wies.id)
-      .eq("status", "approved")
-      .neq("id", ogl.id)
-      .order("published_at", { ascending: false })
-      .limit(4);
-    if (katOgl) {
-      zapytaniePodobne = zapytaniePodobne.or(`equipment_category.eq.${katOgl},category.eq.${katOgl}`);
-    }
-    const { data: podobneRaw } = await zapytaniePodobne;
+    const [podobneResult, subskrybowaneKategorie] = await Promise.all([
+      (async () => {
+        let zapytaniePodobne = supabase
+          .from("marketplace_listings")
+          .select(
+            "id, title, listing_type, price_amount, price_unit, currency, equipment_category, category, image_urls, seller_verified, view_count, published_at, created_at, geoportal_parcel_id, parcel_area_m2, with_operator, location_text",
+          )
+          .eq("village_id", wies.id)
+          .eq("status", "approved")
+          .neq("id", ogl.id)
+          .order("published_at", { ascending: false })
+          .limit(4);
+        if (katOgl) {
+          zapytaniePodobne = zapytaniePodobne.or(`equipment_category.eq.${katOgl},category.eq.${katOgl}`);
+        }
+        return zapytaniePodobne;
+      })(),
+      userRynek
+        ? pobierzSubskrypcjeKategoriiRynku(supabaseSerwer, userRynek.id, wies.id)
+        : Promise.resolve([] as (string | null)[]),
+    ]);
+    const podobneRaw = podobneResult.data;
 
     const { RynekOgloszenieSzczegoly } = await import("@/components/wies/rynek-ogloszenie-szczegoly");
     const { OkruszkiRynku } = await import("@/components/wies/rynek-ui");
@@ -982,15 +1144,8 @@ export default async function WiesCatchAllPage({ params, searchParams }: Props) 
           obserwujCene={obserwujCene}
           zaufanieSprzedawcy={zaufanieSprzedawcy}
           profilSprzedawcy={profilPowiazany}
-          podobne={(podobneRaw ?? []) as {
-            id: string;
-            title: string;
-            listing_type: string;
-            price_amount: number | null;
-            price_unit: string | null;
-            equipment_category: string | null;
-            category: string | null;
-          }[]}
+          subskrybowaneKategorie={subskrybowaneKategorie}
+          podobne={(podobneRaw ?? []) as import("@/components/wies/rynek-ogloszenie-szczegoly").OgloszenieRynekSkrot[]}
         />
       </main>
     );
@@ -1230,7 +1385,7 @@ export default async function WiesCatchAllPage({ params, searchParams }: Props) 
     const { data: ev, error } = await supabase
       .from("village_community_events")
       .select(
-        "id, title, description, location_text, starts_at, ends_at, event_kind, village_id, village_community_groups(name)",
+        "id, title, description, location_text, starts_at, ends_at, event_kind, village_id, group_id, village_community_groups(id, name, group_type, public_slug)",
       )
       .eq("id", idWyd.data)
       .eq("status", "approved")
@@ -1238,36 +1393,41 @@ export default async function WiesCatchAllPage({ params, searchParams }: Props) 
     if (error || !ev || ev.village_id !== wies.id) {
       notFound();
     }
-    const grupaNazwa = nazwaPowiazanejGrupy(
-      (ev as { village_community_groups?: { name: string } | { name: string }[] | null }).village_community_groups,
-    );
+    const grupaSurowa = (ev as {
+      village_community_groups?: {
+        id: string;
+        name: string;
+        group_type: string;
+        public_slug: string | null;
+      } | {
+        id: string;
+        name: string;
+        group_type: string;
+        public_slug: string | null;
+      }[] | null;
+    }).village_community_groups;
+    const grupa = Array.isArray(grupaSurowa) ? grupaSurowa[0] : grupaSurowa;
+    const grupaNazwa = grupa?.name ?? nazwaPowiazanejGrupy(grupaSurowa as { name: string } | { name: string }[] | null);
     const sciezka = sciezkaProfiluWsi(wies);
+    const sciezkaWydarzenia = `${sciezka}/wydarzenia/${ev.id}`;
+    const sciezkaOrganizacji = grupa
+      ? sciezkaPelnejStronyOrganizacji(wies, grupa)
+      : null;
+    const segmentOrganizacji = grupa ? segmentDlaOrganizacji(grupa.group_type, grupa.name) : null;
+    const siteUrl = (process.env.NEXT_PUBLIC_SITE_URL ?? "https://naszawies.pl").replace(/[\r\n]+/g, "").trim();
+
     return (
-      <main className="mx-auto min-w-0 w-full max-w-7xl px-4 py-16 text-stone-800 sm:px-6">
-        <p className="mb-4 text-sm text-stone-500">
-          <Link href={`${sciezka}/wydarzenia`} className="text-green-800 underline">
-            ← Kalendarz wydarzeń
-          </Link>
-          {" · "}
-          <Link href={sciezka} className="text-green-800 underline">
-            {wies.name}
-          </Link>
-        </p>
-        <p className="text-xs uppercase tracking-wide text-indigo-800">Wydarzenie</p>
-        <h1 className="mt-1 font-serif text-2xl text-green-950">{ev.title}</h1>
-        <p className="mt-2 text-sm text-stone-600">
-          {new Date(ev.starts_at).toLocaleString("pl-PL", { dateStyle: "full", timeStyle: "short" })}
-          {ev.ends_at
-            ? ` — ${new Date(ev.ends_at).toLocaleTimeString("pl-PL", { timeStyle: "short" })}`
-            : null}
-          {ev.location_text ? ` · ${ev.location_text}` : null}
-          {grupaNazwa ? ` · ${grupaNazwa}` : null}
-        </p>
-        {ev.description ? (
-          <div className="mt-6 whitespace-pre-wrap rounded-xl border border-stone-200 bg-white p-5 text-sm leading-relaxed text-stone-800 shadow-sm">
-            {ev.description}
-          </div>
-        ) : null}
+      <main className="mx-auto min-w-0 w-full max-w-3xl px-4 py-10 text-stone-800 sm:px-6 sm:py-14">
+        <WydarzenieStronaPubliczna
+          wies={wies}
+          wydarzenie={ev}
+          sciezkaWsi={sciezka}
+          sciezkaWydarzenia={sciezkaWydarzenia}
+          siteUrl={siteUrl}
+          nazwaGrupy={grupaNazwa}
+          sciezkaOrganizacji={sciezkaOrganizacji}
+          segmentOrganizacji={segmentOrganizacji}
+        />
       </main>
     );
   }

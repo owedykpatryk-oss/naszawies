@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { KartaKlubuSportowego } from "@/components/wies/karta-klubu-sportowego";
+import { OrganizacjaTeaserKafel } from "@/components/wies/organizacja/organizacja-teaser-kafel";
 import { NastepnyWydarzenieSportBaner } from "@/components/wies/nastepny-wydarzenie-sport-baner";
 import { OslonaSekcjiWies, KARTA_LISTY_WIES } from "@/components/wies/oslona-sekcji-wies";
 import { PrzewinDoSekcjiKlient } from "@/components/wies/przewin-do-sekcji-klient";
@@ -8,6 +9,7 @@ import { TytulSekcjiWies } from "@/components/wies/tytul-sekcji-wies";
 import { UdostepnijSportWsiKlient } from "@/components/wies/udostepnij-sport-wsi-klient";
 import { UjawnijPoPrzewinieciu } from "@/components/ui/ujawnij-po-przewinieciu";
 import { parsujProfilKlubuSportowego } from "@/lib/wies/profil-klubu-sportowego";
+import { hasloOrganizacjiZProfilu, okladkaOrganizacjiZProfilu } from "@/lib/wies/profil-organizacji-meta";
 import { znajdzNastepneWydarzenieSportowe } from "@/lib/wies/pobierz-terminarz-sportu-wsi";
 import { urlIcalSportuWsi, urlRssSportuWsi } from "@/lib/wies/rss-sportu";
 import { nazwaDniaTygodnia } from "@/lib/wies/teksty-dotacji";
@@ -45,6 +47,8 @@ type Props = {
   klubyPelne: Array<{
     id: string;
     name: string;
+    group_type: string;
+    public_slug?: string | null;
     short_description: string | null;
     meeting_place: string | null;
     schedule_text: string | null;
@@ -59,6 +63,7 @@ type Props = {
   villageId: string;
   linkBoiskoNaMapie?: string | null;
   przewinPrzyWejsciu?: boolean;
+  sciezkaPelnejStronyKlubu?: (klub: { id: string; name: string; group_type: string; public_slug?: string | null }) => string | null;
 };
 
 export function SekcjaSportPubliczna({
@@ -71,6 +76,7 @@ export function SekcjaSportPubliczna({
   villageId,
   linkBoiskoNaMapie = null,
   przewinPrzyWejsciu = false,
+  sciezkaPelnejStronyKlubu,
 }: Props) {
   const nazwy = nazwyKlubowSportowych(kluby);
   const treningi = harmonogram.filter((s) => czySlotHarmonogramuSportowego(s.nazwa_grupy, nazwy));
@@ -126,6 +132,40 @@ export function SekcjaSportPubliczna({
 
       <UdostepnijSportWsiKlient sciezkaProfilu={sciezkaProfilu} nazwaWsi={nazwaWsi} />
 
+      {klubyPelne.some((k) => sciezkaPelnejStronyKlubu?.(k)) ? (
+        <div className="organizacja-teaser-grid mt-5 grid gap-4 sm:grid-cols-2">
+          {klubyPelne.map((k) => {
+            const href = sciezkaPelnejStronyKlubu?.(k);
+            if (!href) return null;
+            const profil = parsujProfilKlubuSportowego(k.profile_data);
+            const nastepneKlub = terminarz.find((ev) =>
+              czyWydarzenieSportowe(ev.event_kind, ev.nazwa_grupy ?? k.name, nazwy),
+            );
+            return (
+              <UjawnijPoPrzewinieciu key={k.id} opoznienieMs={0}>
+                <OrganizacjaTeaserKafel
+                  segment="sport"
+                  nazwa={k.name}
+                  opis={k.short_description}
+                  href={href}
+                  okladkaUrl={okladkaOrganizacjiZProfilu(k.profile_data)}
+                  haslo={hasloOrganizacjiZProfilu(k.profile_data)}
+                  podpis={profil?.trener ? `Trener: ${profil.trener}` : profil?.dyscyplina ?? null}
+                  badge={
+                    nastepneKlub
+                      ? new Date(nastepneKlub.starts_at).toLocaleDateString("pl-PL", {
+                          day: "numeric",
+                          month: "short",
+                        })
+                      : null
+                  }
+                />
+              </UjawnijPoPrzewinieciu>
+            );
+          })}
+        </div>
+      ) : null}
+
       {klubyPelne.map((k) => (
         <div key={k.id} className="mt-5">
           <KartaKlubuSportowego
@@ -152,6 +192,7 @@ export function SekcjaSportPubliczna({
                 location_text: ev.location_text,
                 starts_at: ev.starts_at,
               }))}
+            sciezkaPelnejStrony={sciezkaPelnejStronyKlubu?.(k) ?? undefined}
           />
         </div>
       ))}

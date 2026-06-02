@@ -51,6 +51,9 @@ export type WiesDoModeracjiSpolecznosci = {
   county?: string;
   commune?: string;
   slug?: string;
+  latitude?: string | number | null;
+  longitude?: string | number | null;
+  boundary_geojson?: unknown | null;
 };
 
 export type GrupaOrganizacjiWiersz = {
@@ -810,6 +813,13 @@ export function SoltysSpolecznoscKlient({
         <ProfilMysliwiKlient
           villageId={villageId}
           villageName={villageName}
+          wiesLat={
+            wybranaWies?.latitude != null ? Number(wybranaWies.latitude) : NaN
+          }
+          wiesLon={
+            wybranaWies?.longitude != null ? Number(wybranaWies.longitude) : NaN
+          }
+          boundaryGeojson={wybranaWies?.boundary_geojson ?? null}
           organizacje={organizacjePelne}
           sciezkaProfilu={sciezkaProfilu}
         />

@@ -1,23 +1,32 @@
 "use client";
 
 import Link from "next/link";
-import { useMemo, useState } from "react";
+import { useMemo } from "react";
 import type { WiesNaHubieRynku } from "@/lib/marketplace/pobierz-hub-rynku";
 
-export function RynekHubWyszukiwarka({ wsie }: { wsie: WiesNaHubieRynku[] }) {
-  const [fraza, ustawFraze] = useState("");
+export function RynekHubWyszukiwarka({
+  wsie,
+  fraza,
+  onFrazaChange,
+}: {
+  wsie: WiesNaHubieRynku[];
+  fraza?: string;
+  onFrazaChange?: (v: string) => void;
+}) {
+  const frazaWewnetrzna = fraza ?? "";
 
   const przefiltrowane = useMemo(() => {
-    const q = fraza.trim().toLowerCase();
+    const q = frazaWewnetrzna.trim().toLowerCase();
     if (!q) return wsie;
     return wsie.filter(
       (w) =>
         w.name.toLowerCase().includes(q) ||
         w.commune.toLowerCase().includes(q) ||
         w.county.toLowerCase().includes(q) ||
-        w.voivodeship.toLowerCase().includes(q),
+        w.voivodeship.toLowerCase().includes(q) ||
+        (w.banner?.toLowerCase().includes(q) ?? false),
     );
-  }, [fraza, wsie]);
+  }, [frazaWewnetrzna, wsie]);
 
   if (wsie.length === 0) {
     return (
@@ -38,10 +47,10 @@ export function RynekHubWyszukiwarka({ wsie }: { wsie: WiesNaHubieRynku[] }) {
         Szukaj wsi lub gminy
         <input
           type="search"
-          value={fraza}
-          onChange={(e) => ustawFraze(e.target.value)}
+          value={frazaWewnetrzna}
+          onChange={(e) => onFrazaChange?.(e.target.value)}
           placeholder="np. nazwa wsi, miód, gmina…"
-          className="mt-1.5 w-full max-w-md rounded-xl border border-stone-300 bg-white px-3 py-2.5 text-sm shadow-sm focus:border-green-700 focus:outline-none focus:ring-2 focus:ring-green-200"
+          className="mt-1.5 w-full max-w-md rounded-xl border border-stone-300 bg-white px-3 py-2.5 text-sm shadow-sm transition focus:border-orange-400 focus:outline-none focus:ring-2 focus:ring-orange-200"
         />
       </label>
       <p className="mt-2 text-xs text-stone-500">
@@ -52,20 +61,26 @@ export function RynekHubWyszukiwarka({ wsie }: { wsie: WiesNaHubieRynku[] }) {
           <li key={w.id}>
             <Link
               href={w.sciezkaRynek}
-              className="block rounded-xl border border-stone-200/90 bg-white p-4 shadow-sm transition hover:border-orange-300 hover:shadow-md"
+              className="rynek-hub-wies-karta group block overflow-hidden rounded-2xl border border-stone-200/90 bg-white shadow-sm transition-all duration-200 hover:border-orange-300 hover:shadow-lg"
             >
-              <p className="font-semibold text-green-950">{w.name}</p>
-              <p className="mt-0.5 text-xs text-stone-600">
-                {w.commune} · {w.county}
-              </p>
-              {w.banner ? (
-                <p className="mt-2 line-clamp-2 rounded-lg bg-amber-50 px-2 py-1 text-[11px] font-medium text-amber-950">
-                  🌾 {w.banner}
+              <div className="bg-gradient-to-br from-orange-50/80 via-white to-emerald-50/40 px-4 py-3">
+                <p className="font-semibold text-green-950 group-hover:text-green-900">{w.name}</p>
+                <p className="mt-0.5 text-xs text-stone-600">
+                  {w.commune} · {w.county}
                 </p>
-              ) : null}
-              <p className="mt-2 text-xs font-semibold text-orange-900">
-                {w.liczbaOgloszen} {w.liczbaOgloszen === 1 ? "ogłoszenie" : w.liczbaOgloszen < 5 ? "ogłoszenia" : "ogłoszeń"} →
-              </p>
+              </div>
+              <div className="px-4 pb-4">
+                {w.banner ? (
+                  <p className="line-clamp-2 rounded-lg bg-amber-50 px-2 py-1 text-[11px] font-medium text-amber-950 ring-1 ring-amber-200/60">
+                    🌾 {w.banner}
+                  </p>
+                ) : null}
+                <p className={`text-xs font-bold text-orange-900 ${w.banner ? "mt-2" : "mt-0"}`}>
+                  <span className="inline-flex items-center gap-1 rounded-full bg-orange-100/80 px-2 py-0.5 transition group-hover:bg-orange-200/80">
+                    {w.liczbaOgloszen} {w.liczbaOgloszen === 1 ? "ogłoszenie" : w.liczbaOgloszen < 5 ? "ogłoszenia" : "ogłoszeń"} →
+                  </span>
+                </p>
+              </div>
             </Link>
           </li>
         ))}

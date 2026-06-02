@@ -2,7 +2,7 @@ import Link from "next/link";
 import { RynekUdostepnijPrzycisk } from "@/components/wies/rynek-udostepnij-przycisk";
 import { etykietaRodzajuWydarzenia } from "@/lib/wies/teksty-organizacji";
 import type { ProfilParafiiJson } from "@/lib/wies/profil-organizacji";
-import { ETYKIETY_DNI_INTENCJI } from "@/lib/wies/profil-organizacji";
+import { ParafiaIntencjeTygodnia } from "@/components/wies/organizacja/parafia-intencje-tygodnia";
 
 export type DaneParafiiPubliczne = {
   id: string;
@@ -57,6 +57,8 @@ export function KartaParafiiPubliczna({
   linkCmentarzNaMapie,
   linkPlanCmentarza,
   nadchodzaceWydarzenia = [],
+  trybOsadzony = false,
+  sciezkaPelnejStrony,
 }: {
   parafia: DaneParafiiPubliczne;
   sciezkaWydarzenia?: string;
@@ -65,18 +67,19 @@ export function KartaParafiiPubliczna({
   linkCmentarzNaMapie?: string | null;
   linkPlanCmentarza?: string | null;
   nadchodzaceWydarzenia?: WydarzenieParafialneSkrot[];
+  trybOsadzony?: boolean;
+  sciezkaPelnejStrony?: string;
 }) {
   const p = parafia.profil;
   const wwwHref = linkZTekstu(p?.strona_www);
   const fbHref = linkZTekstu(p?.facebook);
-  const kotwicaUdostepnij = sciezkaProfilu ? `${sciezkaProfilu}#parafia` : "#parafia";
+  const kotwicaUdostepnij =
+    sciezkaPelnejStrony ?? (sciezkaProfilu ? `${sciezkaProfilu}#parafia` : "#parafia");
 
-  return (
-    <section
-      id="parafia"
-      className="scroll-mt-24 rounded-2xl border border-violet-300/60 bg-gradient-to-br from-violet-50/80 via-white to-indigo-50/40 p-5 shadow-sm sm:p-6"
-    >
-      <div className="flex flex-wrap items-start justify-between gap-3">
+  const tresc = (
+    <>
+      {!trybOsadzony ? (
+        <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <p className="text-xs font-bold uppercase tracking-wider text-violet-800">Parafia / duszpasterstwo</p>
           <h2 className="mt-1 font-serif text-2xl text-violet-950">{parafia.name}</h2>
@@ -133,6 +136,18 @@ export function KartaParafiiPubliczna({
           ) : null}
         </div>
       </div>
+      ) : null}
+
+      {sciezkaPelnejStrony && !trybOsadzony ? (
+        <div className="mb-4 flex justify-end">
+          <Link
+            href={sciezkaPelnejStrony}
+            className="rounded-lg bg-violet-800 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-violet-900"
+          >
+            Pełna strona parafii →
+          </Link>
+        </div>
+      ) : null}
 
       {parafia.short_description ? (
         <p className="mt-4 text-sm leading-relaxed text-stone-700">{parafia.short_description}</p>
@@ -242,27 +257,8 @@ export function KartaParafiiPubliczna({
               <span aria-hidden>📋</span>
               Intencje mszalne — tydzień
             </h4>
-            <div className="mt-2 overflow-x-auto">
-              <table className="w-full min-w-[280px] text-left text-sm">
-                <thead>
-                  <tr className="text-xs text-stone-600">
-                    <th className="py-1 pr-3 font-medium">Dzień</th>
-                    <th className="py-1 pr-3 font-medium">Godz.</th>
-                    <th className="py-1 pr-3 font-medium">Intencja</th>
-                    <th className="py-1 font-medium">Celebrans</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {p.intencje_tygodniowe.map((w, i) => (
-                    <tr key={i} className="border-t border-violet-100/80 text-stone-700">
-                      <td className="py-1.5 pr-3 whitespace-nowrap">{ETYKIETY_DNI_INTENCJI[w.dzien]}</td>
-                      <td className="py-1.5 pr-3 whitespace-nowrap">{w.godzina || "—"}</td>
-                      <td className="py-1.5 pr-3">{w.intencja}</td>
-                      <td className="py-1.5 text-stone-600">{w.celebrans ?? "—"}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
+            <div className="mt-3">
+              <ParafiaIntencjeTygodnia intencje={p.intencje_tygodniowe} />
             </div>
           </div>
         ) : null}
@@ -333,6 +329,17 @@ export function KartaParafiiPubliczna({
           </Link>
         </p>
       ) : null}
+    </>
+  );
+
+  if (trybOsadzony) return <div className="min-w-0">{tresc}</div>;
+
+  return (
+    <section
+      id="parafia"
+      className="scroll-mt-24 rounded-2xl border border-violet-300/60 bg-gradient-to-br from-violet-50/80 via-white to-indigo-50/40 p-5 shadow-sm sm:p-6"
+    >
+      {tresc}
     </section>
   );
 }

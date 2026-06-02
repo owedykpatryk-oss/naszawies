@@ -3,6 +3,10 @@ import { RynekUdostepnijPrzycisk } from "@/components/wies/rynek-udostepnij-przy
 import { linkChroniony } from "@/lib/auth/sciezki-chronione";
 import { etykietaRodzajuWydarzenia } from "@/lib/wies/teksty-organizacji";
 import type { ProfilLowieckiJson } from "@/lib/wies/profil-organizacji";
+import {
+  ETYKIETA_RODZAJU_KALENDARZA,
+  type WpisKalendarzaLowieckiego,
+} from "@/lib/lowiectwo/kalendarz-lowiecki";
 
 export type DaneMysliwiPubliczne = {
   id: string;
@@ -65,6 +69,10 @@ export function KartaMysliwiPubliczna({
   sciezkaProfilu,
   zalogowany = false,
   nadchodzaceWydarzenia = [],
+  harmonogramLowiecki = [],
+  mieszkaniecWsi = false,
+  trybOsadzony = false,
+  sciezkaPelnejStrony,
 }: {
   kolo: DaneMysliwiPubliczne;
   maAktywneOstrzezenia?: boolean;
@@ -73,19 +81,22 @@ export function KartaMysliwiPubliczna({
   sciezkaProfilu?: string;
   zalogowany?: boolean;
   nadchodzaceWydarzenia?: WydarzenieLowieckieSkrot[];
+  harmonogramLowiecki?: WpisKalendarzaLowieckiego[];
+  mieszkaniecWsi?: boolean;
+  trybOsadzony?: boolean;
+  sciezkaPelnejStrony?: string;
 }) {
   const p = kolo.profil;
   const wwwHref = linkZTekstu(p?.strona_www);
   const fbHref = linkZTekstu(p?.facebook);
   const igHref = linkZTekstu(p?.instagram);
-  const kotwicaUdostepnij = sciezkaProfilu ? `${sciezkaProfilu}#mysliwi` : "#mysliwi";
+  const kotwicaUdostepnij =
+    sciezkaPelnejStrony ?? (sciezkaProfilu ? `${sciezkaProfilu}#mysliwi` : "#mysliwi");
 
-  return (
-    <section
-      id="mysliwi"
-      className="scroll-mt-24 rounded-2xl border border-emerald-800/30 bg-gradient-to-br from-emerald-50/70 via-white to-amber-50/40 p-5 shadow-sm sm:p-6"
-    >
-      <div className="flex flex-wrap items-start justify-between gap-3">
+  const tresc = (
+    <>
+      {!trybOsadzony ? (
+        <div className="flex flex-wrap items-start justify-between gap-3">
         <div>
           <p className="text-xs font-bold uppercase tracking-wider text-emerald-900">Koło łowieckie / myśliwi</p>
           <h2 className="mt-1 font-serif text-2xl text-emerald-950">{kolo.name}</h2>
@@ -162,6 +173,18 @@ export function KartaMysliwiPubliczna({
           ) : null}
         </div>
       </div>
+      ) : null}
+
+      {sciezkaPelnejStrony && !trybOsadzony ? (
+        <div className="mb-4 flex justify-end">
+          <Link
+            href={sciezkaPelnejStrony}
+            className="rounded-lg bg-emerald-900 px-4 py-2 text-sm font-semibold text-white shadow-sm hover:bg-emerald-950"
+          >
+            Pełna strona koła →
+          </Link>
+        </div>
+      ) : null}
 
       {maAktywneOstrzezenia ? (
         <div className="mt-4 rounded-lg border border-amber-400/70 bg-amber-100/80 px-3 py-2 text-sm text-amber-950">
@@ -259,6 +282,42 @@ export function KartaMysliwiPubliczna({
         ) : null}
       </div>
 
+      {harmonogramLowiecki.length > 0 ? (
+        <div className="mt-5">
+          <h3 className="text-xs font-semibold uppercase tracking-wide text-emerald-900">Kalendarz łowiecki</h3>
+          {!mieszkaniecWsi && zalogowany ? (
+            <p className="mt-1 text-xs text-amber-800">
+              Pełny plan ambony widzą mieszkańcy tej wsi po dołączeniu do społeczności.
+            </p>
+          ) : null}
+          {!zalogowany ? (
+            <p className="mt-1 text-xs text-stone-600">
+              Zaloguj się jako mieszkaniec wsi, aby zobaczyć kto jest przydzielony na ambony.
+            </p>
+          ) : null}
+          <ul className="mt-2 space-y-2">
+            {harmonogramLowiecki.slice(0, 8).map((w) => (
+              <li
+                key={w.id}
+                className="rounded-lg border border-amber-100 bg-white/80 px-3 py-2 text-sm"
+              >
+                <p className="font-medium text-stone-900">{w.title}</p>
+                <p className="mt-0.5 text-xs text-stone-600">
+                  {ETYKIETA_RODZAJU_KALENDARZA[w.entryKind]} ·{" "}
+                  {new Date(w.startsAt).toLocaleString("pl-PL", {
+                    dateStyle: "medium",
+                    timeStyle: "short",
+                  })}
+                  {w.entryKind === "obowiazek_ambony" && w.ambonaNazwa ? ` · ${w.ambonaNazwa}` : ""}
+                  {mieszkaniecWsi && w.hunterName ? ` · ${w.hunterName}` : ""}
+                  {mieszkaniecWsi && w.hunterPhone ? ` · ${w.hunterPhone}` : ""}
+                </p>
+              </li>
+            ))}
+          </ul>
+        </div>
+      ) : null}
+
       {nadchodzaceWydarzenia.length > 0 ? (
         <div className="mt-5">
           <h3 className="text-xs font-semibold uppercase tracking-wide text-emerald-900">Zbliżające się wydarzenia</h3>
@@ -301,6 +360,17 @@ export function KartaMysliwiPubliczna({
           </Link>
         ) : null}
       </div>
+    </>
+  );
+
+  if (trybOsadzony) return <div className="min-w-0">{tresc}</div>;
+
+  return (
+    <section
+      id="mysliwi"
+      className="scroll-mt-24 rounded-2xl border border-emerald-800/30 bg-gradient-to-br from-emerald-50/70 via-white to-amber-50/40 p-5 shadow-sm sm:p-6"
+    >
+      {tresc}
     </section>
   );
 }

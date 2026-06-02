@@ -1,8 +1,12 @@
 "use client";
 
 import { PresetyQrKlient } from "@/components/grafika/presety-qr-klient";
+import { SekcjaTlaGrafiki } from "@/components/grafika/sekcja-tla-grafiki";
+import { BannerPowiazaneSzablony } from "@/components/grafika/banner-powiazane-szablony";
+import { SekcjaPodobneSzablony } from "@/components/grafika/sekcja-podobne-szablony";
 import { MOTYWY_GRAFIKI } from "@/lib/grafika/motywy";
-import type { MotywGrafiki, ProfilWsiGrafiki, SzablonGrafiki } from "@/lib/grafika/typy";
+import { zbudujSugestieGrafiki } from "@/lib/grafika/sugestie-kontekstowe";
+import type { KontekstGrafiki, MotywGrafiki, ProfilWsiGrafiki, SzablonGrafiki } from "@/lib/grafika/typy";
 
 type Props = {
   szablon: SzablonGrafiki;
@@ -12,6 +16,7 @@ type Props = {
   tytulProjektu: string;
   logoDataUrl: string | null;
   backgroundDataUrl: string | null;
+  backgroundOverlay: number;
   qrUrl: string;
   sciezkaWsi: string;
   profilWsi: ProfilWsiGrafiki | null;
@@ -20,6 +25,8 @@ type Props = {
   villageId: string | null;
   oczekuje: boolean;
   maProfil: boolean;
+  wszystkieSzablony: SzablonGrafiki[];
+  kontekst: KontekstGrafiki;
   onPole: (id: string, v: string) => void;
   onTytulProjektu: (v: string) => void;
   onMotyw: (id: string) => void;
@@ -27,10 +34,14 @@ type Props = {
   onTlo: (e: React.ChangeEvent<HTMLInputElement>) => void;
   onUsunLogo: () => void;
   onUsunTlo: () => void;
+  onTloZProfilu: () => void;
+  onBackgroundOverlay: (v: number) => void;
   onQr: (v: string) => void;
   onWstawProfil: () => void;
   onPodpisCyfrowy: () => void;
   onLogoZProfilu: () => void;
+  onUstawDateSezonowa: () => void;
+  onWyborSzablon: (id: string) => void;
   onWstecz: () => void;
   onDalej: () => void;
 };
@@ -43,13 +54,17 @@ export function ZakladkaEdycjaGrafiki({
   tytulProjektu,
   logoDataUrl,
   backgroundDataUrl,
+  backgroundOverlay,
   qrUrl,
   sciezkaWsi,
+  profilWsi,
   toDyplom,
   trybSoltys,
   villageId,
   oczekuje,
   maProfil,
+  wszystkieSzablony,
+  kontekst,
   onPole,
   onTytulProjektu,
   onMotyw,
@@ -57,15 +72,23 @@ export function ZakladkaEdycjaGrafiki({
   onTlo,
   onUsunLogo,
   onUsunTlo,
+  onTloZProfilu,
+  onBackgroundOverlay,
   onQr,
   onWstawProfil,
   onPodpisCyfrowy,
   onLogoZProfilu,
+  onUstawDateSezonowa,
+  onWyborSzablon,
   onWstecz,
   onDalej,
 }: Props) {
+  const sugestie = zbudujSugestieGrafiki(szablon, kontekst);
+
   return (
     <section className="space-y-4">
+      <BannerPowiazaneSzablony szablonId={szablon.id} onWybor={onWyborSzablon} />
+
       <div className="rounded-2xl border border-stone-200 bg-white p-4 shadow-sm sm:p-5">
         <h2 className="font-serif text-lg text-green-950">Treść</h2>
         <p className="mt-1 text-sm text-stone-600">
@@ -90,6 +113,46 @@ export function ZakladkaEdycjaGrafiki({
                 Podpis elektroniczny sołtysa
               </button>
             ) : null}
+            <button
+              type="button"
+              onClick={onUstawDateSezonowa}
+              className="rounded-lg border border-sky-700 bg-sky-50 px-3 py-2 text-sm text-sky-950 hover:bg-sky-100"
+            >
+              Ustaw datę sezonową
+            </button>
+          </div>
+        ) : (
+          <div className="mt-3">
+            <button
+              type="button"
+              onClick={onUstawDateSezonowa}
+              className="rounded-lg border border-sky-700 bg-sky-50 px-3 py-2 text-sm text-sky-950 hover:bg-sky-100"
+            >
+              Ustaw datę sezonową
+            </button>
+          </div>
+        )}
+
+        {sugestie.length > 0 ? (
+          <div className="mt-4 space-y-2 rounded-xl border border-sky-100 bg-sky-50/50 p-3">
+            <p className="text-xs font-semibold text-sky-900">Szybkie wstawki — kliknij chip</p>
+            {sugestie.map((grupa) => (
+              <div key={grupa.grupa}>
+                <p className="text-[10px] font-medium uppercase tracking-wide text-sky-800/70">{grupa.grupa}</p>
+                <div className="mt-1 flex flex-wrap gap-1.5">
+                  {grupa.sugestie.map((s) => (
+                    <button
+                      key={s.id}
+                      type="button"
+                      onClick={() => onPole(s.poleDocelowe, s.wartosc)}
+                      className="rounded-full border border-sky-200 bg-white px-2.5 py-1 text-[11px] font-medium text-sky-950 hover:bg-sky-100"
+                    >
+                      {s.etykieta}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            ))}
           </div>
         ) : null}
 
@@ -128,6 +191,13 @@ export function ZakladkaEdycjaGrafiki({
         </div>
       </div>
 
+      <SekcjaPodobneSzablony
+        biezacy={szablon}
+        wszystkie={wszystkieSzablony}
+        kontekst={kontekst}
+        onWybor={onWyborSzablon}
+      />
+
       <div className="rounded-2xl border border-stone-200 bg-white p-4 shadow-sm sm:p-5">
         <h2 className="font-serif text-lg text-green-950">Wygląd</h2>
         <p className="mt-1 text-sm text-stone-600">Kolor i opcjonalnie logo, tło, kod QR.</p>
@@ -152,8 +222,23 @@ export function ZakladkaEdycjaGrafiki({
           <p className="mt-1 text-xs text-stone-500">Wybrany: {motyw.nazwa}</p>
         </div>
 
-        <details className="mt-5 rounded-lg border border-stone-200 bg-stone-50/80 px-3 py-2" open>
-          <summary className="cursor-pointer text-sm font-medium text-stone-800">Logo, tło, QR (opcjonalnie)</summary>
+        <div className="mt-5">
+          <SekcjaTlaGrafiki
+            backgroundDataUrl={backgroundDataUrl}
+            backgroundOverlay={backgroundOverlay}
+            villageId={villageId}
+            trybSoltys={trybSoltys}
+            maOkladkeWsi={Boolean(profilWsi?.zdjecieTloUrl)}
+            oczekuje={oczekuje}
+            onTlo={onTlo}
+            onUsunTlo={onUsunTlo}
+            onTloZProfilu={onTloZProfilu}
+            onOverlay={onBackgroundOverlay}
+          />
+        </div>
+
+        <details className="mt-5 rounded-lg border border-stone-200 bg-stone-50/80 px-3 py-2">
+          <summary className="cursor-pointer text-sm font-medium text-stone-800">Logo i kod QR (opcjonalnie)</summary>
           <div className="mt-3 space-y-3 pb-2 text-sm">
             <label className="block">
               <span className="text-stone-700">Logo / herb (max 2 MB)</span>
@@ -174,15 +259,6 @@ export function ZakladkaEdycjaGrafiki({
               {logoDataUrl ? (
                 <button type="button" onClick={onUsunLogo} className="mt-1 text-xs text-red-700 underline">
                   Usuń logo
-                </button>
-              ) : null}
-            </label>
-            <label className="block">
-              <span className="text-stone-700">Własne tło (zdjęcie)</span>
-              <input type="file" accept="image/*" onChange={onTlo} className="mt-1 block w-full text-xs" />
-              {backgroundDataUrl ? (
-                <button type="button" onClick={onUsunTlo} className="mt-1 text-xs text-red-700 underline">
-                  Usuń tło
                 </button>
               ) : null}
             </label>

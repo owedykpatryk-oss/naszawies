@@ -761,6 +761,27 @@ html.tryb-senior textarea {
     @apply border-orange-300/70;
   }
 
+  .rynek-paczka-wow {
+    @apply transition-[transform,box-shadow,border-color] duration-200;
+  }
+
+  .rynek-paczka-wow:hover {
+    transform: translateY(-2px);
+  }
+
+  .rynek-paczki-scroll {
+    scrollbar-width: thin;
+    scrollbar-color: rgba(194, 65, 12, 0.25) transparent;
+  }
+
+  .rynek-hub-wies-karta:hover .rynek-hub-wies-karta__gradient {
+    opacity: 1;
+  }
+
+  .animate-rynek-fade-up {
+    animation: rynek-fade-up 0.45s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
   .tablica-szkoly-pasek {
     @apply rounded-xl border border-sky-200/70 bg-gradient-to-br from-sky-50/90 via-white to-white p-3 shadow-sm sm:p-4;
   }
@@ -877,6 +898,17 @@ html.tryb-senior textarea {
   }
 }
 
+@keyframes rynek-fade-up {
+  from {
+    opacity: 0;
+    transform: translateY(14px) scale(0.98);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+  }
+}
+
 .ujawnij-scroll {
   opacity: 0;
   transform: translateY(12px);
@@ -892,6 +924,56 @@ html.tryb-senior textarea {
 
 .profil-wies-motyw .powitanie-profilu-wies {
   animation: wow-wejscie 0.65s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.wies-okladka-hero {
+  isolation: isolate;
+}
+
+.wies-okladka-hero__img {
+  animation: wiesKenBurns 24s ease-in-out infinite alternate;
+  will-change: transform;
+}
+
+.wies-okladka-hero__overlay {
+  background: linear-gradient(
+    to top,
+    rgba(21, 32, 18, 0.45) 0%,
+    rgba(21, 32, 18, 0.08) 45%,
+    transparent 72%
+  );
+  z-index: 1;
+}
+
+.wies-okladka-hero__shine {
+  z-index: 2;
+  background: linear-gradient(
+    125deg,
+    transparent 38%,
+    rgba(255, 255, 255, 0.22) 50%,
+    transparent 62%
+  );
+  animation: wiesOkladkaPolysk 5s ease-in-out infinite;
+  opacity: 0.5;
+}
+
+@keyframes wiesKenBurns {
+  from {
+    transform: scale(1);
+  }
+  to {
+    transform: scale(1.08);
+  }
+}
+
+@keyframes wiesOkladkaPolysk {
+  0%,
+  100% {
+    opacity: 0.35;
+  }
+  50% {
+    opacity: 0.65;
+  }
 }
 
 .spolecznosc-puls {
@@ -948,12 +1030,58 @@ html.tryb-senior textarea {
     animation: none;
   }
 
+  .wies-okladka-hero__img,
+  .wies-okladka-hero__shine {
+    animation: none;
+  }
+
   .karta-wow:hover,
   .panel-karta:hover,
   .karta-akcji:hover,
   .karta-skrot-modulu:hover,
   .kpi-kafel:hover {
     transform: none;
+  }
+}
+
+/* Kreator grafiki — podgląd na żywo i sekcje WOW */
+@keyframes kreatorPodgladPuls {
+  0%,
+  100% {
+    opacity: 1;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.55;
+    transform: scale(0.85);
+  }
+}
+
+.kreator-podglad-puls {
+  animation: kreatorPodgladPuls 2s ease-in-out infinite;
+}
+
+.kreator-podglad-ramka {
+  transition: box-shadow 0.35s ease, border-color 0.35s ease;
+}
+
+.kreator-podglad-ramka:hover {
+  box-shadow: 0 8px 32px rgba(22, 101, 52, 0.12);
+  border-color: rgba(22, 101, 52, 0.25);
+}
+
+.kreator-wow-sekcja::before {
+  content: "";
+  pointer-events: none;
+  position: absolute;
+  inset: -40% -20% auto;
+  height: 60%;
+  background: radial-gradient(ellipse at 30% 20%, rgba(139, 92, 246, 0.08), transparent 65%);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .kreator-podglad-puls {
+    animation: none;
   }
 }
 

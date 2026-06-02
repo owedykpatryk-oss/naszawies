@@ -14,7 +14,10 @@ import { czyKategoriaNieruchomosci } from "@/lib/marketplace/nieruchomosci";
 import { obliczJakoscZOfertyPublicznej } from "@/lib/marketplace/jakosc-ogloszenia";
 import type { ZaufanieSprzedawcy } from "@/lib/marketplace/zaufanie-sprzedawcy";
 import { filtryRynkuZUrl, urlZFiltramiRynku } from "@/lib/marketplace/filtry-url";
+import type { PaczkaRynek } from "@/lib/marketplace/paczki-szybkie-rynek";
+import { PACZKI_SZYBKIE_RYNKU } from "@/lib/marketplace/paczki-szybkie-rynek";
 import { RynekSubskrypcjaKategorii } from "@/components/wies/rynek-subskrypcja-kategorii";
+import { czyPaczkaAktywna, RynekPaczkiSzybkie } from "@/components/wies/rynek-paczki-szybkie";
 import {
   KartaOgloszeniaRynek,
   PasekAkcjiRynku,
@@ -156,7 +159,9 @@ export function MarketplaceListaKlient({
   const [kategoria, setKategoria] = useState("wszystkie");
   const [tylkoZOperatorem, setTylkoZOperatorem] = useState(false);
   const [tylkoProduktyLokalne, setTylkoProduktyLokalne] = useState(false);
-  const [sortowanie, setSortowanie] = useState<"najnowsze" | "najstarsze" | "polecane">("najnowsze");
+  const [sortowanie, setSortowanie] = useState<
+    "najnowsze" | "najstarsze" | "polecane" | "popularne" | "cena-rosnaco" | "cena-malejaco"
+  >("najnowsze");
   const [tylkoZweryfikowane, setTylkoZweryfikowane] = useState(false);
   const [tylkoNieruchomosci, setTylkoNieruchomosci] = useState(false);
   const [tylkoZMapaGeoportal, setTylkoZMapaGeoportal] = useState(false);
@@ -304,6 +309,52 @@ export function MarketplaceListaKlient({
     setSortowanie("najnowsze");
   };
 
+  const stanPaczki = useMemo(
+    () => ({
+      kategoria,
+      tylkoNieruchomosci,
+      tylkoProduktyLokalne,
+      tylkoZMapaGeoportal,
+      typ,
+      tylkoZOperatorem,
+    }),
+    [kategoria, tylkoNieruchomosci, tylkoProduktyLokalne, tylkoZMapaGeoportal, typ, tylkoZOperatorem],
+  );
+
+  const aktywnaPaczka = useMemo(
+    () => PACZKI_SZYBKIE_RYNKU.find((p) => czyPaczkaAktywna(p.akcja, stanPaczki))?.id ?? null,
+    [stanPaczki],
+  );
+
+  const zastosujPaczke = useCallback(
+    (p: PaczkaRynek) => {
+      const aktywna = czyPaczkaAktywna(p.akcja, stanPaczki);
+      switch (p.akcja.typ) {
+        case "kategoria":
+          setKategoria(aktywna ? "wszystkie" : p.akcja.value);
+          setTylkoNieruchomosci(false);
+          break;
+        case "nieruchomosci":
+          setTylkoNieruchomosci(!aktywna);
+          if (!aktywna) setKategoria("wszystkie");
+          break;
+        case "lokalne":
+          setTylkoProduktyLokalne(!aktywna);
+          break;
+        case "geoportal":
+          setTylkoZMapaGeoportal(!aktywna);
+          break;
+        case "oddam":
+          setTyp(aktywna ? "wszystkie" : "oddam");
+          break;
+        case "operator":
+          setTylkoZOperatorem(!aktywna);
+          break;
+      }
+    },
+    [stanPaczki],
+  );
+
   const przefiltrowane = useMemo(() => {
     const q = fraza.trim().toLowerCase();
     const minPow = parsujLiczbe(minM2);
@@ -328,6 +379,20 @@ export function MarketplaceListaKlient({
       return haystack.includes(q);
     });
     rows = [...rows].sort((a, b) => {
+      if (sortowanie === "cena-rosnaco" || sortowanie === "cena-malejaco") {
+        const va = a.price_amount;
+        const vb = b.price_amount;
+        if (va != null && vb != null && va !== vb) {
+          return sortowanie === "cena-rosnaco" ? va - vb : vb - va;
+        }
+        if (va != null && vb == null) return -1;
+        if (va == null && vb != null) return 1;
+      }
+      if (sortowanie === "popularne") {
+        const va = a.view_count ?? 0;
+        const vb = b.view_count ?? 0;
+        if (vb !== va) return vb - va;
+      }
       if (sortowanie === "polecane") {
         const va = a.seller_verified ? 1 : 0;
         const vb = b.seller_verified ? 1 : 0;
@@ -513,6 +578,13 @@ export function MarketplaceListaKlient({
         />
       ) : null}
 
+      {uklad === "pelny" ? (
+        <div className="space-y-2">
+          <p className="text-xs font-semibold uppercase tracking-wider text-stone-500">Szybki wybór</p>
+          <RynekPaczkiSzybkie aktywnaPaczka={aktywnaPaczka} onWybor={zastosujPaczke} />
+        </div>
+      ) : null}
+
       <div className="sticky z-30 space-y-2 rounded-2xl border border-stone-200/90 bg-[#f5f1e8]/95 p-2.5 shadow-sm backdrop-blur-md sm:p-3 [top:var(--sticky-nav-offset)]">
         {chipyKategorii}
         <div className="flex flex-wrap items-center gap-2">
@@ -524,12 +596,25 @@ export function MarketplaceListaKlient({
           />
           <select
             value={sortowanie}
-            onChange={(e) => setSortowanie(e.target.value as "najnowsze" | "najstarsze" | "polecane")}
+            onChange={(e) =>
+              setSortowanie(
+                e.target.value as
+                  | "najnowsze"
+                  | "najstarsze"
+                  | "polecane"
+                  | "popularne"
+                  | "cena-rosnaco"
+                  | "cena-malejaco",
+              )
+            }
             className="rounded-xl border border-stone-200 bg-white px-2 py-1.5 text-xs font-medium text-stone-800"
             aria-label="Sortowanie ogłoszeń"
           >
             <option value="najnowsze">Najnowsze</option>
+            <option value="popularne">Popularne</option>
             <option value="polecane">Polecane</option>
+            <option value="cena-rosnaco">Cena ↑</option>
+            <option value="cena-malejaco">Cena ↓</option>
             <option value="najstarsze">Najstarsze</option>
           </select>
           <button
@@ -636,11 +721,24 @@ export function MarketplaceListaKlient({
               </select>
               <select
                 value={sortowanie}
-                onChange={(e) => setSortowanie(e.target.value as "najnowsze" | "najstarsze" | "polecane")}
+                onChange={(e) =>
+                  setSortowanie(
+                    e.target.value as
+                      | "najnowsze"
+                      | "najstarsze"
+                      | "polecane"
+                      | "popularne"
+                      | "cena-rosnaco"
+                      | "cena-malejaco",
+                  )
+                }
                 className="rounded-xl border border-stone-300 bg-white px-3 py-2 text-sm"
               >
                 <option value="najnowsze">Najnowsze</option>
+                <option value="popularne">Popularne (wyświetlenia)</option>
                 <option value="polecane">Polecane (jakość + zweryfikowane)</option>
+                <option value="cena-rosnaco">Cena rosnąco</option>
+                <option value="cena-malejaco">Cena malejąco</option>
                 <option value="najstarsze">Najstarsze</option>
               </select>
             </div>

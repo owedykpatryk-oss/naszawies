@@ -127,7 +127,7 @@ export async function middleware(request: NextRequest) {
     const apiGusGet =
       request.method === "GET" &&
       (sciezka.startsWith("/api/gus/") ||
-        (sciezka.startsWith("/api/wies/") && sciezka.includes("/rolnictwo")));
+        (sciezka.startsWith("/api/wies/") && (sciezka.includes("/rolnictwo") || sciezka.includes("/ceny-okolicy"))));
     if (!apiGusGet) {
       const limit = await sprawdzLimitApi("api_publiczne", ip);
       if (!limit.ok) {

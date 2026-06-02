@@ -108,11 +108,27 @@ export const PRZEWODNIKI: Record<RolaPrzewodnika, SekcjaPrzewodnika[]> = {
           tytul: "Link z filtrami",
           opis: "Adres URL zapamiętuje filtry (woj, powiat, gmina, warstwa) — możesz wysłać link sąsiadowi lub sołtysowi.",
         },
+        {
+          tytul: "Warstwa Łowiectwo",
+          opis: "Przełącznik 🦌 Łowiectwo: polowania, koła, tereny łowieckie (🌲). Ambony i posterunki — dla większości użytkowników strefa ~500 m; członkowie wsi widzą dokładną pinezkę.",
+          link: { href: "/mapa?warstwa=lowiectwo", label: "Mapa — łowiectwo" },
+        },
+        {
+          tytul: "POI: teren vs ambona",
+          opis: "Sołtys w Mapie POI może dodać „Teren łowiecki” (publiczny obszar) oraz „Ambonę” / „Posterunek” — te drugie na mapie katalogu są zawsze z zabezpieczeniem lokalizacji.",
+          link: { href: "/panel/soltys/mapa", label: "Edytor mapy sołtysa" },
+        },
+        {
+          tytul: "Obrys powiatu",
+          opis: "Po wyborze powiatu włącz „Obrys powiatu” — fioletowa otulina z granic wsi w katalogu (orientacyjnie, nie granica urzędowa TERYT).",
+          link: { href: "/mapa?powiat_obrys=1", label: "Podpowiedź obrysu" },
+        },
       ],
       wskazowki: [
         "Sołtys uzupełnia brakujące pinezki w Panel → Mapa POI; część punktów importuje się z OpenStreetMap (w tym budowy oznaczone w OSM).",
         "Inwestycje: status planowana / w budowie, termin i link do BIP gminy — widoczne na mapie z animowaną pinezką 🏗.",
         "Transport na mapie: filtr „Transport” pokazuje przystanki i stacje powiązane z wsią.",
+        "Polowania: czerwony pulsujący obszar = trwa teraz; pomarańczowy przerywany = zaplanowane (lista z odliczaniem w panelu filtrów).",
       ],
     },
     {
@@ -216,9 +232,10 @@ export const PRZEWODNIKI: Record<RolaPrzewodnika, SekcjaPrzewodnika[]> = {
           link: { href: "/panel/soltys/rezerwacje", label: "Rezerwacje" },
         },
         {
-          tytul: "Ostrzeżenia o polowaniu",
-          opis: "Podaj rejon i termin (od–do) — mieszkańcy zobaczą alert na profilu wsi i w kalendarzu.",
-          link: { href: "/panel/soltys/lowiectwo", label: "Polowania" },
+          tytul: "Kalendarz łowiecki i polowania",
+          opis:
+            "Kalendarz: kto na ambony, zebrania, polowania zbiorowe. Ostrzeżenia na mapie: rejon i termin — alert na profilu wsi.",
+          link: { href: "/panel/soltys/lowiectwo/kalendarz", label: "Kalendarz łowiecki" },
         },
         {
           tytul: "Mapowanie stacji PKP",
@@ -313,6 +330,11 @@ export const PRZEWODNIKI: Record<RolaPrzewodnika, SekcjaPrzewodnika[]> = {
           tytul: "Obszar na mapie",
           opis: "W panelu Polowania zaznacz prostokąt (2 kliknięcia) lub wielokąt; możesz też użyć obrysu całej wsi. Termin ustawisz skrótem (dziś, jutro, weekend).",
           link: { href: "/panel/soltys/lowiectwo", label: "Panel — polowania" },
+        },
+        {
+          tytul: "Mapa katalogu — warstwa Łowiectwo",
+          opis: "Na /mapa widać polowania w regionie, koła łowieckie (🦌) i link do obszaru. Udostępnij adres z ?warstwa=lowiectwo.",
+          link: { href: "/mapa?warstwa=lowiectwo", label: "Mapa — łowiectwo" },
         },
         {
           tytul: "Opis tekstowy",

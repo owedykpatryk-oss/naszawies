@@ -18,6 +18,7 @@ import {
   type OrganizacjaPelna,
   type ProfilOspJson,
 } from "@/lib/wies/profil-organizacji";
+import { PolaOkladkiOrganizacji } from "@/components/panel/soltys/pola-okladki-organizacji";
 
 const SZABLONY_CWICZEN = [
   { etykieta: "Co tydzień", tekst: "Ćwiczenia: każda sobota, godz. 10:00 — remiza OSP." },
@@ -279,6 +280,7 @@ export function ProfilOspKlient({
 
         <PolaOsp
           key={edytowana?.id ?? "nowa"}
+          villageId={villageId}
           domyslne={{
             name: edytowana?.name ?? `OSP ${villageName}`,
             short_description: edytowana?.short_description ?? null,
@@ -338,6 +340,7 @@ function SzablonyPola({
 
 function PolaOsp({
   domyslne,
+  villageId,
 }: {
   domyslne: {
     name: string;
@@ -348,6 +351,7 @@ function PolaOsp({
     schedule_text: string | null;
     profil: ProfilOspJson | null;
   };
+  villageId: string;
 }) {
   const p = domyslne.profil;
   const refCwiczenia = useRef<HTMLTextAreaElement>(null);
@@ -365,6 +369,7 @@ function PolaOsp({
             className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
           />
         </label>
+        <PolaOkladkiOrganizacji prefix="osp" villageId={villageId} okladkaUrl={p?.okladka_url} haslo={p?.haslo} />
         <label className="block text-sm">
           <span className="font-medium text-stone-800">Naczelnik</span>
           <input

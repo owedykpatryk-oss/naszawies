@@ -1,5 +1,7 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { sciezkaProfiluWsi } from "@/lib/wies/sciezka-publiczna";
+import { ETYKIETA_RODZAJU_KALENDARZA } from "@/lib/lowiectwo/kalendarz-lowiecki";
+import type { RodzajWpisuKalendarzaLowieckiego } from "@/lib/lowiectwo/kalendarz-lowiecki";
 import { rozwinHarmonogramTygodniowy } from "./rozwin-harmonogram";
 import type { WpisKalendarza } from "./typy-kalendarza";
 
@@ -64,6 +66,7 @@ export async function pobierzKalendarzSoltysa(
     { data: zadania },
     { data: posty },
     { data: lowiectwo },
+    { data: harmonogramLow },
   ] = await Promise.all([
     supabase
       .from("village_community_events")
@@ -128,6 +131,13 @@ export async function pobierzKalendarzSoltysa(
       .eq("status", "approved")
       .gte("ends_at", odIso)
       .lte("starts_at", doIso),
+    supabase
+      .from("village_hunting_schedule_entries")
+      .select("id, village_id, entry_kind, title, starts_at, ends_at, hunter_name, stand_label, pois(name)")
+      .in("village_id", villageIds)
+      .gte("ends_at", odIso)
+      .lte("starts_at", doIso)
+      .order("starts_at", { ascending: true }),
   ]);
 
   const nazwaSali: Record<string, string> = {};
@@ -255,6 +265,31 @@ export async function pobierzKalendarzSoltysa(
       opis: h.area_description,
       href: "/panel/soltys/lowiectwo",
       pilne: true,
+    });
+  }
+
+  for (const row of harmonogramLow ?? []) {
+    const kind = row.entry_kind as RodzajWpisuKalendarzaLowieckiego;
+    const pois = row.pois as { name?: string } | { name?: string }[] | null;
+    const p = Array.isArray(pois) ? pois[0] : pois;
+    const ambona = p?.name?.trim() || row.stand_label || null;
+    const opisParts = [
+      ETYKIETA_RODZAJU_KALENDARZA[kind] ?? kind,
+      ambona ? `Stanowisko: ${ambona}` : null,
+      row.hunter_name ? `Osoba: ${row.hunter_name}` : null,
+    ].filter(Boolean);
+    wpisy.push({
+      id: `harm-low-${row.id}`,
+      rodzaj: "harmonogram_lowiecki",
+      tytul: row.title,
+      start: row.starts_at,
+      end: row.ends_at,
+      calodniowe: false,
+      wiesId: row.village_id,
+      wiesNazwa: nazwyWsi[row.village_id] ?? "—",
+      opis: opisParts.join(" · "),
+      href: "/panel/soltys/lowiectwo/kalendarz",
+      pilne: kind === "obowiazek_ambony",
     });
   }
 

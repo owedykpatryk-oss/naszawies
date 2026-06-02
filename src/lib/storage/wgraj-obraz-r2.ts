@@ -20,6 +20,7 @@ import {
 } from "@/lib/panel/rola-panelu-soltysa";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
 import { czyBuforZgodnyZMimeObrazu } from "@/lib/storage/waliduj-magic-bytes-obrazu";
+import { przyciajObrazDoOkladki16x9 } from "@/lib/storage/przyciaj-obraz-okladki";
 import { pobierzUzytkownikaDoAkcji } from "@/lib/auth/pobierz-uzytkownika-serwer";
 
 const uuid = z.string().uuid();
@@ -231,7 +232,7 @@ export async function wgrajObrazDoMagazynuR2(formData: FormData): Promise<WynikW
     }
     const podkatalog = String(formData.get("podkatalog") ?? "poi").replace(/[^a-z0-9_-]/gi, "") || "poi";
     const vidsSoltys = await pobierzVillageIdsRoliPaneluSoltysaDlaUzytkownikaCache(user.id);
-    if (podkatalog === "poi" || podkatalog === "ladne" || podkatalog === "branding" || podkatalog === "historia") {
+    if (podkatalog === "poi" || podkatalog === "ladne" || podkatalog === "branding" || podkatalog === "historia" || podkatalog === "organizacje") {
       if (!vidsSoltys.includes(villageId)) {
         return { blad: "Tylko sołtys może wgrywać zdjęcia tej wsi." };
       }
@@ -248,9 +249,27 @@ export async function wgrajObrazDoMagazynuR2(formData: FormData): Promise<WynikW
         return { blad: "Brak aktywnej roli we wsi." };
       }
     }
-    const ext = plik.type === "image/png" ? "png" : plik.type === "image/webp" ? "webp" : "jpg";
+    let mimeWgrywki = plik.type;
+    let buforWgrywki: Buffer = buf;
+    if (podkatalog === "organizacje") {
+      const przetworzony = await przyciajObrazDoOkladki16x9(buf, plik.type);
+      buforWgrywki = Buffer.from(przetworzony.buf);
+      mimeWgrywki = przetworzony.mime;
+    }
+    const ext =
+      podkatalog === "organizacje"
+        ? mimeWgrywki === "image/png"
+          ? "png"
+          : mimeWgrywki === "image/webp"
+            ? "webp"
+            : "jpg"
+        : plik.type === "image/png"
+          ? "png"
+          : plik.type === "image/webp"
+            ? "webp"
+            : "jpg";
     const klucz = `${villageId}/${podkatalog}/${crypto.randomUUID()}.${ext}`;
-    const w = await wgrajBuforDoR2(R2_BUCKET_VILLAGE_PHOTOS, klucz, buf, plik.type);
+    const w = await wgrajBuforDoR2(R2_BUCKET_VILLAGE_PHOTOS, klucz, buforWgrywki, mimeWgrywki);
     if (!w.ok) return { blad: w.blad };
     const publicUrl = zbudujPublicznyUrlObiektuR2(R2_BUCKET_VILLAGE_PHOTOS, klucz);
     if (!publicUrl) return { blad: "Nie udało się zbudować publicznego adresu pliku." };

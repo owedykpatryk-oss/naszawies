@@ -506,6 +506,7 @@ export type GrupaWiejska =
   | "sponsor"
   | "rada"
   | "szkola"
+  | "dyplomy"
   | "mix"
   | "wszystkie";
 
@@ -520,6 +521,7 @@ export const ETYKIETY_GRUP: Record<GrupaWiejska, string> = {
   sponsor: "Sponsorzy",
   rada: "Rada sołecka",
   szkola: "Szkoła / biblioteka",
+  dyplomy: "Dyplomy i certyfikaty",
   mix: "Wspólne akcje",
 };
 
@@ -533,6 +535,9 @@ export function tagiDoGrupy(tag: string[]): GrupaWiejska {
   if (tag.includes("sponsor")) return "sponsor";
   if (tag.includes("rada")) return "rada";
   if (tag.includes("szkoła") || tag.includes("biblioteka")) return "szkola";
+  if (tag.includes("dzieci") || tag.includes("Dzień Dziecka")) return "szkola";
+  if (tag.includes("świetlica") || tag.includes("regulamin")) return "mix";
+  if (tag.includes("fundusz") || tag.includes("zebranie") || tag.includes("informacja")) return "rada";
   if (tag.includes("mix")) return "mix";
   return "wszystkie";
 }

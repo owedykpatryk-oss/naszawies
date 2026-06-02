@@ -2,6 +2,9 @@ import type { KontekstGrafiki, SzablonGrafiki, WartosciPolGrafiki } from "./typy
 import { SZABLONY_SEZONOWE } from "./szablony-sezonowe";
 import { SZABLONY_GRUP_WIEJSKICH } from "./szablony-grupy-wiejskie";
 import { SZABLONY_DWujezyczne } from "./szablony-dwujezyczne";
+import { SZABLONY_DYPLOMY_ROZSZERZONE } from "./szablony-dyplomy-rozszerzone";
+import { SZABLONY_SWIETLICA_DZIECI } from "./szablony-swietlica-dzieci";
+import { SZABLONY_SOLECTWO_ROZSZERZONE } from "./szablony-solectwo-rozszerzone";
 
 const polaZaproszenie = [
   { id: "naglowek", etykieta: "Nagłówek", typ: "text" as const, domysl: "Serdecznie zapraszamy" },
@@ -166,7 +169,7 @@ export const SZABLONY_GRAFIKI: SzablonGrafiki[] = [
     kategoria: "dyplomy",
     tytul: "Dyplom za zasługi OSP",
     opis: "Podziękowanie dla strażaka lub współpracownika.",
-    layout: "dyplom-klasyczny",
+    layout: "dyplom-medal",
     format: "a4",
     orientacja: "poziom",
     pola: [
@@ -314,6 +317,9 @@ export const SZABLONY_GRAFIKI: SzablonGrafiki[] = [
   ...SZABLONY_SEZONOWE,
   ...SZABLONY_GRUP_WIEJSKICH,
   ...SZABLONY_DWujezyczne,
+  ...SZABLONY_DYPLOMY_ROZSZERZONE,
+  ...SZABLONY_SWIETLICA_DZIECI,
+  ...SZABLONY_SOLECTWO_ROZSZERZONE,
 ];
 
 export const ETYKIETY_KATEGORII: Record<string, string> = {

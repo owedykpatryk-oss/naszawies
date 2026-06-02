@@ -13,6 +13,11 @@ import {
 } from "@/app/(site)/panel/soltys/akcje-edytor-mapy-soltysa";
 import { KATEGORIE_PROPONOWALNE_POI } from "@/lib/mapa/kategorie-poi-bazowe";
 import {
+  KATEGORIA_AMBONA,
+  KATEGORIA_POSTERUNEK,
+  KATEGORIA_TEREN_LOWIECKI,
+} from "@/lib/mapa/poi-lowieckie-widocznosc";
+import {
   ETYKIETA_STATUSU_INWESTYCJI,
   KATEGORIA_INWESTYCJA,
   STATUSY_INWESTYCJI,
@@ -440,6 +445,19 @@ export function EdytorMapyPoiSoltys({ wsie, poisByVillage }: Props) {
                 ))}
               </select>
             </label>
+            {kategoria === KATEGORIA_TEREN_LOWIECKI ? (
+              <p className="rounded-lg border border-green-200 bg-green-50/80 px-2 py-1.5 text-xs text-green-950">
+                Teren łowiecki — widoczny dla wszystkich jako <strong>obszar orientacyjny</strong> (zielone kółko na
+                mapie). Nie podawaj dokładnej ambony w tej kategorii.
+              </p>
+            ) : null}
+            {kategoria === KATEGORIA_AMBONA || kategoria === KATEGORIA_POSTERUNEK ? (
+              <p className="rounded-lg border border-amber-200 bg-amber-50/90 px-2 py-1.5 text-xs text-amber-950">
+                Ambona / posterunek: na publicznej mapie katalogu większość osób zobaczy tylko{" "}
+                <strong>strefę ~500 m</strong>. Dokładną pinezkę widzą członkowie tej wsi w serwisie — nie publikuj
+                współrzędnych w mediach społecznościowych.
+              </p>
+            ) : null}
             <label className="block">
               Nazwa *
               <input
@@ -450,7 +468,13 @@ export function EdytorMapyPoiSoltys({ wsie, poisByVillage }: Props) {
                     ? "np. Przystanek — centrum"
                     : kategoria === KATEGORIA_INWESTYCJA
                       ? "np. Rozbudowa świetlicy, droga do…"
-                      : "Nazwa miejsca"
+                      : kategoria === KATEGORIA_TEREN_LOWIECKI
+                        ? "np. Las za wieś — rewir X"
+                        : kategoria === KATEGORIA_AMBONA
+                          ? "np. Ambona — północny bór"
+                          : kategoria === KATEGORIA_POSTERUNEK
+                            ? "np. Posterunek — droga leśna"
+                            : "Nazwa miejsca"
                 }
                 maxLength={120}
                 className="mt-1 w-full rounded-lg border border-stone-300 px-2 py-1.5"

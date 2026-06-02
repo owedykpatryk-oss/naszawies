@@ -17,7 +17,7 @@ export const ETYKIETA_SEGMENTU_PANELU: Record<string, string> = {
   przypomnienia: "Przypomnienia",
   "profil-rynek": "Profil sprzedawcy",
   "lista-zakupow": "Lista zakupów",
-  "rolnictwo-ceny": "Ceny skupu",
+  "rolnictwo-ceny": "Ceny w okolicy",
   swietlica: "Świetlica",
   grafika: "Kreator grafiki",
   zgloszenia: "Zgłoszenia",

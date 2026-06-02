@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { metaOrganizacjiZFormularza, schemaMetaProfiluOrganizacji } from "@/lib/wies/profil-organizacji-meta";
 
 /** Wspólny typ organizacji z pełnymi danymi (panel sołtysa). */
 export type OrganizacjaPelna = {
@@ -43,7 +44,7 @@ export const schemaProfilParafii = z.object({
     .optional(),
   info_cmentarz: z.string().trim().max(600).nullable().optional(),
   uwagi: z.string().trim().max(800).nullable().optional(),
-});
+}).merge(schemaMetaProfiluOrganizacji);
 
 export type ProfilParafiiJson = z.infer<typeof schemaProfilParafii>;
 
@@ -112,6 +113,7 @@ export function profilParafiiZFormularza(fd: FormData): ProfilParafiiJson {
     intencje_tygodniowe: parsujIntencjeTygodnioweZJson(String(fd.get("parafia_intencje_tygodniowe_json") ?? "")),
     info_cmentarz: pole("parafia_info_cmentarz"),
     uwagi: pole("parafia_uwagi"),
+    ...metaOrganizacjiZFormularza(fd, "parafia"),
   };
 }
 
@@ -144,7 +146,7 @@ export const schemaProfilKgw = z.object({
   skladka_czlonkowska: z.string().trim().max(400).nullable().optional(),
   sprzedaz_produkty: z.string().trim().max(600).nullable().optional(),
   uwagi: z.string().trim().max(800).nullable().optional(),
-});
+}).merge(schemaMetaProfiluOrganizacji);
 
 export type ProfilKgwJson = z.infer<typeof schemaProfilKgw>;
 
@@ -177,6 +179,7 @@ export function profilKgwZFormularza(fd: FormData): ProfilKgwJson {
     skladka_czlonkowska: pole("kgw_skladka"),
     sprzedaz_produkty: pole("kgw_sprzedaz_produkty"),
     uwagi: pole("kgw_uwagi"),
+    ...metaOrganizacjiZFormularza(fd, "kgw"),
   };
 }
 
@@ -209,7 +212,26 @@ export const schemaProfilLowiecki = z.object({
   kontakt_dla_mieszkancow: z.string().trim().max(800).nullable().optional(),
   zgloszenie_szkod: z.string().trim().max(600).nullable().optional(),
   uwagi: z.string().trim().max(800).nullable().optional(),
-});
+  /** Polygon rewiru na mapie katalogu (GeoJSON Polygon / Feature). */
+  rewir_geojson: z.unknown().nullable().optional(),
+}).merge(schemaMetaProfiluOrganizacji);
+
+export function parsujRewirGeojsonZProfilu(raw: unknown): unknown | null {
+  if (raw == null || typeof raw !== "object") return null;
+  const r = raw as Record<string, unknown>;
+  const g = r.rewir_geojson;
+  if (g == null) return null;
+  if (typeof g === "string") {
+    const t = g.trim();
+    if (!t) return null;
+    try {
+      return JSON.parse(t) as unknown;
+    } catch {
+      return null;
+    }
+  }
+  return g;
+}
 
 export type ProfilLowieckiJson = z.infer<typeof schemaProfilLowiecki>;
 
@@ -218,6 +240,16 @@ export function parsujProfilLowiecki(raw: unknown): ProfilLowieckiJson | null {
   const w = schemaProfilLowiecki.safeParse(raw);
   if (!w.success) return null;
   return w.data;
+}
+
+function rewirGeojsonZFormularza(fd: FormData): unknown | null {
+  const raw = String(fd.get("mysliwi_rewir_geojson") ?? "").trim();
+  if (!raw) return null;
+  try {
+    return JSON.parse(raw) as unknown;
+  } catch {
+    return null;
+  }
 }
 
 export function profilLowieckiZFormularza(fd: FormData): ProfilLowieckiJson {
@@ -242,6 +274,8 @@ export function profilLowieckiZFormularza(fd: FormData): ProfilLowieckiJson {
     kontakt_dla_mieszkancow: pole("mysliwi_kontakt_info"),
     zgloszenie_szkod: pole("mysliwi_zgloszenie_szkod"),
     uwagi: pole("mysliwi_uwagi"),
+    rewir_geojson: rewirGeojsonZFormularza(fd),
+    ...metaOrganizacjiZFormularza(fd, "mysliwi"),
   };
 }
 
@@ -283,7 +317,7 @@ export const schemaProfilOsp = z.object({
   punkty_wody: z.string().trim().max(600).nullable().optional(),
   wsparcie_finansowe: z.string().trim().max(600).nullable().optional(),
   uwagi: z.string().trim().max(800).nullable().optional(),
-});
+}).merge(schemaMetaProfiluOrganizacji);
 
 export type ProfilOspJson = z.infer<typeof schemaProfilOsp>;
 
@@ -315,6 +349,7 @@ export function profilOspZFormularza(fd: FormData): ProfilOspJson {
     punkty_wody: pole("osp_punkty_wody"),
     wsparcie_finansowe: pole("osp_wsparcie"),
     uwagi: pole("osp_uwagi"),
+    ...metaOrganizacjiZFormularza(fd, "osp"),
   };
 }
 

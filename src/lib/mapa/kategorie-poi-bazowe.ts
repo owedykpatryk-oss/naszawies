@@ -43,5 +43,11 @@ export type KategoriaPoiBazowa = (typeof KATEGORIE_POI_BAZOWE)[number];
 export const KATEGORIE_PROPONOWALNE_POI = [
   ...KATEGORIE_POI_BAZOWE,
   ...KATEGORIE_POI_OPCJONALNE,
+  "siedziba_kola",
+  "zebrania_kola",
+  "teren_lowiecki",
+  "obszar_lowowy",
+  "ambona",
+  "posterunek_lowiecki",
   "inne",
 ] as const;

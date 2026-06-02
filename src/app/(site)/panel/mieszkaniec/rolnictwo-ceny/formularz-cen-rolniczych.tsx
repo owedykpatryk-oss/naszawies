@@ -1,10 +1,17 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { PRODUKTY_ROLNE } from "@/lib/rolnictwo/produkty-rolne";
+import {
+  ETYKIETY_KATEGORII_PRODUKTU,
+  PRODUKTY_LOKALNE,
+  etykietaProduktuLokalnego,
+  type KategoriaProduktuLokalnego,
+} from "@/lib/ceny/produkty-lokalne";
 import { potwierdzCeneSkupuLokalna, zglosCeneSkupuLokalna } from "@/app/(site)/panel/mieszkaniec/akcje-rolnictwo";
 
 type WiesOpcja = { id: string; name: string };
+
+const KATEGORIE: KategoriaProduktuLokalnego[] = ["rolne", "opal", "paliwa", "inne"];
 
 export function FormularzCenRolniczych({
   wioski,
@@ -26,7 +33,7 @@ export function FormularzCenRolniczych({
   const [pending, startTransition] = useTransition();
   const [komunikat, setKomunikat] = useState<string | null>(null);
   const [villageId, setVillageId] = useState(wioski[0]?.id ?? "");
-  const [productKey, setProductKey] = useState(PRODUKTY_ROLNE[0]?.key ?? "pszenica");
+  const [productKey, setProductKey] = useState(PRODUKTY_LOKALNE[0]?.key ?? "pszenica");
   const [priceValue, setPriceValue] = useState("");
   const [placeName, setPlaceName] = useState("");
   const [notes, setNotes] = useState("");
@@ -66,9 +73,10 @@ export function FormularzCenRolniczych({
   return (
     <div className="space-y-8">
       <section className="rounded-2xl border border-stone-200 bg-white p-5 shadow-sm">
-        <h2 className="text-lg font-semibold text-stone-900">Zgłoś cenę w skupie</h2>
+        <h2 className="text-lg font-semibold text-stone-900">Zgłoś cenę lokalną</h2>
         <p className="mt-1 text-sm text-stone-600">
-          Podaj ile zapłacono i gdzie. Sołtys tego nie zatwierdza — inni mieszkańcy mogą potwierdzić.
+          Skup zboża, pellet, węgiel, drewno, AdBlue — podaj ile zapłaciłeś i gdzie. Inni mieszkańcy mogą
+          potwierdzić (ceny paliw na stacjach aktualizują się automatycznie na profilu wsi).
         </p>
         <div className="mt-4 grid gap-3 sm:grid-cols-2">
           <label className="block text-sm">
@@ -92,11 +100,19 @@ export function FormularzCenRolniczych({
               value={productKey}
               onChange={(e) => setProductKey(e.target.value)}
             >
-              {PRODUKTY_ROLNE.map((p) => (
-                <option key={p.key} value={p.key}>
-                  {p.label} ({p.jednostka})
-                </option>
-              ))}
+              {KATEGORIE.map((kat) => {
+                const lista = PRODUKTY_LOKALNE.filter((p) => p.kategoria === kat);
+                if (lista.length === 0) return null;
+                return (
+                  <optgroup key={kat} label={ETYKIETY_KATEGORII_PRODUKTU[kat]}>
+                    {lista.map((p) => (
+                      <option key={p.key} value={p.key}>
+                        {p.label} ({p.jednostka})
+                      </option>
+                    ))}
+                  </optgroup>
+                );
+              })}
             </select>
           </label>
           <label className="block text-sm">
@@ -107,21 +123,21 @@ export function FormularzCenRolniczych({
               className="w-full rounded-lg border border-stone-300 px-3 py-2"
               value={priceValue}
               onChange={(e) => setPriceValue(e.target.value)}
-              placeholder="np. 77"
+              placeholder="np. 1450"
             />
           </label>
           <label className="block text-sm">
-            <span className="mb-1 block text-stone-700">Miejsce (skup, miejscowość)</span>
+            <span className="mb-1 block text-stone-700">Miejsce (skup, skład, stacja)</span>
             <input
               type="text"
               className="w-full rounded-lg border border-stone-300 px-3 py-2"
               value={placeName}
               onChange={(e) => setPlaceName(e.target.value)}
-              placeholder="np. Skup w Nakle"
+              placeholder="np. Skład opału w Nakle"
             />
           </label>
           <label className="block text-sm sm:col-span-2">
-            <span className="mb-1 block text-stone-700">Uwagi (wilgotność, klasa)</span>
+            <span className="mb-1 block text-stone-700">Uwagi (wilgotność, klasa, sortyment)</span>
             <input
               type="text"
               className="w-full rounded-lg border border-stone-300 px-3 py-2"
@@ -150,7 +166,7 @@ export function FormularzCenRolniczych({
               <li key={r.id} className="flex flex-wrap items-center justify-between gap-2 border-b border-stone-100 pb-3">
                 <div className="text-sm text-stone-800">
                   <strong>
-                    {r.product_key} — {r.price_value} {r.price_unit}
+                    {etykietaProduktuLokalnego(r.product_key)} — {r.price_value} {r.price_unit}
                   </strong>{" "}
                   @ {r.place_name}
                   <span className="text-stone-500"> ({r.confirmation_count} potwierdzeń)</span>

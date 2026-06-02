@@ -32,6 +32,12 @@ export const ETYKIETA_KATEGORII_POI: Record<string, string> = {
   spoldzielnia_rolna: "Spółdzielnia rolnicza",
   latarnia: "Latarnia / oświetlenie drogi",
   inwestycja: "Inwestycja / planowana budowa",
+  siedziba_kola: "Siedziba koła łowieckiego",
+  zebrania_kola: "Miejsce zebrań koła łowieckiego",
+  teren_lowiecki: "Teren łowiecki (obszar orientacyjny)",
+  obszar_lowowy: "Obszar łowowy (strefa)",
+  ambona: "Ambona (strefa / członkowie wsi)",
+  posterunek_lowiecki: "Posterunek łowiecki (strefa / członkowie wsi)",
   inne: "Miejsce",
   historia_wydarzenie: "Historia wsi (wydarzenie)",
 };
@@ -63,6 +69,12 @@ const EMOJI_KATEGORII: Record<string, string> = {
   spoldzielnia_rolna: "🏭",
   latarnia: "💡",
   inwestycja: "🏗",
+  siedziba_kola: "🦌",
+  zebrania_kola: "🏕",
+  teren_lowiecki: "🌲",
+  obszar_lowowy: "📍",
+  ambona: "🎯",
+  posterunek_lowiecki: "⛺",
   inne: "📍",
   historia_wydarzenie: "📜",
 };
@@ -95,8 +107,16 @@ const KOLOR_OBRAMOWANIA: Record<string, string> = {
   spoldzielnia_rolna: "#854d0e",
   latarnia: "#ca8a04",
   inwestycja: "#ea580c",
+  siedziba_kola: "#7c2d12",
+  zebrania_kola: "#92400e",
+  teren_lowiecki: "#166534",
+  obszar_lowowy: "#15803d",
+  ambona: "#9a3412",
+  posterunek_lowiecki: "#b45309",
   inne: "#57534e",
 };
+
+export { KATEGORIE_POI_LOWIECKIE_MAPA as KATEGORIE_POI_LOWIECKIE } from "@/lib/mapa/poi-lowieckie-widocznosc";
 
 export const KATEGORIA_LADNE_MIEJSCE = "ladne_miejsce";
 

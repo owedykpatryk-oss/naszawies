@@ -45,3 +45,135 @@
     animation: none;
   }
 }
+
+.mapa-polowanie-badge {
+  display: inline-block;
+  margin-bottom: 4px;
+  border-radius: 9999px;
+  padding: 2px 8px;
+  font-size: 10px;
+  font-weight: 600;
+}
+
+.mapa-polowanie-badge--aktywne {
+  background: #fecaca;
+  color: #7f1d1d;
+}
+
+.mapa-polowanie-badge--nadchodzace {
+  background: #ffedd5;
+  color: #9a3412;
+}
+
+.mapa-polowanie-odliczanie {
+  margin: 4px 0 0;
+  font-size: 11px;
+  font-weight: 600;
+  color: #991b1b;
+}
+
+.naszawies-marker-kolo-lowieckie {
+  box-shadow: 0 0 0 2px rgba(124, 45, 18, 0.25);
+}
+
+.mapa-poi-precyzja-hint {
+  margin: 4px 0 0;
+  border-radius: 8px;
+  border: 1px solid #fed7aa;
+  background: #fff7ed;
+  padding: 6px 8px;
+  font-size: 10px;
+  line-height: 1.35;
+  color: #9a3412;
+}
+
+.mapa-poi-precyzja-hint--dokladna {
+  border-color: #bbf7d0;
+  background: #f0fdf4;
+  color: #166534;
+}
+
+.mapa-wsi-map-shell--lowiectwo .naszawies-marker-wrap {
+  opacity: 0.42;
+  transform: scale(0.86);
+  filter: saturate(0.65);
+}
+
+.mapa-wsi-map-shell--lowiectwo .naszawies-marker-poi-inner:not(.naszawies-marker-poi-lowiecki) {
+  opacity: 0.55;
+}
+
+.mapa-wsi-map-shell--lowiectwo .naszawies-marker-poi-lowiecki,
+.mapa-wsi-map-shell--lowiectwo .naszawies-marker-kolo-lowieckie {
+  box-shadow: 0 0 0 3px rgba(180, 83, 9, 0.35), 0 4px 14px rgba(120, 53, 15, 0.4);
+}
+
+.mapa-lowiectwo-alert {
+  animation: mapaLowiectwoAlertWejscie 0.45s ease-out;
+}
+
+@keyframes mapaLowiectwoAlertWejscie {
+  from {
+    opacity: 0;
+    transform: translateY(-8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.mapa-lowiectwo-stats span {
+  animation: mapaLegendaWejscie 0.4s ease-out backwards;
+}
+
+.naszawies-marker-poi-lowiecki {
+  background: linear-gradient(145deg, #fef3c7 0%, #fde68a 100%) !important;
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .mapa-polowanie-obszar--aktywne,
+  .mapa-polowanie-pinezka--aktywne {
+    animation: mapaPolowaniePuls 2.2s ease-in-out infinite;
+  }
+
+  @keyframes mapaPolowaniePuls {
+    0%,
+    100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.72;
+    }
+  }
+
+  .mapa-wsi-map-shell--lowiectwo .leaflet-naszawiesGranice-pane svg path[stroke="#991b1b"],
+  .mapa-wsi-map-shell--lowiectwo .leaflet-naszawiesGranice-pane svg path[stroke='#991b1b'] {
+    filter: drop-shadow(0 0 4px rgba(220, 38, 38, 0.55));
+  }
+
+  .mapa-wsi-map-shell--lowiectwo .mapa-rewir-lowiecki {
+    animation: mapaRewirPuls 3.5s ease-in-out infinite;
+  }
+
+  @keyframes mapaRewirPuls {
+    0%,
+    100% {
+      filter: drop-shadow(0 0 2px rgba(34, 197, 94, 0.35));
+    }
+    50% {
+      filter: drop-shadow(0 0 6px rgba(34, 197, 94, 0.65));
+    }
+  }
+}
+
+.mapa-rewir-lowiecki--spokojny {
+  opacity: 0.92;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .mapa-lowiectwo-alert,
+  .mapa-lowiectwo-stats span {
+    animation: none;
+  }
+}

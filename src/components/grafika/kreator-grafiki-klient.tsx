@@ -1,6 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
+import { useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState, useTransition } from "react";
 import {
   PodgladSzablonuGrafiki,
@@ -35,7 +36,7 @@ import {
   filtrujSzablonyDlaRoli,
   znajdzSzablon,
 } from "@/lib/grafika/szablony";
-import type { KontekstGrafiki, ProfilWsiGrafiki, ProjektGrafiki } from "@/lib/grafika/typy";
+import type { KontekstGrafiki, ProfilWsiGrafiki, ProjektGrafiki, SzablonSpolecznosciGrafiki } from "@/lib/grafika/typy";
 import {
   opublikujPlakatNaProfilWsi,
   pobierzLogoWsiJakoDataUrl,
@@ -43,7 +44,13 @@ import {
   wczytajProjektyGrafiki,
   zapiszProjektGrafiki,
 } from "@/app/(site)/panel/grafika/akcje";
+import { zapiszOstatniSzablon } from "@/lib/grafika/ostatnie-szablony";
 import { wczytajLogoMarkiJakoDataUrl } from "@/lib/grafika/logo-marki";
+import { uzupelnijWartosciDatamiSezonowymi } from "@/lib/grafika/daty-sezonowe";
+import { DOMYSLNY_BACKGROUND_OVERLAY, normalizujBackgroundOverlay } from "@/lib/grafika/meta-tla-grafiki";
+import { szablonPasujeDoTematu, type FiltrTematuGrafiki } from "@/lib/grafika/filtr-tematu";
+import { wartosciPolZParametrowUrl } from "@/lib/grafika/link-grafika";
+import { gotowyDoEksportu, walidujPrzedEksportem } from "@/lib/grafika/walidacja-pol-grafiki";
 
 const ID_PODGLADU = "podglad-grafiki-export";
 const KLUCZ_LOCAL_STORAGE = "naszawies-grafika-szkic";
@@ -84,6 +91,7 @@ export function KreatorGrafikiKlient({
   sciezkaWsi = "",
   profilWsi = null,
 }: Props) {
+  const searchParams = useSearchParams();
   const dostepneSzablony = useMemo(
     () => filtrujSzablonyDlaRoli(SZABLONY_GRAFIKI, { trybSoltys, trybKgw, trybOsp }),
     [trybSoltys, trybKgw, trybOsp],
@@ -93,43 +101,65 @@ export function KreatorGrafikiKlient({
   const [tryb, ustawTryb] = useState<TrybPracyGrafiki>("zaproszenie");
   const [zakladka, ustawZakladke] = useState<ZakladkaKreatora>("szablon");
   const [szablonId, ustawSzablonId] = useState(pierwszy?.id ?? "");
+  const [podgladSzablonId, ustawPodgladSzablonId] = useState(pierwszy?.id ?? "");
   const [motywId, ustawMotywId] = useState(pierwszy?.domyslnyMotyw ?? "zielony-wies");
   const [wartosci, ustawWartosci] = useState<Record<string, string>>(() =>
     pierwszy ? domyslneWartosciPol(pierwszy, kontekst) : {},
   );
   const [logoDataUrl, ustawLogoDataUrl] = useState<string | null>(null);
   const [backgroundDataUrl, ustawBackgroundDataUrl] = useState<string | null>(null);
+  const [backgroundOverlay, ustawBackgroundOverlay] = useState(DOMYSLNY_BACKGROUND_OVERLAY);
   const [canvasJson, ustawCanvasJson] = useState<Record<string, unknown> | null>(null);
   const [qrUrl, ustawQrUrl] = useState(() => (sciezkaWsi ? domyslnyUrlQrWies(sciezkaWsi) : ""));
   const [bookingId, ustawBookingId] = useState<string | null>(prefill?.bookingId ?? null);
   const [ostatniZapisId, ustawOstatniZapisId] = useState<string | null>(null);
   const [filtr, ustawFiltr] = useState("");
   const [kategoria, ustawKategorie] = useState<string>("wszystkie");
+  const [filtrTemat, ustawFiltrTemat] = useState<FiltrTematuGrafiki>("wszystkie");
   const [tytulProjektu, ustawTytulProjektu] = useState("");
   const [projekty, ustawProjekty] = useState<ProjektGrafiki[]>([]);
   const [komunikat, ustawKomunikat] = useState<string | null>(null);
   const [blad, ustawBlad] = useState<string | null>(null);
   const [oczekuje, startTransition] = useTransition();
+  const [kluczOdswiezeniaSzablonow, ustawKluczOdswiezeniaSzablonow] = useState(0);
 
   const szablon = znajdzSzablon(szablonId) ?? pierwszy;
   const motyw = znajdzMotyw(motywId);
+  const szablonPodgladu = znajdzSzablon(zakladka === "szablon" ? podgladSzablonId || szablonId : szablonId) ?? szablon;
+  const motywPodgladu =
+    zakladka === "szablon"
+      ? znajdzMotyw(znajdzSzablon(podgladSzablonId || szablonId)?.domyslnyMotyw ?? motywId)
+      : motyw;
+  const wartosciPodgladu = useMemo(() => {
+    if (zakladka === "szablon") {
+      return domyslneWartosciPol(szablonPodgladu, kontekst);
+    }
+    return wartosci;
+  }, [zakladka, szablonPodgladu, kontekst, wartosci]);
 
   const przefiltrowane = useMemo(() => {
     const f = znormalizujDoSzukania(filtr);
     return dostepneSzablony.filter((s) => {
       if (kategoria !== "wszystkie" && s.kategoria !== kategoria) return false;
+      if (!szablonPasujeDoTematu(s, filtrTemat)) return false;
       if (!f) return true;
       const paczka = [s.tytul, s.opis, s.kategoria, ...(s.tagi ?? [])].join(" ");
       return znormalizujDoSzukania(paczka).includes(f);
     });
-  }, [dostepneSzablony, filtr, kategoria]);
+  }, [dostepneSzablony, filtr, kategoria, filtrTemat]);
 
   const ukonczoneZakladki = useMemo(
     (): Partial<Record<ZakladkaKreatora, boolean>> => ({
       szablon: Boolean(szablonId),
       edycja: Object.values(wartosci).some((v) => v?.trim()),
+      eksport: szablon ? gotowyDoEksportu(szablon, wartosci) : false,
     }),
-    [szablonId, wartosci],
+    [szablonId, wartosci, szablon],
+  );
+
+  const aktualnyProjekt = useMemo(
+    () => (ostatniZapisId ? projekty.find((p) => p.id === ostatniZapisId) : undefined),
+    [ostatniZapisId, projekty],
   );
 
   const wczytajProjekty = useCallback(async () => {
@@ -175,6 +205,47 @@ export function KreatorGrafikiKlient({
     ustawKomunikat("Dane z rezerwacji świetlicy wczytane — sprawdź treść w kroku 2.");
   }, [prefill]);
 
+  useEffect(() => {
+    const szablonUrl = searchParams.get("szablon")?.trim();
+    const trybUrl = searchParams.get("tryb")?.trim();
+    const motywUrl = searchParams.get("motyw")?.trim();
+    const tytulUrl = searchParams.get("tytulProjektu")?.trim();
+    if (trybUrl === "dyplomy") ustawTryb("dyplomy");
+    if (trybUrl === "edytor") ustawTryb("edytor");
+    if (szablonUrl && znajdzSzablon(szablonUrl)) {
+      const s = znajdzSzablon(szablonUrl)!;
+      if (trybUrl !== "dyplomy" && trybUrl !== "edytor") ustawTryb("zaproszenie");
+      ustawSzablonId(szablonUrl);
+      ustawPodgladSzablonId(szablonUrl);
+      ustawMotywId(motywUrl && znajdzMotyw(motywUrl) ? motywUrl : s.domyslnyMotyw);
+      const bazowe = domyslneWartosciPol(s, kontekst);
+      const zUrl = wartosciPolZParametrowUrl(
+        searchParams,
+        s.pola.map((p) => p.id),
+      );
+      ustawWartosci({ ...bazowe, ...zUrl });
+      ustawTytulProjektu(tytulUrl || s.tytul);
+      ustawZakladke("edycja");
+      ustawKomunikat(
+        Object.keys(zUrl).length > 0
+          ? "Szablon i treść wczytane z linku — sprawdź pola i pobierz PDF."
+          : "Szablon wczytany z linku — sprawdź treść i pobierz PDF.",
+      );
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- jednorazowe wczytanie z URL
+  }, []);
+
+  const przejdzDoEksportu = () => {
+    if (!szablon) return;
+    const bledy = walidujPrzedEksportem(szablon, wartosci);
+    if (bledy.length > 0) {
+      ustawBlad(`Uzupełnij przed eksportem: ${bledy.join(", ")}.`);
+      return;
+    }
+    ustawBlad(null);
+    ustawZakladke("eksport");
+  };
+
   const wybierzPaczkeWow = (w: {
     szablonId: string;
     motywId: string;
@@ -183,24 +254,33 @@ export function KreatorGrafikiKlient({
     komunikat: string;
   }) => {
     ustawSzablonId(w.szablonId);
+    ustawPodgladSzablonId(w.szablonId);
     ustawMotywId(w.motywId);
-    ustawWartosci(w.wartosci);
+    const sz = znajdzSzablon(w.szablonId);
+    const wartosciZData = sz
+      ? uzupelnijWartosciDatamiSezonowymi(w.wartosci, sz.id, sz.tagi ?? [])
+      : w.wartosci;
+    ustawWartosci(wartosciZData);
     ustawTytulProjektu(w.tytulProjektu);
     ustawKomunikat(w.komunikat);
     ustawBlad(null);
     ustawZakladke("edycja");
+    zapiszOstatniSzablon({ szablonId: w.szablonId, motywId: w.motywId, tytul: w.tytulProjektu });
   };
 
   const wybierzSzablon = (id: string) => {
     const s = znajdzSzablon(id);
     if (!s) return;
     ustawSzablonId(id);
+    ustawPodgladSzablonId(id);
     ustawMotywId(s.domyslnyMotyw);
-    ustawWartosci(domyslneWartosciPol(s, kontekst));
+    const bazowe = domyslneWartosciPol(s, kontekst);
+    ustawWartosci(uzupelnijWartosciDatamiSezonowymi(bazowe, s.id, s.tagi ?? []));
     ustawTytulProjektu(s.tytul);
     ustawKomunikat(null);
     ustawBlad(null);
     ustawZakladke("edycja");
+    zapiszOstatniSzablon({ szablonId: id, motywId: s.domyslnyMotyw, tytul: s.tytul });
   };
 
   const ustawPole = (id: string, wartosc: string) => {
@@ -244,6 +324,43 @@ export function KreatorGrafikiKlient({
     });
   };
 
+  const wstawTloZProfilu = () => {
+    if (!villageId) {
+      ustawBlad("Tło z profilu wymaga przypisania do wsi (panel sołtysa).");
+      return;
+    }
+    startTransition(async () => {
+      const r = await pobierzLogoWsiJakoDataUrl(villageId);
+      if ("blad" in r) {
+        ustawBlad(r.blad);
+        return;
+      }
+      ustawBackgroundDataUrl(r.dataUrl);
+      ustawKomunikat("Okładka wsi ustawiona jako tło — reguluj widoczność suwakiem.");
+      ustawBlad(null);
+    });
+  };
+
+  const uzyjSzablonuSpolecznosci = (s: SzablonSpolecznosciGrafiki) => {
+    const sz = znajdzSzablon(s.templateId);
+    if (!sz) {
+      ustawBlad("Szablon społecznościowy nie jest już dostępny w bibliotece.");
+      return;
+    }
+    ustawSzablonId(s.templateId);
+    ustawPodgladSzablonId(s.templateId);
+    ustawMotywId(s.motywId);
+    ustawWartosci(s.wartosci);
+    ustawTytulProjektu(s.tytul);
+    ustawLogoDataUrl(s.logoDataUrl ?? null);
+    ustawBackgroundDataUrl(s.backgroundDataUrl ?? null);
+    ustawBackgroundOverlay(normalizujBackgroundOverlay(s.backgroundOverlay));
+    ustawQrUrl(s.qrUrl ?? "");
+    ustawZakladke("edycja");
+    ustawKomunikat(`Wczytano publiczny szablon „${s.tytul}” — dostosuj treść i pobierz PDF.`);
+    ustawBlad(null);
+  };
+
   const wstawPodpisCyfrowy = () => {
     const imie = kontekst.organizator?.replace(/^Sołtys\s+/i, "").trim();
     if (!imie) {
@@ -256,6 +373,39 @@ export function KreatorGrafikiKlient({
 
   const maDateWydarzenia = Boolean(wartosci.data?.trim());
   const toDyplom = szablon.kategoria === "dyplomy";
+
+  const ustawDateSezonowa = () => {
+    const next = uzupelnijWartosciDatamiSezonowymi(wartosci, szablon.id, szablon.tagi ?? []);
+    ustawWartosci(next);
+    ustawKomunikat(
+      next.data ? `Ustawiono datę sezonową: ${next.data}${next.godzina ? `, godz. ${next.godzina}` : ""}.` : "Brak sugerowanej daty dla tego szablonu.",
+    );
+  };
+
+  const duplikujSzkic = () => {
+    if (!szablon) return;
+    const kopia: ProjektGrafiki = {
+      id: crypto.randomUUID(),
+      templateId: szablon.id,
+      tytul: `${(tytulProjektu.trim() || szablon.tytul).slice(0, 80)} (kopia)`,
+      motywId,
+      wartosci: { ...wartosci },
+      logoDataUrl,
+      backgroundDataUrl,
+      backgroundOverlay,
+      canvasJson,
+      qrUrl,
+      villageId,
+      bookingId,
+      updatedAt: new Date().toISOString(),
+    };
+    const next = [kopia, ...projekty].slice(0, 20);
+    if (!zapisDoBazy) {
+      localStorage.setItem(KLUCZ_LOCAL_STORAGE, JSON.stringify(next));
+    }
+    ustawProjekty(next);
+    ustawKomunikat(`Duplikat zapisany: „${kopia.tytul}”. Wczytaj go z listy projektów.`);
+  };
 
   const onObraz = (e: React.ChangeEvent<HTMLInputElement>, ustaw: (v: string | null) => void) => {
     const plik = e.target.files?.[0];
@@ -279,6 +429,7 @@ export function KreatorGrafikiKlient({
       wartosci,
       logoDataUrl,
       backgroundDataUrl,
+      backgroundOverlay,
       canvasJson,
       qrUrl,
       villageId,
@@ -297,6 +448,7 @@ export function KreatorGrafikiKlient({
           wartosci: projekt.wartosci,
           logoDataUrl: projekt.logoDataUrl,
           backgroundDataUrl: projekt.backgroundDataUrl,
+          backgroundOverlay: projekt.backgroundOverlay,
           canvasJson: projekt.canvasJson,
           qrUrl: projekt.qrUrl,
           bookingId: projekt.bookingId,
@@ -307,6 +459,7 @@ export function KreatorGrafikiKlient({
         }
         if (r.id) ustawOstatniZapisId(r.id);
         ustawKomunikat("Projekt zapisany.");
+        await wczytajProjekty();
       } else {
         const next = [projekt, ...projekty.filter((p) => p.id !== projekt.id)].slice(0, 20);
         localStorage.setItem(KLUCZ_LOCAL_STORAGE, JSON.stringify(next));
@@ -325,6 +478,7 @@ export function KreatorGrafikiKlient({
     ustawWartosci(p.wartosci);
     ustawLogoDataUrl(p.logoDataUrl ?? null);
     ustawBackgroundDataUrl(p.backgroundDataUrl ?? null);
+    ustawBackgroundOverlay(normalizujBackgroundOverlay(p.backgroundOverlay));
     ustawCanvasJson(p.canvasJson ?? null);
     ustawQrUrl(p.qrUrl ?? "");
     ustawOstatniZapisId(p.id);
@@ -402,7 +556,12 @@ export function KreatorGrafikiKlient({
       <SelektorTrybuGrafiki tryb={tryb} onZmiana={zmienTryb} />
 
       {tryb === "dyplomy" ? (
-        <MasowyDrukDyplomowKlient kontekst={kontekst} szablonId="dyplom-dziecko-konkurs" motywId={motywId} />
+        <MasowyDrukDyplomowKlient
+          kontekst={kontekst}
+          szablonId={szablonId}
+          motywId={motywId}
+          szablonyDyplomow={dostepneSzablony.filter((s) => s.kategoria === "dyplomy")}
+        />
       ) : null}
 
       {tryb === "edytor" ? (
@@ -436,10 +595,16 @@ export function KreatorGrafikiKlient({
                   szablony={przefiltrowane}
                   kategoria={kategoria}
                   filtr={filtr}
+                  filtrTemat={filtrTemat}
+                  liczbaWszystkich={dostepneSzablony.length}
                   onKategoria={ustawKategorie}
                   onFiltr={ustawFiltr}
+                  onFiltrTemat={ustawFiltrTemat}
                   onWyborSzablon={wybierzSzablon}
+                  onPodgladSzablon={(id) => ustawPodgladSzablonId(id)}
                   onWyborPaczkiWow={wybierzPaczkeWow}
+                  onUzyjSzablonSpolecznosci={uzyjSzablonuSpolecznosci}
+                  odswiezKluczSzablonow={kluczOdswiezeniaSzablonow}
                   onDalej={() => ustawZakladke("edycja")}
                 />
               ) : null}
@@ -453,6 +618,7 @@ export function KreatorGrafikiKlient({
                   tytulProjektu={tytulProjektu}
                   logoDataUrl={logoDataUrl}
                   backgroundDataUrl={backgroundDataUrl}
+                  backgroundOverlay={backgroundOverlay}
                   qrUrl={qrUrl}
                   sciezkaWsi={sciezkaWsi}
                   profilWsi={profilWsi}
@@ -461,6 +627,8 @@ export function KreatorGrafikiKlient({
                   villageId={villageId}
                   oczekuje={oczekuje}
                   maProfil={maProfil}
+                  wszystkieSzablony={dostepneSzablony}
+                  kontekst={kontekst}
                   onPole={ustawPole}
                   onTytulProjektu={ustawTytulProjektu}
                   onMotyw={ustawMotywId}
@@ -468,12 +636,16 @@ export function KreatorGrafikiKlient({
                   onTlo={(e) => onObraz(e, ustawBackgroundDataUrl)}
                   onUsunLogo={() => ustawLogoDataUrl(null)}
                   onUsunTlo={() => ustawBackgroundDataUrl(null)}
+                  onTloZProfilu={wstawTloZProfilu}
+                  onBackgroundOverlay={ustawBackgroundOverlay}
                   onQr={ustawQrUrl}
                   onWstawProfil={wstawDaneZProfilu}
                   onPodpisCyfrowy={wstawPodpisCyfrowy}
                   onLogoZProfilu={wstawLogoZProfilu}
+                  onUstawDateSezonowa={ustawDateSezonowa}
+                  onWyborSzablon={wybierzSzablon}
                   onWstecz={() => ustawZakladke("szablon")}
-                  onDalej={() => ustawZakladke("eksport")}
+                  onDalej={przejdzDoEksportu}
                 />
               ) : null}
 
@@ -483,10 +655,15 @@ export function KreatorGrafikiKlient({
                   nazwaPliku={nazwaPliku}
                   szablon={szablon}
                   motyw={motyw}
+                  motywId={motywId}
+                  trybKreatora={tryb}
                   wartosci={wartosci}
                   logoDataUrl={logoDataUrl}
                   backgroundDataUrl={backgroundDataUrl}
+                  backgroundOverlay={backgroundOverlay}
                   qrUrl={qrUrl}
+                  villageId={villageId}
+                  nazwaWsi={kontekst.wies ?? ""}
                   projekty={projekty}
                   ostatniZapisId={ostatniZapisId}
                   maDateWydarzenia={maDateWydarzenia}
@@ -506,7 +683,16 @@ export function KreatorGrafikiKlient({
                   }}
                   onKomunikat={ustawKomunikat}
                   onBlad={ustawBlad}
+                  onDuplikuj={duplikujSzkic}
                   onWstecz={() => ustawZakladke("edycja")}
+                  linkedPostId={aktualnyProjekt?.linkedPostId}
+                  linkedEventId={aktualnyProjekt?.linkedEventId}
+                  featuredOnDigitalBoard={aktualnyProjekt?.featuredOnDigitalBoard}
+                  onOdswiezProjekty={() => void wczytajProjekty()}
+                  onOdswiezSzablonySpolecznosci={() =>
+                    ustawKluczOdswiezeniaSzablonow((k) => k + 1)
+                  }
+                  tytulProjektu={tytulProjektu}
                 />
               ) : null}
 
@@ -514,31 +700,33 @@ export function KreatorGrafikiKlient({
               {blad ? <p className="text-sm text-red-700">{blad}</p> : null}
             </div>
 
-            {zakladka !== "szablon" ? (
+            {tryb === "zaproszenie" ? (
               <section className="lg:sticky lg:top-24 lg:self-start">
-                <p className="no-print mb-2 text-xs font-semibold uppercase tracking-wide text-stone-500">
+                <p className="no-print mb-2 flex items-center gap-2 text-xs font-semibold uppercase tracking-wide text-stone-500">
+                  <span className="kreator-podglad-puls inline-block h-2 w-2 rounded-full bg-green-600" aria-hidden />
                   Podgląd na żywo
+                  {zakladka === "szablon" ? (
+                    <span className="normal-case font-normal text-stone-400">— najedź na szablon</span>
+                  ) : null}
                 </p>
-                <div className="overflow-x-auto rounded-2xl border border-stone-200 bg-stone-100/80 p-3 sm:p-4">
+                <div className="kreator-podglad-ramka overflow-x-auto rounded-2xl border border-stone-200 bg-stone-100/80 p-3 sm:p-4">
                   <PodgladSzablonuGrafiki
-                    szablon={szablon}
-                    motyw={motyw}
-                    wartosci={wartosci}
+                    szablon={szablonPodgladu}
+                    motyw={motywPodgladu}
+                    wartosci={wartosciPodgladu}
                     logoDataUrl={logoDataUrl}
-                    backgroundDataUrl={backgroundDataUrl}
-                    qrDataUrl={qrUrl}
+                    backgroundDataUrl={zakladka === "szablon" ? null : backgroundDataUrl}
+                    backgroundOverlay={zakladka === "szablon" ? undefined : backgroundOverlay}
+                    qrDataUrl={zakladka === "eksport" ? qrUrl : null}
                     elementId={ID_PODGLADU}
                   />
                 </div>
                 <p className="no-print mt-2 text-[11px] text-stone-500">
-                  {szablon.format.toUpperCase()} · {szablon.orientacja === "pion" ? "pion" : "poziom"}
+                  {szablonPodgladu.format.toUpperCase()} · {szablonPodgladu.orientacja === "pion" ? "pion" : "poziom"}
+                  {szablonPodgladu.layout.includes("dyplom") ? " · układ premium" : ""}
                 </p>
               </section>
-            ) : (
-              <p className="no-print hidden text-sm text-stone-500 lg:block">
-                Wybierz szablon — podgląd pojawi się w kolejnych krokach.
-              </p>
-            )}
+            ) : null}
           </div>
         </>
       ) : null}

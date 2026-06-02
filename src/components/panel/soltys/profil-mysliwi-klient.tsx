@@ -9,6 +9,9 @@ import {
   dodajOrganizacjeWsi,
 } from "@/app/(site)/panel/soltys/akcje";
 import { etykietaTypuGrupy } from "@/lib/wies/teksty-organizacji";
+import { EdytorObszaruPolowania } from "@/components/panel/edytor-obszaru-polowania";
+import type { GeoJsonPolygonPolowania } from "@/lib/lowiectwo/geojson-obszar";
+import { parsujRewirGeojsonZProfilu } from "@/lib/wies/profil-organizacji";
 import {
   czyProfilLowieckiUzupelniony,
   parsujProfilLowiecki,
@@ -16,6 +19,7 @@ import {
   type OrganizacjaPelna,
   type ProfilLowieckiJson,
 } from "@/lib/wies/profil-organizacji";
+import { PolaOkladkiOrganizacji } from "@/components/panel/soltys/pola-okladki-organizacji";
 
 const SZABLONY_ZEBRAN = [
   { etykieta: "Co miesiąc", tekst: "Zebranie koła: pierwsza środa miesiąca, godz. 18:00 — siedziba koła." },
@@ -58,11 +62,17 @@ const SZABLONY_ZGLOSZENIE_SZKOD = [
 export function ProfilMysliwiKlient({
   villageId,
   villageName,
+  wiesLat,
+  wiesLon,
+  boundaryGeojson = null,
   organizacje,
   sciezkaProfilu,
 }: {
   villageId: string;
   villageName: string;
+  wiesLat?: number;
+  wiesLon?: number;
+  boundaryGeojson?: unknown | null;
   organizacje: OrganizacjaPelna[];
   sciezkaProfilu?: string | null;
 }) {
@@ -196,7 +206,12 @@ export function ProfilMysliwiKlient({
           <Link href="/panel/soltys/lowiectwo" className="font-medium text-amber-900 underline">
             module Łowiectwo
           </Link>
-          . Zebrania i polowania — jako wydarzenia typu „Zebranie koła” / „Polowanie” w zakładce Wydarzenia.
+          . Zebrania i polowania — jako wydarzenia typu „Zebranie koła” / „Polowanie” w zakładce Wydarzenia. Rewir
+          narysuj poniżej — pojawi się na{" "}
+          <Link href="/mapa?warstwa=lowiectwo" className="font-medium text-amber-900 underline">
+            mapie w trybie Łowiectwo
+          </Link>
+          .
         </p>
       </div>
 
@@ -263,6 +278,11 @@ export function ProfilMysliwiKlient({
 
         <PolaMysliwi
           key={edytowana?.id ?? "nowa"}
+          villageId={villageId}
+          wiesLat={wiesLat ?? NaN}
+          wiesLon={wiesLon ?? NaN}
+          boundaryGeojson={boundaryGeojson}
+          profileData={edytowana?.profile_data}
           domyslne={{
             name: edytowana?.name ?? `Koło Łowieckie ${villageName}`,
             short_description: edytowana?.short_description ?? null,
@@ -322,6 +342,11 @@ function SzablonyPola({
 
 function PolaMysliwi({
   domyslne,
+  villageId,
+  wiesLat,
+  wiesLon,
+  boundaryGeojson,
+  profileData,
 }: {
   domyslne: {
     name: string;
@@ -332,15 +357,26 @@ function PolaMysliwi({
     schedule_text: string | null;
     profil: ProfilLowieckiJson | null;
   };
+  villageId: string;
+  wiesLat: number;
+  wiesLon: number;
+  boundaryGeojson: unknown | null;
+  profileData?: unknown;
 }) {
   const p = domyslne.profil;
   const refZebrania = useRef<HTMLTextAreaElement>(null);
   const refSezon = useRef<HTMLTextAreaElement>(null);
   const refBezpieczenstwo = useRef<HTMLTextAreaElement>(null);
   const refZgloszenie = useRef<HTMLTextAreaElement>(null);
+  const [rewir, ustawRewir] = useState<GeoJsonPolygonPolowania | null>(() => {
+    const raw = profileData != null ? parsujRewirGeojsonZProfilu(profileData) : p?.rewir_geojson ?? null;
+    return raw as GeoJsonPolygonPolowania | null;
+  });
+  const maGeo = Number.isFinite(wiesLat) && Number.isFinite(wiesLon);
 
   return (
     <>
+      <input type="hidden" name="mysliwi_rewir_geojson" value={rewir ? JSON.stringify(rewir) : ""} />
       <div className="grid gap-3 md:grid-cols-2">
         <label className="block text-sm md:col-span-2">
           <span className="font-medium text-stone-800">Nazwa koła</span>
@@ -352,6 +388,9 @@ function PolaMysliwi({
             className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
           />
         </label>
+        <div className="md:col-span-2">
+          <PolaOkladkiOrganizacji prefix="mysliwi" villageId={villageId} okladkaUrl={p?.okladka_url} haslo={p?.haslo} />
+        </div>
         <label className="block text-sm">
           <span className="font-medium text-stone-800">Prezes</span>
           <input
@@ -386,6 +425,36 @@ function PolaMysliwi({
             className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
           />
         </label>
+        <div className="md:col-span-2">
+          <p className="text-sm font-medium text-stone-800">Rewir na mapie (opcjonalnie)</p>
+          <p className="mt-1 text-xs text-stone-500">
+            Zielony polygon na mapie w trybie Łowiectwo — orientacyjny zasięg obwodu, nie dokładna granica prawna.
+          </p>
+          {maGeo ? (
+            <div className="mt-2">
+              <EdytorObszaruPolowania
+                srodekLat={wiesLat}
+                srodekLng={wiesLon}
+                boundaryGeojson={boundaryGeojson}
+                value={rewir}
+                onChange={ustawRewir}
+              />
+              {rewir ? (
+                <button
+                  type="button"
+                  onClick={() => ustawRewir(null)}
+                  className="mt-2 text-xs font-medium text-red-800 underline hover:text-red-950"
+                >
+                  Usuń polygon rewiru
+                </button>
+              ) : null}
+            </div>
+          ) : (
+            <p className="mt-2 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-950">
+              Uzupełnij współrzędne wsi w panelu administracyjnym, aby narysować rewir na mapie.
+            </p>
+          )}
+        </div>
         <label className="block text-sm md:col-span-2">
           <span className="font-medium text-stone-800">Siedziba koła</span>
           <input

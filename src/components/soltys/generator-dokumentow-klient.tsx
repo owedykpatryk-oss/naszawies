@@ -1,8 +1,11 @@
 "use client";
 
+import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { PrzyciskPobierzPdf } from "@/components/dokumenty/przycisk-pobierz-pdf";
+import { KopiujLinkDokumentu } from "@/components/soltys/kopiuj-link-dokumentu";
+import { PrzyciskUlubionyPreset } from "@/components/soltys/przycisk-ulubiony-preset";
 import {
   PRESETY_DOKUMENTOW_SOLTYSA,
   domyslneWartosciPol,
@@ -12,8 +15,21 @@ import {
   znajdzPreset,
 } from "@/lib/dokumenty-soltysa/presety";
 import { zbudujSugestieKontekstowe } from "@/lib/dokumenty-soltysa/sugestie-kontekstowe";
+import {
+  GRAFIKA_DLA_PRESETU,
+  GRAFIKA_DYPLOM_SCENARIUSZE,
+  zbudujLejekSponsora,
+  zbudujScenariuszeWowDokumentow,
+  type ScenariuszDokumentu,
+} from "@/lib/dokumenty-soltysa/scenariusze-wow";
 import type { PresetDokumentu } from "@/lib/dokumenty-soltysa/typy";
 import { wczytajSzkicPresetu, zapiszSzkicPresetu } from "@/lib/dokumenty-soltysa/szkic-presetu-local";
+import { wczytajUlubionePresety } from "@/lib/dokumenty-soltysa/ulubione-presety";
+import { ETYKIETY_TEMATU_DOK, presetPasujeDoTematuDok, type FiltrTematuDokumentu } from "@/lib/dokumenty-soltysa/filtr-tematu-dokument";
+import { wczytajOstatniePresety, zapiszOstatniPreset } from "@/lib/dokumenty-soltysa/ostatnie-presety";
+import { zbudujLinkGrafiki } from "@/lib/grafika/link-grafika";
+import { mapujPresetNaGrafike } from "@/lib/grafika/prefill-z-dokumentu";
+import { znajdzSzablon } from "@/lib/grafika/szablony";
 
 type WiesGeneratora = { id: string; name: string; commune?: string };
 
@@ -26,22 +42,10 @@ type Props = {
   domyslnySoltysNazwa?: string;
 };
 
-type ScenariuszDokumentu = {
-  id: string;
-  tytul: string;
-  opis: string;
-  presetId: string;
-  uzupelnienia: Record<string, string>;
-};
-
 type StylDokumentu = "urzedowy" | "elegancki" | "nowoczesny";
 type RozmiarDokumentu = "standard" | "duzy";
 type ZnakWodnyDokumentu = "brak" | "subtelny";
 type UkladPodpisowDokumentu = "jeden" | "dwa" | "trzy";
-
-function polaScenariusza(pola: Record<string, string>): Record<string, string> {
-  return pola;
-}
 
 function pogrupujPresety(lista: PresetDokumentu[]) {
   const map = new Map<string, PresetDokumentu[]>();
@@ -87,6 +91,11 @@ export function GeneratorDokumentowSoltysaKlient({
     presetZUrl && znajdzPreset(presetZUrl) ? presetZUrl : (pierwszy?.id ?? ""),
   );
   const [filtrSzukaj, ustawFiltrSzukaj] = useState("");
+  const [filtrKategoria, ustawFiltrKategoria] = useState("wszystkie");
+  const [filtrTagWow, ustawFiltrTagWow] = useState("wszystkie");
+  const [filtrTematDok, ustawFiltrTematDok] = useState<FiltrTematuDokumentu>("wszystkie");
+  const [ulubioneTick, ustawUlubioneTick] = useState(0);
+  const [ostatnieTick, ustawOstatnieTick] = useState(0);
   const [numerReferencyjnySesji, ustawNumerReferencyjnySesji] = useState(() =>
     wygenerujNumerReferencyjnySoltys(),
   );
@@ -106,250 +115,91 @@ export function GeneratorDokumentowSoltysaKlient({
     [wiesEfektywna, gminaEfektywna, domyslnySoltysNazwa],
   );
 
-  const scenariuszeWow = useMemo<ScenariuszDokumentu[]>(() => {
-    const nazwaWsi = domyslnaWies.trim() || "Twojej wsi";
-    const nazwaGminy = domyslnaGmina.trim() || "Twojej gminy";
-    const podpis = domyslnySoltysNazwa.trim()
-      ? `Sołtys ${domyslnySoltysNazwa.trim()}`
-      : "Sołtys sołectwa";
-    const kontakt = "tel. …, e-mail …";
-    const wnioskodawcaSolectwo =
-      nazwaWsi !== "Twojej wsi" && nazwaGminy !== "Twojej gminy"
-        ? `Sołectwo ${nazwaWsi}, gmina ${nazwaGminy}`
-        : nazwaWsi !== "Twojej wsi"
-          ? `Sołectwo ${nazwaWsi}`
-          : "Sołectwo …";
+  const scenariuszeWow = useMemo(
+    () =>
+      zbudujScenariuszeWowDokumentow({
+        domyslnaWies: wiesEfektywna,
+        domyslnaGmina: gminaEfektywna,
+        domyslnySoltysNazwa,
+      }),
+    [wiesEfektywna, gminaEfektywna, domyslnySoltysNazwa],
+  );
 
-    return [
-      {
-        id: "wow-finanse-firma",
-        tytul: "Kampania sponsora (finanse)",
-        opis: "Prośba o środki do firmy — start z gotowym uzasadnieniem i pakietem korzyści.",
-        presetId: "prosba-wsparcie-finansowe-firma",
-        uzupelnienia: polaScenariusza({
-          adresat: "Do Zarządu / Właściciela\n[NAZWA FIRMY]\n[ADRES]",
-          wnioskodawca: wnioskodawcaSolectwo,
-          cel: "doposażenie świetlicy wiejskiej",
-          kwota: "3 000,00 PLN",
-          uzasadnienie:
-            "Celem projektu jest doposażenie świetlicy i zwiększenie dostępności zajęć dla dzieci, seniorów oraz spotkań integracyjnych mieszkańców. Inicjatywa realnie poprawi warunki życia społecznego w sołectwie.",
-          korzysci:
-            "Publiczne podziękowanie na stronie wsi i tablicy ogłoszeń, informacja o partnerstwie podczas wydarzenia, możliwość oznaczenia sponsora na materiałach promocyjnych.",
-          kontakt,
-          podpis,
-        }),
-      },
-      {
-        id: "wow-rzeczowe-uslugi",
-        tytul: "Wsparcie rzeczowe/usługowe",
-        opis: "Pismo o materiały, transport lub robociznę z gotową sekcją rozliczenia.",
-        presetId: "prosba-wsparcie-rzeczowe-uslugowe",
-        uzupelnienia: polaScenariusza({
-          adresat: "Do [NAZWA FIRMY / SKLEPU / WYKONAWCY]",
-          cel: "odświeżenie i naprawy w świetlicy wiejskiej",
-          zakres:
-            "1) Materiały wykończeniowe.\n2) Transport materiałów.\n3) Wsparcie robocizną przy pracach przygotowawczych.",
-          termin: "do uzupełnienia (preferowany termin realizacji)",
-          rozliczenie:
-            "Przekazanie wsparcia zostanie udokumentowane protokołem odbioru. Po realizacji przygotujemy krótkie podsumowanie efektów dla darczyńcy.",
-          kontakt,
-          podpis,
-        }),
-      },
-      {
-        id: "wow-podziekowanie",
-        tytul: "Podziękowanie po realizacji",
-        opis: "Gotowe eleganckie podziękowanie dla sponsora po zakończonym działaniu.",
-        presetId: "podziekowanie-za-wsparcie",
-        uzupelnienia: polaScenariusza({
-          adresat: "Do [NAZWA FIRMY / ORGANIZACJI]",
-          projekt: "doposażenie świetlicy wiejskiej",
-          wsparcie:
-            "Dziękujemy za przekazane wsparcie finansowe / rzeczowe, które umożliwiło realizację zadania wskazanego przez mieszkańców.",
-          efekt:
-            "Dzięki wsparciu poprawiono warunki korzystania ze świetlicy i zwiększono dostępność wydarzeń społecznych dla mieszkańców.",
-          publikacja: "strona sołectwa, tablica ogłoszeń i profil społecznościowy",
-          podpis,
-        }),
-      },
-      {
-        id: "wow-potwierdzenie-darowizny",
-        tytul: "Protokół odbioru darowizny",
-        opis: "Potwierdzenie dla darczyńcy do podpisu, gotowe do wydruku.",
-        presetId: "potwierdzenie-darowizny-rzeczowej",
-        uzupelnienia: polaScenariusza({
-          darczyca: "[NAZWA DARCZYŃCY / FIRMY]",
-          odbiorca: wnioskodawcaSolectwo,
-          cel: "doposażenie i utrzymanie świetlicy wiejskiej",
-          przedmiot: "Lista przekazanych materiałów / sprzętu / usług (ilość, stan, wartość orientacyjna).",
-          uwagi: "Przekazanie zgodne z ustaleniami stron.",
-          podpis,
-        }),
-      },
-      {
-        id: "wow-kgw-plan-roczny",
-        tytul: "KGW: plan roczny",
-        opis: "Gotowy układ działań, harmonogramu i budżetu dla koła gospodyń.",
-        presetId: "plan-pracy-kgw-roczny",
-        uzupelnienia: polaScenariusza({
-          nazwa_kgw: "KGW [NAZWA KOŁA]",
-          wies: nazwaWsi !== "Twojej wsi" ? nazwaWsi : "Sołectwo …",
-          rok_plan: String(new Date().getFullYear()),
-          cele:
-            "1) Integracja mieszkańców przez wydarzenia lokalne.\n2) Wzmocnienie współpracy międzypokoleniowej.\n3) Promocja tradycji kulinarnych i rękodzielniczych.",
-          harmonogram:
-            "I kwartał: warsztaty kulinarne.\nII kwartał: piknik rodzinny.\nIII kwartał: udział w dożynkach.\nIV kwartał: kiermasz świąteczny i podsumowanie.",
-          budzet:
-            "Składki członkowskie, wsparcie sponsorskie, mikrodotacje gminne i dochód z wydarzeń lokalnych.",
-          podpis: "Przewodnicząca KGW …",
-        }),
-      },
-      {
-        id: "wow-kgw-dotacja",
-        tytul: "KGW: wniosek o mikrodotację",
-        opis: "Start do naboru gminnego z gotowym opisem projektu i rezultatami.",
-        presetId: "wniosek-kgw-mikrodotacja",
-        uzupelnienia: polaScenariusza({
-          adresat: "Do [NAZWA PROGRAMU / GMINY / FUNDACJI]",
-          nazwa_kgw: "KGW [NAZWA KOŁA]",
-          wies: nazwaWsi !== "Twojej wsi" ? nazwaWsi : "Sołectwo …",
-          tytul_projektu: "Tradycja i integracja pokoleń",
-          kwota: "4 500,00 PLN",
-          opis:
-            "Projekt obejmuje cykl otwartych warsztatów i wydarzeń sąsiedzkich budujących integrację oraz aktywność mieszkańców.",
-          rezultaty:
-            "Min. 4 wydarzenia, wzrost udziału mieszkańców w działaniach społecznych, trwałe materiały i know-how dla kolejnych edycji.",
-          podpis: "Przewodnicząca KGW …",
-        }),
-      },
-      {
-        id: "wow-osp-komunikat",
-        tytul: "OSP: komunikat bezpieczeństwa",
-        opis: "Szybki szablon informacji dla mieszkańców o ćwiczeniach i zaleceniach.",
-        presetId: "komunikat-osp-bezpieczenstwo",
-        uzupelnienia: polaScenariusza({
-          jednostka: "OSP [NAZWA JEDNOSTKI]",
-          temat: "Ćwiczenia OSP i czasowe utrudnienia",
-          data_miejsce: "Data: …\nMiejsce: …",
-          tresc:
-            "W wyznaczonym czasie odbędą się ćwiczenia służb. Mogą wystąpić chwilowe utrudnienia w ruchu i wzmożony ruch pojazdów ratowniczych.",
-          zalecenia:
-            "Prosimy o zachowanie ostrożności, nieblokowanie dojazdów i stosowanie się do poleceń służb porządkowych.",
-          kontakt,
-        }),
-      },
-    ];
-  }, [domyslnaWies, domyslnaGmina, domyslnySoltysNazwa]);
+  const scenariuszeWowWidoczne = useMemo(() => {
+    if (filtrTagWow === "wszystkie") return scenariuszeWow;
+    return scenariuszeWow.filter((sc) => sc.tag === filtrTagWow);
+  }, [scenariuszeWow, filtrTagWow]);
 
-  const lejekSponsora = useMemo(() => {
-    const nazwaWsi = domyslnaWies.trim() || "Twojej wsi";
-    const nazwaGminy = domyslnaGmina.trim() || "Twojej gminy";
-    const podpis = domyslnySoltysNazwa.trim()
-      ? `Sołtys ${domyslnySoltysNazwa.trim()}`
-      : "Sołtys sołectwa";
-    const kontakt = "tel. …, e-mail …";
-    const wnioskodawcaSolectwo =
-      nazwaWsi !== "Twojej wsi" && nazwaGminy !== "Twojej gminy"
-        ? `Sołectwo ${nazwaWsi}, gmina ${nazwaGminy}`
-        : nazwaWsi !== "Twojej wsi"
-          ? `Sołectwo ${nazwaWsi}`
-          : "Sołectwo …";
-    const celSwietlica = "doposażenie świetlicy wiejskiej";
+  const ulubionePresetyIds = useMemo(
+    () => wczytajUlubionePresety(),
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- odświeżenie po kliknięciu gwiazdki
+    [ulubioneTick],
+  );
 
-    return [
-      {
-        krok: 1,
-        tytul: "Prośba",
-        opis: "Pierwsze pismo z uzasadnieniem i korzyściami dla sponsora.",
-        scenariusz: {
-          id: "lejek-1-prosba",
-          tytul: "",
-          opis: "",
-          presetId: "prosba-wsparcie-finansowe-firma",
-          uzupelnienia: polaScenariusza({
-            adresat: "Do Zarządu / Właściciela\n[NAZWA FIRMY]\n[ADRES]",
-            wnioskodawca: wnioskodawcaSolectwo,
-            cel: celSwietlica,
-            kwota: "3 000,00 PLN",
-            uzasadnienie:
-              "Celem projektu jest doposażenie świetlicy i zwiększenie dostępności zajęć dla dzieci, seniorów oraz spotkań integracyjnych mieszkańców. Inicjatywa realnie poprawi warunki życia społecznego w sołectwie.",
-            korzysci:
-              "Publiczne podziękowanie na stronie wsi i tablicy ogłoszeń, informacja o partnerstwie podczas wydarzenia, możliwość oznaczenia sponsora na materiałach promocyjnych.",
-            kontakt,
-            podpis,
-          }),
-        },
-      },
-      {
-        krok: 2,
-        tytul: "Przypomnienie",
-        opis: "Delikatne przypomnienie po pierwszej prośbie.",
-        scenariusz: {
-          id: "lejek-2-przypomnienie",
-          tytul: "",
-          opis: "",
-          presetId: "przypomnienie-o-wsparcie-sponsora",
-          uzupelnienia: polaScenariusza({
-            adresat: "Do Zarządu / Właściciela\n[NAZWA FIRMY]\n[ADRES]",
-            cel: celSwietlica,
-            data_pierwszej_prosby: "… (uzupełnij datę pierwszego pisma)",
-            tresc:
-              "Uprzejmie przypominam o wcześniejszej prośbie o wsparcie inicjatywy sołeckiej. Jeśli jest możliwość krótkiej odpowiedzi lub propozycji innej formy pomocy, będę wdzięczny/a. Pozostaję do dyspozycji.",
-            kontakt,
-            podpis,
-          }),
-        },
-      },
-      {
-        krok: 3,
-        tytul: "Potwierdzenie wpływu",
-        opis: "Notatka po otrzymaniu przelewu — do archiwum.",
-        scenariusz: {
-          id: "lejek-3-finanse",
-          tytul: "",
-          opis: "",
-          presetId: "potwierdzenie-wplywu-srodkow-finansowych",
-          uzupelnienia: polaScenariusza({
-            darczyca: "[NAZWA FIRMY / DARCZYŃCY]",
-            odbiorca: wnioskodawcaSolectwo,
-            kwota: "3 000,00",
-            nr_operacji: "… (z wyciągu bankowego)",
-            cel: `realizacja zadania: ${celSwietlica}`,
-            uwagi: "Dokument ma charakter informacyjny — dopasuj do praktyki księgowej w sołectwie / gminie.",
-            podpis,
-          }),
-        },
-      },
-      {
-        krok: 4,
-        tytul: "Podziękowanie",
-        opis: "Domknięcie współpracy z podziękowaniem i informacją o publikacji.",
-        scenariusz: {
-          id: "lejek-4-podziekowanie",
-          tytul: "",
-          opis: "",
-          presetId: "podziekowanie-za-wsparcie",
-          uzupelnienia: polaScenariusza({
-            adresat: "Do [NAZWA FIRMY / ORGANIZACJI]",
-            projekt: celSwietlica,
-            wsparcie:
-              "Dziękujemy za przekazane wsparcie finansowe, które umożliwiło realizację zadania wskazanego przez mieszkańców.",
-            efekt:
-              "Dzięki wsparciu poprawiono warunki korzystania ze świetlicy i zwiększono dostępność wydarzeń społecznych dla mieszkańców.",
-            publikacja: "strona sołectwa, tablica ogłoszeń i profil społecznościowy",
-            podpis,
-          }),
-        },
-      },
-    ];
-  }, [domyslnaWies, domyslnaGmina, domyslnySoltysNazwa]);
+  const ostatniePresetyIds = useMemo(
+    () => wczytajOstatniePresety(),
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- odświeżenie po wyborze presetu
+    [ostatnieTick],
+  );
 
-  const presetyPoFiltze = useMemo(
-    () => PRESETY_DOKUMENTOW_SOLTYSA.filter((p) => presetPasujeDoFiltra(p, filtrSzukaj)),
-    [filtrSzukaj],
+  const lejekSponsora = useMemo(
+    () =>
+      zbudujLejekSponsora({
+        domyslnaWies: wiesEfektywna,
+        domyslnaGmina: gminaEfektywna,
+        domyslnySoltysNazwa,
+      }),
+    [wiesEfektywna, gminaEfektywna, domyslnySoltysNazwa],
+  );
+
+    const presetyPoFiltze = useMemo(
+    () =>
+      PRESETY_DOKUMENTOW_SOLTYSA.filter(
+        (p) =>
+          presetPasujeDoFiltra(p, filtrSzukaj) &&
+          (filtrKategoria === "wszystkie" || p.kategoria === filtrKategoria) &&
+          presetPasujeDoTematuDok(p, filtrTematDok),
+      ),
+    [filtrSzukaj, filtrKategoria, filtrTematDok],
+  );
+
+  const kategorieDokumentow = useMemo(
+    () => Array.from(new Set(PRESETY_DOKUMENTOW_SOLTYSA.map((p) => p.kategoria))),
+    [],
   );
 
   const preset = znajdzPreset(presetId) ?? pierwszy;
+  const grafikaPreset = GRAFIKA_DLA_PRESETU[presetId];
+
+  const kontekstGrafiki = useMemo(
+    () => ({
+      wies: wiesEfektywna,
+      gmina: gminaEfektywna,
+      organizator: domyslnySoltysNazwa ? `Sołtys ${domyslnySoltysNazwa}` : undefined,
+    }),
+    [wiesEfektywna, gminaEfektywna, domyslnySoltysNazwa],
+  );
+
+  const linkDoGrafiki = useCallback(
+    (szablonGrafikiId: string, uzupelnienia: Record<string, string>, tytul?: string, motyw?: string) =>
+      zbudujLinkGrafiki({
+        szablon: szablonGrafikiId,
+        motyw: motyw ?? znajdzSzablon(szablonGrafikiId)?.domyslnyMotyw,
+        wartosci: mapujPresetNaGrafike(szablonGrafikiId, uzupelnienia, kontekstGrafiki),
+        tytulProjektu: tytul,
+      }),
+    [kontekstGrafiki],
+  );
+
+  useEffect(() => {
+    if (!preset) return;
+    if (preset.kategoria === "Dyplomy i certyfikaty") {
+      ustawStylDokumentu("elegancki");
+      if (preset.pola.some((x) => x.id === "podpis1") && preset.pola.some((x) => x.id === "podpis2")) {
+        ustawUkladPodpisow("dwa");
+      }
+    }
+  }, [presetId, preset]);
 
   const [wartosci, ustawWartosci] = useState<Record<string, string>>(() => {
     if (!pierwszy) return {};
@@ -368,6 +218,8 @@ export function GeneratorDokumentowSoltysaKlient({
       ustawPresetId(id);
       const p = znajdzPreset(id);
       if (!p) return;
+      zapiszOstatniPreset({ presetId: id, tytul: p.tytul });
+      ustawOstatnieTick((x) => x + 1);
       const szkic = wczytajSzkicPresetu(id);
       if (szkic) {
         ustawWartosci(uzupelnijDomyslnePresetu(p, szkic, opcjeDomyslne));
@@ -411,6 +263,8 @@ export function GeneratorDokumentowSoltysaKlient({
       const p = znajdzPreset(scenariusz.presetId);
       if (!p) return;
       ustawPresetId(scenariusz.presetId);
+      zapiszOstatniPreset({ presetId: scenariusz.presetId, tytul: p.tytul });
+      ustawOstatnieTick((x) => x + 1);
       const bazowe = domyslneWartosciPol(p);
       const merged = { ...bazowe, ...scenariusz.uzupelnienia };
       if (domyslnaWies && p.pola.some((x) => x.id === "wies")) merged.wies = merged.wies || domyslnaWies;
@@ -574,18 +428,75 @@ export function GeneratorDokumentowSoltysaKlient({
             Oszczędność czasu: start w kilkanaście sekund
           </span>
         </div>
-        <div className="mt-3 grid gap-2 sm:grid-cols-2">
-          {scenariuszeWow.map((sc) => (
+        <div className="mt-3 flex flex-wrap gap-1.5">
+          {(
+            [
+              { id: "wszystkie", label: "Wszystkie" },
+              { id: "dyplom", label: "Dyplomy" },
+              { id: "sezon", label: "Sezon" },
+              { id: "zebranie", label: "Zebrania" },
+              { id: "dzieci", label: "Dzieci" },
+              { id: "swietlica", label: "Świetlica" },
+            ] as const
+          ).map((t) => (
             <button
-              key={sc.id}
+              key={t.id}
               type="button"
-              onClick={() => uruchomScenariusz(sc)}
-              className="rounded-xl border border-emerald-200 bg-white/95 p-3 text-left shadow-sm transition hover:border-emerald-400 hover:bg-emerald-50/60 active:scale-[0.99]"
+              onClick={() => ustawFiltrTagWow(t.id)}
+              className={`rounded-full px-2.5 py-1 text-[11px] font-medium ${
+                filtrTagWow === t.id ? "bg-emerald-800 text-white" : "bg-white text-stone-700 ring-1 ring-emerald-200"
+              }`}
             >
-              <p className="text-sm font-semibold text-green-950">{sc.tytul}</p>
-              <p className="mt-1 text-xs leading-relaxed text-stone-600">{sc.opis}</p>
+              {t.label}
             </button>
           ))}
+        </div>
+        <div className="mt-3 grid gap-2 sm:grid-cols-2">
+          {scenariuszeWowWidoczne.length === 0 ? (
+            <p className="col-span-full rounded-lg border border-emerald-200 bg-white/80 px-3 py-2 text-sm text-stone-600">
+              Brak scenariuszy w tej kategorii — wybierz inny filtr.
+            </p>
+          ) : null}
+          {scenariuszeWowWidoczne.map((sc) => {
+            const grafika = GRAFIKA_DYPLOM_SCENARIUSZE[sc.id];
+            return (
+              <div
+                key={sc.id}
+                className="rounded-xl border border-emerald-200 bg-white/95 shadow-sm transition hover:border-emerald-400 hover:shadow-md"
+              >
+                <button
+                  type="button"
+                  onClick={() => uruchomScenariusz(sc)}
+                  className="w-full p-3 text-left active:scale-[0.99]"
+                >
+                  <div className="flex flex-wrap items-center gap-1.5">
+                    <p className="text-sm font-semibold text-green-950">{sc.tytul}</p>
+                    {sc.tag ? (
+                      <span className="rounded-full bg-emerald-100 px-2 py-0.5 text-[10px] font-semibold uppercase text-emerald-800">
+                        {sc.tag}
+                      </span>
+                    ) : null}
+                  </div>
+                  <p className="mt-1 text-xs leading-relaxed text-stone-600">{sc.opis}</p>
+                </button>
+                {grafika ? (
+                  <div className="border-t border-emerald-100 px-3 pb-2.5 pt-2">
+                    <Link
+                      href={linkDoGrafiki(
+                        grafika.szablon,
+                        sc.uzupelnienia,
+                        sc.tytul,
+                        sc.id === "wow-osp-komunikat" ? "osp-czerwony" : undefined,
+                      )}
+                      className="text-[11px] font-semibold text-violet-700 hover:text-violet-900 hover:underline"
+                    >
+                      {grafika.etykieta} →
+                    </Link>
+                  </div>
+                ) : null}
+              </div>
+            );
+          })}
         </div>
       </section>
 
@@ -602,6 +513,7 @@ export function GeneratorDokumentowSoltysaKlient({
         <ol className="mt-4 grid gap-2 sm:grid-cols-2 lg:grid-cols-4">
           {lejekSponsora.map(({ krok, tytul, opis, scenariusz }) => {
             const aktywny = aktywnyKrokLejka === krok;
+            const grafikaLejka = GRAFIKA_DYPLOM_SCENARIUSZE[scenariusz.id];
             return (
               <li key={krok} className="list-none">
                 <button
@@ -619,6 +531,14 @@ export function GeneratorDokumentowSoltysaKlient({
                   <span className="mt-1 font-serif text-[15px] text-green-950">{tytul}</span>
                   <span className="mt-1 text-xs leading-snug text-stone-600">{opis}</span>
                 </button>
+                {grafikaLejka ? (
+                  <Link
+                    href={linkDoGrafiki(grafikaLejka.szablon, scenariusz.uzupelnienia, tytul)}
+                    className="mt-1 block px-3 pb-2 text-[10px] font-semibold text-violet-700 hover:underline"
+                  >
+                    {grafikaLejka.etykieta} →
+                  </Link>
+                ) : null}
               </li>
             );
           })}
@@ -647,6 +567,43 @@ export function GeneratorDokumentowSoltysaKlient({
             autoComplete="off"
             className="w-full rounded-xl border border-stone-200 bg-white px-3 py-2.5 text-sm text-stone-900 shadow-sm outline-none ring-green-800/20 placeholder:text-stone-400 focus:border-green-700 focus:ring-2"
           />
+          <div className="flex flex-wrap gap-1.5">
+            <button
+              type="button"
+              onClick={() => ustawFiltrKategoria("wszystkie")}
+              className={`rounded-full px-2.5 py-1 text-[11px] font-medium ${
+                filtrKategoria === "wszystkie" ? "bg-green-800 text-white" : "bg-stone-100 text-stone-700"
+              }`}
+            >
+              Wszystkie
+            </button>
+            {kategorieDokumentow.map((kat) => (
+              <button
+                key={kat}
+                type="button"
+                onClick={() => ustawFiltrKategoria(kat)}
+                className={`rounded-full px-2.5 py-1 text-[11px] font-medium ${
+                  filtrKategoria === kat ? "bg-green-800 text-white" : "bg-stone-100 text-stone-700"
+                }`}
+              >
+                {kat}
+              </button>
+            ))}
+          </div>
+          <div className="mt-2 flex flex-wrap gap-1.5">
+            {(Object.keys(ETYKIETY_TEMATU_DOK) as FiltrTematuDokumentu[]).map((t) => (
+              <button
+                key={t}
+                type="button"
+                onClick={() => ustawFiltrTematDok(t)}
+                className={`rounded-full px-2.5 py-1 text-[11px] font-medium ${
+                  filtrTematDok === t ? "bg-sky-800 text-white" : "bg-sky-50 text-sky-900 ring-1 ring-sky-200"
+                }`}
+              >
+                {ETYKIETY_TEMATU_DOK[t]}
+              </button>
+            ))}
+          </div>
           <p className="text-xs text-stone-500">
             {filtrSzukaj.trim() ? (
               <>
@@ -672,15 +629,25 @@ export function GeneratorDokumentowSoltysaKlient({
                   <ul className="space-y-1 border-l-2 border-green-900/15 pl-3">
                     {items.map((p) => (
                       <li key={p.id}>
-                        <button
-                          type="button"
-                          onClick={() => zmienPreset(p.id)}
-                          className={`min-h-[44px] w-full touch-manipulation rounded-md px-3 py-2.5 text-left text-[15px] leading-snug transition-colors hover:bg-stone-100 active:bg-stone-200 sm:min-h-0 sm:py-1.5 sm:text-sm ${
-                            p.id === presetId ? "bg-green-900/10 font-medium text-green-950" : "text-stone-700"
+                        <div
+                          className={`flex min-h-[44px] w-full items-center gap-1 rounded-md px-1 py-1 sm:min-h-0 ${
+                            p.id === presetId ? "bg-green-900/10" : ""
                           }`}
                         >
-                          {p.tytul}
-                        </button>
+                          <PrzyciskUlubionyPreset
+                            presetId={p.id}
+                            onZmiana={() => ustawUlubioneTick((x) => x + 1)}
+                          />
+                          <button
+                            type="button"
+                            onClick={() => zmienPreset(p.id)}
+                            className={`min-h-[44px] flex-1 touch-manipulation rounded-md px-2 py-2.5 text-left text-[15px] leading-snug transition-colors hover:bg-stone-100 active:bg-stone-200 sm:min-h-0 sm:py-1.5 sm:text-sm ${
+                              p.id === presetId ? "font-medium text-green-950" : "text-stone-700"
+                            }`}
+                          >
+                            {p.tytul}
+                          </button>
+                        </div>
                       </li>
                     ))}
                   </ul>
@@ -688,6 +655,55 @@ export function GeneratorDokumentowSoltysaKlient({
               ))
             )}
           </nav>
+          {ostatniePresetyIds.length > 0 ? (
+            <div className="rounded-xl border border-stone-200 bg-stone-50/80 p-3">
+              <p className="text-xs font-bold uppercase tracking-wider text-stone-600">Ostatnio używane</p>
+              <ul className="mt-2 space-y-1">
+                {ostatniePresetyIds.map((o) => {
+                  const p = znajdzPreset(o.presetId);
+                  if (!p) return null;
+                  return (
+                    <li key={o.presetId}>
+                      <button
+                        type="button"
+                        onClick={() => zmienPreset(o.presetId)}
+                        className={`w-full rounded-md px-2 py-1.5 text-left text-sm hover:bg-stone-100 ${
+                          o.presetId === presetId ? "bg-green-900/10 font-medium text-green-950" : "text-stone-700"
+                        }`}
+                      >
+                        {p.tytul}
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+          ) : null}
+          {ulubionePresetyIds.length > 0 ? (
+            <div className="rounded-xl border border-amber-200/90 bg-amber-50/50 p-3">
+              <p className="text-xs font-bold uppercase tracking-wider text-amber-900">Ulubione</p>
+              <ul className="mt-2 space-y-1">
+                {ulubionePresetyIds.map((id) => {
+                  const p = znajdzPreset(id);
+                  if (!p) return null;
+                  return (
+                    <li key={id}>
+                      <button
+                        type="button"
+                        onClick={() => zmienPreset(id)}
+                        className={`flex w-full items-center gap-1 rounded-md px-2 py-1.5 text-left text-sm hover:bg-amber-100/80 ${
+                          id === presetId ? "bg-amber-100 font-medium text-green-950" : "text-stone-700"
+                        }`}
+                      >
+                        <PrzyciskUlubionyPreset presetId={id} onZmiana={() => ustawUlubioneTick((x) => x + 1)} />
+                        <span className="line-clamp-2">{p.tytul}</span>
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+            </div>
+          ) : null}
         </aside>
 
         <div className="min-w-0 space-y-4">
@@ -707,6 +723,21 @@ export function GeneratorDokumentowSoltysaKlient({
               Nr ref. sesji: <span className="text-green-900">{numerReferencyjnySesji}</span>
             </p>
           </div>
+
+          {grafikaPreset ? (
+            <div className="no-print rounded-xl border border-violet-200 bg-gradient-to-r from-violet-50/80 to-white p-3">
+              <p className="text-xs font-semibold text-violet-900">Chcesz wersję graficzną?</p>
+              <p className="mt-1 text-xs text-stone-600">
+                Ten dokument ma gotowy odpowiednik w kreatorze — dyplom, plakat lub zaproszenie do druku w kolorze.
+              </p>
+              <Link
+                href={linkDoGrafiki(grafikaPreset.szablon, wartosci, preset.tytul)}
+                className="mt-2 inline-block text-sm font-semibold text-violet-700 hover:text-violet-900 hover:underline"
+              >
+                {grafikaPreset.etykieta} →
+              </Link>
+            </div>
+          ) : null}
 
           <div className="no-print rounded-xl border border-sky-200/80 bg-sky-50/40 p-3">
             <p className="text-xs font-semibold uppercase tracking-wide text-sky-900">Styl dokumentu</p>
@@ -966,6 +997,7 @@ export function GeneratorDokumentowSoltysaKlient({
               >
                 Drukuj / PDF z systemu
               </button>
+              <KopiujLinkDokumentu presetId={presetId} />
             </div>
             <div className="flex w-full flex-col gap-2 sm:w-auto sm:flex-row sm:flex-wrap">
               {(domyslnaWies || domyslnaGmina || domyslnySoltysNazwa) && (

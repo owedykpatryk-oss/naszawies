@@ -14,6 +14,7 @@ import {
   profilKlubuSportowegoZFormularza,
 } from "@/lib/wies/profil-klubu-sportowego";
 import type { OrganizacjaPelna } from "@/lib/wies/profil-organizacji";
+import { PolaOkladkiOrganizacji } from "@/components/panel/soltys/pola-okladki-organizacji";
 
 export function ProfilKlubuSportowegoKlient({
   villageId,
@@ -151,6 +152,7 @@ export function ProfilKlubuSportowegoKlient({
       <form onSubmit={edytujId ? onAktualizuj : onNowa} className="space-y-3">
         <h3 className="font-medium text-stone-900">{edytujId ? "Edycja klubu" : "Nowy klub"}</h3>
         <input name="name" required placeholder="Nazwa (np. LKS Studzienki)" defaultValue={edytowana?.name ?? ""} className="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm" />
+        <PolaOkladkiOrganizacji prefix="sport" villageId={villageId} okladkaUrl={profilEdycji?.okladka_url} haslo={profilEdycji?.haslo} />
         <textarea name="short_description" rows={2} placeholder="Krótki opis" defaultValue={edytowana?.short_description ?? ""} className="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm" />
         <input name="meeting_place" placeholder="Boisko / hala" defaultValue={edytowana?.meeting_place ?? ""} className="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm" />
         <textarea name="schedule_text" rows={2} placeholder="Stałe godziny (tekst)" defaultValue={edytowana?.schedule_text ?? ""} className="w-full rounded-lg border border-stone-300 px-3 py-2 text-sm" />

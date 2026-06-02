@@ -1131,6 +1131,322 @@ export const PRESETY_DOKUMENTOW_SOLTYSA: PresetDokumentu[] = [
         <p><strong>Kontakt:</strong> ${v(w, "kontakt")}</p>
       `),
   },
+  {
+    id: "dyplom-honorowy-mieszkaniec",
+    kategoria: "Dyplomy i certyfikaty",
+    tytul: "Dyplom honorowy — zasłużony mieszkaniec",
+    opis: "Uroczysty dyplom do wręczenia na zebraniu lub festynie — wersja tekstowa do PDF.",
+    pola: [
+      { id: "wies", etykieta: "Sołectwo / wieś", typ: "text" },
+      { id: "gmina", etykieta: "Gmina", typ: "text" },
+      { id: "nagroda", etykieta: "Tytuł wyróżnienia", typ: "text", placeholder: "np. Zasłużony Mieszkaniec Sołectwa", domyslna: "Zasłużony Mieszkaniec Sołectwa" },
+      { id: "laureat", etykieta: "Imię i nazwisko laureata", typ: "text" },
+      {
+        id: "uzasadnienie",
+        etykieta: "Uzasadnienie / za co",
+        typ: "textarea",
+        wiersze: 6,
+        placeholder: "Za wieloletnie zaangażowanie…",
+      },
+      { id: "data", etykieta: "Data wręczenia", typ: "date" },
+      { id: "miejsce", etykieta: "Miejsce wręczenia", typ: "text", placeholder: "np. świetlica, festyn dożynkowy" },
+      { id: "podpis1", etykieta: "Podpis 1 (funkcja + nazwisko)", typ: "text", placeholder: "Sołtys …" },
+      { id: "podpis2", etykieta: "Podpis 2 (funkcja + nazwisko)", typ: "text", placeholder: "Przewodniczący Rady Sołeckiej …" },
+    ],
+    budujHtml: (w, meta) =>
+      otoczenie(
+        v(w, "nagroda"),
+        { ...meta, stylWydruku: "elegancki", ukladPodpisow: "dwa" },
+        `
+        <p style="text-align:center;font-size:0.9rem;margin-bottom:1.5rem">Sołectwo <strong>${v(w, "wies")}</strong> · gmina ${v(w, "gmina")}</p>
+        <p style="text-align:center;font-size:1.35rem;margin:1.5rem 0 0.5rem"><strong>${v(w, "laureat")}</strong></p>
+        <div class="ramka"><p style="white-space:pre-wrap;text-align:center">${v(w, "uzasadnienie")}</p></div>
+        <p style="text-align:center;margin-top:1.25rem"><strong>${v(w, "miejsce")}</strong>, dnia ${v(w, "data")}</p>
+        <div class="podpisy-siatka podpisy-2">
+          <div class="podpis-kolumna"><p>……………………………</p><p style="white-space:pre-wrap">${v(w, "podpis1")}</p></div>
+          <div class="podpis-kolumna"><p>……………………………</p><p style="white-space:pre-wrap">${v(w, "podpis2")}</p></div>
+        </div>
+      `,
+      ),
+  },
+  {
+    id: "zaswiadczenie-uczestnictwo-szkolenie",
+    kategoria: "Dyplomy i certyfikaty",
+    tytul: "Zaświadczenie o uczestnictwie w szkoleniu",
+    opis: "Certyfikat uczestnictwa — OSP, KGW, GOPS, pierwsza pomoc, warsztaty.",
+    pola: [
+      { id: "organizator", etykieta: "Organizator szkolenia", typ: "text", placeholder: "np. OSP, KGW, GOPS" },
+      { id: "wies", etykieta: "Wieś / sołectwo", typ: "text" },
+      { id: "tytul_szkolenia", etykieta: "Tytuł szkolenia / kursu", typ: "text", placeholder: "np. Pierwsza pomoc przedmedyczna" },
+      { id: "uczestnik", etykieta: "Imię i nazwisko uczestnika", typ: "text" },
+      { id: "data_od", etykieta: "Data rozpoczęcia", typ: "date" },
+      { id: "data_do", etykieta: "Data zakończenia", typ: "date" },
+      { id: "program", etykieta: "Zakres / program (skrót)", typ: "textarea", wiersze: 5 },
+      { id: "podpis", etykieta: "Podpis (instruktor / kierownik)", typ: "text" },
+    ],
+    budujHtml: (w, meta) =>
+      otoczenie("Zaświadczenie o uczestnictwie", { ...meta, stylWydruku: "elegancki" }, `
+        <p style="text-align:center">Niniejszym zaświadcza się, że</p>
+        <p style="text-align:center;font-size:1.3rem;margin:0.75rem 0"><strong>${v(w, "uczestnik")}</strong></p>
+        <p style="text-align:center">uczestniczył/a w szkoleniu:</p>
+        <p style="text-align:center;font-size:1.05rem;margin:0.5rem 0"><strong>${v(w, "tytul_szkolenia")}</strong></p>
+        <p style="text-align:center">organizowanym przez <strong>${v(w, "organizator")}</strong> · ${v(w, "wies")}</p>
+        <p style="text-align:center">w okresie od ${v(w, "data_od")} do ${v(w, "data_do")}.</p>
+        <h2>Zakres szkolenia</h2>
+        <div class="ramka"><p style="white-space:pre-wrap">${v(w, "program")}</p></div>
+        <p class="podpis">Potwierdza —<br/><strong>${v(w, "podpis")}</strong></p>
+      `),
+  },
+  {
+    id: "dyplom-wolontariusz-roku",
+    kategoria: "Dyplomy i certyfikaty",
+    tytul: "Dyplom — Wolontariusz Roku",
+    opis: "Wyróżnienie dla osoby szczególnie zaangażowanej w wydarzenia sołeckie.",
+    pola: [
+      { id: "wies", etykieta: "Sołectwo", typ: "text" },
+      { id: "gmina", etykieta: "Gmina", typ: "text" },
+      { id: "laureat", etykieta: "Imię i nazwisko", typ: "text" },
+      { id: "rok", etykieta: "Rok", typ: "text", domyslna: String(new Date().getFullYear()) },
+      {
+        id: "uzasadnienie",
+        etykieta: "Uzasadnienie",
+        typ: "textarea",
+        wiersze: 5,
+        placeholder: "Za wkład w organizację festynu, pomoc przy remoncie świetlicy…",
+      },
+      { id: "data", etykieta: "Data wręczenia", typ: "date" },
+      { id: "podpis1", etykieta: "Podpis sołtysa", typ: "text" },
+      { id: "podpis2", etykieta: "Podpis przedstawiciela organizacji", typ: "text", placeholder: "np. KGW, OSP" },
+    ],
+    budujHtml: (w, meta) =>
+      otoczenie(`Wolontariusz Roku ${v(w, "rok")}`, { ...meta, stylWydruku: "elegancki", ukladPodpisow: "dwa" }, `
+        <p style="text-align:center">Sołectwo <strong>${v(w, "wies")}</strong> · gmina ${v(w, "gmina")}</p>
+        <p style="text-align:center;font-size:1.35rem;margin:1.25rem 0"><strong>${v(w, "laureat")}</strong></p>
+        <div class="ramka"><p style="white-space:pre-wrap;text-align:center">${v(w, "uzasadnienie")}</p></div>
+        <p style="text-align:center;margin-top:1rem">Wręczono dnia ${v(w, "data")}</p>
+        <div class="podpisy-siatka podpisy-2">
+          <div class="podpis-kolumna"><p>……………………………</p><p style="white-space:pre-wrap">${v(w, "podpis1")}</p></div>
+          <div class="podpis-kolumna"><p>……………………………</p><p style="white-space:pre-wrap">${v(w, "podpis2")}</p></div>
+        </div>
+      `),
+  },
+  {
+    id: "lista-wreczenia-dyplomow",
+    kategoria: "Dyplomy i certyfikaty",
+    tytul: "Protokół wręczenia dyplomów / listy laureatów",
+    opis: "Spis osób, którym wręczono dyplomy — do protokołu i archiwum.",
+    pola: [
+      { id: "wies", etykieta: "Sołectwo / organizacja", typ: "text" },
+      { id: "wydarzenie", etykieta: "Nazwa wydarzenia / okazja", typ: "text", placeholder: "np. festyn dożynkowy, zakończenie roku szkolnego" },
+      { id: "data", etykieta: "Data wręczenia", typ: "date" },
+      { id: "miejsce", etykieta: "Miejsce", typ: "text" },
+      {
+        id: "lista",
+        etykieta: "Lista laureatów (imię, nazwisko, tytuł dyplomu)",
+        typ: "textarea",
+        wiersze: 12,
+        placeholder: "1. Jan Kowalski — dyplom uczestnictwa KGW\n2. Anna Nowak — dyplom konkursu plastycznego\n…",
+      },
+      { id: "uwagi", etykieta: "Uwagi", typ: "textarea", wiersze: 3 },
+      { id: "podpis", etykieta: "Sporządził/a (funkcja + nazwisko)", typ: "text" },
+    ],
+    budujHtml: (w, meta) =>
+      otoczenie("Protokół wręczenia dyplomów", meta, `
+        <p><strong>Sołectwo / organizacja:</strong> ${v(w, "wies")}</p>
+        <p><strong>Wydarzenie:</strong> ${v(w, "wydarzenie")}</p>
+        <p><strong>Data:</strong> ${v(w, "data")} · <strong>Miejsce:</strong> ${v(w, "miejsce")}</p>
+        <h2>Lista wręczonych dyplomów</h2>
+        <div class="ramka"><p style="white-space:pre-wrap">${v(w, "lista")}</p></div>
+        <p><strong>Uwagi:</strong></p>
+        <div class="ramka"><p style="white-space:pre-wrap">${v(w, "uwagi")}</p></div>
+        <p class="podpis">Sporządził/a —<br/><strong>${v(w, "podpis")}</strong></p>
+      `),
+  },
+  {
+    id: "dyplom-zasluzeni-seniorzy",
+    kategoria: "Dyplomy i certyfikaty",
+    tytul: "Dyplom uznania — aktywni seniorzy (wiele osób)",
+    opis: "Szablon ogólny z listą wyróżnionych seniorów klubu.",
+    pola: [
+      { id: "organizator", etykieta: "Organizacja (np. Klub Seniora)", typ: "text" },
+      { id: "wies", etykieta: "Wieś / sołectwo", typ: "text" },
+      { id: "okazja", etykieta: "Okazja", typ: "text", placeholder: "np. Dni Seniora, jubileusz klubu" },
+      {
+        id: "laureaci",
+        etykieta: "Wyróżnieni (lista imion i nazwisk)",
+        typ: "textarea",
+        wiersze: 8,
+      },
+      {
+        id: "tresc",
+        etykieta: "Wspólna treść dyplomu",
+        typ: "textarea",
+        wiersze: 4,
+        placeholder: "Za aktywny udział w działalności klubu seniora…",
+      },
+      { id: "data", etykieta: "Data", typ: "date" },
+      { id: "podpis", etykieta: "Podpis", typ: "text" },
+    ],
+    budujHtml: (w, meta) =>
+      otoczenie("Dyplom uznania dla seniorów", { ...meta, stylWydruku: "elegancki" }, `
+        <p style="text-align:center"><strong>${v(w, "organizator")}</strong> · ${v(w, "wies")}</p>
+        <p style="text-align:center">Z okazji: <strong>${v(w, "okazja")}</strong></p>
+        <div class="ramka"><p style="white-space:pre-wrap;text-align:center">${v(w, "tresc")}</p></div>
+        <h2>Wyróżnieni</h2>
+        <div class="ramka"><p style="white-space:pre-wrap">${v(w, "laureaci")}</p></div>
+        <p style="text-align:center;margin-top:1rem">${v(w, "wies")}, dnia ${v(w, "data")}</p>
+        <p class="podpis" style="text-align:center">……………………………<br/><strong>${v(w, "podpis")}</strong></p>
+      `),
+  },
+  {
+    id: "podziekowanie-za-sluzbe-parafialna",
+    kategoria: "Dyplomy i certyfikaty",
+    tytul: "Podziękowanie za służbę parafialną (lektor, ministrant, organista)",
+    opis: "Oficjalne podziękowanie od parafii lub sołectwa współpracującego z parafią.",
+    pola: [
+      { id: "parafia", etykieta: "Parafia", typ: "text", placeholder: "np. Parafia pw. św. …" },
+      { id: "wies", etykieta: "Wieś", typ: "text" },
+      { id: "adresat", etykieta: "Imię i nazwisko / funkcja", typ: "text", placeholder: "np. Jan Kowalski — lektor" },
+      {
+        id: "tresc",
+        etykieta: "Treść podziękowania",
+        typ: "textarea",
+        wiersze: 6,
+        placeholder: "Składamy serdeczne podziękowania za…",
+      },
+      { id: "data", etykieta: "Data", typ: "date" },
+      { id: "podpis1", etykieta: "Podpis proboszcza", typ: "text" },
+      { id: "podpis2", etykieta: "Podpis 2 (opcjonalnie)", typ: "text", placeholder: "np. sołtys" },
+    ],
+    budujHtml: (w, meta) =>
+      otoczenie("Podziękowanie", { ...meta, stylWydruku: "elegancki", ukladPodpisow: "dwa" }, `
+        <p style="text-align:center"><strong>${v(w, "parafia")}</strong> · ${v(w, "wies")}</p>
+        <p style="text-align:center;font-size:1.15rem;margin:1rem 0"><strong>${v(w, "adresat")}</strong></p>
+        <div class="ramka"><p style="white-space:pre-wrap;text-align:center">${v(w, "tresc")}</p></div>
+        <p style="text-align:center;margin-top:1rem">${v(w, "wies")}, dnia ${v(w, "data")}</p>
+        <div class="podpisy-siatka podpisy-2">
+          <div class="podpis-kolumna"><p>……………………………</p><p style="white-space:pre-wrap">${v(w, "podpis1")}</p></div>
+          <div class="podpis-kolumna"><p>……………………………</p><p style="white-space:pre-wrap">${v(w, "podpis2")}</p></div>
+        </div>
+      `),
+  },
+  {
+    id: "zaproszenie-dozynki-pismo",
+    kategoria: "Komunikacja z mieszkańcami",
+    tytul: "Zaproszenie na dożynki / festyn dożynkowy",
+    opis: "Oficjalne zaproszenie mieszkańców i zaproszonych gości na uroczystość dożynkową.",
+    pola: [
+      { id: "wies", etykieta: "Sołectwo / wieś", typ: "text" },
+      { id: "gmina", etykieta: "Gmina", typ: "text" },
+      { id: "tytul_wyd", etykieta: "Tytuł wydarzenia", typ: "text", placeholder: "np. Dożynki Gminne 2026" },
+      { id: "data_miejsce", etykieta: "Data, godzina, miejsce", typ: "textarea", wiersze: 3 },
+      {
+        id: "opis",
+        etykieta: "Program / informacje",
+        typ: "textarea",
+        wiersze: 6,
+        placeholder: "Korowód · występy · kiermasz KGW · poczęstunek…",
+      },
+      { id: "kontakt", etykieta: "Kontakt / zapisy", typ: "text" },
+      { id: "podpis", etykieta: "Zaprasza (sołtys / organizator)", typ: "text", placeholder: "Sołtys …" },
+    ],
+    budujHtml: (w, meta) =>
+      otoczenie("Zaproszenie", { ...meta, stylWydruku: "elegancki" }, `
+        <p style="text-align:center">Sołectwo <strong>${v(w, "wies")}</strong> · gmina ${v(w, "gmina")}</p>
+        <p style="text-align:center;font-size:1.1rem;margin:1rem 0"><strong>${v(w, "tytul_wyd")}</strong></p>
+        <p style="text-align:center"><strong>Termin i miejsce:</strong><br/>${v(w, "data_miejsce")}</p>
+        <h2>Program</h2>
+        <div class="ramka"><p style="white-space:pre-wrap;text-align:center">${v(w, "opis")}</p></div>
+        <p style="text-align:center;margin-top:1rem"><strong>Kontakt:</strong> ${v(w, "kontakt")}</p>
+        <p class="podpis" style="text-align:center">Serdecznie zapraszamy —<br/><strong>${v(w, "podpis")}</strong></p>
+      `),
+  },
+  {
+    id: "komunikat-tablica-ogloszen",
+    kategoria: "Komunikacja z mieszkańcami",
+    tytul: "Komunikat na tablicę ogłoszeń (krótki)",
+    opis: "Zwięzłe ogłoszenie do powieszenia na tablicy wsi lub w sklepie.",
+    pola: [
+      { id: "wies", etykieta: "Wieś / sołectwo", typ: "text" },
+      { id: "tytul", etykieta: "Nagłówek komunikatu", typ: "text", placeholder: "np. Zebranie wiejskie" },
+      { id: "tresc", etykieta: "Treść", typ: "textarea", wiersze: 8 },
+      { id: "data", etykieta: "Data ogłoszenia", typ: "date" },
+      { id: "kontakt", etykieta: "Kontakt (sołtys)", typ: "text" },
+    ],
+    budujHtml: (w, meta) =>
+      otoczenie(v(w, "tytul"), meta, `
+        <p><strong>Sołectwo:</strong> ${v(w, "wies")} · <strong>Data:</strong> ${v(w, "data")}</p>
+        <div class="ramka" style="font-size:1.05rem;line-height:1.6"><p style="white-space:pre-wrap">${v(w, "tresc")}</p></div>
+        <p style="margin-top:1.25rem"><strong>Kontakt:</strong> ${v(w, "kontakt")}</p>
+      `),
+  },
+  {
+    id: "zaproszenie-dzien-dziecka-pismo",
+    kategoria: "Komunikacja z mieszkańcami",
+    tytul: "Zaproszenie — Dzień Dziecka (pismo / ogłoszenie)",
+    opis: "Krótkie zaproszenie na imprezę dla dzieci — do wysłania rodzicom lub na tablicę.",
+    pola: [
+      { id: "wies", etykieta: "Wieś / sołectwo", typ: "text" },
+      { id: "gmina", etykieta: "Gmina", typ: "text" },
+      { id: "tytul_wyd", etykieta: "Tytuł imprezy", typ: "text", placeholder: "np. Dzień Dziecka w świetlicy" },
+      { id: "data_miejsce", etykieta: "Data, godzina, miejsce", typ: "textarea", wiersze: 3 },
+      {
+        id: "opis",
+        etykieta: "Program / atrakcje",
+        typ: "textarea",
+        wiersze: 5,
+        placeholder: "Animacje · zabawy · konkursy · poczęstunek…",
+      },
+      { id: "kontakt", etykieta: "Kontakt / zapisy", typ: "text" },
+      { id: "podpis", etykieta: "Zaprasza", typ: "text", placeholder: "Sołtys …" },
+    ],
+    budujHtml: (w, meta) =>
+      otoczenie("Zaproszenie — Dzień Dziecka", { ...meta, stylWydruku: "nowoczesny" }, `
+        <p style="text-align:center">Sołectwo <strong>${v(w, "wies")}</strong> · gmina ${v(w, "gmina")}</p>
+        <p style="text-align:center;font-size:1.15rem;margin:1rem 0"><strong>${v(w, "tytul_wyd")}</strong></p>
+        <p style="text-align:center"><strong>Termin i miejsce:</strong><br/>${v(w, "data_miejsce")}</p>
+        <h2>Program</h2>
+        <div class="ramka"><p style="white-space:pre-wrap;text-align:center">${v(w, "opis")}</p></div>
+        <p style="text-align:center;margin-top:1rem"><strong>Kontakt:</strong> ${v(w, "kontakt")}</p>
+        <p class="podpis" style="text-align:center">Serdecznie zapraszamy dzieci i rodziny —<br/><strong>${v(w, "podpis")}</strong></p>
+      `),
+  },
+  {
+    id: "regulamin-swietlica-skrot",
+    kategoria: "Świetlica i majątek",
+    tytul: "Regulamin świetlicy — skrót do tablicy",
+    opis: "Najważniejsze zasady korzystania ze świetlicy — uzupełnij i wydrukuj razem z wersją graficzną.",
+    pola: [
+      { id: "wies", etykieta: "Sołectwo / wieś", typ: "text" },
+      { id: "gmina", etykieta: "Gmina", typ: "text" },
+      { id: "obiekt", etykieta: "Nazwa obiektu", typ: "text", placeholder: "np. Świetlica wiejska" },
+      {
+        id: "zasady",
+        etykieta: "Punkty regulaminu",
+        typ: "textarea",
+        wiersze: 10,
+        placeholder: "1. Rezerwacja u sołtysa…\n2. Zakaz palenia…",
+        szybkieWstawki: [
+          {
+            etykieta: "Pełny szablon zasad",
+            wartosc:
+              "1. Korzystanie ze świetlicy możliwe po wcześniejszej rezerwacji u sołtysa lub opiekuna.\n2. W sali obowiązuje zakaz palenia tytoniu i spożywania alkoholu.\n3. Użytkownik odpowiada za porządek i stan wyposażenia po zakończeniu zajęć.\n4. Dzieci do lat 14 korzystają wyłącznie pod opieką dorosłego.\n5. W razie szkody należy niezwłocznie poinformować sołtysa lub gminę.",
+          },
+        ],
+      },
+      { id: "kontakt", etykieta: "Rezerwacja / kontakt", typ: "text" },
+      { id: "podstawa", etykieta: "Podstawa (uchwała / data)", typ: "textarea", wiersze: 2 },
+    ],
+    budujHtml: (w, meta) =>
+      otoczenie("Regulamin korzystania ze świetlicy", meta, `
+        <p><strong>Obiekt:</strong> ${v(w, "obiekt")} · sołectwo ${v(w, "wies")}, gmina ${v(w, "gmina")}</p>
+        <h2>Zasady</h2>
+        <div class="ramka"><p style="white-space:pre-wrap">${v(w, "zasady")}</p></div>
+        <p><strong>Rezerwacja / pytania:</strong> ${v(w, "kontakt")}</p>
+        <p class="ramka" style="margin-top:1rem;font-size:0.9rem"><strong>Podstawa:</strong> ${v(w, "podstawa")}</p>
+        <p style="margin-top:1rem;font-size:0.85rem;color:#666">Wydrukuj także wersję graficzną w kreatorze (szablon „Regulamin świetlicy”) i powieś przy wejściu.</p>
+      `),
+  },
 ];
 
 /** Jedna linia pod tytułem dokumentu (druk / archiwum). */

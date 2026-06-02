@@ -20,6 +20,18 @@ export default function manifest(): MetadataRoute.Manifest {
     categories: ["lifestyle", "social", "utilities"],
     shortcuts: [
       {
+        name: "Szukaj wsi",
+        short_name: "Szukaj",
+        url: "/szukaj",
+        description: "Katalog miejscowości w Polsce",
+      },
+      {
+        name: "Mapa",
+        short_name: "Mapa",
+        url: "/mapa",
+        description: "Mapa wsi, POI i warstw tematycznych",
+      },
+      {
         name: "Powiadomienia",
         short_name: "Powiadomienia",
         url: "/panel/powiadomienia",

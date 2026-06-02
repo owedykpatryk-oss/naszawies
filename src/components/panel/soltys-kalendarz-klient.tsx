@@ -63,6 +63,7 @@ const WSZYSTKIE_RODZAJE: RodzajWpisKalendarza[] = [
   "zadanie",
   "ogloszenie",
   "lowiectwo",
+  "harmonogram_lowiecki",
 ];
 
 function zakresTygodnia(dzienKlucz: string): string[] {

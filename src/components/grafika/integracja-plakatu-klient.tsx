@@ -1,21 +1,24 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
+import Link from "next/link";
 import {
   dodajDoKalendarzaZPlakatu,
   dodajOgloszenieZPlakatu,
   ustawPlakatNaTablicyCyfrowej,
 } from "@/app/(site)/panel/grafika/akcje";
 
-import Link from "next/link";
-
 type Props = {
   projektId: string | null;
   maDate: boolean;
   trybSoltys: boolean;
   zapisDoBazy: boolean;
+  linkedPostId?: string | null;
+  linkedEventId?: string | null;
+  featuredOnDigitalBoard?: boolean;
   onKomunikat: (tekst: string) => void;
   onBlad: (tekst: string) => void;
+  onOdswiez?: () => void;
 };
 
 export function IntegracjaPlakatuKlient({
@@ -23,11 +26,19 @@ export function IntegracjaPlakatuKlient({
   maDate,
   trybSoltys,
   zapisDoBazy,
+  linkedPostId = null,
+  linkedEventId = null,
+  featuredOnDigitalBoard = false,
   onKomunikat,
   onBlad,
+  onOdswiez,
 }: Props) {
-  const [naTablicy, ustawNaTablicy] = useState(false);
+  const [naTablicy, ustawNaTablicy] = useState(featuredOnDigitalBoard);
   const [oczekuje, startTransition] = useTransition();
+
+  useEffect(() => {
+    ustawNaTablicy(featuredOnDigitalBoard);
+  }, [featuredOnDigitalBoard, projektId]);
 
   if (!trybSoltys || !zapisDoBazy) return null;
 
@@ -40,7 +51,7 @@ export function IntegracjaPlakatuKlient({
   };
 
   const ogloszenie = () => {
-    if (!wymagajZapisu()) return;
+    if (!wymagajZapisu() || linkedPostId) return;
     startTransition(async () => {
       const r = await dodajOgloszenieZPlakatu(projektId!);
       if ("blad" in r) {
@@ -49,11 +60,12 @@ export function IntegracjaPlakatuKlient({
       }
       onKomunikat("Ogłoszenie dodane na profil wsi (widoczne od razu).");
       onBlad("");
+      onOdswiez?.();
     });
   };
 
   const kalendarz = () => {
-    if (!wymagajZapisu()) return;
+    if (!wymagajZapisu() || linkedEventId) return;
     if (!maDate) {
       onBlad("Uzupełnij pole „Data” w kroku 2, aby dodać wydarzenie do kalendarza.");
       return;
@@ -66,6 +78,7 @@ export function IntegracjaPlakatuKlient({
       }
       onKomunikat("Wydarzenie dodane do kalendarza społeczności wsi.");
       onBlad("");
+      onOdswiez?.();
     });
   };
 
@@ -84,6 +97,7 @@ export function IntegracjaPlakatuKlient({
           : "Plakat usunięty z rotacji tablicy cyfrowej.",
       );
       onBlad("");
+      onOdswiez?.();
     });
   };
 
@@ -93,22 +107,39 @@ export function IntegracjaPlakatuKlient({
       <p className="mt-1 text-xs text-stone-600">
         Jeden klik — plakat staje się ogłoszeniem lub wpisem w kalendarzu wydarzeń.
       </p>
+
+      {(linkedPostId || linkedEventId) && (
+        <div className="mt-2 flex flex-wrap gap-2 text-xs">
+          {linkedPostId ? (
+            <span className="rounded-full bg-emerald-200/80 px-2.5 py-1 font-medium text-emerald-950">
+              ✓ Ogłoszenie utworzone
+            </span>
+          ) : null}
+          {linkedEventId ? (
+            <span className="rounded-full bg-sky-200/80 px-2.5 py-1 font-medium text-sky-950">
+              ✓ W kalendarzu wsi
+            </span>
+          ) : null}
+        </div>
+      )}
+
       <div className="mt-3 flex flex-wrap gap-2">
         <button
           type="button"
-          disabled={oczekuje}
+          disabled={oczekuje || Boolean(linkedPostId)}
           onClick={ogloszenie}
-          className="rounded-lg border border-emerald-800 bg-white px-3 py-2 text-sm text-emerald-900 hover:bg-emerald-100 disabled:opacity-60"
+          className="rounded-lg border border-emerald-800 bg-white px-3 py-2 text-sm text-emerald-900 hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-50"
         >
-          Dodaj jako ogłoszenie
+          {linkedPostId ? "Ogłoszenie już dodane" : "Dodaj jako ogłoszenie"}
         </button>
         <button
           type="button"
-          disabled={oczekuje}
+          disabled={oczekuje || Boolean(linkedEventId) || !maDate}
           onClick={kalendarz}
-          className="rounded-lg border border-emerald-800 bg-white px-3 py-2 text-sm text-emerald-900 hover:bg-emerald-100 disabled:opacity-60"
+          title={!maDate ? "Uzupełnij datę w kroku 2" : undefined}
+          className="rounded-lg border border-emerald-800 bg-white px-3 py-2 text-sm text-emerald-900 hover:bg-emerald-100 disabled:cursor-not-allowed disabled:opacity-50"
         >
-          Dodaj do kalendarza
+          {linkedEventId ? "Już w kalendarzu" : "Dodaj do kalendarza"}
         </button>
         <button
           type="button"

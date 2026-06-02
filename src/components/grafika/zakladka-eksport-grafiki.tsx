@@ -3,8 +3,12 @@
 import { PrzyciskPobierzPdf } from "@/components/dokumenty/przycisk-pobierz-pdf";
 import { EksportSocialKlient } from "@/components/grafika/eksport-social-klient";
 import { IntegracjaPlakatuKlient } from "@/components/grafika/integracja-plakatu-klient";
+import { PrzyciskSzablonSpolecznosci } from "@/components/grafika/przycisk-szablon-spolecznosci";
+import { KopiujLinkProjektu } from "@/components/grafika/kopiuj-link-projektu";
+import { PrzyciskPngPodglad } from "@/components/grafika/przycisk-png-podglad";
 import { WyslijGrafikeEmailKlient } from "@/components/grafika/wyslij-grafike-email-klient";
 import { ZachetaKontaGrafiki } from "@/components/grafika/zacheta-konta-grafiki";
+import type { TrybPracyGrafiki } from "@/lib/grafika/kreator-zakladki";
 import type { MotywGrafiki, ProjektGrafiki, SzablonGrafiki } from "@/lib/grafika/typy";
 
 type Props = {
@@ -12,10 +16,15 @@ type Props = {
   nazwaPliku: string;
   szablon: SzablonGrafiki;
   motyw: MotywGrafiki;
+  motywId: string;
+  trybKreatora?: TrybPracyGrafiki;
   wartosci: Record<string, string>;
   logoDataUrl: string | null;
   backgroundDataUrl: string | null;
+  backgroundOverlay: number;
   qrUrl: string;
+  villageId: string | null;
+  nazwaWsi: string;
   projekty: ProjektGrafiki[];
   ostatniZapisId: string | null;
   maDateWydarzenia: boolean;
@@ -32,7 +41,14 @@ type Props = {
   onResetTresci: () => void;
   onKomunikat: (t: string) => void;
   onBlad: (t: string) => void;
+  onDuplikuj: () => void;
   onWstecz: () => void;
+  tytulProjektu?: string;
+  linkedPostId?: string | null;
+  linkedEventId?: string | null;
+  featuredOnDigitalBoard?: boolean;
+  onOdswiezProjekty?: () => void;
+  onOdswiezSzablonySpolecznosci?: () => void;
 };
 
 export function ZakladkaEksportGrafiki({
@@ -40,10 +56,15 @@ export function ZakladkaEksportGrafiki({
   nazwaPliku,
   szablon,
   motyw,
+  motywId,
+  trybKreatora = "zaproszenie",
   wartosci,
   logoDataUrl,
   backgroundDataUrl,
+  backgroundOverlay,
   qrUrl,
+  villageId,
+  nazwaWsi,
   projekty,
   ostatniZapisId,
   maDateWydarzenia,
@@ -60,16 +81,25 @@ export function ZakladkaEksportGrafiki({
   onResetTresci,
   onKomunikat,
   onBlad,
+  onDuplikuj,
   onWstecz,
+  tytulProjektu,
+  linkedPostId,
+  linkedEventId,
+  featuredOnDigitalBoard,
+  onOdswiezProjekty,
+  onOdswiezSzablonySpolecznosci,
 }: Props) {
+  const brakujeDaty = !maDateWydarzenia && szablon.pola.some((p) => p.id === "data");
   return (
     <section className="no-print space-y-4">
       <div className="rounded-2xl border border-stone-200 bg-white p-4 shadow-sm sm:p-5">
         <h2 className="font-serif text-lg text-green-950">Pobierz i udostępnij</h2>
         <p className="mt-1 text-sm text-stone-600">PDF, druk, social media i e-mail — wszystko w jednym miejscu.</p>
 
-        <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:flex-wrap">
+        <div className="mt-4 flex flex-col gap-2 sm:flex-row sm:flex-wrap sm:items-start">
           <PrzyciskPobierzPdf elementId={elementId} nazwaPliku={nazwaPliku} />
+          <PrzyciskPngPodglad elementId={elementId} nazwaPliku={nazwaPliku} />
           <button
             type="button"
             onClick={() => window.print()}
@@ -77,7 +107,21 @@ export function ZakladkaEksportGrafiki({
           >
             Drukuj
           </button>
+          <KopiujLinkProjektu
+            szablonId={szablon.id}
+            motywId={motywId}
+            tryb={trybKreatora === "dyplomy" ? "dyplomy" : "zaproszenie"}
+            wartosci={wartosci}
+            tytulProjektu={tytulProjektu}
+          />
         </div>
+
+        {brakujeDaty ? (
+          <p className="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-950">
+            Brak daty w polu „Data” — PDF wyjdzie poprawnie, ale integracja z kalendarzem wsi wymaga uzupełnienia daty w
+            kroku 2.
+          </p>
+        ) : null}
 
         <EksportSocialKlient
           szablon={szablon}
@@ -85,6 +129,7 @@ export function ZakladkaEksportGrafiki({
           wartosci={wartosci}
           logoDataUrl={logoDataUrl}
           backgroundDataUrl={backgroundDataUrl}
+          backgroundOverlay={backgroundOverlay}
           qrUrl={qrUrl}
           nazwaPliku={nazwaPliku}
         />
@@ -117,6 +162,13 @@ export function ZakladkaEksportGrafiki({
           >
             Cofnij treść do domyślnej
           </button>
+          <button
+            type="button"
+            onClick={onDuplikuj}
+            className="rounded-lg border border-indigo-300 px-3 py-2 text-sm text-indigo-900 hover:bg-indigo-50"
+          >
+            Duplikuj szkic
+          </button>
         </div>
 
         {!zapisDoBazy && trybPubliczny ? (
@@ -130,8 +182,28 @@ export function ZakladkaEksportGrafiki({
           maDate={maDateWydarzenia}
           trybSoltys={trybSoltys}
           zapisDoBazy={zapisDoBazy}
+          linkedPostId={linkedPostId}
+          linkedEventId={linkedEventId}
+          featuredOnDigitalBoard={featuredOnDigitalBoard}
           onKomunikat={onKomunikat}
           onBlad={onBlad}
+          onOdswiez={onOdswiezProjekty}
+        />
+
+        <PrzyciskSzablonSpolecznosci
+          szablon={szablon}
+          motywId={motywId}
+          tytulProjektu={tytulProjektu ?? szablon.tytul}
+          wartosci={wartosci}
+          logoDataUrl={logoDataUrl}
+          backgroundDataUrl={backgroundDataUrl}
+          backgroundOverlay={backgroundOverlay}
+          qrUrl={qrUrl}
+          villageId={villageId}
+          nazwaWsi={nazwaWsi}
+          onKomunikat={onKomunikat}
+          onBlad={onBlad}
+          onOpublikowano={onOdswiezSzablonySpolecznosci}
         />
 
         {projekty.length > 0 ? (

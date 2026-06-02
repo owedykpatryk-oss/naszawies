@@ -28,6 +28,7 @@ const SKROTY_WEDLUG_TRYBU: Record<TrybOrganizacji, Skrot[]> = {
   mysliwi: [
     { typ: "sekcja", label: "Profil koła", sekcja: "organizacje" },
     { typ: "link", label: "Polowania", href: "/panel/soltys/lowiectwo" },
+    { typ: "link", label: "Kalendarz łowiecki", href: "/panel/soltys/lowiectwo/kalendarz" },
     { typ: "sekcja", label: "Wydarzenia", sekcja: "wydarzenia" },
   ],
   szkola: [

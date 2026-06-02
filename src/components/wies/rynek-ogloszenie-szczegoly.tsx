@@ -17,10 +17,20 @@ import { ObrazR2 } from "@/components/media/obraz-r2";
 import {
   BlokInfoRynku,
   FormatujCeneOgloszenia,
+  KartaOgloszeniaRynek,
   MiniaturaOgloszenia,
+  OdznakaNowosci,
+  OdznakaOddam,
+  OdznakaPopularne,
   OdznakaZweryfikowany,
   PasekOdznakSprzedawcy,
 } from "@/components/wies/rynek-ui";
+import { RynekSubskrypcjaKategorii } from "@/components/wies/rynek-subskrypcja-kategorii";
+import {
+  czyOgloszenieNowe,
+  czyOgloszenieOddam,
+  czyOgloszeniePopularne,
+} from "@/lib/marketplace/odznaki-ogloszenia";
 import type { ZaufanieSprzedawcy } from "@/lib/marketplace/zaufanie-sprzedawcy";
 import { MapaDzialkiOgledzin } from "@/components/marketplace/mapa-dzialki-ogledzin";
 import { czyKategoriaNieruchomosci, formatujPowierzchnieDzialki } from "@/lib/marketplace/nieruchomosci";
@@ -75,8 +85,18 @@ export type OgloszenieRynekSkrot = {
   listing_type: string;
   price_amount: number | null;
   price_unit: string | null;
+  currency?: string | null;
   equipment_category: string | null;
   category: string | null;
+  image_urls?: string[] | null;
+  seller_verified?: boolean | null;
+  view_count?: number;
+  published_at?: string | null;
+  created_at?: string;
+  geoportal_parcel_id?: string | null;
+  parcel_area_m2?: number | null;
+  with_operator?: boolean | null;
+  location_text?: string | null;
 };
 
 export function RynekOgloszenieSzczegoly({
@@ -92,6 +112,7 @@ export function RynekOgloszenieSzczegoly({
   zaufanieSprzedawcy = null,
   profilSprzedawcy = null,
   podobne = [],
+  subskrybowaneKategorie = [],
 }: {
   ogloszenie: OgloszenieRynekPubliczne;
   sciezkaWsi: string;
@@ -105,6 +126,7 @@ export function RynekOgloszenieSzczegoly({
   zaufanieSprzedawcy?: ZaufanieSprzedawcy | null;
   profilSprzedawcy?: ProfilSprzedawcySkrot | null;
   podobne?: OgloszenieRynekSkrot[];
+  subskrybowaneKategorie?: (string | null)[];
 }) {
   const [zdjecieAktywne, ustawZdjecieAktywne] = useState(0);
   const [lightbox, ustawLightbox] = useState(false);
@@ -115,6 +137,9 @@ export function RynekOgloszenieSzczegoly({
   } | null>(null);
   const zdjecia = ogloszenie.image_urls ?? [];
   const kat = ogloszenie.equipment_category ?? ogloszenie.category;
+  const nowe = czyOgloszenieNowe(ogloszenie.published_at, ogloszenie.created_at);
+  const popularne = czyOgloszeniePopularne(ogloszenie.view_count);
+  const oddam = czyOgloszenieOddam(ogloszenie.listing_type, ogloszenie.price_amount);
   const bazaUrl = process.env.NEXT_PUBLIC_SITE_URL?.replace(/\/$/, "") ?? "https://naszawies.pl";
   const urlOgloszenia = `${bazaUrl}${sciezkaWsi}/rynek/${ogloszenie.id}`;
 
@@ -181,6 +206,9 @@ export function RynekOgloszenieSzczegoly({
         <div className="border-b border-stone-100 p-5 sm:p-6 lg:border-b-0 lg:border-r">
           <p className="inline-flex flex-wrap items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-orange-900">
             <span className="rounded-full bg-orange-100/80 px-2 py-0.5">{etykietaTypuOgloszenia(ogloszenie.listing_type)}</span>
+            {oddam ? <OdznakaOddam /> : null}
+            {nowe ? <OdznakaNowosci duza /> : null}
+            {popularne ? <OdznakaPopularne /> : null}
             {kat ? (
               <span className="rounded-full bg-stone-100 px-2 py-0.5 normal-case tracking-normal text-stone-700">
                 {etykietaKategoriiSprzetu(kat)}
@@ -235,7 +263,7 @@ export function RynekOgloszenieSzczegoly({
             </div>
           ) : (
             <div className="mt-5">
-              <MiniaturaOgloszenia rozmiar="duzy" />
+              <MiniaturaOgloszenia rozmiar="duzy" kategoria={kat} />
             </div>
           )}
 
@@ -412,6 +440,18 @@ export function RynekOgloszenieSzczegoly({
             <p className="mt-3 text-xs text-stone-500">To Twoje ogłoszenie — odpowiedzi zobaczysz w Wiadomościach.</p>
           ) : null}
 
+          {kat && nazwaWsi ? (
+            <div className="mt-4">
+              <RynekSubskrypcjaKategorii
+                villageId={villageId}
+                nazwaWsi={nazwaWsi}
+                kategoria={kat}
+                zalogowany={zalogowany}
+                juzSubskrybuje={subskrybowaneKategorie.includes(kat) || subskrybowaneKategorie.includes(null)}
+              />
+            </div>
+          ) : null}
+
           <p className="mt-4 text-xs text-stone-500">
             <Link
               href={`/zglos-naruszenie?url=${encodeURIComponent(urlOgloszenia)}`}
@@ -426,27 +466,36 @@ export function RynekOgloszenieSzczegoly({
       {podobne.length > 0 ? (
         <section className="border-t border-stone-200 px-5 py-6 sm:px-6">
           <h2 className="font-serif text-lg text-green-950">Podobne ogłoszenia</h2>
-          <ul className="mt-3 grid gap-2 sm:grid-cols-2">
-            {podobne.map((p) => {
-              const katP = p.equipment_category ?? p.category;
-              return (
-                <li key={p.id}>
-                  <Link
-                    href={`${sciezkaWsi}/rynek/${p.id}`}
-                    className="block rounded-xl border border-orange-100 bg-orange-50/30 px-3 py-2.5 text-sm transition hover:border-orange-300 hover:bg-orange-50"
-                  >
-                    <span className="font-medium text-green-950">{p.title}</span>
-                    <span className="mt-0.5 block text-xs text-stone-600">
-                      {etykietaTypuOgloszenia(p.listing_type)}
-                      {katP ? ` · ${etykietaKategoriiSprzetu(katP)}` : ""}
-                      {p.price_amount != null
-                        ? ` · ${p.price_amount} PLN${p.price_unit ? ` ${etykietaJednostkiCeny(p.price_unit)}` : ""}`
-                        : ""}
-                    </span>
-                  </Link>
-                </li>
-              );
-            })}
+          <p className="mt-1 text-xs text-stone-500">Inne oferty w tej samej kategorii we wsi.</p>
+          <ul className="mt-4 grid gap-4 sm:grid-cols-2">
+            {podobne.map((p) => (
+              <li key={p.id}>
+                <KartaOgloszeniaRynek
+                  oferta={{
+                    id: p.id,
+                    title: p.title,
+                    listing_type: p.listing_type,
+                    category: p.category,
+                    equipment_category: p.equipment_category,
+                    location_text: p.location_text ?? null,
+                    price_amount: p.price_amount,
+                    price_unit: p.price_unit,
+                    currency: p.currency ?? "PLN",
+                    with_operator: p.with_operator,
+                    seller_verified: p.seller_verified,
+                    image_urls: p.image_urls,
+                    published_at: p.published_at ?? null,
+                    created_at: p.created_at ?? new Date(0).toISOString(),
+                    parcel_area_m2: p.parcel_area_m2,
+                    geoportal_parcel_id: p.geoportal_parcel_id,
+                    view_count: p.view_count,
+                  }}
+                  href={`${sciezkaWsi}/rynek/${p.id}`}
+                  uklad="siatka"
+                  hrefMapy={p.geoportal_parcel_id ? `${sciezkaWsi}/rynek#rynek-mapa` : undefined}
+                />
+              </li>
+            ))}
           </ul>
         </section>
       ) : null}

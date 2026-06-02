@@ -6,6 +6,8 @@ import type { WierszKalendarzaPublicznego } from "@/components/swietlica/kalenda
 import type { SalaPublicznaWsi } from "@/lib/swietlica/pobierz-sale-publiczne-wsi";
 import type { WiesPubliczna } from "@/lib/wies/znajdz-wies-po-sciezce";
 import { sciezkaProfiluWsi, sciezkaGminy, sciezkaPowiatu, sciezkaWojewodztwa } from "@/lib/wies/sciezka-publiczna";
+import { sciezkaPelnejStronyOrganizacji, segmentDlaOrganizacji, type SegmentOrganizacji } from "@/lib/wies/sciezka-organizacji-publicznej";
+import { hasloOrganizacjiZProfilu, okladkaOrganizacjiZProfilu } from "@/lib/wies/profil-organizacji-meta";
 import { ListaZakupowWsiKlient, type PozycjaListyZakupow } from "@/components/wies/lista-zakupow-wsi-klient";
 import { etykietaRodzajuWydarzenia, etykietaTypuGrupy, czyWydarzenieKgw, czyWydarzenieLowieckie, czyWydarzenieOsp, czyWydarzenieParafialne } from "@/lib/wies/teksty-organizacji";
 import {
@@ -32,10 +34,9 @@ import type { WpisHistoriiPubliczny } from "@/lib/historia/typy-historii";
 import { BanerPodgladuProfiluWies } from "@/components/wies/baner-podgladu-profilu-wies";
 import type { DaneSzkolyPubliczne } from "@/components/wies/karta-szkoly-publiczna";
 import type { OgloszenieSzkolyPubliczne } from "@/lib/szkola/teksty-szkoly";
-import { KartaParafiiPubliczna } from "@/components/wies/karta-parafii-publiczna";
-import { KartaKgwPubliczna } from "@/components/wies/karta-kgw-publiczna";
-import { KartaOspPubliczna } from "@/components/wies/karta-osp-publiczna";
-import { KartaMysliwiPubliczna } from "@/components/wies/karta-mysliwi-publiczna";
+import { parsujProfilKlubuSportowego } from "@/lib/wies/profil-klubu-sportowego";
+import { OrganizacjaTeaserKafel } from "@/components/wies/organizacja/organizacja-teaser-kafel";
+import { UjawnijPoPrzewinieciu } from "@/components/ui/ujawnij-po-przewinieciu";
 import { etykietaKategoriiDotacji, nazwaDniaTygodnia } from "@/lib/wies/teksty-dotacji";
 import {
   SekcjaPrzewodnikSamorzadowy,
@@ -59,12 +60,15 @@ import { MojeObserwujWiesPasek } from "@/components/panel/moje/moje-obserwuj-wie
 import { BanerDolaczDoWsi } from "@/components/wies/baner-dolacz-do-wsi";
 import { SpolecznyDowodWsi } from "@/components/wies/spoleczny-dowod-wsi";
 import { RynekUdostepnijPrzycisk } from "@/components/wies/rynek-udostepnij-przycisk";
+import { RynekBannerSezonowy } from "@/components/wies/rynek-ui";
+import { RynekSubskrypcjaKategorii } from "@/components/wies/rynek-subskrypcja-kategorii";
 import { ZapiszTrescPrzycisk } from "@/components/panel/moje/zapisz-tresc-przycisk";
 import { KARTA_LISTY_WIES, OslonaSekcjiWies } from "@/components/wies/oslona-sekcji-wies";
 import { TytulSekcjiWies } from "@/components/wies/tytul-sekcji-wies";
 import { SekcjaDaneGeoWsiLazy } from "@/components/wies/sekcja-dane-geo-wsi-lazy";
 import { WiesTransportLazy } from "@/components/wies/wies-transport-lazy";
 import { WiesRolnictwoLazy } from "@/components/wies/wies-rolnictwo-lazy";
+import { WiesCenyOkolicyLazy } from "@/components/wies/wies-ceny-okolicy-lazy";
 import { linkChroniony } from "@/lib/auth/sciezki-chronione";
 import { SwietliceWsiLazy } from "@/components/wies/swietlice-wsi-lazy";
 import { WiesSkrotyProfilu } from "@/components/wies/wies-skroty-profilu";
@@ -171,6 +175,8 @@ export function WiesProfilPubliczny({
   fotokronikaPubliczna = [],
   ostrzezeniaLowieckie = [],
   zalogowany = false,
+  mieszkaniecWsi = false,
+  harmonogramLowiecki = [],
   zapisaneTresci = {},
   mapaZnacznik = null,
   mapaPoi = [],
@@ -182,6 +188,8 @@ export function WiesProfilPubliczny({
   przewinDoSzkoly = false,
   przewinDoHistorii = false,
   przewinDoSportu = false,
+  bannerRynek = null,
+  subskrybowaneKategorieRynek = [],
 }: {
   wies: WiesPubliczna;
   posty: WpisPostu[];
@@ -233,6 +241,7 @@ export function WiesProfilPubliczny({
     contact_phone: string | null;
     contact_email?: string | null;
     profile_data?: unknown;
+    public_slug?: string | null;
   }[];
   wydarzenia?: {
     id: string;
@@ -294,6 +303,8 @@ export function WiesProfilPubliczny({
   pomocSasiedzka?: import("@/components/wies/pomoc-sasiedzka-sekcja").OfertaPomocyPubliczna[];
   zgloszeniaPubliczne?: import("@/components/wies/wies-zgloszenia-publiczne").ZgloszeniePubliczne[];
   zalogowany?: boolean;
+  mieszkaniecWsi?: boolean;
+  harmonogramLowiecki?: import("@/lib/lowiectwo/kalendarz-lowiecki").WpisKalendarzaLowieckiego[];
   /** Klucz `post:id` lub `event:id` → ID wiersza w user_saved_content. */
   zapisaneTresci?: Record<string, string>;
   mapaZnacznik?: ZnacznikWsi | null;
@@ -308,43 +319,85 @@ export function WiesProfilPubliczny({
   przewinDoHistorii?: boolean;
   przewinDoSportu?: boolean;
   ustawieniaWsi?: UstawieniaWsiPubliczne;
+  /** Aktywny banner sezonowy ustawiony przez sołtysa. */
+  bannerRynek?: string | null;
+  subskrybowaneKategorieRynek?: (string | null)[];
 }) {
   const ustawieniaWsi = ustawieniaWsiProp ?? zbudujUstawieniaWsiPubliczne(null);
   const modul = (klucz: Parameters<typeof czyModulWsiWlaczony>[1]) =>
     czyModulWsiWlaczony(ustawieniaWsi, klucz);
   const sciezka = sciezkaProfiluWsi(wies);
+  const linkOrganizacji = (o: { id: string; name: string; group_type: string; public_slug?: string | null }) =>
+    sciezkaPelnejStronyOrganizacji(wies, o);
   const parafie = organizacje.filter((o) => o.group_type === "parafia");
-  const poiKosciol = mapaPoi.find((poi) => poi.category === "kosciol");
-  const poiCmentarz = mapaPoi.find((poi) => poi.category === "cmentarz");
-  const linkKosciolNaMapie = poiKosciol
-    ? `/mapa/miejsce/${poiKosciol.id}`
-    : mapaPoi.length > 0 || mapaZnacznik
-      ? `${sciezka}#sekcja-mapa`
-      : null;
-  const linkCmentarzNaMapie = poiCmentarz ? `/mapa/miejsce/${poiCmentarz.id}` : null;
-  const linkPlanCmentarza = maPlanCmentarza ? `${sciezka}/cmentarz` : null;
-  const poiSwietlica = mapaPoi.find((poi) => poi.category === "swietlica");
-  const linkMiejsceKgwNaMapie = poiSwietlica
-    ? `/mapa/miejsce/${poiSwietlica.id}`
-    : mapaPoi.length > 0 || mapaZnacznik
-      ? `${sciezka}#sekcja-mapa`
-      : null;
-  const poiRemiza = mapaPoi.find((poi) => poi.category === "osp");
-  const poiWodaOsp = mapaPoi.find((poi) => poi.category === "osp_punkt_czerpania_wody");
-  const linkRemizaNaMapie = poiRemiza
-    ? `/mapa/miejsce/${poiRemiza.id}`
-    : mapaPoi.length > 0 || mapaZnacznik
-      ? `${sciezka}#sekcja-mapa`
-      : null;
-  const linkPunktyWodyOsp =
-    poiWodaOsp
-      ? `/mapa/miejsce/${poiWodaOsp.id}`
-      : mapaPoi.some((poi) => poi.category === "osp_punkt_czerpania_wody")
-        ? `${sciezka}#sekcja-mapa`
-        : null;
   const kolaKgw = organizacje.filter((o) => o.group_type === "kgw");
   const kolaLowieckie = organizacje.filter((o) => o.group_type === "lowiectwo");
   const jednostkiOsp = organizacje.filter((o) => czyOrganizacjaOsp(o.group_type, o.name));
+
+  function badgeNastepnegoWydarzenia(
+    nazwa: string,
+    filtr: (ev: (typeof wydarzenia)[number]) => boolean,
+  ): string | null {
+    const ev = wydarzenia.find(filtr);
+    if (!ev) return null;
+    return new Date(ev.starts_at).toLocaleDateString("pl-PL", { day: "numeric", month: "short" });
+  }
+
+  function podpisOrganizacji(o: (typeof organizacje)[number], segment: SegmentOrganizacji): string | null {
+    if (segment === "parafia") {
+      const p = parsujProfilParafii(o.profile_data);
+      return p?.proboszcz ? `Proboszcz: ${p.proboszcz}` : null;
+    }
+    if (segment === "kgw") {
+      const p = parsujProfilKgw(o.profile_data);
+      return p?.przewodniczaca ? `Przewodnicząca: ${p.przewodniczaca}` : null;
+    }
+    if (segment === "osp") {
+      const p = parsujProfilOsp(o.profile_data);
+      return p?.naczelnik ? `Naczelnik: ${p.naczelnik}` : null;
+    }
+    if (segment === "lowiectwo") {
+      const p = parsujProfilLowiecki(o.profile_data);
+      if (p?.lowczy) return `Łowczy: ${p.lowczy}`;
+      if (p?.prezes) return `Prezes: ${p.prezes}`;
+    }
+    if (segment === "sport") {
+      const p = parsujProfilKlubuSportowego(o.profile_data);
+      if (p?.trener) return `Trener: ${p.trener}`;
+      if (p?.dyscyplina) return p.dyscyplina;
+    }
+    return null;
+  }
+
+  const teaseryOrganizacji = [...parafie, ...kolaKgw, ...jednostkiOsp, ...kolaLowieckie]
+    .map((o) => {
+      const segment = segmentDlaOrganizacji(o.group_type, o.name);
+      const href = linkOrganizacji(o);
+      if (!segment || !href) return null;
+      const badgeLow =
+        segment === "lowiectwo" && ostrzezeniaLowieckie.length > 0
+          ? "Polowanie"
+          : badgeNastepnegoWydarzenia(o.name, (ev) => {
+              if (segment === "parafia") return czyWydarzenieParafialne(ev.event_kind, ev.nazwa_grupy, o.name);
+              if (segment === "kgw") return czyWydarzenieKgw(ev.event_kind, ev.nazwa_grupy, o.name);
+              if (segment === "osp") return czyWydarzenieOsp(ev.event_kind, ev.nazwa_grupy, o.name);
+              return czyWydarzenieLowieckie(ev.event_kind, ev.nazwa_grupy, o.name);
+            });
+      return {
+        id: o.id,
+        segment,
+        nazwa: o.name,
+        opis: o.short_description,
+        href,
+        okladkaUrl: okladkaOrganizacjiZProfilu(o.profile_data),
+        haslo: hasloOrganizacjiZProfilu(o.profile_data),
+        podpis: podpisOrganizacji(o, segment),
+        badge: badgeLow,
+        badgePulsujacy: segment === "lowiectwo" && ostrzezeniaLowieckie.length > 0,
+      };
+    })
+    .filter((t): t is NonNullable<typeof t> => t != null);
+
   const szkoly: DaneSzkolyPubliczne[] = organizacje
     .filter((o) => czyOrganizacjaSzkola(o.group_type, o.name))
     .map((o) => ({
@@ -473,15 +526,17 @@ export function WiesProfilPubliczny({
       </a>
 
       {wies.cover_image_url ? (
-        <div className="wies-okladka-hero relative mb-8 aspect-[21/9] max-h-64 overflow-hidden rounded-2xl border border-stone-200/90 bg-stone-100 shadow-md ring-1 ring-stone-900/[0.04]">
+        <div className="wies-okladka-hero wow-wejscie relative mb-8 aspect-[21/9] max-h-64 overflow-hidden rounded-2xl border border-stone-200/90 bg-stone-100 shadow-lg ring-1 ring-stone-900/[0.04]">
           {/* eslint-disable-next-line @next/next/no-img-element */}
           <img
             src={wies.cover_image_url}
             alt={`Okładka profilu wsi ${wies.name}`}
-            className="h-full w-full object-cover"
+            className="wies-okladka-hero__img h-full w-full object-cover"
             loading="lazy"
             decoding="async"
           />
+          <div className="wies-okladka-hero__overlay pointer-events-none absolute inset-0" aria-hidden />
+          <div className="wies-okladka-hero__shine pointer-events-none absolute inset-0" aria-hidden />
         </div>
       ) : null}
 
@@ -707,6 +762,7 @@ export function WiesProfilPubliczny({
 
       {maRynek && modul("rynek") ? (
         <OslonaSekcjiWies id="sekcja-rynek-lokalny">
+          {bannerRynek ? <RynekBannerSezonowy tekst={bannerRynek} /> : null}
           <div className="rynek-hero-wow mb-6 !p-4 sm:!p-5">
             <TytulSekcjiWies
               etykieta="Rynek"
@@ -720,6 +776,14 @@ export function WiesProfilPubliczny({
               >
                 Przeglądaj wszystkie ogłoszenia
               </Link>
+              {rynek.some((o) => o.geoportal_parcel_id) ? (
+                <Link
+                  href={`${sciezka}/rynek#rynek-mapa`}
+                  className="rounded-xl border border-amber-400/60 bg-amber-50/90 px-4 py-2 text-sm font-semibold text-amber-950 shadow-sm transition hover:bg-amber-100"
+                >
+                  📐 Działki na mapie
+                </Link>
+              ) : null}
               <Link
                 href="/panel/mieszkaniec/marketplace"
                 className="rounded-xl border border-green-800/40 bg-white/90 px-4 py-2 text-sm font-semibold text-green-900 shadow-sm transition hover:bg-green-50"
@@ -751,11 +815,34 @@ export function WiesProfilPubliczny({
                 oferty={rynek}
                 sciezkaWsi={sciezka}
                 villageId={wies.id}
+                nazwaWsi={wies.name}
+                zalogowany={zalogowany}
+                subskrybowaneKategorie={subskrybowaneKategorieRynek}
                 kotwicaZasadSwietlicy={`${sciezka}#swietlica-regulamin`}
                 limitWyswietlania={6}
                 tryb="skrot"
                 ukryjPasekAkcji
               />
+              {zalogowany && rynek.length > 0 ? (
+                <div className="mt-4">
+                  <RynekSubskrypcjaKategorii
+                    villageId={wies.id}
+                    nazwaWsi={wies.name}
+                    kategoria={
+                      rynek.find((o) => o.equipment_category ?? o.category)?.equipment_category ??
+                      rynek.find((o) => o.category)?.category ??
+                      "miod"
+                    }
+                    zalogowany={zalogowany}
+                    juzSubskrybuje={
+                      subskrybowaneKategorieRynek.includes(null) ||
+                      subskrybowaneKategorieRynek.some((k) =>
+                        rynek.some((o) => (o.equipment_category ?? o.category) === k),
+                      )
+                    }
+                  />
+                </div>
+              ) : null}
             </section>
           ) : profileUslug.length > 0 ? (
             <p className="mt-4 text-sm text-stone-500">Brak aktywnych ogłoszeń — zobacz firmy i sklepy powyżej.</p>
@@ -811,6 +898,10 @@ export function WiesProfilPubliczny({
       ) : null}
 
       {modul("transport") ? <WiesTransportLazy villageId={wies.id} zalogowany={zalogowany} /> : null}
+
+      {modul("transport") || modul("rolnictwo") ? (
+        <WiesCenyOkolicyLazy villageId={wies.id} zalogowany={zalogowany} />
+      ) : null}
 
       {modul("rolnictwo") ? <WiesRolnictwoLazy villageId={wies.id} zalogowany={zalogowany} /> : null}
 
@@ -973,6 +1064,8 @@ export function WiesProfilPubliczny({
           klubyPelne={klubySportowe.map((o) => ({
             id: o.id,
             name: o.name,
+            group_type: o.group_type,
+            public_slug: o.public_slug,
             short_description: o.short_description,
             meeting_place: o.meeting_place,
             schedule_text: o.schedule_text,
@@ -980,6 +1073,7 @@ export function WiesProfilPubliczny({
             contact_email: o.contact_email ?? null,
             profile_data: o.profile_data,
           }))}
+          sciezkaPelnejStronyKlubu={(k) => linkOrganizacji(k)}
           wydarzenia={wydarzenia}
           harmonogram={harmonogramTygodnia}
           sciezkaProfilu={sciezka}
@@ -998,7 +1092,7 @@ export function WiesProfilPubliczny({
           <TytulSekcjiWies
             etykieta="Organizacje"
             tytul="Koła, kluby i kalendarz wydarzeń"
-            opis="Koła Gospodyń, sekcje sportowe, zespoły — oraz zbliżające się wydarzenia. Pełny kalendarz: link poniżej."
+            opis="Każda organizacja ma własną mini-stronę — szczegóły, kalendarz i kontakt w jednym miejscu."
           />
           <p className="mt-2 text-xs text-stone-600">
             <Link href={`${sciezka}/wydarzenia`} className="text-green-800 underline">
@@ -1006,136 +1100,32 @@ export function WiesProfilPubliczny({
             </Link>
           </p>
 
-          {parafie.length > 0 ? (
-            <div className="mt-5 space-y-4">
-              {parafie.map((p) => (
-                <KartaParafiiPubliczna
-                  key={p.id}
-                  parafia={{
-                    id: p.id,
-                    name: p.name,
-                    short_description: p.short_description,
-                    meeting_place: p.meeting_place,
-                    schedule_text: p.schedule_text,
-                    contact_phone: p.contact_phone,
-                    contact_email: p.contact_email ?? null,
-                    profil: parsujProfilParafii(p.profile_data),
-                  }}
-                  sciezkaProfilu={sciezka}
-                  sciezkaWydarzenia={`${sciezka}/wydarzenia`}
-                  linkKosciolNaMapie={linkKosciolNaMapie}
-                  linkCmentarzNaMapie={linkCmentarzNaMapie}
-                  linkPlanCmentarza={linkPlanCmentarza}
-                  nadchodzaceWydarzenia={wydarzenia
-                    .filter((ev) => czyWydarzenieParafialne(ev.event_kind, ev.nazwa_grupy, p.name))
-                    .slice(0, 4)}
-                />
-              ))}
-            </div>
-          ) : null}
-
-          {kolaKgw.length > 0 ? (
-            <div className={`space-y-4 ${parafie.length > 0 ? "mt-6" : "mt-5"}`}>
-              {kolaKgw.map((k) => (
-                <KartaKgwPubliczna
-                  key={k.id}
-                  kgw={{
-                    id: k.id,
-                    name: k.name,
-                    short_description: k.short_description,
-                    meeting_place: k.meeting_place,
-                    schedule_text: k.schedule_text,
-                    contact_phone: k.contact_phone,
-                    contact_email: k.contact_email ?? null,
-                    profil: parsujProfilKgw(k.profile_data),
-                  }}
-                  sciezkaProfilu={sciezka}
-                  sciezkaWydarzenia={`${sciezka}/wydarzenia`}
-                  sciezkaDotacje={`${sciezka}/dotacje`}
-                  sciezkaRynek={maRynek ? `${sciezka}/rynek` : undefined}
-                  linkMiejsceNaMapie={linkMiejsceKgwNaMapie}
-                  nadchodzaceWydarzenia={wydarzenia
-                    .filter((ev) => czyWydarzenieKgw(ev.event_kind, ev.nazwa_grupy, k.name))
-                    .slice(0, 4)}
-                />
-              ))}
-            </div>
-          ) : null}
-
-          {jednostkiOsp.length > 0 ? (
-            <div className={`space-y-4 ${parafie.length > 0 || kolaKgw.length > 0 ? "mt-6" : "mt-5"}`}>
-              {jednostkiOsp.map((o) => (
-                <KartaOspPubliczna
-                  key={o.id}
-                  osp={{
-                    id: o.id,
-                    name: o.name,
-                    short_description: o.short_description,
-                    meeting_place: o.meeting_place,
-                    schedule_text: o.schedule_text,
-                    contact_phone: o.contact_phone,
-                    contact_email: o.contact_email ?? null,
-                    profil: parsujProfilOsp(o.profile_data),
-                  }}
-                  sciezkaProfilu={sciezka}
-                  sciezkaWydarzenia={`${sciezka}/wydarzenia`}
-                  linkRemizaNaMapie={linkRemizaNaMapie}
-                  linkPunktyWodyNaMapie={linkPunktyWodyOsp}
-                  nadchodzaceWydarzenia={wydarzenia
-                    .filter((ev) => czyWydarzenieOsp(ev.event_kind, ev.nazwa_grupy, o.name))
-                    .slice(0, 4)}
-                />
-              ))}
-            </div>
-          ) : null}
-
-          {kolaLowieckie.length > 0 ? (
-            <div
-              className={`space-y-4 ${parafie.length > 0 || kolaKgw.length > 0 || jednostkiOsp.length > 0 ? "mt-6" : "mt-5"}`}
-            >
-              {kolaLowieckie.map((k) => {
-                const pierwszeOstrzezenie = ostrzezeniaLowieckie[0] ?? null;
-                return (
-                  <KartaMysliwiPubliczna
-                    key={k.id}
-                    kolo={{
-                      id: k.id,
-                      name: k.name,
-                      short_description: k.short_description,
-                      meeting_place: k.meeting_place,
-                      schedule_text: k.schedule_text,
-                      contact_phone: k.contact_phone,
-                      contact_email: k.contact_email ?? null,
-                      profil: parsujProfilLowiecki(k.profile_data),
-                    }}
-                    maAktywneOstrzezenia={ostrzezeniaLowieckie.length > 0}
-                    ostrzezenieAktywne={
-                      pierwszeOstrzezenie
-                        ? {
-                            id: pierwszeOstrzezenie.id,
-                            title: pierwszeOstrzezenie.title,
-                            startsAt: pierwszeOstrzezenie.startsAt,
-                            endsAt: pierwszeOstrzezenie.endsAt,
-                            maObszarMapy: pierwszeOstrzezenie.maObszarMapy,
-                          }
-                        : null
-                    }
-                    sciezkaProfilu={sciezka}
-                    sciezkaWydarzenia={`${sciezka}/wydarzenia`}
-                    zalogowany={zalogowany}
-                    nadchodzaceWydarzenia={wydarzenia
-                      .filter((ev) => czyWydarzenieLowieckie(ev.event_kind, ev.nazwa_grupy, k.name))
-                      .slice(0, 4)}
+          {teaseryOrganizacji.length > 0 ? (
+            <div className="organizacja-teaser-grid mt-5 grid gap-4 sm:grid-cols-2">
+              {teaseryOrganizacji.map((t, i) => (
+                <UjawnijPoPrzewinieciu key={t.id} opoznienieMs={i * 90}>
+                  <OrganizacjaTeaserKafel
+                    segment={t.segment}
+                    nazwa={t.nazwa}
+                    opis={t.opis}
+                    href={t.href}
+                    okladkaUrl={t.okladkaUrl}
+                    haslo={t.haslo}
+                    podpis={t.podpis}
+                    badge={t.badge}
+                    badgePulsujacy={t.badgePulsujacy}
                   />
-                );
-              })}
+                </UjawnijPoPrzewinieciu>
+              ))}
             </div>
+          ) : null}
+
+          {teaseryOrganizacji.length > 0 && (organizacjePozostale.length > 0 || wydarzeniaBezSportu.length > 0) ? (
+            <p className="organizacja-separator">Kalendarz i pozostałe</p>
           ) : null}
 
           <div
-            className={`grid gap-6 lg:grid-cols-2 ${
-              parafie.length > 0 || kolaKgw.length > 0 || jednostkiOsp.length > 0 || kolaLowieckie.length > 0 ? "mt-6" : "mt-5"
-            }`}
+            className={`grid gap-6 lg:grid-cols-2 ${teaseryOrganizacji.length > 0 ? "mt-6" : "mt-5"}`}
           >
             {organizacjePozostale.length > 0 ? (
               <div>

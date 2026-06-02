@@ -33,7 +33,7 @@ export default async function SoltysSpolecznoscPage({
 
   const { data: rows } = await supabase
     .from("villages")
-    .select("id, name, voivodeship, county, commune, slug")
+    .select("id, name, voivodeship, county, commune, slug, latitude, longitude, boundary_geojson")
     .in("id", villageIds)
     .order("name");
   const wsie: WiesDoModeracjiSpolecznosci[] = (rows ?? []).map((r) => ({
@@ -43,6 +43,9 @@ export default async function SoltysSpolecznoscPage({
     county: r.county,
     commune: r.commune,
     slug: r.slug,
+    latitude: r.latitude,
+    longitude: r.longitude,
+    boundary_geojson: r.boundary_geojson,
   }));
 
   const { data: grupyRows } = await supabase
