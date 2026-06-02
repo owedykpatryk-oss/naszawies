@@ -107,7 +107,6 @@ export async function POST(request: Request) {
     password: d.haslo,
     options: {
       emailRedirectTo: `${pochodzenie}/auth/potwierdz?next=${nastepnyPoPotwierdzeniu}`,
-      captchaToken: d.cfTurnstileResponse?.trim() || undefined,
       data: {
         display_name: nazwaW.nazwa,
         signup_intent: d.intencja,
@@ -125,7 +124,9 @@ export async function POST(request: Request) {
       ? "Ten adres jest już zarejestrowany — spróbuj się zalogować."
       : error.message.includes("Password")
         ? "Hasło nie spełnia wymagań bezpieczeństwa."
-        : "Nie udało się utworzyć konta. Spróbuj ponownie.";
+        : /captcha|timeout-or-duplicate/i.test(error.message)
+          ? "Weryfikacja antyspamowa wygasła. Odśwież stronę i spróbuj ponownie."
+          : "Nie udało się utworzyć konta. Spróbuj ponownie.";
     return NextResponse.json({ error: msg }, { status: 400 });
   }
 

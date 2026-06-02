@@ -29,6 +29,9 @@ function mapujBladLogowania(msg: string): string {
   if (msg.toLowerCase().includes("too many requests")) {
     return "Za dużo prób logowania. Odczekaj chwilę i spróbuj ponownie.";
   }
+  if (/captcha|timeout-or-duplicate/i.test(msg)) {
+    return "Weryfikacja antyspamowa wygasła. Odśwież stronę i spróbuj ponownie.";
+  }
   return msg;
 }
 
@@ -91,9 +94,6 @@ export async function POST(request: NextRequest) {
   const { error } = await supabase.auth.signInWithPassword({
     email,
     password: d.haslo,
-    options: {
-      captchaToken: d.cfTurnstileResponse?.trim() || undefined,
-    },
   });
 
   if (error) {
