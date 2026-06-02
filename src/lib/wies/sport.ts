@@ -4,7 +4,7 @@ export type OrganizacjaSportowaSkrot = {
   group_type: string;
 };
 
-const RODZAJE_WYDARZEN_SPORTOWYCH = new Set(["mecz", "proba", "wyjazd"]);
+const RODZAJE_WYDARZEN_SPORTOWYCH = new Set(["mecz", "proba", "wyjazd", "trening", "spacer", "rajd"]);
 
 function nazwaSugerujeSport(name: string): boolean {
   const n = name.toLowerCase();
@@ -22,7 +22,17 @@ function nazwaSugerujeSport(name: string): boolean {
     n.includes("siatków") ||
     n.includes("tenis") ||
     n.includes("zawody") ||
-    n.includes("orlik")
+    n.includes("orlik") ||
+    n.includes("bieg") ||
+    n.includes("nordic") ||
+    n.includes("marsz") ||
+    n.includes("rower") ||
+    n.includes("kolar") ||
+    n.includes("turyst") ||
+    n.includes("wędr") ||
+    n.includes("wedr") ||
+    n.includes("fitness") ||
+    n.includes("gimnastyk")
   );
 }
 

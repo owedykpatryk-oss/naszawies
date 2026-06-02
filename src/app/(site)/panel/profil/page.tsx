@@ -11,6 +11,7 @@ import { pobierzKluczeDolnejNawigacjiZMeta, pobierzKluczePanelNawigacjiZMeta } f
 import { ProfilPreferencjePanelKlient } from "./profil-preferencje-panel-klient";
 import { pobierzVillageIdsRoliPaneluSoltysaDlaUzytkownikaCache } from "@/lib/panel/rola-panelu-soltysa";
 import { czyAdminPlatformy } from "@/lib/admin/czy-admin-platformy";
+import { PrzelacznikTrybuSeniora, PrzelacznikKontrastu } from "@/components/ui/tryb-senior-provider";
 import { ProfilPowiazanieWsiKlient } from "./profil-powiazanie-wsi-klient";
 import { pobierzMojePowiazania } from "@/lib/panel/pobierz-moje-powiazania";
 import type { IntencjaOnboardingu } from "@/lib/auth/onboarding-uzytkownika";
@@ -112,6 +113,15 @@ export default async function PanelProfilPage() {
         pokazSoltysa={villageIdsSoltys.length > 0}
         pokazAdmin={pokazAdmin}
       />
+
+      <section className="my-8 rounded-2xl border border-stone-200 bg-white p-4 shadow-sm">
+        <h2 className="font-serif text-lg text-green-950">Dostępność</h2>
+        <p className="mt-1 text-sm text-stone-600">Większy tekst i wysoki kontrast — także na profilu publicznym wsi.</p>
+        <div className="mt-4 flex flex-wrap gap-3">
+          <PrzelacznikTrybuSeniora />
+          <PrzelacznikKontrastu />
+        </div>
+      </section>
 
       <ProfilPowiazanieWsiKlient
         intencjaStart={intencjaStart}

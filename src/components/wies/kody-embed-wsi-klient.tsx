@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import { zbudujKodyEmbedWsi } from "@/lib/wies/kody-embed-wsi";
+import { urlRssAktywnosciFitnessWsi } from "@/lib/wies/rss-aktywnosci-fitness";
+import { urlIcalSportuWsi, urlRssSportuWsi } from "@/lib/wies/rss-sportu";
 
 export function KodyEmbedWsiKlient({ villageId }: { villageId: string }) {
   const kody = zbudujKodyEmbedWsi(villageId);
@@ -31,6 +33,28 @@ export function KodyEmbedWsiKlient({ villageId }: { villageId: string }) {
         <div key={klucz} className="rounded-xl border border-stone-200 bg-stone-50/80 p-4">
           <p className="text-sm font-medium text-stone-800">{tytul}</p>
           <p className="mt-1 break-all text-xs text-stone-600">{dane.url}</p>
+          {klucz === "sport" ? (
+            <p className="mt-2 space-y-1 text-xs text-stone-600">
+              <span className="block break-all">
+                RSS terminarz:{" "}
+                <a href={urlRssSportuWsi(villageId)} className="text-green-800 underline">
+                  {urlRssSportuWsi(villageId)}
+                </a>
+              </span>
+              <span className="block break-all">
+                RSS aktywność:{" "}
+                <a href={urlRssAktywnosciFitnessWsi(villageId)} className="text-green-800 underline">
+                  {urlRssAktywnosciFitnessWsi(villageId)}
+                </a>
+              </span>
+              <span className="block break-all">
+                iCal:{" "}
+                <a href={urlIcalSportuWsi(villageId)} className="text-green-800 underline">
+                  {urlIcalSportuWsi(villageId)}
+                </a>
+              </span>
+            </p>
+          ) : null}
           <textarea
             readOnly
             className="form-control form-control--textarea mt-2 w-full max-w-full min-w-0 font-mono text-[11px]"

@@ -37,6 +37,9 @@ export const ETYKIETA_RODZAJU_WYDARZENIA: Record<string, string> = {
   zebranie_lowieckie: "Zebranie koła",
   szkolenie_lowieckie: "Szkolenie / egzamin",
   hubertus: "Hubertus / uroczystość",
+  trening: "Trening",
+  spacer: "Spacer / marsz",
+  rajd: "Rajd / wycieczka rowerowa",
   inne: "Wydarzenie",
 };
 

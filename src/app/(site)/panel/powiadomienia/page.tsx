@@ -6,6 +6,9 @@ import { pobierzUzytkownikaPanelu } from "@/lib/auth/pobierz-uzytkownika-serwer"
 import { PowiadomieniaPushKlient } from "@/components/pwa/powiadomienia-push-klient";
 import { IosPushOnboarding } from "@/components/pwa/ios-push-onboarding";
 import { PowiadomieniaLista, type PowiadomienieWiersz } from "./powiadomienia-lista";
+import { PreferencjePowiadomienKlient } from "./preferencje-powiadomien-klient";
+import { pobierzPreferencjePowiadomienSerwer } from "./akcje-preferencje";
+import type { PreferencjaPowiadomieniaWiersz } from "@/lib/powiadomienia/typy-powiadomien-preferences";
 
 export const metadata: Metadata = {
   title: "Powiadomienia",
@@ -24,6 +27,7 @@ export default async function PowiadomieniaPage() {
 
   const wpisy = (data ?? []) as PowiadomienieWiersz[];
   const nieprzeczytane = wpisy.filter((w) => !w.is_read).length;
+  const preferencje = (await pobierzPreferencjePowiadomienSerwer()) as PreferencjaPowiadomieniaWiersz[];
 
   return (
     <main>
@@ -47,6 +51,7 @@ export default async function PowiadomieniaPage() {
       />
       <IosPushOnboarding />
       <PowiadomieniaPushKlient />
+      <PreferencjePowiadomienKlient zapisane={preferencje} />
       <div className="mt-8">
         <PowiadomieniaLista wpisy={wpisy} />
       </div>

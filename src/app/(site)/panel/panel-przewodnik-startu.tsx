@@ -240,19 +240,38 @@ export function PanelPrzewodnikStartu({ stan }: { stan: StanPrzewodnikaStartu })
           }
         />
         {stan.jestSoltysem ? (
-          <Krok
-            ok={stan.wiesOpisWypelniony}
-            tytul="3. (Sołtys) Profil wsi w internecie"
-            opis="Opis miejscowości na publicznej stronie wsi — mieszkańcy i goście widzą go od razu. Uzupełnij dla każdej zarządzanej wsi (min. ok. 30 znaków)."
-            dzieci={
-              <Link
-                href="/panel/soltys/moja-wies"
-                className="rounded-lg bg-green-800 px-3 py-1.5 text-white hover:bg-green-900"
-              >
-                Profil wsi — edycja
-              </Link>
-            }
-          />
+          <>
+            <Krok
+              ok={stan.wiesOpisWypelniony}
+              tytul="3. (Sołtys) Profil wsi w internecie"
+              opis="Opis miejscowości na publicznej stronie wsi — min. ok. 30 znaków."
+              dzieci={
+                <Link href="/panel/soltys/moja-wies" className="rounded-lg bg-green-800 px-3 py-1.5 text-white hover:bg-green-900">
+                  Profil wsi — edycja
+                </Link>
+              }
+            />
+            <Krok
+              ok={stan.pierwszeOgloszenieOk}
+              tytul="4. (Sołtys) Pierwsze ogłoszenie"
+              opis="Opublikuj choć jedno zatwierdzone ogłoszenie — mieszkańcy zobaczą je w feedzie „Co nowego”."
+              dzieci={
+                <Link href="/panel/soltys/kalendarz" className="rounded-lg bg-green-800 px-3 py-1.5 text-white hover:bg-green-900">
+                  Kalendarz i ogłoszenia
+                </Link>
+              }
+            />
+            <Krok
+              ok={stan.swietlicaSkonfigurowana}
+              tytul="5. (Sołtys) Świetlica w systemie"
+              opis="Dodaj salę w module świetlicy, żeby mieszkańcy mogli składać wnioski o rezerwację."
+              dzieci={
+                <Link href="/panel/soltys/swietlica" className="rounded-lg bg-green-800 px-3 py-1.5 text-white hover:bg-green-900">
+                  Moduł świetlicy
+                </Link>
+              }
+            />
+          </>
         ) : null}
       </ol>
       <p className="mt-4 text-xs text-stone-500">

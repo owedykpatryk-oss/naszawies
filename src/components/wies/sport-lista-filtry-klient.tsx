@@ -6,7 +6,14 @@ import { KARTA_LISTY_WIES } from "@/components/wies/oslona-sekcji-wies";
 import type { WydarzenieSportowePubliczne } from "@/lib/wies/pobierz-terminarz-sportu-wsi";
 import { etykietaRodzajuWydarzenia } from "@/lib/wies/teksty-organizacji";
 
-type Filtr = "wszystkie" | "mecz" | "proba" | "wyjazd";
+type Filtr =
+  | "wszystkie"
+  | "mecz"
+  | "trening"
+  | "proba"
+  | "spacer"
+  | "rajd"
+  | "wyjazd";
 
 type Props = {
   wydarzenia: WydarzenieSportowePubliczne[];
@@ -40,7 +47,10 @@ export function SportListaFiltryKlient({ wydarzenia, sciezkaProfilu }: Props) {
       <div className="flex flex-wrap gap-2">
         {przycisk("wszystkie", "Wszystkie")}
         {przycisk("mecz", "Mecze")}
-        {przycisk("proba", "Treningi")}
+        {przycisk("trening", "Treningi")}
+        {przycisk("proba", "Zajęcia")}
+        {przycisk("spacer", "Spacery")}
+        {przycisk("rajd", "Rajdy")}
         {przycisk("wyjazd", "Wyjazdy")}
       </div>
       {lista.length === 0 ? (

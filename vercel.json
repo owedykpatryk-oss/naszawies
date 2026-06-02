@@ -15,6 +15,10 @@
     {
       "path": "/api/gus/sync",
       "schedule": "0 4 5 * *"
+    },
+    {
+      "path": "/api/powiadomienia/dostarcz",
+      "schedule": "*/5 * * * *"
     }
   ]
 }

@@ -7,6 +7,7 @@ import {
   aktualizujOrganizacjeWsi,
   dodajOrganizacjeWsi,
 } from "@/app/(site)/panel/soltys/akcje";
+import { PRESETY_DYSCYPLIN_SPORTOWYCH } from "@/lib/wies/dyscypliny-sportowe";
 import { czyOrganizacjaSport } from "@/lib/wies/sport";
 import {
   czyProfilKlubuSportowegoUzupelniony,
@@ -61,13 +62,29 @@ export function ProfilKlubuSportowegoKlient({
   }
 
   function polaProfilu(p: ReturnType<typeof parsujProfilKlubuSportowego>) {
+    const preset = p?.dyscyplina_preset ?? "";
     return (
       <div className="mt-4 grid gap-3 sm:grid-cols-2">
-        <input name="sport_dyscyplina" placeholder="Dyscyplina (np. piłka nożna)" defaultValue={p?.dyscyplina ?? ""} className="rounded-lg border border-stone-300 px-3 py-2 text-sm" />
+        <label className="text-xs text-stone-600 sm:col-span-2">
+          Dyscyplina
+          <select
+            name="sport_dyscyplina_preset"
+            defaultValue={preset || "inne"}
+            className="mt-1 w-full rounded-lg border border-stone-300 px-3 py-2 text-sm"
+          >
+            {PRESETY_DYSCYPLIN_SPORTOWYCH.map((d) => (
+              <option key={d.kod} value={d.kod}>
+                {d.etykieta}
+              </option>
+            ))}
+          </select>
+        </label>
+        <input name="sport_dyscyplina" placeholder="Własna nazwa (gdy „Inna dyscyplina”)" defaultValue={p?.dyscyplina ?? ""} className="rounded-lg border border-stone-300 px-3 py-2 text-sm sm:col-span-2" />
         <input name="sport_trener" placeholder="Trener / opiekun" defaultValue={p?.trener ?? ""} className="rounded-lg border border-stone-300 px-3 py-2 text-sm" />
         <input name="sport_strona_www" placeholder="Strona www" defaultValue={p?.strona_www ?? ""} className="rounded-lg border border-stone-300 px-3 py-2 text-sm sm:col-span-2" />
         <input name="sport_facebook" placeholder="Facebook" defaultValue={p?.facebook ?? ""} className="rounded-lg border border-stone-300 px-3 py-2 text-sm" />
         <input name="sport_instagram" placeholder="Instagram" defaultValue={p?.instagram ?? ""} className="rounded-lg border border-stone-300 px-3 py-2 text-sm" />
+        <input name="sport_strava" placeholder="Strava (klub lub profil)" defaultValue={p?.strava ?? ""} className="rounded-lg border border-stone-300 px-3 py-2 text-sm sm:col-span-2" />
         <input name="sport_skladka" placeholder="Składka / opłaty" defaultValue={p?.skladka ?? ""} className="rounded-lg border border-stone-300 px-3 py-2 text-sm" />
         <input name="sport_stroje" placeholder="Kolory strojów" defaultValue={p?.stroje_kolory ?? ""} className="rounded-lg border border-stone-300 px-3 py-2 text-sm" />
         <textarea name="sport_rekrutacja" rows={2} placeholder="Rekrutacja — kogo szukamy" defaultValue={p?.rekrutacja ?? ""} className="rounded-lg border border-stone-300 px-3 py-2 text-sm sm:col-span-2" />

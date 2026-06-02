@@ -48,6 +48,7 @@ export function KartaKlubuSportowego({
   const wwwHref = linkZTekstu(p?.strona_www);
   const fbHref = linkZTekstu(p?.facebook);
   const igHref = linkZTekstu(p?.instagram);
+  const stravaHref = linkZTekstu(p?.strava);
 
   const tresc = (
     <>
@@ -94,7 +95,7 @@ export function KartaKlubuSportowego({
             <dd>{p.skladka}</dd>
           </div>
         ) : null}
-        {wwwHref || fbHref || igHref ? (
+        {wwwHref || fbHref || igHref || stravaHref ? (
           <div className="flex flex-wrap gap-3 pt-1">
             {wwwHref ? (
               <a href={wwwHref} className="text-sm font-medium text-green-800 underline" target="_blank" rel="noopener noreferrer">
@@ -109,6 +110,11 @@ export function KartaKlubuSportowego({
             {igHref ? (
               <a href={igHref} className="text-sm font-medium text-green-800 underline" target="_blank" rel="noopener noreferrer">
                 Instagram ↗
+              </a>
+            ) : null}
+            {stravaHref ? (
+              <a href={stravaHref} className="text-sm font-medium text-orange-700 underline" target="_blank" rel="noopener noreferrer">
+                Strava ↗
               </a>
             ) : null}
           </div>

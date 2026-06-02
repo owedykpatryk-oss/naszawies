@@ -120,6 +120,9 @@ export function grupyNawigacjiSoltysa(l: LicznikiSoltysa | null, laczniePrzeglad
       opis: "Kalendarz, sale, dokumenty",
       linki: [
         { href: "/panel/soltys/kalendarz", label: "Kalendarz", highlight: true },
+        { href: "/panel/soltys/alerty", label: "Alerty awarii" },
+        { href: "/panel/soltys/glosowania", label: "Głosowania" },
+        { href: "/panel/soltys/dyzury", label: "Dyżury sołtysa" },
         { href: "/panel/soltys/rezerwacje", label: "Rezerwacje sal", badge: l?.rezerwacje || undefined },
         { href: "/panel/soltys/swietlica", label: "Świetlica" },
         { href: "/panel/soltys/cmentarz", label: "Plan cmentarza" },

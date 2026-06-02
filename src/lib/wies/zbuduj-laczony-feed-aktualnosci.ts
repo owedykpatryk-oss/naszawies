@@ -1,4 +1,5 @@
 import { etykietaRodzajuWydarzenia } from "@/lib/wies/teksty-organizacji";
+import { etykietaRodzajuAktywnosci } from "@/lib/wies/pobierz-aktywnosci-fitness-wsi";
 
 export type ElementLaczonegoFeedu = {
   sortAt: number;
@@ -154,4 +155,64 @@ export function zbudujLaczonyFeedAktualnosci(
   }
 
   return out.sort((a, b) => b.sortAt - a.sortAt).slice(0, limit);
+}
+
+type AktywnoscFeedSkrot = {
+  id: string;
+  title: string;
+  activity_kind: string;
+  activity_date: string;
+  distance_meters: number | null;
+};
+
+/** Ostatnie aktywności fitness mieszkańców w feedzie „Co nowego”. */
+export function dolaczAktywnosciFitnessDoFeedu(
+  feed: ElementLaczonegoFeedu[],
+  sciezka: string,
+  aktywnosci: AktywnoscFeedSkrot[],
+  limit = 14,
+): ElementLaczonegoFeedu[] {
+  const out = [...feed];
+  for (const a of aktywnosci) {
+    const t = Date.parse(a.activity_date);
+    if (!Number.isFinite(t)) continue;
+    const dystans =
+      a.distance_meters && a.distance_meters >= 1000
+        ? `${(a.distance_meters / 1000).toFixed(1)} km`
+        : a.distance_meters
+          ? `${a.distance_meters} m`
+          : "";
+    out.push({
+      sortAt: t,
+      etykieta: "Aktywność",
+      tytul: a.title,
+      href: `${sciezka}#sekcja-sport`,
+      podpis: [etykietaRodzajuAktywnosci(a.activity_kind), dystans, formatPl(t)].filter(Boolean).join(" · "),
+    });
+  }
+  return out.sort((x, y) => y.sortAt - x.sortAt).slice(0, limit);
+}
+
+type AlertSkrot = { id: string; title: string; kind: string; created_at: string };
+
+/** Rozszerzenie feedu o alerty awarii (osobna funkcja — opcjonalne źródło). */
+export function dolaczAlertyDoFeedu(
+  feed: ElementLaczonegoFeedu[],
+  sciezka: string,
+  alerty: AlertSkrot[],
+  limit = 14,
+): ElementLaczonegoFeedu[] {
+  const out = [...feed];
+  for (const a of alerty) {
+    const t = Date.parse(a.created_at);
+    if (!Number.isFinite(t)) continue;
+    out.push({
+      sortAt: t,
+      etykieta: "Alert",
+      tytul: a.title,
+      href: `${sciezka}#sekcja-alerty-wsi`,
+      podpis: `${a.kind} · ${formatPl(t)}`,
+    });
+  }
+  return out.sort((x, y) => y.sortAt - x.sortAt).slice(0, limit);
 }

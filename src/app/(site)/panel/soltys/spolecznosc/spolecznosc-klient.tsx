@@ -42,6 +42,8 @@ import { ProfilOspKlient } from "@/components/panel/soltys/profil-osp-klient";
 import { ProfilMysliwiKlient } from "@/components/panel/soltys/profil-mysliwi-klient";
 import { ProfilSzkolyKlient } from "@/components/panel/soltys/profil-szkoly-klient";
 import { ProfilKlubuSportowegoKlient } from "@/components/panel/soltys/profil-klubu-sportowego-klient";
+import { ModeracjaAktywnosciFitnessKlient } from "@/components/panel/soltys/moderacja-aktywnosci-fitness-klient";
+import { PresetyHarmonogramuSportKlient } from "@/components/panel/soltys/presety-harmonogramu-sport-klient";
 import type { OrganizacjaPelna } from "@/lib/wies/profil-organizacji";
 
 export type WiesDoModeracjiSpolecznosci = {
@@ -530,6 +532,9 @@ export function SoltysSpolecznoscKlient({
             | "zebranie_lowieckie"
             | "szkolenie_lowieckie"
             | "hubertus"
+            | "trening"
+            | "spacer"
+            | "rajd"
             | "inne",
           title: String(fd.get("title") ?? ""),
           description: String(fd.get("description") ?? "") || null,
@@ -834,6 +839,18 @@ export function SoltysSpolecznoscKlient({
         />
       ) : null}
 
+      {sekcjaAktywna === "organizacje" && tryb === "sport" ? (
+        <div className="scroll-mt-[10.5rem] rounded-2xl border border-sky-200/80 bg-gradient-to-br from-sky-50/40 to-white p-5 shadow-sm">
+          <h2 className="font-serif text-xl text-green-950">Aktywności mieszkańców</h2>
+          <p className="mt-1 text-sm text-stone-600">
+            Biegi, nordic walking i rowery dodawane przez mieszkańców. Możesz usunąć wpis niezgodny z regulaminem.
+          </p>
+          <div className="mt-4">
+            <ModeracjaAktywnosciFitnessKlient villageId={villageId} />
+          </div>
+        </div>
+      ) : null}
+
       {sekcjaAktywna === "organizacje" &&
       tryb !== "parafia" &&
       tryb !== "kgw" &&
@@ -943,6 +960,19 @@ export function SoltysSpolecznoscKlient({
                 <option value="wyjazd">Wyjazd / zawody</option>
                 <option value="inne">Inne</option>
               </>
+            ) : tryb === "sport" ? (
+              <>
+                <option value="mecz">Mecz / zawody</option>
+                <option value="trening">Trening</option>
+                <option value="proba">Próba / zajęcia</option>
+                <option value="spacer">Spacer / marsz</option>
+                <option value="rajd">Rajd / wycieczka rowerowa</option>
+                <option value="wyjazd">Wyjazd / wycieczka</option>
+                <option value="wystep">Występ / koncert</option>
+                <option value="spotkanie">Spotkanie</option>
+                <option value="festyn">Festyn / impreza</option>
+                <option value="inne">Inne</option>
+              </>
             ) : (
               <>
                 <option value="mecz">Mecz / zawody</option>
@@ -1025,9 +1055,19 @@ export function SoltysSpolecznoscKlient({
             Do (opcjonalnie)
             <input name="time_end" type="time" className="mt-1 w-full rounded border border-stone-300 px-3 py-2 text-sm" />
           </label>
-          <input name="title" placeholder="Np. Próba zespołu" required className="rounded border border-stone-300 px-3 py-2 text-sm md:col-span-2" />
+          <input
+            name="title"
+            placeholder={
+              tryb === "sport"
+                ? "Np. Nordic walking — grupa poranna"
+                : "Np. Próba zespołu"
+            }
+            required
+            className="rounded border border-stone-300 px-3 py-2 text-sm md:col-span-2"
+          />
           <textarea name="description" rows={2} placeholder="Miejsce, uwagi" className="rounded border border-stone-300 px-3 py-2 text-sm md:col-span-2" />
         </div>
+        {tryb === "sport" ? <PresetyHarmonogramuSportKlient formId="sekcja-harmonogram" /> : null}
         <button disabled={czek || !villageId} className="mt-4 rounded-lg bg-teal-800 px-4 py-2 text-sm text-white hover:bg-teal-900 disabled:opacity-60">
           Dodaj do planu tygodnia
         </button>

@@ -7,11 +7,14 @@ import { PrzewinDoSekcjiKlient } from "@/components/wies/przewin-do-sekcji-klien
 import { QrTerminarzSportuKlient } from "@/components/wies/qr-terminarz-sportu-klient";
 import { TytulSekcjiWies } from "@/components/wies/tytul-sekcji-wies";
 import { UdostepnijSportWsiKlient } from "@/components/wies/udostepnij-sport-wsi-klient";
+import { FormularzAktywnosciFitnessKlient, ListaAktywnosciFitness, PodsumowanieAktywnosciFitness } from "@/components/wies/aktywnosc-fitness-wsi";
 import { UjawnijPoPrzewinieciu } from "@/components/ui/ujawnij-po-przewinieciu";
 import { parsujProfilKlubuSportowego } from "@/lib/wies/profil-klubu-sportowego";
 import { hasloOrganizacjiZProfilu, okladkaOrganizacjiZProfilu } from "@/lib/wies/profil-organizacji-meta";
 import { znajdzNastepneWydarzenieSportowe } from "@/lib/wies/pobierz-terminarz-sportu-wsi";
 import { urlIcalSportuWsi, urlRssSportuWsi } from "@/lib/wies/rss-sportu";
+import { urlRssAktywnosciFitnessWsi } from "@/lib/wies/rss-aktywnosci-fitness";
+import { urlCsvAktywnosciFitnessWsi } from "@/lib/wies/csv-aktywnosci-fitness";
 import { nazwaDniaTygodnia } from "@/lib/wies/teksty-dotacji";
 import { etykietaRodzajuWydarzenia } from "@/lib/wies/teksty-organizacji";
 import {
@@ -20,6 +23,7 @@ import {
   nazwyKlubowSportowych,
   type OrganizacjaSportowaSkrot,
 } from "@/lib/wies/sport";
+import type { AktywnoscFitnessPubliczna, PodsumowanieAktywnosciFitness as PodsumowanieFitnessWsi } from "@/lib/wies/pobierz-aktywnosci-fitness-wsi";
 
 type Wydarzenie = {
   id: string;
@@ -64,6 +68,11 @@ type Props = {
   linkBoiskoNaMapie?: string | null;
   przewinPrzyWejsciu?: boolean;
   sciezkaPelnejStronyKlubu?: (klub: { id: string; name: string; group_type: string; public_slug?: string | null }) => string | null;
+  aktywnosciFitness?: AktywnoscFitnessPubliczna[];
+  podsumowanieFitness?: PodsumowanieFitnessWsi | null;
+  zalogowany?: boolean;
+  mieszkaniecWsi?: boolean;
+  biezacyUserId?: string | null;
 };
 
 export function SekcjaSportPubliczna({
@@ -77,6 +86,11 @@ export function SekcjaSportPubliczna({
   linkBoiskoNaMapie = null,
   przewinPrzyWejsciu = false,
   sciezkaPelnejStronyKlubu,
+  aktywnosciFitness = [],
+  podsumowanieFitness = null,
+  zalogowany = false,
+  mieszkaniecWsi = false,
+  biezacyUserId = null,
 }: Props) {
   const nazwy = nazwyKlubowSportowych(kluby);
   const treningi = harmonogram.filter((s) => czySlotHarmonogramuSportowego(s.nazwa_grupy, nazwy));
@@ -85,6 +99,8 @@ export function SekcjaSportPubliczna({
     .slice(0, 12);
   const sciezkaWydarzenia = `${sciezkaProfilu}/wydarzenia`;
   const rssUrl = urlRssSportuWsi(villageId);
+  const rssAktywnoscUrl = urlRssAktywnosciFitnessWsi(villageId);
+  const csvAktywnoscUrl = urlCsvAktywnosciFitnessWsi(villageId);
   const icalUrl = urlIcalSportuWsi(villageId);
   const nastepne = znajdzNastepneWydarzenieSportowe(
     terminarz.map((ev) => ({
@@ -116,7 +132,13 @@ export function SekcjaSportPubliczna({
           Pełny terminarz
         </Link>
         <a href={rssUrl} className="font-medium text-sky-900 underline" title="Kanał RSS meczów i treningów">
-          RSS
+          RSS terminarz
+        </a>
+        <a href={rssAktywnoscUrl} className="font-medium text-sky-900 underline" title="Kanał RSS aktywności mieszkańców">
+          RSS aktywność
+        </a>
+        <a href={csvAktywnoscUrl} className="font-medium text-sky-900 underline" title="Eksport CSV aktywności mieszkańców">
+          CSV aktywność
         </a>
         <a href={icalUrl} className="font-medium text-sky-900 underline" title="Kalendarz iCal (.ics)">
           iCal
@@ -242,6 +264,23 @@ export function SekcjaSportPubliczna({
           </ul>
         </div>
       ) : null}
+
+      <PodsumowanieAktywnosciFitness podsumowanie={podsumowanieFitness} />
+
+      <ListaAktywnosciFitness
+        aktywnosci={aktywnosciFitness}
+        villageId={villageId}
+        biezacyUserId={biezacyUserId}
+      />
+
+      <div className="mt-8">
+        <FormularzAktywnosciFitnessKlient
+          villageId={villageId}
+          zalogowany={zalogowany}
+          mieszkaniecWsi={mieszkaniecWsi}
+          kluby={kluby.map((k) => ({ id: k.id, name: k.name }))}
+        />
+      </div>
 
       <UjawnijPoPrzewinieciu>
         <div className="mt-8">

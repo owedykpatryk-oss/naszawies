@@ -232,6 +232,26 @@ html.tryb-senior textarea {
   min-height: 2.75rem;
 }
 
+html[data-tryb-dostepnosci="wysoki-kontrast"] {
+  --tw-prose-body: #000;
+}
+
+html[data-tryb-dostepnosci="wysoki-kontrast"] body {
+  background: #fff !important;
+  color: #000 !important;
+}
+
+html[data-tryb-dostepnosci="wysoki-kontrast"] a {
+  text-decoration: underline;
+  font-weight: 600;
+}
+
+html[data-tryb-dostepnosci="wysoki-kontrast"] .btn-panel-primary,
+html[data-tryb-dostepnosci="wysoki-kontrast"] .btn-panel-secondary {
+  border-width: 2px;
+  border-color: #000;
+}
+
 /* Formularz waitlist (fragment HTML z landingu) */
 .waitlist-honeypot {
   position: absolute;

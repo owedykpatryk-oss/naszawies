@@ -20,6 +20,8 @@ import {
   pobierzHubPowiatuCached,
   pobierzHubWojewodztwaCached,
 } from "@/lib/wies/hub-administracyjny";
+import { pobierzModulySpolecznosciWsi } from "@/lib/wies/pobierz-moduly-spolecznosci-wsi";
+import { pobierzAktywnosciFitnessWsi, pobierzPodsumowanieAktywnosciFitnessWsi } from "@/lib/wies/pobierz-aktywnosci-fitness-wsi";
 import { pobierzDanePubliczneProfiluWsi } from "@/lib/wies/pobierz-dane-publiczne-profilu-wsi";
 import { pobierzUstawieniaWsi } from "@/lib/wies/pobierz-ustawienia-wsi";
 import { maCiasteczkaSesjiSupabaseSerwer } from "@/lib/auth/ciasteczka-sesji";
@@ -72,10 +74,16 @@ import { mapujWpisHistoriiPubliczny } from "@/lib/historia/pobierz-historie-wsi"
 import { czyUzytkownikZapalilSwieczke } from "@/lib/historia/akcje-historia-reakcje";
 import { urlRssHistoriiWsi } from "@/lib/historia/rss-historii";
 import { SportListaFiltryKlient } from "@/components/wies/sport-lista-filtry-klient";
+import {
+  FormularzAktywnosciFitnessKlient,
+  ListaAktywnosciFitness,
+  PodsumowanieAktywnosciFitness,
+} from "@/components/wies/aktywnosc-fitness-wsi";
 import { KartaKlubuSportowego } from "@/components/wies/karta-klubu-sportowego";
 import { pobierzTerminarzSportuWsi } from "@/lib/wies/pobierz-terminarz-sportu-wsi";
 import { parsujProfilKlubuSportowego } from "@/lib/wies/profil-klubu-sportowego";
 import { urlIcalSportuWsi, urlRssSportuWsi } from "@/lib/wies/rss-sportu";
+import { urlRssAktywnosciFitnessWsi } from "@/lib/wies/rss-aktywnosci-fitness";
 import {
   czyWydarzenieSportowe,
   nazwyKlubowSportowych,
@@ -737,6 +745,10 @@ export default async function WiesCatchAllPage({ params, searchParams }: Props) 
       searchParams?.sport === "true" ||
       (Array.isArray(searchParams?.sport) && searchParams.sport.includes("1"));
 
+    const modulySpolecznosci = await pobierzModulySpolecznosciWsi(wies.id, userSesji?.id ?? null);
+    const aktywnosciFitness = await pobierzAktywnosciFitnessWsi(wies.id);
+    const podsumowanieFitness = await pobierzPodsumowanieAktywnosciFitnessWsi(wies.id);
+
     return (
       <main className="profil-wies-strona mx-auto min-w-0 w-full max-w-7xl px-4 py-8 text-stone-800 sm:px-6 sm:py-14">
         <WiesJsonLd wies={wies} siteUrl={siteUrl} organizacje={organizacje} />
@@ -803,8 +815,12 @@ export default async function WiesCatchAllPage({ params, searchParams }: Props) 
           przewinDoSzkoly={przewinDoSzkoly}
           przewinDoHistorii={przewinDoHistorii}
           przewinDoSportu={przewinDoSportu}
+          aktywnosciFitness={aktywnosciFitness}
+          podsumowanieFitness={podsumowanieFitness}
+          biezacyUserId={userSesji?.id ?? null}
           bannerRynek={bannerRynek}
           subskrybowaneKategorieRynek={subskrybowaneKategorieRynek}
+          modulySpolecznosci={modulySpolecznosci}
         />
       </main>
     );
@@ -1718,8 +1734,27 @@ export default async function WiesCatchAllPage({ params, searchParams }: Props) 
   if (reszta.length === 1 && reszta[0] === "sport") {
     const sciezka = sciezkaProfiluWsi(wies);
     const { kluby, wydarzenia, treningi } = await pobierzTerminarzSportuWsi(supabase, wies.id);
+    const aktywnosciFitness = await pobierzAktywnosciFitnessWsi(wies.id);
+    const podsumowanieFitness = await pobierzPodsumowanieAktywnosciFitnessWsi(wies.id);
+    const userSesjiSport = (await maCiasteczkaSesjiSupabaseSerwer()) ? await pobierzUzytkownikaSerwer() : null;
+    let mieszkaniecWsiSport = false;
+    if (userSesjiSport) {
+      const serwer = utworzKlientaSupabaseSerwer();
+      const { data: rolaWsi } = await serwer
+        .from("user_village_roles")
+        .select("id")
+        .eq("user_id", userSesjiSport.id)
+        .eq("village_id", wies.id)
+        .eq("status", "active")
+        .maybeSingle();
+      mieszkaniecWsiSport = !!rolaWsi;
+    }
     const sciezkaWydarzenia = `${sciezka}/wydarzenia`;
-    const pusto = kluby.length === 0 && treningi.length === 0 && wydarzenia.length === 0;
+    const pusto =
+      kluby.length === 0 &&
+      treningi.length === 0 &&
+      wydarzenia.length === 0 &&
+      aktywnosciFitness.length === 0;
     return (
       <main className="mx-auto min-w-0 w-full max-w-7xl px-4 py-16 text-stone-800 sm:px-6">
         <p className="mb-4 text-sm text-stone-500">
@@ -1737,7 +1772,10 @@ export default async function WiesCatchAllPage({ params, searchParams }: Props) 
             Kalendarz (sport)
           </Link>
           <a href={urlRssSportuWsi(wies.id)} className="text-green-800 underline">
-            RSS
+            RSS terminarz
+          </a>
+          <a href={urlRssAktywnosciFitnessWsi(wies.id)} className="text-green-800 underline">
+            RSS aktywność
           </a>
           <a href={urlIcalSportuWsi(wies.id)} className="text-green-800 underline">
             iCal
@@ -1799,6 +1837,20 @@ export default async function WiesCatchAllPage({ params, searchParams }: Props) 
             ) : null}
           </div>
         )}
+        <PodsumowanieAktywnosciFitness podsumowanie={podsumowanieFitness} />
+        <ListaAktywnosciFitness
+          aktywnosci={aktywnosciFitness}
+          villageId={wies.id}
+          biezacyUserId={userSesjiSport?.id ?? null}
+        />
+        <div className="mt-8">
+          <FormularzAktywnosciFitnessKlient
+            villageId={wies.id}
+            zalogowany={!!userSesjiSport}
+            mieszkaniecWsi={mieszkaniecWsiSport}
+            kluby={kluby.map((k) => ({ id: k.id, name: k.name }))}
+          />
+        </div>
       </main>
     );
   }

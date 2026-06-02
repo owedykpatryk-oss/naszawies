@@ -51,6 +51,8 @@ export async function pobierzMojFeedCoNowego(villageIds: string[], limit = 24): 
     { data: blogRaw },
     { data: wiadomosciRaw },
     { data: wydRaw },
+    { data: historiaRaw },
+    { data: rynekRaw },
   ] = await Promise.all([
     supabase
       .from("posts")
@@ -81,6 +83,20 @@ export async function pobierzMojFeedCoNowego(villageIds: string[], limit = 24): 
       .gte("starts_at", odWydarzen)
       .order("starts_at", { ascending: true })
       .limit(24),
+    supabase
+      .from("village_history_entries")
+      .select("id, title, event_date, created_at, village_id")
+      .in("village_id", unikalne)
+      .eq("status", "approved")
+      .order("created_at", { ascending: false })
+      .limit(15),
+    supabase
+      .from("marketplace_listings")
+      .select("id, title, listing_type, published_at, created_at, village_id")
+      .in("village_id", unikalne)
+      .eq("status", "approved")
+      .order("published_at", { ascending: false, nullsFirst: false })
+      .limit(15),
   ]);
 
   const out: MojeElementFeedu[] = [];
@@ -163,6 +179,42 @@ export async function pobierzMojFeedCoNowego(villageIds: string[], limit = 24): 
       podpis: [v.name, etykietaRodzajuWydarzenia(ev.event_kind), ng ?? "", formatPl(t)].filter(Boolean).join(" · "),
       nazwaWsi: v.name,
       villageId: ev.village_id,
+    });
+  }
+
+  for (const h of historiaRaw ?? []) {
+    const raw = h.event_date ?? h.created_at;
+    const t = Date.parse(raw);
+    if (!Number.isFinite(t)) continue;
+    const v = mapaWsi.get(h.village_id);
+    if (!v) continue;
+    const sciezka = sciezkaProfiluWsi(v);
+    out.push({
+      sortAt: t,
+      etykieta: "Historia",
+      tytul: h.title,
+      href: `${sciezka}/historia/${h.id}`,
+      podpis: `${v.name} · ${formatPl(t)}`,
+      nazwaWsi: v.name,
+      villageId: h.village_id,
+    });
+  }
+
+  for (const r of rynekRaw ?? []) {
+    const raw = r.published_at ?? r.created_at;
+    const t = Date.parse(raw);
+    if (!Number.isFinite(t)) continue;
+    const v = mapaWsi.get(r.village_id);
+    if (!v) continue;
+    const sciezka = sciezkaProfiluWsi(v);
+    out.push({
+      sortAt: t,
+      etykieta: "Rynek",
+      tytul: r.title,
+      href: `${sciezka}#sekcja-rynek-lokalny`,
+      podpis: `${v.name} · ${r.listing_type} · ${formatPl(t)}`,
+      nazwaWsi: v.name,
+      villageId: r.village_id,
     });
   }
 

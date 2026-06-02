@@ -29,6 +29,8 @@ export function budujCspProdukcji(): string {
     "https://*.supabase.co",
     "https://tile.openstreetmap.org",
     "https://*.tile.openstreetmap.org",
+    "https://*.basemaps.cartocdn.com",
+    "https://integracja.gugik.gov.pl",
     "https://server.arcgisonline.com",
     "https://*.arcgisonline.com",
     r2Base,

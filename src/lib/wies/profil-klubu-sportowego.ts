@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { dyscyplinaZPresetu } from "@/lib/wies/dyscypliny-sportowe";
 import { metaOrganizacjiZFormularza, schemaMetaProfiluOrganizacji } from "@/lib/wies/profil-organizacji-meta";
 
 export const schemaProfilKlubuSportowego = z.object({
@@ -8,6 +9,8 @@ export const schemaProfilKlubuSportowego = z.object({
   strona_www: z.string().trim().max(500).nullable().optional(),
   facebook: z.string().trim().max(500).nullable().optional(),
   instagram: z.string().trim().max(500).nullable().optional(),
+  strava: z.string().trim().max(500).nullable().optional(),
+  dyscyplina_preset: z.string().trim().max(40).nullable().optional(),
   rekrutacja: z.string().trim().max(800).nullable().optional(),
   skladka: z.string().trim().max(300).nullable().optional(),
   stroje_kolory: z.string().trim().max(200).nullable().optional(),
@@ -27,13 +30,22 @@ export function profilKlubuSportowegoZFormularza(fd: FormData): ProfilKlubuSport
     const t = String(fd.get(k) ?? "").trim();
     return t.length ? t : null;
   };
+  const preset = String(fd.get("sport_dyscyplina_preset") ?? "").trim();
+  const dyscyplinaWlasna = pole("sport_dyscyplina");
+  const dyscyplina =
+    preset && preset !== "inne"
+      ? dyscyplinaZPresetu(preset, dyscyplinaWlasna ?? "")
+      : dyscyplinaWlasna;
+
   return {
     wersja: 1,
-    dyscyplina: pole("sport_dyscyplina"),
+    dyscyplina,
+    dyscyplina_preset: preset || null,
     trener: pole("sport_trener"),
     strona_www: pole("sport_strona_www"),
     facebook: pole("sport_facebook"),
     instagram: pole("sport_instagram"),
+    strava: pole("sport_strava"),
     rekrutacja: pole("sport_rekrutacja"),
     skladka: pole("sport_skladka"),
     stroje_kolory: pole("sport_stroje"),
@@ -48,6 +60,7 @@ export function czyProfilKlubuSportowegoUzupelniony(p: ProfilKlubuSportowegoJson
     p.dyscyplina?.trim() ||
       p.trener?.trim() ||
       p.rekrutacja?.trim() ||
-      p.strona_www?.trim(),
+      p.strona_www?.trim() ||
+      p.strava?.trim(),
   );
 }

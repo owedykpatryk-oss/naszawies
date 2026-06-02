@@ -42,13 +42,19 @@ import {
   SekcjaPrzewodnikSamorzadowy,
   type PrzewodnikSamorzadowyZapis,
 } from "@/components/wies/sekcja-przewodnik-samorzadowy";
-import { WiesLaczonyFeedAktualnosci } from "@/components/wies/wies-laczony-feed-aktualnosci";
+import { SekcjaAlertyWsi } from "@/components/wies/sekcja-alerty-wsi";
+import { SekcjaGlosowaniaWsi } from "@/components/wies/sekcja-glosowania-wsi";
+import { SekcjaHarmonogramSmieci } from "@/components/wies/sekcja-harmonogram-smieci";
+import { SekcjaDyzurySoltysa } from "@/components/wies/sekcja-dyzury-soltysa";
+import type { ModulySpolecznosciWsi } from "@/lib/wies/pobierz-moduly-spolecznosci-wsi";
+import type { AktywnoscFitnessPubliczna, PodsumowanieAktywnosciFitness as PodsumowanieFitnessWsi } from "@/lib/wies/pobierz-aktywnosci-fitness-wsi";
 import { WiesPilneAlerty } from "@/components/wies/wies-pilne-alerty";
 import { WiesZgloszeniaPubliczne } from "@/components/wies/wies-zgloszenia-publiczne";
 import { PomocSasiedzkaSekcja } from "@/components/wies/pomoc-sasiedzka-sekcja";
 import { filtrujPilneAlerty } from "@/lib/wies/filtruj-pilne-alerty";
-import { zbudujLaczonyFeedAktualnosci } from "@/lib/wies/zbuduj-laczony-feed-aktualnosci";
-import { PrzelacznikTrybuSeniora } from "@/components/ui/tryb-senior-provider";
+import { zbudujLaczonyFeedAktualnosci, dolaczAlertyDoFeedu, dolaczAktywnosciFitnessDoFeedu } from "@/lib/wies/zbuduj-laczony-feed-aktualnosci";
+import { WiesLaczonyFeedAktualnosci } from "@/components/wies/wies-laczony-feed-aktualnosci";
+import { PrzelacznikTrybuSeniora, PrzelacznikKontrastu } from "@/components/ui/tryb-senior-provider";
 import { WiesKontaktSzybkiPasek } from "@/components/wies/wies-kontakt-szybki-pasek";
 import type { ZakladkaProfiluWsi } from "@/components/wies/wies-zakladki-profilu";
 import { LazyWidoczny } from "@/components/ui/lazy-widoczny";
@@ -175,6 +181,7 @@ export function WiesProfilPubliczny({
   fotokronikaPubliczna = [],
   ostrzezeniaLowieckie = [],
   zalogowany = false,
+  mieszkaniecWsi = false,
   zapisaneTresci = {},
   mapaZnacznik = null,
   mapaPoi = [],
@@ -186,8 +193,12 @@ export function WiesProfilPubliczny({
   przewinDoSzkoly = false,
   przewinDoHistorii = false,
   przewinDoSportu = false,
+  aktywnosciFitness = [],
+  podsumowanieFitness = null,
+  biezacyUserId = null,
   bannerRynek = null,
   subskrybowaneKategorieRynek = [],
+  modulySpolecznosci,
 }: {
   wies: WiesPubliczna;
   posty: WpisPostu[];
@@ -316,10 +327,14 @@ export function WiesProfilPubliczny({
   przewinDoSzkoly?: boolean;
   przewinDoHistorii?: boolean;
   przewinDoSportu?: boolean;
+  aktywnosciFitness?: AktywnoscFitnessPubliczna[];
+  podsumowanieFitness?: PodsumowanieFitnessWsi | null;
+  biezacyUserId?: string | null;
   ustawieniaWsi?: UstawieniaWsiPubliczne;
   /** Aktywny banner sezonowy ustawiony przez sołtysa. */
   bannerRynek?: string | null;
   subskrybowaneKategorieRynek?: (string | null)[];
+  modulySpolecznosci?: ModulySpolecznosciWsi;
 }) {
   const ustawieniaWsi = ustawieniaWsiProp ?? zbudujUstawieniaWsiPubliczne(null);
   const modul = (klucz: Parameters<typeof czyModulWsiWlaczony>[1]) =>
@@ -438,6 +453,25 @@ export function WiesProfilPubliczny({
     wies.id,
     16,
   );
+  const feedZAlertami = dolaczAktywnosciFitnessDoFeedu(
+    modulySpolecznosci?.alerty?.length
+      ? dolaczAlertyDoFeedu(
+          laczonyFeed,
+          sciezka,
+          modulySpolecznosci.alerty.filter((a) => a.status === "active"),
+          16,
+        )
+      : laczonyFeed,
+    sciezka,
+    aktywnosciFitness.map((a) => ({
+      id: a.id,
+      title: a.title,
+      activity_kind: a.activity_kind,
+      activity_date: a.activity_date,
+      distance_meters: a.distance_meters,
+    })),
+    16,
+  );
 
   const maPrzewodnik =
     !!przewodnikSamorzadowy &&
@@ -457,6 +491,7 @@ export function WiesProfilPubliczny({
   const maModulHistoria = modul("historia");
   const maSport =
     klubySportowe.length > 0 ||
+    aktywnosciFitness.length > 0 ||
     wydarzenia.some((ev) => czyWydarzenieSportowe(ev.event_kind, ev.nazwa_grupy, nazwyKlubow)) ||
     harmonogramTygodnia.some((s) => czySlotHarmonogramuSportowego(s.nazwa_grupy, nazwyKlubow));
   const maModulSport = modul("sport");
@@ -702,12 +737,14 @@ export function WiesProfilPubliczny({
         <SkokDoSekcjiMobilny zakladki={zakladkiProfilu} />
         <div className="mt-4 flex flex-wrap items-center gap-3">
           <PrzelacznikTrybuSeniora />
+          <PrzelacznikKontrastu />
         </div>
       </header>
 
       <WiesBlokiTresci bloki={ustawieniaWsi.bloki} />
 
       <WiesPilneAlerty alerty={pilneAlerty} sciezkaOgloszenia={prefixOgloszenia} />
+      {modulySpolecznosci ? <SekcjaAlertyWsi alerty={modulySpolecznosci.alerty} /> : null}
       <OstrzezeniaLowieckieWsi
         ostrzezenia={ostrzezeniaLowieckie}
         nazwaWsi={wies.name}
@@ -756,7 +793,22 @@ export function WiesProfilPubliczny({
 
       <SekcjaPrzewodnikSamorzadowy wies={wies} przewodnik={przewodnikSamorzadowy} />
 
-      {modul("aktualnosci") ? <WiesLaczonyFeedAktualnosci wpisy={laczonyFeed} /> : null}
+      {modulySpolecznosci ? (
+        <>
+          <SekcjaHarmonogramSmieci
+            wpisy={modulySpolecznosci.harmonogramSmieci}
+            wasteInfo={przewodnikSamorzadowy?.waste_info}
+          />
+          <SekcjaDyzurySoltysa dyzury={modulySpolecznosci.dyzurySoltysa} />
+          <SekcjaGlosowaniaWsi
+            glosowania={modulySpolecznosci.glosowania}
+            mojGlos={modulySpolecznosci.mojGlos}
+            zalogowany={zalogowany}
+          />
+        </>
+      ) : null}
+
+      {modul("aktualnosci") ? <WiesLaczonyFeedAktualnosci wpisy={feedZAlertami} /> : null}
 
       {maRynek && modul("rynek") ? (
         <OslonaSekcjiWies id="sekcja-rynek-lokalny">
@@ -1079,10 +1131,24 @@ export function WiesProfilPubliczny({
           villageId={wies.id}
           linkBoiskoNaMapie={linkBoiskoNaMapie}
           przewinPrzyWejsciu={przewinDoSportu}
+          aktywnosciFitness={aktywnosciFitness}
+          podsumowanieFitness={podsumowanieFitness}
+          zalogowany={zalogowany}
+          mieszkaniecWsi={mieszkaniecWsi}
+          biezacyUserId={biezacyUserId}
         />
       ) : null}
       {maModulSport && !maSport ? (
-        <SekcjaSportPusta sciezkaProfilu={sciezka} nazwaWsi={wies.name} />
+        <SekcjaSportPusta
+          sciezkaProfilu={sciezka}
+          nazwaWsi={wies.name}
+          villageId={wies.id}
+          aktywnosciFitness={aktywnosciFitness}
+          podsumowanieFitness={podsumowanieFitness}
+          zalogowany={zalogowany}
+          mieszkaniecWsi={mieszkaniecWsi}
+          biezacyUserId={biezacyUserId}
+        />
       ) : null}
 
       {(parafie.length > 0 || kolaKgw.length > 0 || jednostkiOsp.length > 0 || kolaLowieckie.length > 0 || organizacjePozostale.length > 0 || wydarzeniaBezSportu.length > 0) && modul("organizacje") ? (

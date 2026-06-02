@@ -2,8 +2,13 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { z } from "zod";
 import { SportListaFiltryKlient } from "@/components/wies/sport-lista-filtry-klient";
+import { ListaAktywnosciFitness, PodsumowanieAktywnosciFitness } from "@/components/wies/aktywnosc-fitness-wsi";
 import { nazwaDniaTygodnia } from "@/lib/wies/teksty-dotacji";
 import { pobierzTerminarzSportuWsi } from "@/lib/wies/pobierz-terminarz-sportu-wsi";
+import {
+  pobierzAktywnosciFitnessWsi,
+  pobierzPodsumowanieAktywnosciFitnessWsi,
+} from "@/lib/wies/pobierz-aktywnosci-fitness-wsi";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
 import { sciezkaProfiluWsi } from "@/lib/wies/sciezka-publiczna";
 
@@ -34,7 +39,11 @@ export default async function EmbedSportWsiPage({ params }: Props) {
   if (!wies?.is_active) notFound();
 
   const sciezka = sciezkaProfiluWsi(wies);
-  const { wydarzenia, treningi } = await pobierzTerminarzSportuWsi(supabase, wies.id);
+  const [{ wydarzenia, treningi }, aktywnosciFitness, podsumowanieFitness] = await Promise.all([
+    pobierzTerminarzSportuWsi(supabase, wies.id),
+    pobierzAktywnosciFitnessWsi(wies.id, 8),
+    pobierzPodsumowanieAktywnosciFitnessWsi(wies.id),
+  ]);
 
   return (
     <main className="min-w-0 bg-white p-4 text-stone-800">
@@ -45,6 +54,10 @@ export default async function EmbedSportWsiPage({ params }: Props) {
           Pełny profil wsi
         </a>
       </header>
+      <PodsumowanieAktywnosciFitness podsumowanie={podsumowanieFitness} />
+      {aktywnosciFitness.length > 0 ? (
+        <ListaAktywnosciFitness aktywnosci={aktywnosciFitness} villageId={wies.id} />
+      ) : null}
       {treningi.length > 0 ? (
         <div className="mt-4">
           <h2 className="text-xs font-semibold uppercase text-stone-500">Plan tygodnia</h2>
@@ -59,7 +72,9 @@ export default async function EmbedSportWsiPage({ params }: Props) {
         </div>
       ) : null}
       {wydarzenia.length === 0 ? (
-        <p className="mt-6 text-sm text-stone-500">Brak zaplanowanych wydarzeń sportowych.</p>
+        treningi.length === 0 && aktywnosciFitness.length === 0 ? (
+          <p className="mt-6 text-sm text-stone-500">Brak opublikowanych informacji sportowych.</p>
+        ) : null
       ) : (
         <SportListaFiltryKlient wydarzenia={wydarzenia} sciezkaProfilu={sciezka} />
       )}

@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
 import { utworzPlikIcsWiele } from "@/lib/kalendarz/utworz-plik-ics";
+import { wpisyIcsZeSlotowTygodniowych } from "@/lib/wies/ical-sport-tygodniowy";
 import { pobierzTerminarzSportuWsi } from "@/lib/wies/pobierz-terminarz-sportu-wsi";
 import { bazowyUrlWitryny } from "@/lib/wies/kody-embed-wsi";
 import { sciezkaProfiluWsi } from "@/lib/wies/sciezka-publiczna";
@@ -35,7 +36,7 @@ export async function GET(_request: Request, { params }: Props) {
   const baza = bazowyUrlWitryny();
   const terminarz = await pobierzTerminarzSportuWsi(supabase, wies.id);
 
-  const wpisy = terminarz.wydarzenia.map((ev) => ({
+  const wpisyWydarzen = terminarz.wydarzenia.map((ev) => ({
     uid: `sport-event-${ev.id}`,
     title: ev.title,
     description: ev.description,
@@ -45,7 +46,13 @@ export async function GET(_request: Request, { params }: Props) {
     url: `${baza}${sciezka}/wydarzenia/${ev.id}`,
   }));
 
-  const ics = utworzPlikIcsWiele(wpisy, `Sport — ${wies.name}`);
+  const wpisyTreningi = wpisyIcsZeSlotowTygodniowych(terminarz.treningi, {
+    tygodnie: 10,
+    urlBazy: baza,
+    sciezkaProfilu: sciezka,
+  });
+
+  const ics = utworzPlikIcsWiele([...wpisyWydarzen, ...wpisyTreningi], `Sport — ${wies.name}`);
 
   return new NextResponse(ics, {
     headers: {
