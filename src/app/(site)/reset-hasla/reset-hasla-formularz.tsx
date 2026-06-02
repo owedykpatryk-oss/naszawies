@@ -2,27 +2,41 @@
 
 import Link from "next/link";
 import { FormEvent, useState } from "react";
-import { utworzKlientaSupabasePrzegladarka } from "@/lib/supabase/przegladarka";
+import { TurnstileAntybot } from "@/components/turnstile/TurnstileAntybot";
 
-type Props = { pochodzeniePubliczne: string };
+const TURNSTILE_SITE_KEY = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY?.trim() ?? "";
 
-export function ResetHaslaFormularz({ pochodzeniePubliczne }: Props) {
+export function ResetHaslaFormularz() {
   const [laduje, ustawLaduje] = useState(false);
   const [blad, ustawBlad] = useState("");
   const [wyslano, ustawWyslano] = useState(false);
+  const [turnstileToken, ustawTurnstileToken] = useState<string | null>(null);
+  const [turnstileKey, ustawTurnstileKey] = useState(0);
 
   async function onSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const email = String(new FormData(e.currentTarget).get("email") || "").trim();
+    if (TURNSTILE_SITE_KEY && !turnstileToken) {
+      ustawBlad("Potwierdź weryfikację antyspamową (Cloudflare) przed wysłaniem.");
+      return;
+    }
+
     ustawLaduje(true);
     ustawBlad("");
     try {
-      const supabase = utworzKlientaSupabasePrzegladarka();
-      const { error } = await supabase.auth.resetPasswordForEmail(email, {
-        redirectTo: `${pochodzeniePubliczne}/auth/potwierdz?next=${encodeURIComponent("/auth/ustaw-haslo")}`,
+      const res = await fetch("/api/reset-hasla", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email,
+          ...(turnstileToken ? { cfTurnstileResponse: turnstileToken } : {}),
+        }),
       });
-      if (error) {
-        ustawBlad(error.message);
+      const d = (await res.json().catch(() => ({}))) as { error?: string };
+      if (!res.ok) {
+        ustawBlad(d.error || "Nie udało się wysłać linku resetującego.");
+        ustawTurnstileToken(null);
+        ustawTurnstileKey((k) => k + 1);
         return;
       }
       ustawWyslano(true);
@@ -73,6 +87,13 @@ export function ResetHaslaFormularz({ pochodzeniePubliczne }: Props) {
           className="w-full rounded-lg border border-stone-300 px-3 py-2 text-stone-900 outline-none ring-green-800 focus:ring-2"
         />
       </div>
+      {TURNSTILE_SITE_KEY ? (
+        <TurnstileAntybot
+          key={turnstileKey}
+          siteKey={TURNSTILE_SITE_KEY}
+          onToken={ustawTurnstileToken}
+        />
+      ) : null}
       <button
         type="submit"
         disabled={laduje}

@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { LogoNaszawiesWycentrowane } from "@/components/marka/logo-naszawies";
-import { pobierzPochodzeniePubliczne } from "@/lib/zadanie/pochodzenie-publiczne";
 import { ResetHaslaFormularz } from "./reset-hasla-formularz";
 
 export const metadata: Metadata = {
@@ -10,8 +9,6 @@ export const metadata: Metadata = {
 };
 
 export default function ResetHaslaPage() {
-  const pochodzenie = pobierzPochodzeniePubliczne();
-
   return (
     <main className="mx-auto min-w-0 max-w-md py-12 text-stone-800 sm:py-16">
       <LogoNaszawiesWycentrowane />
@@ -24,7 +21,7 @@ export default function ResetHaslaPage() {
       <p className="mt-2 text-sm text-stone-600">
         Podaj adres e-mail konta — wyślemy link z instrukcją do ustawienia nowego hasła.
       </p>
-      <ResetHaslaFormularz pochodzeniePubliczne={pochodzenie} />
+      <ResetHaslaFormularz />
     </main>
   );
 }
