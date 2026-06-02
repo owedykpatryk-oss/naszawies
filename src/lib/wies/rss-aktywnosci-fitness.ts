@@ -1,9 +1,9 @@
-import type { AktywnoscFitnessPubliczna } from "@/lib/wies/pobierz-aktywnosci-fitness-wsi";
+import type { AktywnoscFitnessPubliczna } from "@/lib/wies/aktywnosc-fitness-wspolne";
 import {
   etykietaRodzajuAktywnosci,
   formatujCzas,
   formatujDystans,
-} from "@/lib/wies/pobierz-aktywnosci-fitness-wsi";
+} from "@/lib/wies/aktywnosc-fitness-wspolne";
 import { bazowyUrlWitryny } from "@/lib/wies/kody-embed-wsi";
 
 function escapeXml(s: string): string {

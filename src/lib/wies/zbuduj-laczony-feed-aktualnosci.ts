@@ -1,5 +1,5 @@
 import { etykietaRodzajuWydarzenia } from "@/lib/wies/teksty-organizacji";
-import { etykietaRodzajuAktywnosci } from "@/lib/wies/pobierz-aktywnosci-fitness-wsi";
+import { etykietaRodzajuAktywnosci } from "@/lib/wies/aktywnosc-fitness-wspolne";
 
 export type ElementLaczonegoFeedu = {
   sortAt: number;

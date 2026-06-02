@@ -10,7 +10,7 @@ import {
 import {
   etykietaRodzajuAktywnosci,
   formatujDystans,
-} from "@/lib/wies/pobierz-aktywnosci-fitness-wsi";
+} from "@/lib/wies/aktywnosc-fitness-wspolne";
 import { urlCsvAktywnosciFitnessWsi } from "@/lib/wies/csv-aktywnosci-fitness";
 
 export function ModeracjaAktywnosciFitnessKlient({ villageId }: { villageId: string }) {

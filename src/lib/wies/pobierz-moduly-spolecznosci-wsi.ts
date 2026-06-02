@@ -76,7 +76,7 @@ export async function pobierzModulySpolecznosciWsi(
     });
   }
 
-  let mojGlos: Record<string, string> = {};
+  const mojGlos: Record<string, string> = {};
   if (userId && glosowania.length > 0) {
     const ids = glosowania.map((g) => g.id);
     const { data: moje } = await supabase

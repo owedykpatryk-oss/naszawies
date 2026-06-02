@@ -11,7 +11,7 @@ import {
   type AktywnoscStravaDoImportu,
 } from "@/app/(site)/wies/akcje-strava-fitness";
 import { urlPolaczeniaStrava } from "@/lib/strava/url-polaczenia";
-import { formatujCzas, formatujDystans } from "@/lib/wies/pobierz-aktywnosci-fitness-wsi";
+import { formatujCzas, formatujDystans } from "@/lib/wies/aktywnosc-fitness-wspolne";
 import { PrzyciskLadowania } from "@/components/ui/przycisk-ladowania";
 
 type Props = {
@@ -19,7 +19,7 @@ type Props = {
   kluby: Array<{ id: string; name: string }>;
 };
 
-export function ImportStravaOAuthKlient({ villageId, kluby }: Props) {
+export function ImportStravaOAuthKlient({ villageId }: Props) {
   const router = useRouter();
   const pathname = usePathname();
   const searchParams = useSearchParams();

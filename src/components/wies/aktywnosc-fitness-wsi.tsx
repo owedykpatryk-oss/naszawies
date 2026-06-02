@@ -16,7 +16,7 @@ import {
   formatujDystans,
   type AktywnoscFitnessPubliczna,
   type PodsumowanieAktywnosciFitness,
-} from "@/lib/wies/pobierz-aktywnosci-fitness-wsi";
+} from "@/lib/wies/aktywnosc-fitness-wspolne";
 import type { RodzajAktywnosci } from "@/lib/wies/wywnioskuj-rodzaj-aktywnosci";
 import { wywnioskujRodzajAktywnosci } from "@/lib/wies/wywnioskuj-rodzaj-aktywnosci";
 
