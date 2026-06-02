@@ -183,7 +183,7 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       if (hub) {
         return {
           title: `Powiaty i wsie — ${hub.wojewodztwo}`,
-          description: `${hub.powiaty.length} powiatów, ${hub.wies.length} miejscowości w woj. ${hub.wojewodztwo}.`,
+          description: `${hub.powiaty.length} powiatów, ${hub.liczba_wsi} miejscowości w woj. ${hub.wojewodztwo}.`,
         };
       }
     }

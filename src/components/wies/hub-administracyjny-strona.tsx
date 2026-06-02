@@ -171,12 +171,8 @@ export function HubWojewodztwaStrona({ hub }: { hub: HubWojewodztwa }) {
 
       <div className="mt-6 grid gap-3 sm:grid-cols-3">
         <KartaStatystykiHub etykieta="Powiatów" wartosc={hub.powiaty.length} />
-        <KartaStatystykiHub etykieta="Miejscowości w serwisie" wartosc={hub.wies.length} />
-        <KartaStatystykiHub
-          etykieta="Aktywne profile"
-          wartosc={hub.wies.filter((w) => w.is_active).length}
-          wariant="akcent"
-        />
+        <KartaStatystykiHub etykieta="Miejscowości w serwisie" wartosc={hub.liczba_wsi} />
+        <KartaStatystykiHub etykieta="Aktywne profile" wartosc={hub.liczba_aktywnych} wariant="akcent" />
       </div>
 
       <section className="sekcja-poza-foldem mt-10">

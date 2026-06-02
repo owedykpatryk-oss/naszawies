@@ -58,7 +58,8 @@ export type HubWojewodztwa = {
   poziom: "wojewodztwo";
   wojewodztwo: string;
   powiaty: PowiatNaHubie[];
-  wies: WiesNaHubie[];
+  liczba_wsi: number;
+  liczba_aktywnych: number;
 };
 
 function mapWies(w: {
@@ -162,36 +163,39 @@ export async function pobierzHubWojewodztwa(
 ): Promise<HubWojewodztwa | null> {
   const woj = slugCzesciAdministracyjnej(wojSeg);
 
-  const [{ data: wiesRaw, error: errW }, { data: powiatyRaw, error: errP }] = await Promise.all([
-    supabase.rpc("hub_wsi_po_sciezce", { p_woj_slug: woj, p_pow_slug: null, p_gmina_slug: null }),
-    supabase.rpc("hub_powiaty_w_wojewodztwie", { p_woj_slug: woj }),
-  ]);
+  const { data: powiatyRaw, error: errP } = await supabase.rpc("hub_powiaty_w_wojewodztwie", {
+    p_woj_slug: woj,
+  });
 
-  if (errW || errP || !wiesRaw?.length) {
+  if (errP || !powiatyRaw?.length) {
     return null;
   }
 
-  const wies = (wiesRaw as Omit<WiesNaHubie, "sciezka">[]).map(mapWies);
-  const pierwsza = wies[0]!;
-
-  const powiaty: PowiatNaHubie[] = ((powiatyRaw ?? []) as {
+  type WierszPowiatu = {
     county: string;
+    voivodeship: string;
     liczba_gmin: number;
     liczba_wsi: number;
     liczba_aktywnych: number;
-  }[]).map((p) => ({
+  };
+
+  const wiersze = powiatyRaw as WierszPowiatu[];
+  const wojewodztwo = wiersze[0]!.voivodeship;
+
+  const powiaty: PowiatNaHubie[] = wiersze.map((p) => ({
     county: p.county,
     liczba_gmin: Number(p.liczba_gmin),
     liczba_wsi: Number(p.liczba_wsi),
     liczba_aktywnych: Number(p.liczba_aktywnych),
-    sciezka: sciezkaPowiatu({ voivodeship: pierwsza.voivodeship, county: p.county }),
+    sciezka: sciezkaPowiatu({ voivodeship: wojewodztwo, county: p.county }),
   }));
 
   return {
     poziom: "wojewodztwo",
-    wojewodztwo: pierwsza.voivodeship,
+    wojewodztwo,
     powiaty,
-    wies,
+    liczba_wsi: powiaty.reduce((s, p) => s + p.liczba_wsi, 0),
+    liczba_aktywnych: powiaty.reduce((s, p) => s + p.liczba_aktywnych, 0),
   };
 }
 
