@@ -848,7 +848,7 @@ export default async function WiesCatchAllPage({ params, searchParams }: Props) 
     const { pois: poisMapy } = await pobierzDaneMapyWsi(supabase, wies);
     const sciezkaWsiOrg = sciezkaProfiluWsi(wies);
     const linkiMapy = linkiMapyOrganizacji(znaleziona.segment, poisMapy);
-    const heroMapaPunkt = heroMapaOrganizacji(znaleziona.segment, poisMapy, sciezkaWsiOrg);
+    const heroMapaPunkt = heroMapaOrganizacji(znaleziona.segment, poisMapy);
 
     let linkPlanCmentarza: string | null = null;
     if (segment === "parafia") {

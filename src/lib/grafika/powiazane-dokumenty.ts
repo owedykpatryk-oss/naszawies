@@ -1,4 +1,3 @@
-import type { PowiazanySzablon } from "./powiazane-szablony";
 
 export type PowiazanyDokument = {
   presetId: string;

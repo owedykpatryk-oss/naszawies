@@ -19,7 +19,6 @@ export function bboxDlaPromieniaKm(lat: number, promienKm: number): {
   maxLng: number;
 } {
   const deltaLat = promienKm / 111;
-  const deltaLng = promienKm / (111 * Math.max(Math.cos((lat * Math.PI) / 180), 0.15));
   return {
     minLat: lat - deltaLat,
     maxLat: lat + deltaLat,

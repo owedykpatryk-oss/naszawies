@@ -175,8 +175,6 @@ export function WiesProfilPubliczny({
   fotokronikaPubliczna = [],
   ostrzezeniaLowieckie = [],
   zalogowany = false,
-  mieszkaniecWsi = false,
-  harmonogramLowiecki = [],
   zapisaneTresci = {},
   mapaZnacznik = null,
   mapaPoi = [],

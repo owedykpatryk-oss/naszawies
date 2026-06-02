@@ -98,7 +98,6 @@ export function linkiMapyOrganizacji(
 export function heroMapaOrganizacji(
   segment: SegmentOrganizacji,
   pois: ZnacznikPoi[],
-  _sciezkaWsi: string,
 ): HeroMapaOrganizacji | null {
   if (segment === "lowiectwo") return null;
 

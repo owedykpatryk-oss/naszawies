@@ -485,7 +485,7 @@ export function OrganizacjaTrescPubliczna(props: Props) {
 }
 
 export function OrganizacjaZakladkaKalendarz(props: Props) {
-  const { wydarzenia, sciezkaWydarzenia, segment, harmonogramLowiecki, mieszkaniecWsi } = props;
+  const { wydarzenia, sciezkaWydarzenia, segment, harmonogramLowiecki } = props;
   return (
     <div className="space-y-6">
       <section>

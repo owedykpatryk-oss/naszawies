@@ -15,7 +15,6 @@ import {
 import {
   etykietaKategoriiPoi,
   KATEGORIA_LATARNIA,
-  KATEGORIE_POI_LOWIECKIE,
 } from "@/lib/mapa/kategorie-poi";
 import { czyKategoriaPoiLowiecka } from "@/lib/mapa/poi-lowieckie-widocznosc";
 import { obrysPowiatuZznacznikow } from "@/lib/mapa/obrys-administracyjny";
