@@ -1189,7 +1189,8 @@ html[data-tryb-dostepnosci="wysoki-kontrast"] .btn-panel-secondary {
   @apply absolute left-0 font-bold text-emerald-700 dark:text-emerald-400;
 }
 .blog-tresc-artykulu ol.blog-lista-kroki {
-  @apply mb-4 list-none space-y-3 pl-0 counter-reset blog-krok;
+  @apply mb-4 list-none space-y-3 pl-0;
+  counter-reset: blog-krok;
 }
 .blog-tresc-artykulu ol.blog-lista-kroki > li {
   @apply relative rounded-xl border border-stone-200/80 bg-white/60 py-3 pl-12 pr-4 dark:border-stone-700 dark:bg-stone-900/40;
