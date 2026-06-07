@@ -55,6 +55,10 @@ $$;
 REVOKE ALL ON FUNCTION public.refresh_village_hub_stats() FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.refresh_village_hub_stats() TO service_role;
 
+DROP FUNCTION IF EXISTS public.hub_powiaty_w_wojewodztwie(text);
+DROP FUNCTION IF EXISTS public.hub_gminy_w_powiacie(text, text);
+DROP FUNCTION IF EXISTS public.hub_podsumowanie_wojewodztw();
+
 CREATE OR REPLACE FUNCTION public.hub_podsumowanie_wojewodztw()
 RETURNS TABLE (
   voivodeship text,
