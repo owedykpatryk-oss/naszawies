@@ -98,7 +98,9 @@ export async function synchronizujGranicePrgAutomatycznie(
         .select("id, name, teryt_id, gmina_teryt_kod, boundary_geojson, latitude, longitude, boundary_source")
         .eq("is_active", true)
         .not("teryt_id", "is", null)
-        .or("boundary_geojson.is.null,boundary_source.is.null,boundary_source.eq.demo")
+        .or(
+          "boundary_geojson.is.null,boundary_source.is.null,boundary_source.eq.demo,boundary_source.like.%_gmina",
+        )
         .order("updated_at", { ascending: true })
         .limit(maxScanned)
     : await supabase.rpc("villages_kolejka_sync_granic_prg", { p_limit: maxScanned });

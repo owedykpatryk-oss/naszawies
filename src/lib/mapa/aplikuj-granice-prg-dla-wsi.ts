@@ -1,11 +1,14 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import {
+  czyObrysPodejrzanieDuzyDlaWsi,
   czyPunktWGranicyGeojson,
+  czyZrodloGranicyGminy,
   pobierzGraniceWsiZPrgWfs,
   zrodloZWarstwyPrg,
   centroidZGeojson,
   type GeoJsonGeometry,
 } from "@/lib/geoportal/prg-wfs-client";
+import { geokodujLokalizacjeTekst } from "@/lib/marketplace/geokoduj-lokalizacje";
 
 export { zrodloZWarstwyPrg, centroidZGeojson };
 
@@ -36,28 +39,55 @@ function doNum(v: unknown): number | null {
 export async function aplikujGranicePrgDlaWsi(
   supabase: SupabaseClient,
   village: WiesDoSyncGranic,
+  opcje?: { geokodujGdyBrakGps?: boolean; commune?: string; county?: string; voivodeship?: string },
 ): Promise<WynikSyncGranicyJednejWsi> {
-  const lat = doNum(village.latitude);
-  const lon = doNum(village.longitude);
+  let lat = doNum(village.latitude);
+  let lon = doNum(village.longitude);
+
+  if ((lat == null || lon == null) && opcje?.geokodujGdyBrakGps) {
+    const kontekst = [opcje.commune, opcje.county, opcje.voivodeship].filter(Boolean).join(", ");
+    const gps = await geokodujLokalizacjeTekst(village.name, kontekst || null);
+    if (gps) {
+      lat = gps.latitude;
+      lon = gps.longitude;
+    }
+  }
+
+  if (lat == null || lon == null) {
+    return {
+      ok: false,
+      reason: "Brak współrzędnych wsi — potrzebny punkt GPS do pobrania obrębu ewidencyjnego z PRG.",
+      retryable: false,
+    };
+  }
 
   const wynik = await pobierzGraniceWsiZPrgWfs(village.teryt_id, {
     lat,
     lon,
+    gminaTerytKod: village.gmina_teryt_kod ?? null,
   });
   if (!wynik.ok) {
     return { ok: false, reason: wynik.reason, retryable: wynik.retryable };
   }
 
-  if (wynik.sourceTypeName.toLowerCase().includes("obrys gminy")) {
+  if (czyZrodloGranicyGminy(wynik.sourceTypeName)) {
     return {
       ok: false,
       reason:
-        "Odrzucono granicę: pobrany obrys obejmuje całą gminę, a nie obręb ewidencyjny wsi. Użyj synchronizacji z punktem GPS.",
+        "Odrzucono granicę: pobrany obrys obejmuje całą gminę, a nie obręb ewidencyjny wsi.",
       retryable: false,
     };
   }
 
-  if (lat != null && lon != null && !czyPunktWGranicyGeojson(wynik.boundaryGeojson as GeoJsonGeometry, lon, lat)) {
+  if (czyObrysPodejrzanieDuzyDlaWsi(wynik.boundaryGeojson as GeoJsonGeometry)) {
+    return {
+      ok: false,
+      reason: "Odrzucono granicę: obrys jest zbyt duży (prawdopodobnie granica gminy, nie wsi).",
+      retryable: false,
+    };
+  }
+
+  if (!czyPunktWGranicyGeojson(wynik.boundaryGeojson as GeoJsonGeometry, lon, lat)) {
     return {
       ok: false,
       reason:

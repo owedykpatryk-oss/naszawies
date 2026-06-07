@@ -275,15 +275,42 @@ function polaczKandydatowBezPunktu(kandydaci: GeoJsonGeometry[]): GeoJsonGeometr
   return najlepszy ?? null;
 }
 
+/** Maks. powierzchnia obrysu w „stopniach²” (bez projekcji) — odrzuca obrys wielkości gminy. */
+export const MAX_POWIERZCHNIA_OBRYSU_WSI_STOPNIE2 = 0.012;
+
 function wybierzGeometrieKandydata(kandydaci: GeoJsonGeometry[], lon?: number, lat?: number): GeoJsonGeometry | null {
   if (kandydaci.length === 0) return null;
-  if (Number.isFinite(lon) && Number.isFinite(lat)) {
-    const trafiony = kandydaci.find((k) => punktWGeojson(k, lon as number, lat as number));
-    if (trafiony) return trafiony;
-    /** Przy znanym GPS nie bierz pierwszego obrysu z filtra TERYT — często to inny obręb ewidencyjny. */
+  if (!Number.isFinite(lon) || !Number.isFinite(lat)) {
     return null;
   }
-  return polaczKandydatowBezPunktu(kandydaci);
+  const trafione = kandydaci.filter((k) => punktWGeojson(k, lon as number, lat as number));
+  if (trafione.length === 0) return null;
+  let najlepszy = trafione[0];
+  let minArea = powierzchniaPrzyblizona(najlepszy);
+  for (let i = 1; i < trafione.length; i += 1) {
+    const k = trafione[i];
+    if (!k) continue;
+    const a = powierzchniaPrzyblizona(k);
+    if (a < minArea) {
+      minArea = a;
+      najlepszy = k;
+    }
+  }
+  return najlepszy ?? null;
+}
+
+export function czyObrysPodejrzanieDuzyDlaWsi(
+  granica: GeoJsonGeometry,
+  maxPowierzchnia = MAX_POWIERZCHNIA_OBRYSU_WSI_STOPNIE2,
+): boolean {
+  return powierzchniaPrzyblizona(granica) > maxPowierzchnia;
+}
+
+export function czyZrodloGranicyGminy(sourceTypeName: string, boundarySource?: string | null): boolean {
+  const t = sourceTypeName.toLowerCase();
+  if (t.includes("obrys gminy")) return true;
+  const s = boundarySource?.toLowerCase() ?? "";
+  return s.endsWith("_gmina");
 }
 
 /** Sprawdza, czy punkt WGS84 leży w granicy GeoJSON (do walidacji po sync z PRG). */
@@ -531,7 +558,11 @@ async function probujWarstwePrgBbox(
     const fallback = await pobierzKandydatowWfs(wfsUrl, wfsVersion, typeName, { bbox, limit: 120 });
     if (!czyWfsOk(fallback)) continue;
     const boundary = wybierzGeometrieKandydata(fallback.kandydaci, lon, lat);
-    if (boundary && punktWGeojson(boundary, lon, lat)) {
+    if (
+      boundary &&
+      punktWGeojson(boundary, lon, lat) &&
+      !czyObrysPodejrzanieDuzyDlaWsi(boundary)
+    ) {
       return {
         ok: true,
         boundaryGeojson: boundary,
@@ -563,26 +594,17 @@ async function probujWarstwePrgCql(
   const boundary = wybierzGeometrieKandydata(kandydaci, lon, lat);
   const mamyPunkt = Number.isFinite(lon) && Number.isFinite(lat);
   const punktOk = boundary && mamyPunkt ? punktWGeojson(boundary, lon as number, lat as number) : false;
-  if (boundary && (!mamyPunkt || punktOk)) {
+  if (boundary && mamyPunkt && punktOk) {
+    if (czyObrysPodejrzanieDuzyDlaWsi(boundary)) {
+      return probujWarstwePrgBbox(wfsUrl, wfsVersion, typeName, lat as number, lon as number);
+    }
     return {
       ok: true,
       boundaryGeojson: boundary,
       sourceName: wfsUrl,
-      sourceTypeName: !mamyPunkt ? `${typeName} (obrys gminy)` : typeName,
+      sourceTypeName: typeName,
       featureCount,
     };
-  }
-  if (!mamyPunkt && kandydaci.length > 0) {
-    const gmina = polaczKandydatowBezPunktu(kandydaci);
-    if (gmina) {
-      return {
-        ok: true,
-        boundaryGeojson: gmina,
-        sourceName: wfsUrl,
-        sourceTypeName: `${typeName} (obrys gminy)`,
-        featureCount,
-      };
-    }
   }
   if (mamyPunkt) {
     return probujWarstwePrgBbox(wfsUrl, wfsVersion, typeName, lat as number, lon as number);
@@ -611,14 +633,16 @@ export async function pobierzGraniceWsiZPrgWfs(
   const bledy: string[] = [];
   const mamyPunkt = Number.isFinite(lat) && Number.isFinite(lon);
 
+  const kodGminy = opts?.gminaTerytKod?.trim().slice(0, 7) ?? "";
+
   for (const warstwa of warstwy) {
     try {
       if (mamyPunkt) {
         const zBbox = await probujWarstwePrgBbox(wfsUrl, wfsVersion, warstwa.typeName, lat as number, lon as number);
         if (zBbox?.ok) return zBbox;
       }
-      if (mamyPunkt) {
-        const wynik = await probujWarstwePrgCql(wfsUrl, wfsVersion, warstwa, cleanTeryt, lat, lon);
+      if (mamyPunkt && kodGminy.length === 7) {
+        const wynik = await probujWarstwePrgCql(wfsUrl, wfsVersion, warstwa, kodGminy, lat, lon);
         if (wynik?.ok) return wynik;
       }
     } catch (e) {

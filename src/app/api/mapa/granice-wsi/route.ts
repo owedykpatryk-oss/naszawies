@@ -40,9 +40,11 @@ export async function GET(req: Request) {
   const granice: Record<string, unknown> = {};
   const zrodla: Record<string, string | null> = {};
   for (const row of data ?? []) {
+    const zrodlo = (row.boundary_source as string | null) ?? "";
+    if (zrodlo.endsWith("_gmina")) continue;
     if (row.boundary_geojson) {
       granice[row.id as string] = row.boundary_geojson;
-      zrodla[row.id as string] = (row.boundary_source as string | null) ?? null;
+      zrodla[row.id as string] = zrodlo || null;
     }
   }
 

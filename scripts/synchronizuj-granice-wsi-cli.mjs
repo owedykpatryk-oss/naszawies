@@ -12,9 +12,12 @@ import { createClient } from "@supabase/supabase-js";
 import {
   pobierzGraniceWsiZPrgWfs,
   czyPunktWGranicyGeojson,
+  czyObrysPodejrzanieDuzyDlaWsi,
+  czyZrodloGranicyGminy,
   zrodloZWarstwyPrg,
   centroidZGeojson,
 } from "../src/lib/geoportal/prg-wfs-client.ts";
+import { geokodujLokalizacjeTekst } from "../src/lib/marketplace/geokoduj-lokalizacje.ts";
 
 const TMP = join(process.cwd(), ".tmp/granice-sync");
 const MAX_SQL_BYTES = 450_000;
@@ -90,11 +93,13 @@ async function pobierzWsie(opts) {
     ? "teryt_id IS NOT NULL AND btrim(teryt_id) <> ''"
     : opts.tylkoBezGranicy
       ? "boundary_geojson IS NULL AND teryt_id IS NOT NULL AND btrim(teryt_id) <> ''"
-      : `(boundary_geojson IS NULL OR boundary_source IS NULL OR boundary_source = 'demo')
+      : `(boundary_geojson IS NULL OR boundary_source IS NULL OR boundary_source = 'demo'
+          OR boundary_source LIKE '%\\_gmina' ESCAPE '\\')
          AND teryt_id IS NOT NULL AND btrim(teryt_id) <> ''`;
 
   const sql = `
-    SELECT id, name, teryt_id, gmina_teryt_kod, latitude, longitude, boundary_source
+    SELECT id, name, teryt_id, gmina_teryt_kod, latitude, longitude, boundary_source,
+           commune, county, voivodeship
     FROM public.villages
     WHERE ${where}
     ORDER BY
@@ -146,6 +151,7 @@ async function main() {
   const delayMs = delayArg ? Number.parseInt(delayArg.split("=")[1], 10) : 250;
   const force = process.argv.includes("--force");
   const tylkoBezGranicy = process.argv.includes("--tylko-bez-granicy");
+  const geokoduj = process.argv.includes("--geokoduj");
 
   const wsie = await pobierzWsie({ limit, force, tylkoBezGranicy });
   console.log(`Do sync: ${wsie.length} wsi (limit ${limit}).`);
@@ -154,9 +160,23 @@ async function main() {
   const errors = [];
 
   for (const w of wsie) {
-    const lat = w.latitude != null ? Number(w.latitude) : null;
-    const lon = w.longitude != null ? Number(w.longitude) : null;
+    let lat = w.latitude != null ? Number(w.latitude) : null;
+    let lon = w.longitude != null ? Number(w.longitude) : null;
     try {
+      if ((lat == null || lon == null) && geokoduj) {
+        const kontekst = [w.commune, w.county, w.voivodeship].filter(Boolean).join(", ");
+        const gps = await geokodujLokalizacjeTekst(w.name, kontekst || null);
+        if (gps) {
+          lat = gps.latitude;
+          lon = gps.longitude;
+        }
+        await new Promise((r) => setTimeout(r, 1100));
+      }
+      if (lat == null || lon == null) {
+        errors.push(`${w.name}: brak GPS (użyj --geokoduj)`);
+        console.log(`✗ ${w.name}: brak GPS`);
+        continue;
+      }
       const wynik = await pobierzGraniceWsiZPrgWfs(String(w.teryt_id), {
         lat,
         lon,
@@ -167,12 +187,27 @@ async function main() {
         console.log(`✗ ${w.name}: ${wynik.reason}`);
         continue;
       }
-      if (lat != null && lon != null && !czyPunktWGranicyGeojson(wynik.boundaryGeojson, lon, lat)) {
+      if (czyZrodloGranicyGminy(wynik.sourceTypeName, w.boundary_source)) {
+        errors.push(`${w.name}: odrzucono obrys gminy`);
+        console.log(`✗ ${w.name}: odrzucono obrys gminy`);
+        continue;
+      }
+      if (czyObrysPodejrzanieDuzyDlaWsi(wynik.boundaryGeojson)) {
+        errors.push(`${w.name}: obrys zbyt duży`);
+        console.log(`✗ ${w.name}: obrys zbyt duży`);
+        continue;
+      }
+      if (!czyPunktWGranicyGeojson(wynik.boundaryGeojson, lon, lat)) {
         errors.push(`${w.name}: punkt GPS poza obrysem`);
         console.log(`✗ ${w.name}: punkt GPS poza obrysem`);
         continue;
       }
       const source = zrodloZWarstwyPrg(wynik.sourceTypeName);
+      if (source.endsWith("_gmina")) {
+        errors.push(`${w.name}: źródło gminy`);
+        console.log(`✗ ${w.name}: źródło gminy`);
+        continue;
+      }
       const c = centroidZGeojson(wynik.boundaryGeojson);
       const zapisLat = lat ?? c?.lat ?? null;
       const zapisLon = lon ?? c?.lon ?? null;
