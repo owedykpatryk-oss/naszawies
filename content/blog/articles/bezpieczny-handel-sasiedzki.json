@@ -1,0 +1,46 @@
+{
+  "title": "Bezpieczny handel sąsiedzki — zasady dla kupujących i sprzedających",
+  "slug": "bezpieczny-handel-sasiedzki",
+  "excerpt": "Jak handlować z sąsiadami przez rynek lokalny bez zaliczek oszustom, niejasnych ustaleń i konfliktów na linii ogrodów.",
+  "coverImage": "/blog/bezpieczny-handel-sasiedzki/cover.webp",
+  "gallery": [],
+  "authorId": "zespol",
+  "categorySlug": "rynek",
+  "tags": [
+    "rynek",
+    "bezpieczenstwo",
+    "ogloszenia",
+    "oszustwa"
+  ],
+  "faq": [
+    {
+      "question": "Czy naszawies.pl gwarantuje transakcję?",
+      "answer": "Nie — platforma udostępnia tablicę ogłoszeń. Płatności i odbiór towaru ustalacie bezpośrednio między stronami."
+    },
+    {
+      "question": "Co zrobić, gdy kupujący nie przyjedzie?",
+      "answer": "To kwestia ustaleń między stronami. Warto ustalać konkretną godzinę odbioru i potwierdzać SMS-em."
+    }
+  ],
+  "relatedSlugs": [
+    "rynek-lokalny-na-wsi",
+    "jak-zalozyc-profil-wsi"
+  ],
+  "featured": false,
+  "status": "published",
+  "publishedAt": "2026-06-10T08:00:00.000Z",
+  "seoTitle": "Bezpieczny handel na wsi — poradnik rynku lokalnego",
+  "seoDescription": "Zasady bezpiecznych transakcji między sąsiadami: spotkania, płatności, zgłaszanie nadużyć na naszawies.pl.",
+  "internalLinks": [
+    {
+      "href": "/rynek",
+      "label": "Rynek lokalny"
+    },
+    {
+      "href": "/zglos-naruszenie",
+      "label": "Zgłoś naruszenie"
+    }
+  ],
+  "generatedImages": [],
+  "content": "<p>Lokalny rynek to zaufanie — ale nie wyklucza ostrożności. Większość transakcji między sąsiadami przebiega spokojnie; problemy zwykle wynikają z niejasnych ustaleń lub ofert od osób spoza wsi. Poniżej zestaw praktycznych zasad.</p>\n\n<h2 id=\"dla-kupujacych\">Dla kupujących</h2>\n<ul class=\"blog-lista-check\">\n<li>Spotykaj się w miejscu publicznym lub za dnia u sprzedawcy z sąsiedztwa</li>\n<li>Nie płać zaliczek osobom, których nie znasz</li>\n<li>Sprawdź towar przed zapłatą — szczególnie elektronikę i maszyny</li>\n<li>Zgłaszaj podejrzane ogłoszenia sołtysowi</li>\n</ul>\n\n<h2 id=\"dla-sprzedajacych\">Dla sprzedających</h2>\n<p>Podawaj realny stan przedmiotu i aktualne zdjęcia. Jeśli coś jest „do naprawy”, napisz to wprost — unikniesz kłótni przy odbiorze.</p>\n<div class=\"blog-callout blog-callout-uwaga\"><strong>Uwaga</strong><p>Nie publikuj swojego pełnego adresu w opisie ogłoszenia. Ustal miejsce odbioru w wiadomości po wstępnym kontakcie.</p></div>\n\n<h2 id=\"czerwone-flagi\">Czerwone flagi</h2>\n<table class=\"blog-tabela\">\n<thead><tr><th>Sygnał</th><th>Działanie</th></tr></thead>\n<tbody>\n<tr><td>Cena zaniżona „na już”, presja na przelew</td><td>Odmów, zgłoś ogłoszenie</td></tr>\n<tr><td>Konto spoza wsi, brak moderacji</td><td>Poinformuj sołtysa</td></tr>\n<tr><td>Prośba o kod BLIK „na zadatek”</td><td>Nie wysyłaj — spotkanie osobiste</td></tr>\n</tbody>\n</table>\n\n<p>Więcej o module rynku: <a href=\"/blog/rynek-lokalny-na-wsi\">rynek lokalny na wsi</a>.</p>"
+}

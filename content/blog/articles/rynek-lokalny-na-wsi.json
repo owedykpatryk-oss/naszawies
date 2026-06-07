@@ -4,24 +4,42 @@
   "excerpt": "Ogłoszenia sąsiedzkie, zaufanie lokalnej społeczności i bezpieczne zasady handlu między mieszkańcami tej samej wsi.",
   "coverImage": "/blog/rynek-lokalny-na-wsi/cover.webp",
   "gallery": [],
-  "content": "<p>Na wsi handel często opiera się na zaufaniu: ktoś sprzedaje nadwyżki z ogrodu, ktoś szuka usługny przy domu. <strong>Rynek lokalny</strong> na naszawies.pl zbiera ogłoszenia w jednym miejscu przypisanym do konkretnej miejscowości.</p><h2 id=\"dla-sprzedajacych\">Dla sprzedających</h2><p>Po zalogowaniu dodaj ogłoszenie z opisem, ceną i zdjęciami. Sołtys może moderować wpisy przed publikacją — to filtr antyspamowy i ochrona mieszkańców przed podejrzanymi ofertami.</p><h2 id=\"dla-kupujacych\">Dla kupujących</h2><p>Przeglądaj <a href=\"/rynek\">hub rynku</a> lub ogłoszenia na profilu swojej wsi. Filtry kategorii ułatwiają znalezienie np. warzyw, usług rolniczych czy mebli.</p><h2 id=\"bezpieczenstwo\">Bezpieczeństwo transakcji</h2><p>Spotykaj się w miejscu publicznym, nie przesyłaj zaliczek nieznajomym, zgłaszaj podejrzane ogłoszenia sołtysowi lub przez <a href=\"/zglos-naruszenie\">formularz naruszeń</a>.</p>",
+  "content": "<p>Na wsi handel często opiera się na zaufaniu: ktoś sprzedaje nadwyżki z ogrodu, ktoś szuka usług przy domu, sąsiad poleca sprawdzonego fachowca. <strong>Rynek lokalny</strong> na naszawies.pl zbiera ogłoszenia w jednym miejscu przypisanym do konkretnej miejscowości — bez przepełnionych grup na Facebooku i bez ogólnopolskich portali, gdzie Twoja oferta ginie w tłumie.</p>\n\n<h2 id=\"dla-sprzedajacych\">Dla sprzedających</h2>\n<p>Po zalogowaniu dodaj ogłoszenie z opisem, ceną i zdjęciami. Sołtys może moderować wpisy przed publikacją — to filtr antyspamowy i ochrona mieszkańców przed podejrzanymi ofertami.</p>\n<div class=\"blog-callout blog-callout-porada\"><strong>Porada</strong><p>Dodaj 2–3 zdjęcia w dobrym świetle i podaj realną cenę. Ogłoszenia ze zdjęciami dostają więcej zapytań.</p></div>\n\n<h2 id=\"dla-kupujacych\">Dla kupujących</h2>\n<p>Przeglądaj <a href=\"/rynek\">hub rynku</a> lub ogłoszenia na profilu swojej wsi. Filtry kategorii ułatwiają znalezienie np. warzyw, usług rolniczych czy mebli. Możesz też obserwować profile sprzedawców z sąsiedztwa.</p>\n\n<h2 id=\"kategorie\">Popularne kategorie na wsi</h2>\n<ul>\n<li>Warzywa, owoce, jajka, mleko — produkty z gospodarstwa</li>\n<li>Usługi: koszenie, transport, drobne remonty</li>\n<li>Sprzęt rolniczy i ogrodniczy — używany, ale sprawny</li>\n<li>Meble, odzież dziecięca — przekazane „do odebrania”</li>\n</ul>\n\n<h2 id=\"bezpieczenstwo\">Bezpieczeństwo transakcji</h2>\n<p>Spotykaj się w miejscu publicznym, nie przesyłaj zaliczek nieznajomym, zgłaszaj podejrzane ogłoszenia sołtysowi lub przez <a href=\"/zglos-naruszenie\">formularz naruszeń</a>. Szczegółowy poradnik: <a href=\"/blog/bezpieczny-handel-sasiedzki\">bezpieczny handel sąsiedzki</a>.</p>\n\n<h2 id=\"moderacja\">Rola sołtysa przy rynku</h2>\n<p>Moderacja nie musi być cenzurą — to szybki przegląd: czy ogłoszenie dotyczy wsi, czy nie ma oczywistego spamu. Dzięki temu mieszkańcy czują się bezpieczniej, a rynek pozostaje lokalny.</p>\n\n<hr class=\"blog-separator\" />\n<p>Zacznij od profilu wsi: <a href=\"/blog/jak-zalozyc-profil-wsi\">jak założyć profil miejscowości</a>.</p>",
   "authorId": "zespol",
   "categorySlug": "rynek",
-  "tags": ["rynek", "ogloszenia", "sprzedaz", "kupno"],
+  "tags": [
+    "rynek",
+    "ogloszenia",
+    "sprzedaz",
+    "kupno"
+  ],
   "faq": [
     {
       "question": "Czy rynek jest dostępny bez logowania?",
       "answer": "Przeglądanie publicznych ogłoszeń na profilu wsi jest możliwe dla gości. Dodawanie ofert wymaga konta mieszkańca danej miejscowości."
+    },
+    {
+      "question": "Czy pobieracie prowizję od sprzedaży?",
+      "answer": "Nie — naszawies.pl nie jest pośrednikiem płatności. Umawiacie się bezpośrednio między sobą."
+    },
+    {
+      "question": "Jak zgłosić podejrzane ogłoszenie?",
+      "answer": "Użyj przycisku zgłoszenia na ogłoszeniu lub formularza naruszeń. Sołtys może też usunąć wpis w panelu moderacji."
     }
   ],
-  "relatedSlugs": ["jak-zalozyc-profil-wsi"],
+  "relatedSlugs": [
+    "jak-zalozyc-profil-wsi"
+  ],
   "featured": false,
   "status": "published",
   "publishedAt": "2026-06-03T10:00:00.000Z",
   "seoTitle": "Rynek lokalny na wsi — ogłoszenia na naszawies.pl",
   "seoDescription": "Jak korzystać z rynku lokalnego: wystawianie ogłoszeń, moderacja przez sołtysa i bezpieczny handel między sąsiadami.",
   "internalLinks": [
-    { "href": "/rynek", "label": "Rynek lokalny" }
+    {
+      "href": "/rynek",
+      "label": "Rynek lokalny"
+    }
   ],
   "generatedImages": []
 }

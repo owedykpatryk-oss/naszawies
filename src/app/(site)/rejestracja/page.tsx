@@ -4,8 +4,7 @@ import { redirect } from "next/navigation";
 import { bezpiecznaSciezkaNastepna } from "@/lib/auth/bezpieczna-sciezka-nastepna";
 import { pobierzUzytkownikaSerwer } from "@/lib/auth/pobierz-uzytkownika-serwer";
 import { pobierzPochodzeniePubliczne } from "@/lib/zadanie/pochodzenie-publiczne";
-import { LogowanieProwiderzy } from "../logowanie/logowanie-prowiderzy";
-import { RejestracjaFormularz } from "./rejestracja-formularz";
+import { RejestracjaKlient } from "./rejestracja-klient";
 import { LogoNaszawiesWycentrowane } from "@/components/marka/logo-naszawies";
 import { pobierzWiesPoIdDlaRejestracji } from "./akcje-katalog-wsi";
 
@@ -60,9 +59,8 @@ export default async function RejestracjaPage({ searchParams }: Props) {
           sołtysem” w sensie prawnym.
         </p>
       )}
-      <LogowanieProwiderzy pochodzeniePubliczne={pochodzenie} nastepnaSciezka={nastepna} />
-      <p className="mt-8 text-center text-sm text-stone-500">lub zarejestruj się e-mailem</p>
-      <RejestracjaFormularz
+      <RejestracjaKlient
+        pochodzeniePubliczne={pochodzenie}
         nastepnaSciezka={nastepna}
         domyslnaIntencja={domyslnaIntencja ?? (wiesPrefill ? "mieszkaniec" : undefined)}
         domyslnaWies={wiesPrefill}

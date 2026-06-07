@@ -1,0 +1,42 @@
+{
+  "title": "Fotokronika wsi — jak archiwizować zdjęcia i historię miejscowości",
+  "slug": "fotokronika-i-historia-wsi",
+  "excerpt": "Zdjęcia z dożynek, starych chat, remontów — moduł fotokroniki i historii wsi pomaga zachować pamięć społeczności w jednym miejscu.",
+  "coverImage": "/blog/fotokronika-i-historia-wsi/cover.webp",
+  "gallery": [],
+  "authorId": "zespol",
+  "categorySlug": "spolecznosc",
+  "tags": [
+    "fotokronika",
+    "historia",
+    "zdjecia",
+    "pamiec"
+  ],
+  "faq": [
+    {
+      "question": "Kto może dodawać zdjęcia?",
+      "answer": "Zależy od ustawień wsi — sołtys może włączyć dodawanie dla mieszkańców z moderacją lub ograniczyć do zespołu."
+    },
+    {
+      "question": "Czy zdjęcia są publiczne?",
+      "answer": "Publiczne albumy na profilu wsi są widoczne dla gości. Prywatne materiały trzymaj poza platformą."
+    }
+  ],
+  "relatedSlugs": [
+    "kgw-integracja-spolecznosci",
+    "jak-zalozyc-profil-wsi"
+  ],
+  "featured": false,
+  "status": "published",
+  "publishedAt": "2026-06-13T08:00:00.000Z",
+  "seoTitle": "Fotokronika i historia wsi online",
+  "seoDescription": "Jak prowadzić cyfrową fotokronikę miejscowości: archiwum zdjęć, opisy, moderacja i współpraca mieszkańców.",
+  "internalLinks": [
+    {
+      "href": "/o-nas",
+      "label": "O naszawies.pl"
+    }
+  ],
+  "generatedImages": [],
+  "content": "<p>Każda wieś ma swoją historię — często w segregatorach u sołtysa i na dyskach u dziesięciu osób. <strong>Fotokronika</strong> na naszawies.pl porządkuje zdjęcia z imprez, remontów i codzienności, żeby po latach dało się wrócić do wspomnień bez przekopywania pendrive'ów.</p>\n\n<h2 id=\"od-czego-zaczac\">Od czego zacząć archiwum?</h2>\n<ol class=\"blog-lista-kroki\">\n<li>Zbierz 20–30 najlepszych zdjęć z ostatnich 5 lat (festyny, zebrania, remonty)</li>\n<li>Dodaj krótkie podpisy: rok, okazja, kto organizował</li>\n<li>Poproś KGW i OSP o skan starej fotografii — jedna na miesiąc</li>\n</ol>\n\n<h2 id=\"wspolpraca\">Współpraca mieszkańców</h2>\n<p>Możesz poprosić o zdjęcia przez ogłoszenie na profilu wsi. Moderacja chroni przed treściami nie na miejscu lub naruszeniem prywatności (np. zdjęcia dzieci bez zgody).</p>\n\n<div class=\"blog-callout blog-callout-porada\"><strong>Porada</strong><p>Twórz albumy tematyczne: „Dożynki”, „Remont boiska”, „Stare chaty” — łatwiej przeglądać niż jeden wielki worek zdjęć.</p></div>\n\n<h2 id=\"historia\">Moduł historii wsi</h2>\n<p>Oprócz zdjęć warto dopisywać krótkie artykuły: kiedy powstało sołectwo, ciekawostki architektoniczne, znani mieszkańcy. To treść, która przyciąga także osoby szukające genealogii i turystyki wiejskiej.</p>\n\n<p>Zobacz też: <a href=\"/blog/kgw-integracja-spolecznosci\">KGW w internecie</a>.</p>"
+}

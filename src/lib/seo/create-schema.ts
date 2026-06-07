@@ -13,6 +13,8 @@ export type SchemaArtykul = {
   autor: string;
   obraz?: string | null;
   czasCzytaniaMin?: number;
+  sekcja?: string;
+  tagi?: string[];
 };
 
 function absolutny(href: string): string {
@@ -54,6 +56,8 @@ export function createSchema() {
         ...(artykul.czasCzytaniaMin
           ? { timeRequired: `PT${artykul.czasCzytaniaMin}M` }
           : {}),
+        ...(artykul.sekcja ? { articleSection: artykul.sekcja } : {}),
+        ...(artykul.tagi?.length ? { keywords: artykul.tagi.join(", ") } : {}),
       };
     },
 

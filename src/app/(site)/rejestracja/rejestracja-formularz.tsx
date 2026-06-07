@@ -3,23 +3,26 @@
 import Link from "next/link";
 import { FormEvent, useState } from "react";
 import type { WpisWsi } from "@/components/wies/wyszukiwarka-wsi";
-import { TurnstileAntybot } from "@/components/turnstile/TurnstileAntybot";
 import { walidujWyswietlanaNazwaRejestracji } from "@/lib/rejestracja/waliduj-wyswietlana-nazwa";
 import { PolaZgodyRejestracji, czyZaznaczoneZgodyRejestracji } from "@/components/rodo/pola-zgody-rejestracji";
 import { RejestracjaWyborWsi } from "./rejestracja-wybor-wsi";
-
-const TURNSTILE_SITE_KEY = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY?.trim() ?? "";
 
 type Props = {
   nastepnaSciezka?: string;
   domyslnaIntencja?: "mieszkaniec" | "soltys";
   domyslnaWies?: WpisWsi | null;
+  turnstileToken: string | null;
+  wymagajTurnstile: boolean;
+  onTurnstileZuzyty: () => void;
 };
 
 export function RejestracjaFormularz({
   nastepnaSciezka = "/panel",
   domyslnaIntencja,
   domyslnaWies = null,
+  turnstileToken,
+  wymagajTurnstile,
+  onTurnstileZuzyty,
 }: Props) {
   const [laduje, ustawLaduje] = useState(false);
   const [blad, ustawBlad] = useState("");
@@ -34,9 +37,6 @@ export function RejestracjaFormularz({
     intencja: string;
     nazwaWsi: string | null;
   } | null>(null);
-  const [turnstileToken, ustawTurnstileToken] = useState<string | null>(null);
-  const [turnstileKey, ustawTurnstileKey] = useState(0);
-
   async function onSubmit(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     const form = e.currentTarget;
@@ -70,8 +70,8 @@ export function RejestracjaFormularz({
       ustawBlad("Zaakceptuj regulamin, politykę prywatności i potwierdź wiek (16 lat).");
       return;
     }
-    if (TURNSTILE_SITE_KEY && !turnstileToken) {
-      ustawBlad("Potwierdź weryfikację antyspamową (Cloudflare) przed wysłaniem formularza.");
+    if (wymagajTurnstile && !turnstileToken) {
+      ustawBlad("Potwierdź weryfikację antyspamową powyżej przed wysłaniem formularza.");
       return;
     }
 
@@ -98,8 +98,7 @@ export function RejestracjaFormularz({
       const d = (await res.json().catch(() => ({}))) as { error?: string };
       if (!res.ok) {
         ustawBlad(d.error || "Nie udało się utworzyć konta.");
-        ustawTurnstileToken(null);
-        ustawTurnstileKey((k) => k + 1);
+        onTurnstileZuzyty();
         return;
       }
       ustawPodsumowanieSukcesu({
@@ -109,7 +108,7 @@ export function RejestracjaFormularz({
       ustawSukces(true);
       ustawWybranaWies(null);
       ustawIntencje("");
-      ustawTurnstileToken(null);
+      onTurnstileZuzyty();
       form.reset();
     } catch {
       ustawBlad("Nie udało się połączyć z serwerem.");
@@ -286,17 +285,6 @@ export function RejestracjaFormularz({
         />
       </div>
       <PolaZgodyRejestracji idPrefix="reg" />
-      {TURNSTILE_SITE_KEY ? (
-        <div className="rounded-lg border border-stone-200 bg-stone-50 p-3">
-          <p className="mb-2 text-xs text-stone-600">Weryfikacja antyspamowa (Cloudflare)</p>
-          <TurnstileAntybot
-            key={turnstileKey}
-            siteKey={TURNSTILE_SITE_KEY}
-            akcja="rejestracja"
-            onToken={ustawTurnstileToken}
-          />
-        </div>
-      ) : null}
       <div>
         <label htmlFor="reg-haslo2" className="mb-1 block text-sm font-medium text-stone-700">
           Powtórz hasło
@@ -313,7 +301,7 @@ export function RejestracjaFormularz({
       </div>
       <button
         type="submit"
-        disabled={laduje || (Boolean(TURNSTILE_SITE_KEY) && !turnstileToken)}
+        disabled={laduje || (wymagajTurnstile && !turnstileToken)}
         className="w-full rounded-lg bg-green-800 px-4 py-2.5 font-medium text-white transition hover:bg-green-900 disabled:opacity-60"
       >
         {laduje ? "Wysyłanie…" : "Zarejestruj się"}

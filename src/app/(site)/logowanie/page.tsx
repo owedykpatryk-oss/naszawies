@@ -5,8 +5,7 @@ import { bezpiecznaSciezkaNastepna } from "@/lib/auth/bezpieczna-sciezka-nastepn
 import { pobierzUzytkownikaSerwer } from "@/lib/auth/pobierz-uzytkownika-serwer";
 import { ponowJesliRedirect } from "@/lib/next/ponow-redirect";
 import { pobierzPochodzeniePubliczne } from "@/lib/zadanie/pochodzenie-publiczne";
-import { LogowanieFormularz } from "./logowanie-formularz";
-import { LogowanieProwiderzy } from "./logowanie-prowiderzy";
+import { LogowanieKlient } from "./logowanie-klient";
 import { LogoNaszawiesWycentrowane } from "@/components/marka/logo-naszawies";
 
 export const metadata: Metadata = {
@@ -54,17 +53,14 @@ export default async function LogowaniePage({ searchParams }: Props) {
           (mieszkaniec, sołtys lub tylko przeglądanie) — każde konto jest przypisane do Ciebie, nie do jednej wsi.
         </p>
         <div className="relative mt-6">
-          <LogowanieProwiderzy pochodzeniePubliczne={pochodzenie} nastepnaSciezka={nastepna} />
+          <LogowanieKlient
+            pochodzeniePubliczne={pochodzenie}
+            nastepnaSciezka={nastepna}
+            kodBledu={kodBledu}
+            szczegolBledu={szczegolBledu}
+            emailStartowy={emailStartowy}
+          />
         </div>
-        <p className="relative mt-8 text-center text-xs font-medium uppercase tracking-wider text-stone-500">
-          lub e-mail
-        </p>
-        <LogowanieFormularz
-          nastepnaSciezka={nastepna}
-          kodBledu={kodBledu}
-          szczegolBledu={szczegolBledu}
-          emailStartowy={emailStartowy}
-        />
         <div className="relative mt-6 rounded-2xl border border-stone-200/80 bg-white/80 p-4 text-sm text-stone-700">
           <p className="font-medium text-stone-900">Po co się logować?</p>
           <ul className="mt-2 list-disc space-y-1 pl-4 text-xs text-stone-600">

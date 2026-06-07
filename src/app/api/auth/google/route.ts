@@ -5,7 +5,10 @@ import { z } from "zod";
 import { odczytajAdresIpZNaglowkow } from "@/lib/api/odczytaj-adres-ip";
 import { bezpiecznaSciezkaNastepna } from "@/lib/auth/bezpieczna-sciezka-nastepna";
 import { sprawdzLimitApi } from "@/lib/rate-limit/sprawdz-limit-upstash";
-import { walidujTurnstileZNaglowkow } from "@/lib/turnstile/waliduj-token-serwer";
+import {
+  tokenCaptchaDlaSupabase,
+  walidujTurnstilePrzedAuth,
+} from "@/lib/turnstile/walidacja-auth-supabase";
 
 type CiasteczkaDoUstawienia = {
   name: string;
@@ -37,7 +40,7 @@ export async function POST(request: NextRequest) {
 
   const d = sparsowane.data;
 
-  const turnstile = await walidujTurnstileZNaglowkow(d.cfTurnstileResponse, request.headers);
+  const turnstile = await walidujTurnstilePrzedAuth(d.cfTurnstileResponse, request.headers);
   if (!turnstile.ok) {
     return NextResponse.json({ error: turnstile.komunikat }, { status: 400 });
   }
@@ -80,11 +83,13 @@ export async function POST(request: NextRequest) {
     },
   });
 
+  const captchaToken = tokenCaptchaDlaSupabase(d.cfTurnstileResponse);
   const { data, error } = await supabase.auth.signInWithOAuth({
     provider: "google",
     options: {
       redirectTo: `${pochodzenie}/auth/potwierdz?next=${nastepnyZakodowany}`,
       skipBrowserRedirect: true,
+      ...(captchaToken ? { captchaToken } : {}),
     },
   });
 

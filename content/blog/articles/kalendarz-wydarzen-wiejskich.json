@@ -1,0 +1,46 @@
+{
+  "title": "Kalendarz wydarzeń wiejskich — jak ogłaszać i nie gubić terminów",
+  "slug": "kalendarz-wydarzen-wiejskich",
+  "excerpt": "Zebrania, festyny, kiermasze KGW i mecze — jeden kalendarz na profilu wsi zamiast rozproszonych postów w mediach społecznościowych.",
+  "coverImage": "/blog/kalendarz-wydarzen-wiejskich/cover.webp",
+  "gallery": [],
+  "authorId": "zespol",
+  "categorySlug": "spolecznosc",
+  "tags": [
+    "kalendarz",
+    "wydarzenia",
+    "festyn",
+    "zebranie"
+  ],
+  "faq": [
+    {
+      "question": "Kto może dodawać wydarzenia?",
+      "answer": "Sołtys i uprawnione osoby w panelu wsi oraz — zależnie od ustawień — mieszkańcy po moderacji. Organizacje (KGW, OSP) mogą mieć własne podstrony z kalendarzem."
+    },
+    {
+      "question": "Czy wydarzenia są widoczne poza wsią?",
+      "answer": "Publiczne wydarzenia zatwierdzone na profilu wsi mogą być indeksowane i widoczne dla gości oraz w wynikach wyszukiwania."
+    }
+  ],
+  "relatedSlugs": [
+    "zebranie-wiejskie-swietlica",
+    "kgw-integracja-spolecznosci"
+  ],
+  "featured": true,
+  "status": "published",
+  "publishedAt": "2026-06-09T08:00:00.000Z",
+  "seoTitle": "Kalendarz wydarzeń na wsi — poradnik naszawies.pl",
+  "seoDescription": "Jak prowadzić kalendarz wydarzeń wiejskich online: zebrania, festyny, spotkania organizacji — jeden harmonogram dla całej społeczności.",
+  "internalLinks": [
+    {
+      "href": "/szukaj",
+      "label": "Znajdź swoją wieś"
+    },
+    {
+      "href": "/pomoc",
+      "label": "Pomoc"
+    }
+  ],
+  "generatedImages": [],
+  "content": "<p>Każda wieś ma swój rytm: wiosenne zebranie, letni festyn, jesienny kiermasz, wigilijne spotkanie. Gdy terminy żyją wyłącznie na Facebooku, starsi mieszkańcy często ich nie widzą, a młodzi tracą wzmiankę w scrollowaniu. <strong>Kalendarz na profilu wsi</strong> rozwiązuje ten problem — jeden harmonogram, stały link, powiadomienia w panelu.</p>\n\n<h2 id=\"co-wpisac\">Co wpisywać do kalendarza?</h2>\n<ul class=\"blog-lista-check\">\n<li>Zebrania wiejskie i komisje</li>\n<li>Festyny, dożynki, koncerty na boisku</li>\n<li>Spotkania KGW, OSP, koła łowieckiego</li>\n<li>Terminy nabożeństw i uroczystości (jeśli organizacja tego chce)</li>\n<li>Zbiórki, akcje sprzątania, sadzenia drzew</li>\n</ul>\n\n<h2 id=\"jak-publikowac\">Jak publikować, żeby dotrzeć do sąsiadów</h2>\n<ol class=\"blog-lista-kroki\">\n<li>Dodaj wydarzenie z datą, godziną i miejscem (świetlica, boisko, kościół)</li>\n<li>Dołącz krótki opis: dla kogo, czy wstęp wolny, co zabrać</li>\n<li>Opublikuj ogłoszenie na profilu wsi z linkiem do wydarzenia</li>\n<li>Na zebraniu podaj adres profilu — nie tylko „będzie na Facebooku”</li>\n</ol>\n\n<div class=\"blog-callout blog-callout-porada\"><strong>Porada</strong><p>Wydarzenia cykliczne (np. „każda pierwsza sobota miesiąca”) warto opisać w regulaminie organizacji i powtarzać w kalendarzu z wyprzedzeniem na cały kwartał.</p></div>\n\n<h2 id=\"integracja\">Świetlica i wydarzenia</h2>\n<p>Jeśli impreza wymaga sali, połącz termin w kalendarzu z <a href=\"/blog/rezerwacja-swietlicy-poradnik\">rezerwacją świetlicy</a>. Unikniesz sytuacji, w której wydarzenie jest ogłoszone, a sala zajęta przez inną grupę.</p>\n\n<h2 id=\"kgw-osp\">Organizacje lokalne</h2>\n<p>KGW, OSP i inne grupy mogą mieć własne podstrony z własnymi terminami — szczegóły w artykule <a href=\"/blog/kgw-integracja-spolecznosci\">KGW w internecie</a>.</p>"
+}

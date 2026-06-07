@@ -4,29 +4,43 @@
   "excerpt": "Od ogłoszeń i kalendarza po głosowania i dokumenty — jak cyfryzacja wspiera codzienną pracę sołtysa bez zastępowania spotkań przy kawie.",
   "coverImage": "/blog/rola-soltysa-narzedzia-cyfrowe/cover.webp",
   "gallery": [],
-  "content": "<p>Sołtys nadal jest „pierwszym sąsiadem”, ale mieszkańcy oczekują też informacji na bieżąco — w telefonie, nie tylko na tablicy przy sklepie. Cyfrowe narzędzia nie zastępują relacji; porządkują komunikację.</p><h2 id=\"ogloszenia\">Ogłoszenia i aktualności</h2><p>Zamiast wielu grup na komunikatorach, ważne komunikaty mogą trafiać na profil wsi i do powiadomień w panelu. Mieszkaniec wybiera, o czym chce być informowany.</p><h2 id=\"dokumenty\">Dokumenty i regulaminy</h2><p>Generator dokumentów i szablony w panelu sołtysa przyspieszają przygotowanie zarządzeń czy protokołów zebrania. Pliki są dostępne dla uprawnionych mieszkańców.</p><h2 id=\"spolecznosc\">Społeczność i organizacje</h2><p>KGW, OSP, koło myśliwskie — każda organizacja może mieć podstronę z kalendarzem i aktualnościami. To buduje <strong>topical authority</strong> wsi w sieci i ułatwia pozyskiwanie wolontariuszy.</p><h2 id=\"start\">Od czego zacząć</h2><p>Zacznij od profilu wsi i jednego modułu, który najbardziej boli (np. świetlica lub ogłoszenia). Resztę dodawaj stopniowo — mieszkańcy przyzwyczają się szybciej, gdy widzą realną korzyść.</p>",
+  "content": "<p>Funkcja sołtysa to dziś coś więcej niż podpisywanie protokołów zebrania. Mieszkańcy oczekują szybkiej informacji, przejrzystych terminów świetlicy i miejsca na lokalne ogłoszenia. <strong>Panel sołtysa</strong> na naszawies.pl zbiera te zadania w jednym miejscu — bez konieczności prowadzenia osobnej strony WWW.</p>\n\n<h2 id=\"narzedzia\">Kluczowe narzędzia</h2>\n<ul class=\"blog-lista-check\">\n<li>Edycja profilu publicznego wsi</li>\n<li>Moderacja ogłoszeń i rynku lokalnego</li>\n<li>Rezerwacje świetlicy i kalendarz</li>\n<li>Zarządzanie organizacjami (KGW, OSP)</li>\n<li>Mapa POI i zgłoszenia mieszkańców</li>\n</ul>\n\n<h2 id=\"czas\">Ile czasu to zajmuje?</h2>\n<p>Po pierwszym miesiącu konfiguracji większość sołtysów spędza w panelu <strong>15–30 minut tygodniowo</strong> — głównie akceptacja wniosków i jedno-dwa ogłoszenia. To mniej niż seria telefonów w niedzielę.</p>\n\n<div class=\"blog-callout blog-callout-wazne\"><strong>Ważne</strong><p>Możesz delegować uprawnienia — np. sekretarzowi zebrania lub przewodniczącej KGW — zamiast robić wszystko sam.</p></div>\n\n<h2 id=\"plan\">Plan wdrożenia</h2>\n<p>Szczegółowy harmonogram na pół roku: <a href=\"/blog/cyfryzacja-solectwa-od-czego-zaczac\">cyfryzacja sołectwa od czego zacząć</a>.</p>\n\n<h2 id=\"wsparcie\">Wsparcie</h2>\n<p>Instrukcje krok po kroku w <a href=\"/pomoc\">centrum pomocy</a>. Problemy techniczne zgłaszaj przez <a href=\"/kontakt\">kontakt</a>.</p>",
   "authorId": "zespol",
   "categorySlug": "soltys",
-  "tags": ["soltys", "cyfryzacja", "solectwo", "komunikacja"],
+  "tags": [
+    "soltys",
+    "cyfryzacja",
+    "solectwo",
+    "komunikacja"
+  ],
   "faq": [
     {
-      "question": "Czy sołtys musi być biegły w IT?",
-      "answer": "Nie. Interfejs jest projektowany z myślą o codziennym użytkowaniu na telefonie. W razie problemów pomaga centrum pomocy i wsparcie platformy."
+      "question": "Czy sołtys musi mieć komputer?",
+      "answer": "Panel działa też na telefonie. Do wgrania wielu zdjęć wygodniejszy jest laptop, ale codzienna moderacja jest możliwa z telefonu."
     },
     {
-      "question": "Czy mogę mieć współadministratora?",
-      "answer": "Tak — rola współadmina pozwala zdelegować moderację i zarządzanie modułami innemu mieszkańcowi."
+      "question": "Co jeśli zmieni się sołtys?",
+      "answer": "Nowa osoba składa wniosek o rolę. Administrator weryfikuje i przenosi uprawnienia — historia wsi zostaje w systemie."
     }
   ],
-  "relatedSlugs": ["rezerwacja-swietlicy-poradnik", "jak-zalozyc-profil-wsi"],
+  "relatedSlugs": [
+    "rezerwacja-swietlicy-poradnik",
+    "jak-zalozyc-profil-wsi"
+  ],
   "featured": true,
   "status": "published",
   "publishedAt": "2026-06-04T11:00:00.000Z",
   "seoTitle": "Sołtys a cyfryzacja wsi — narzędzia naszawies.pl",
   "seoDescription": "Jak sołtys może wykorzystać platformę cyfrową: ogłoszenia, dokumenty, organizacje i komunikacja z mieszkańcami.",
   "internalLinks": [
-    { "href": "/o-nas", "label": "O nas" },
-    { "href": "/rejestracja", "label": "Załóż konto sołtysa" }
+    {
+      "href": "/o-nas",
+      "label": "O nas"
+    },
+    {
+      "href": "/rejestracja",
+      "label": "Załóż konto sołtysa"
+    }
   ],
   "generatedImages": []
 }

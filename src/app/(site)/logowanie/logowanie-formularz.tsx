@@ -2,15 +2,15 @@
 
 import Link from "next/link";
 import { FormEvent, useState } from "react";
-import { TurnstileAntybot } from "@/components/turnstile/TurnstileAntybot";
-
-const TURNSTILE_SITE_KEY = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY?.trim() ?? "";
 
 type Props = {
   nastepnaSciezka: string;
   kodBledu?: string;
   szczegolBledu?: string;
   emailStartowy?: string;
+  turnstileToken: string | null;
+  wymagajTurnstile: boolean;
+  onTurnstileZuzyty: () => void;
 };
 
 const OPISY_BLEDOW: Record<string, string> = {
@@ -19,11 +19,17 @@ const OPISY_BLEDOW: Record<string, string> = {
   konfiguracja: "Logowanie jest chwilowo niedostępne. Spróbuj ponownie później.",
 };
 
-export function LogowanieFormularz({ nastepnaSciezka, kodBledu, szczegolBledu, emailStartowy = "" }: Props) {
+export function LogowanieFormularz({
+  nastepnaSciezka,
+  kodBledu,
+  szczegolBledu,
+  emailStartowy = "",
+  turnstileToken,
+  wymagajTurnstile,
+  onTurnstileZuzyty,
+}: Props) {
   const [laduje, ustawLaduje] = useState(false);
   const [pokazHaslo, ustawPokazHaslo] = useState(false);
-  const [turnstileToken, ustawTurnstileToken] = useState<string | null>(null);
-  const [turnstileKey, ustawTurnstileKey] = useState(0);
   const [blad, ustawBlad] = useState(() => {
     if (!kodBledu) return "";
     const podstawa = OPISY_BLEDOW[kodBledu] ?? "Wystąpił problem z logowaniem.";
@@ -38,8 +44,8 @@ export function LogowanieFormularz({ nastepnaSciezka, kodBledu, szczegolBledu, e
     const fd = new FormData(e.currentTarget);
     const email = String(fd.get("email") || "").trim();
     const haslo = String(fd.get("haslo") || "");
-    if (TURNSTILE_SITE_KEY && !turnstileToken) {
-      ustawBlad("Potwierdź weryfikację antyspamową (Cloudflare) przed logowaniem.");
+    if (wymagajTurnstile && !turnstileToken) {
+      ustawBlad("Potwierdź weryfikację antyspamową powyżej przed logowaniem.");
       return;
     }
 
@@ -61,8 +67,7 @@ export function LogowanieFormularz({ nastepnaSciezka, kodBledu, szczegolBledu, e
       const d = (await res.json().catch(() => ({}))) as { error?: string; redirect?: string };
       if (!res.ok) {
         ustawBlad(d.error || "Nie udało się zalogować.");
-        ustawTurnstileToken(null);
-        ustawTurnstileKey((k) => k + 1);
+        onTurnstileZuzyty();
         return;
       }
       const cel = typeof d.redirect === "string" && d.redirect.startsWith("/") ? d.redirect : "/panel";
@@ -125,20 +130,9 @@ export function LogowanieFormularz({ nastepnaSciezka, kodBledu, szczegolBledu, e
           </button>
         </div>
       </div>
-      {TURNSTILE_SITE_KEY ? (
-        <div className="rounded-xl border border-stone-200/80 bg-white/90 px-3 py-3">
-          <p className="mb-2 text-xs text-stone-600">Weryfikacja antyspamowa (Cloudflare)</p>
-          <TurnstileAntybot
-            key={turnstileKey}
-            siteKey={TURNSTILE_SITE_KEY}
-            akcja="logowanie"
-            onToken={ustawTurnstileToken}
-          />
-        </div>
-      ) : null}
       <button
         type="submit"
-        disabled={laduje || (Boolean(TURNSTILE_SITE_KEY) && !turnstileToken)}
+        disabled={laduje || (wymagajTurnstile && !turnstileToken)}
         className="w-full min-h-[44px] rounded-xl bg-gradient-to-b from-green-800 to-green-900 px-4 py-2.5 font-medium text-white shadow-md transition hover:from-green-900 hover:to-green-950 disabled:opacity-60"
       >
         {laduje ? "Logowanie…" : "Zaloguj się"}

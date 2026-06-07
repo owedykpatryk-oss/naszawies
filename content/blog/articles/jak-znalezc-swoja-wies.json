@@ -4,25 +4,42 @@
   "excerpt": "Wyszukiwarka miejscowości, ścieżki URL według TERYT i różnica między profilem publicznym a panelem po zalogowaniu.",
   "coverImage": "/blog/jak-znalezc-swoja-wies/cover.webp",
   "gallery": [],
-  "content": "<p>Zanim dołączysz do społeczności, warto sprawdzić, czy Twoja miejscowość jest już w katalogu. <strong>Szukaj wsi</strong> to publiczna wyszukiwarka po nazwie, gminie i województwie.</p><h2 id=\"szukaj\">Jak szukać</h2><p>Wejdź na <a href=\"/szukaj\">/szukaj</a> i wpisz nazwę wsi. Jeśli jest wiele homonimów, pomogą informacje o gminie i powiecie. Kliknięcie w wynik prowadzi do publicznego profilu (jeśli wieś jest aktywna).</p><h2 id=\"url\">Czytelne adresy URL</h2><p>Profile wsi mają strukturę: województwo / powiat / gmina / slug miejscowości. Dzięki temu linki są zrozumiałe dla ludzi i wyszukiwarek.</p><h2 id=\"mapa\">Mapa po zalogowaniu</h2><p>Interaktywna <a href=\"/mapa\">mapa wsi</a> z warstwami tematycznymi jest dostępna po zalogowaniu — chroni to zasoby i ogranicza nadużycia automatycznego scrapowania.</p><h2 id=\"brak-wsi\">Nie ma Twojej wsi?</h2><p>Skontaktuj się z nami przez <a href=\"/kontakt\">formularz kontaktowy</a> lub złóż wniosek sołtysa — administrator może aktywować profil po weryfikacji.</p>",
+  "content": "<p>Polska ma dziesiątki tysięcy miejscowości o podobnych nazwach — „Brzóza”, „Zalesie”, „Nowa Wieś” występują w wielu gminach. <strong>Katalog naszawies.pl</strong> opiera się na rejestrze TERYT, dzięki czemu wybierasz właściwą wieś po województwie, powiecie i gminie, a nie tylko po krótkiej nazwie.</p>\n\n<h2 id=\"szukaj\">Wyszukiwarka miejscowości</h2>\n<p>Wejdź na <a href=\"/szukaj\">Szukaj wsi</a> i wpisz nazwę miejscowości lub gminy. Wyniki pokazują pełny kontekst administracyjny — unikniesz pomyłki między dwoma „Zalesiami” w różnych powiatach.</p>\n<div class=\"blog-callout blog-callout-porada\"><strong>Porada</strong><p>Jeśli znasz tylko nazwę gminy, wyszukaj po niej i przejrzyj listę wsí w gminie.</p></div>\n\n<h2 id=\"url\">Czytelne adresy URL</h2>\n<p>Profil publiczny ma strukturę: województwo / powiat / gmina / wieś. To ułatwia orientację i pozycjonowanie w Google — link jest opisowy, nie losowy.</p>\n\n<h2 id=\"profil-vs-panel\">Profil publiczny a panel po logowaniu</h2>\n<table class=\"blog-tabela\">\n<thead><tr><th>Profil publiczny</th><th>Panel po zalogowaniu</th></tr></thead>\n<tbody>\n<tr><td>Widoczny dla wszystkich</td><td>Tylko dla mieszkańców i sołtysa</td></tr>\n<tr><td>Opis, ogłoszenia, rynek</td><td>Edycja, moderacja, wnioski</td></tr>\n<tr><td>Bez konta</td><td>Wymaga rejestracji</td></tr>\n</tbody>\n</table>\n\n<h2 id=\"mapa\">Mapa po zalogowaniu</h2>\n<p>Po dołączeniu do wsi zyskujesz dostęp do <a href=\"/blog/mapa-wsi-po-zalogowaniu\">mapy interaktywnej</a> z punktami POI i warstwami — to rozszerzenie katalogu, nie zamiennik profilu publicznego.</p>\n\n<p>Następny krok: <a href=\"/blog/jak-zalozyc-profil-wsi\">załóż profil swojej wsi</a>.</p>",
   "authorId": "zespol",
   "categorySlug": "poradniki",
-  "tags": ["szukaj", "katalog", "wies", "teryt"],
+  "tags": [
+    "szukaj",
+    "katalog",
+    "wies",
+    "teryt"
+  ],
   "faq": [
     {
-      "question": "Czy każda wieś w Polsce ma profil?",
-      "answer": "Katalog obejmuje miejscowości z bazy SIMC/TERYT. Publiczny profil pojawia się, gdy wieś jest aktywna i ma skonfigurowaną społeczność na platformie."
+      "question": "Nie widzę swojej wsi w katalogu — co robić?",
+      "answer": "Sprawdź pisownię i wyszukaj po gminie. Jeśli miejscowość jest w SIMC/TERC, powinna być dostępna. W razie braku skontaktuj się z nami przez formularz kontaktowy."
+    },
+    {
+      "question": "Czy mogę przeglądać inne wsie bez konta?",
+      "answer": "Tak — profile publiczne aktywnych wsi są dostępne dla gości."
     }
   ],
-  "relatedSlugs": ["jak-zalozyc-profil-wsi"],
+  "relatedSlugs": [
+    "jak-zalozyc-profil-wsi"
+  ],
   "featured": false,
   "status": "published",
   "publishedAt": "2026-06-05T12:00:00.000Z",
   "seoTitle": "Jak znaleźć wieś w katalogu naszawies.pl",
   "seoDescription": "Instrukcja wyszukiwania miejscowości w Polsce: Szukaj wsi, URL profilu i mapa po zalogowaniu.",
   "internalLinks": [
-    { "href": "/szukaj", "label": "Szukaj wsi" },
-    { "href": "/kontakt", "label": "Kontakt" }
+    {
+      "href": "/szukaj",
+      "label": "Szukaj wsi"
+    },
+    {
+      "href": "/kontakt",
+      "label": "Kontakt"
+    }
   ],
   "generatedImages": []
 }

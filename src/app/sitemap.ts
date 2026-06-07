@@ -1,4 +1,5 @@
 import type { MetadataRoute } from "next";
+import { pobierzPopularneTagi } from "@/lib/blog/pobierz-popularne-tagi";
 import { pobierzKategorieBlog, pobierzOpublikowaneArtykuly } from "@/lib/blog/wczytaj-tresci";
 import { pobierzBazeUrlWitryny } from "@/lib/seo/konfiguracja-domeny";
 import { createPublicSupabaseClient } from "@/lib/supabase/public-client";
@@ -226,6 +227,13 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     }
   }
 
+  const blogTagi: MetadataRoute.Sitemap = pobierzPopularneTagi(40).map((t) => ({
+    url: `${baza}/blog/tag/${encodeURIComponent(t.slug)}`,
+    lastModified: teraz,
+    changeFrequency: "weekly" as const,
+    priority: 0.55,
+  }));
+
   const blogKategorie: MetadataRoute.Sitemap = pobierzKategorieBlog().map((k) => ({
     url: `${baza}/blog/kategoria/${k.slug}`,
     lastModified: teraz,
@@ -250,5 +258,5 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     };
   });
 
-  return [...statyczne, ...stuby, ...blogKategorie, ...blog, ...wsi, ...rynek, ...organizacje, ...wydarzenia];
+  return [...statyczne, ...stuby, ...blogKategorie, ...blogTagi, ...blog, ...wsi, ...rynek, ...organizacje, ...wydarzenia];
 }

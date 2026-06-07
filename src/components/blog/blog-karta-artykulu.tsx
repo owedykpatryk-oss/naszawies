@@ -30,6 +30,9 @@ export function BlogKartaArtykulu({ artykul, featured = false }: Props) {
           sizes={featured ? "(max-width: 768px) 100vw, 50vw" : "(max-width: 768px) 100vw, 33vw"}
           unoptimized={okladka.startsWith("/api/")}
         />
+        <span className="absolute right-3 top-3 rounded-full bg-black/55 px-2 py-0.5 text-xs font-medium text-white backdrop-blur-sm">
+          {artykul.readingTime} min
+        </span>
         {artykul.featured ? (
           <span className="absolute left-3 top-3 rounded-full bg-green-800/90 px-2.5 py-0.5 text-xs font-medium text-white">
             Wyróżnione

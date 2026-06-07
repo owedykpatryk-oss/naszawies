@@ -7,9 +7,12 @@ import { BlogKartaArtykulu } from "@/components/blog/blog-karta-artykulu";
 import { BlogJsonLd } from "@/components/blog/blog-json-ld";
 import { BlogWyszukiwarka } from "@/components/blog/blog-wyszukiwarka";
 import { BlogCtaStopka } from "@/components/blog/blog-cta-stopka";
+import { BlogFiltryKategorii } from "@/components/blog/blog-filtry-kategorii";
 import { BlogPaginacja } from "@/components/blog/blog-paginacja";
 import { BlogSidebar } from "@/components/blog/blog-sidebar";
+import { pobierzPopularneTagi } from "@/lib/blog/pobierz-popularne-tagi";
 import {
+  pobierzArtykulyKategorii,
   pobierzKategorieBlog,
   pobierzOpublikowaneArtykuly,
   szukajArtykulowBlog,
@@ -22,11 +25,12 @@ export const revalidate = 3600;
 const NA_STRONE = 9;
 
 type Props = {
-  searchParams: { q?: string; strona?: string };
+  searchParams: { q?: string; strona?: string; kategoria?: string };
 };
 
 export function generateMetadata({ searchParams }: Props): Metadata {
   const zapytanie = searchParams.q?.trim();
+  const kategoria = searchParams.kategoria?.trim();
   const strona = Math.max(1, Number.parseInt(searchParams.strona ?? "1", 10) || 1);
 
   if (zapytanie) {
@@ -38,7 +42,19 @@ export function generateMetadata({ searchParams }: Props): Metadata {
     });
   }
 
-  const sciezka = strona > 1 ? `/blog?strona=${strona}` : "/blog";
+  const p = new URLSearchParams();
+  if (kategoria) p.set("kategoria", kategoria);
+  if (strona > 1) p.set("strona", String(strona));
+  const sciezka = p.toString() ? `/blog?${p}` : "/blog";
+
+  const kat = kategoria ? pobierzKategorieBlog().find((k) => k.slug === kategoria) : null;
+  if (kat) {
+    return createSeoMeta({
+      tytul: `${kat.name} — blog`,
+      opis: kat.description,
+      sciezka,
+    });
+  }
 
   return createSeoMeta({
     tytul: "Blog — poradniki o życiu na wsi i narzędziach naszawies.pl",
@@ -50,15 +66,24 @@ export function generateMetadata({ searchParams }: Props): Metadata {
 
 export default function StronaBlog({ searchParams }: Props) {
   const zapytanie = searchParams.q?.trim() ?? "";
+  const kategoria = searchParams.kategoria?.trim() ?? "";
   const strona = Math.max(1, Number.parseInt(searchParams.strona ?? "1", 10) || 1);
 
-  const wszystkie = zapytanie ? szukajArtykulowBlog(zapytanie) : pobierzOpublikowaneArtykuly();
-  const featured = zapytanie ? [] : wszystkie.filter((a) => a.featured);
-  const lista = zapytanie ? wszystkie : wszystkie.filter((a) => !a.featured);
+  const baza = zapytanie
+    ? szukajArtykulowBlog(zapytanie)
+    : kategoria
+      ? pobierzArtykulyKategorii(kategoria)
+      : pobierzOpublikowaneArtykuly();
+  const wszystkie = baza;
+  const filtrujWyroznione = !zapytanie && !kategoria;
+  const featured = filtrujWyroznione ? wszystkie.filter((a) => a.featured) : [];
+  const lista = filtrujWyroznione ? wszystkie.filter((a) => !a.featured) : wszystkie;
   const offset = (strona - 1) * NA_STRONE;
   const stronaLista = lista.slice(offset, offset + NA_STRONE);
   const kategorie = pobierzKategorieBlog();
   const ostatnie = pobierzOpublikowaneArtykuly();
+  const tagiPopularne = pobierzPopularneTagi();
+  const katAktywna = kategorie.find((k) => k.slug === kategoria);
 
   const breadcrumbs = generateBreadcrumbsBlog([]);
   const liczbaStron = Math.max(1, Math.ceil(lista.length / NA_STRONE));
@@ -82,6 +107,7 @@ export default function StronaBlog({ searchParams }: Props) {
         opis="Poradniki dla sołtysów i mieszkańców — od profilu miejscowości po rynek lokalny i rezerwację świetlicy."
       />
       <p className="mt-3 text-center text-sm text-stone-600 dark:text-stone-400">
+        {pobierzOpublikowaneArtykuly().length} artykułów ·{" "}
         <Link href="/blog/rss.xml" className="font-medium text-green-800 underline decoration-emerald-600/40 dark:text-green-300">
           Subskrybuj RSS
         </Link>
@@ -92,6 +118,12 @@ export default function StronaBlog({ searchParams }: Props) {
           <Suspense fallback={null}>
             <BlogWyszukiwarka />
           </Suspense>
+
+          {!zapytanie ? <BlogFiltryKategorii kategorie={kategorie} aktywna={kategoria || undefined} /> : null}
+
+          {katAktywna && !zapytanie ? (
+            <p className="mt-4 text-sm text-stone-600 dark:text-stone-400">{katAktywna.description}</p>
+          ) : null}
 
           {zapytanie ? (
             <p className="mt-4 text-sm text-stone-600 dark:text-stone-400">
@@ -126,12 +158,17 @@ export default function StronaBlog({ searchParams }: Props) {
             </section>
           )}
 
-          <BlogPaginacja strona={strona} liczbaStron={liczbaStron} zapytanie={zapytanie || undefined} />
+          <BlogPaginacja
+            strona={strona}
+            liczbaStron={liczbaStron}
+            zapytanie={zapytanie || undefined}
+            kategoria={kategoria || undefined}
+          />
 
           <BlogCtaStopka />
         </div>
 
-        <BlogSidebar kategorie={kategorie} ostatnie={ostatnie} />
+        <BlogSidebar kategorie={kategorie} ostatnie={ostatnie} tagiPopularne={tagiPopularne} />
       </div>
     </main>
   );

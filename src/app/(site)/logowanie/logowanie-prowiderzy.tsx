@@ -1,25 +1,28 @@
 "use client";
 
 import { useState } from "react";
-import { TurnstileAntybot } from "@/components/turnstile/TurnstileAntybot";
-
-const TURNSTILE_SITE_KEY = process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY?.trim() ?? "";
 
 type Props = {
-  /** Pełny URL strony, np. https://naszawies.pl */
   pochodzeniePubliczne: string;
   nastepnaSciezka: string;
+  turnstileToken: string | null;
+  wymagajTurnstile: boolean;
+  onTurnstileZuzyty: () => void;
 };
 
-export function LogowanieProwiderzy({ pochodzeniePubliczne, nastepnaSciezka }: Props) {
+export function LogowanieProwiderzy({
+  pochodzeniePubliczne,
+  nastepnaSciezka,
+  turnstileToken,
+  wymagajTurnstile,
+  onTurnstileZuzyty,
+}: Props) {
   const [laduje, ustawLaduje] = useState(false);
   const [blad, ustawBlad] = useState("");
-  const [turnstileToken, ustawTurnstileToken] = useState<string | null>(null);
-  const [turnstileKey, ustawTurnstileKey] = useState(0);
 
   async function zalogujPrzezGoogle() {
-    if (TURNSTILE_SITE_KEY && !turnstileToken) {
-      ustawBlad("Potwierdź weryfikację antyspamową (Cloudflare) przed logowaniem przez Google.");
+    if (wymagajTurnstile && !turnstileToken) {
+      ustawBlad("Potwierdź weryfikację antyspamową powyżej przed logowaniem.");
       return;
     }
 
@@ -39,8 +42,7 @@ export function LogowanieProwiderzy({ pochodzeniePubliczne, nastepnaSciezka }: P
       const d = (await res.json().catch(() => ({}))) as { error?: string; url?: string };
       if (!res.ok || !d.url) {
         ustawBlad(d.error || "Nie udało się rozpocząć logowania przez Google.");
-        ustawTurnstileToken(null);
-        ustawTurnstileKey((k) => k + 1);
+        onTurnstileZuzyty();
         ustawLaduje(false);
         return;
       }
@@ -62,21 +64,10 @@ export function LogowanieProwiderzy({ pochodzeniePubliczne, nastepnaSciezka }: P
           {blad}
         </p>
       ) : null}
-      {TURNSTILE_SITE_KEY ? (
-        <div className="rounded-xl border border-stone-200/80 bg-white/90 px-3 py-3">
-          <p className="mb-2 text-xs text-stone-600">Weryfikacja antyspamowa (Cloudflare)</p>
-          <TurnstileAntybot
-            key={turnstileKey}
-            siteKey={TURNSTILE_SITE_KEY}
-            akcja="logowanie-google"
-            onToken={ustawTurnstileToken}
-          />
-        </div>
-      ) : null}
       <p className="text-center text-xs font-medium uppercase tracking-wider text-stone-500">Kontynuuj przez</p>
       <button
         type="button"
-        disabled={laduje || (Boolean(TURNSTILE_SITE_KEY) && !turnstileToken)}
+        disabled={laduje || (wymagajTurnstile && !turnstileToken)}
         onClick={() => void zalogujPrzezGoogle()}
         className="flex min-h-[44px] w-full items-center justify-center gap-2 rounded-xl border border-stone-300/90 bg-white px-4 py-2.5 text-sm font-medium text-stone-800 shadow-sm transition hover:border-stone-400 hover:bg-stone-50/90 disabled:opacity-60"
       >

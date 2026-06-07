@@ -4,10 +4,15 @@
   "excerpt": "Jak skonfigurować sale, regulamin, kalendarz rezerwacji i moderację wniosków mieszkańców — bez chaosu w zeszycie i telefonach.",
   "coverImage": "/blog/rezerwacja-swietlicy-poradnik/cover.webp",
   "gallery": [],
-  "content": "<p>Świetlica to serce wielu wydarzeń wiejskich: zebrania, urodziny, zajęcia dla dzieci, spotkania KGW. Problem zaczyna się, gdy terminy zapisuje się w kilku miejscach naraz. Moduł świetlicy na <strong>naszawies.pl</strong> porządkuje rezerwacje w jednym kalendarzu.</p><h2 id=\"konfiguracja\">Konfiguracja sali</h2><p>W panelu sołtysa dodaj salę (lub kilka), opisz wyposażenie, wgraj zdjęcia i ewentualny regulamin w formie PDF. Mieszkańcy widzą dostępność przed złożeniem wniosku.</p><h2 id=\"workflow\">Workflow rezerwacji</h2><p>Typowy przebieg: wniosek mieszkańca → status <em>oczekuje</em> → akceptacja lub odrzucenie przez sołtysa → potwierdzenie terminu. Po zakończeniu imprezy można odnotować ewentualne uszkodzenia — dokumentacja zostaje w systemie.</p><h2 id=\"komunikacja\">Komunikacja z mieszkańcami</h2><p>Powiadomienia w panelu informują o nowych wnioskach. Warto ustawić jasne zasady: maksymalny czas trwania imprezy, kaucja, sprzątanie po evencie. Regulamin wgrany do systemu ogranicza liczbę pytań telefonicznych.</p><h2 id=\"planer\">Planer stołów (perspektywa)</h2><p>Platforma rozwija narzędzia do planowania układu stołów pod wydarzenia w świetlicy — warto śledzić aktualizacje w <a href=\"/pomoc\">centrum pomocy</a>.</p>",
+  "content": "<p>Świetlica to serce wielu wydarzeń wiejskich: zebrania, urodziny, zajęcia dla dzieci, spotkania KGW. Problem zaczyna się, gdy terminy zapisuje się w kilku miejscach naraz — zeszyt u sołtysa, kartka przy drzwiach, wiadomości na Messengerze. Moduł świetlicy na <strong>naszawies.pl</strong> porządkuje rezerwacje w jednym kalendarzu widocznym dla całej wsi.</p>\n\n<h2 id=\"konfiguracja\">Konfiguracja sali</h2>\n<p>W panelu sołtysa dodaj salę (lub kilka), opisz wyposażenie, wgraj zdjęcia i ewentualny regulamin w formie PDF. Mieszkańcy widzą dostępność przed złożeniem wniosku.</p>\n<ul class=\"blog-lista-check\">\n<li>Nazwa sali i pojemność (np. 80 miejsc)</li>\n<li>Lista wyposażenia: stoły, krzesła, nagłośnienie, kuchnia</li>\n<li>Regulamin: godziny ciszy, kaucja, sprzątanie po imprezie</li>\n<li>Zdjęcia wnętrza — mniej pytań „czy jest projektor?”</li>\n</ul>\n\n<h2 id=\"workflow\">Workflow rezerwacji</h2>\n<p>Typowy przebieg wygląda tak:</p>\n<ol class=\"blog-lista-kroki\">\n<li>Mieszkaniec składa wniosek z datą, godziną i celem wydarzenia</li>\n<li>Status <em>oczekuje</em> — sołtys dostaje powiadomienie</li>\n<li>Akceptacja lub odrzucenie z krótkim komentarzem</li>\n<li>Po imprezie: ewentualna notatka o stanie sali</li>\n</ol>\n<div class=\"blog-callout blog-callout-wazne\"><strong>Ważne</strong><p>Nie zatwierdzaj dwóch wniosków na ten sam termin bez sprawdzenia nakładania się godzin (np. sprzątanie po poprzedniej imprezie).</p></div>\n\n<h2 id=\"komunikacja\">Komunikacja z mieszkańcami</h2>\n<p>Powiadomienia w panelu informują o nowych wnioskach. Warto ustawić jasne zasady: maksymalny czas trwania imprezy, kaucja, sprzątanie po evencie. Regulamin wgrany do systemu ogranicza liczbę pytań telefonicznych w niedzielę wieczorem.</p>\n<blockquote>„Od kiedy mamy kalendarz online, nie dostaję już pięciu telefonów o ten sam weekend.” — typowa opinia sołtysów po pierwszym miesiącu</blockquote>\n\n<h2 id=\"planer\">Planer stołów i dokumenty</h2>\n<p>Platforma rozwija narzędzia do planowania układu stołów pod wydarzenia w świetlicy — warto śledzić aktualizacje w <a href=\"/pomoc\">centrum pomocy</a>. Regulamin i protokoły możesz trzymać jako pliki PDF dostępne z profilu sali.</p>\n\n<h2 id=\"najczestsze-bledy\">Najczęstsze błędy</h2>\n<table class=\"blog-tabela\">\n<thead><tr><th>Problem</th><th>Rozwiązanie</th></tr></thead>\n<tbody>\n<tr><td>Podwójna rezerwacja</td><td>Jeden kalendarz + obowiązkowa akceptacja sołtysa</td></tr>\n<tr><td>Brak regulaminu</td><td>Wgraj PDF przed sezonem wesel/komunii</td></tr>\n<tr><td>Mieszkańcy nie wiedzą o systemie</td><td>Ogłoszenie na profilu wsi + QR w świetlicy</td></tr>\n</tbody>\n</table>\n\n<p>Więcej o zebraniach i terminach: <a href=\"/blog/zebranie-wiejskie-swietlica\">zebranie wiejskie bez chaosu</a>.</p>",
   "authorId": "zespol",
   "categorySlug": "soltys",
-  "tags": ["swietlica", "rezerwacja", "soltys", "wydarzenia"],
+  "tags": [
+    "swietlica",
+    "rezerwacja",
+    "soltys",
+    "wydarzenia"
+  ],
   "faq": [
     {
       "question": "Czy mieszkaniec może sam zarezerwować termin bez akceptacji?",
@@ -16,17 +21,31 @@
     {
       "question": "Ile sal można dodać?",
       "answer": "Możesz skonfigurować wiele sal lub pomieszczeń przypisanych do jednej wsi — np. świetlica główna i mniejsza świetliczka."
+    },
+    {
+      "question": "Czy widać dane osoby rezerwującej publicznie?",
+      "answer": "Publicznie widać zajęte terminy. Szczegóły wniosku (kontakt, cel imprezy) ma sołtys w panelu moderacji."
     }
   ],
-  "relatedSlugs": ["jak-zalozyc-profil-wsi", "rola-soltysa-narzedzia-cyfrowe"],
+  "relatedSlugs": [
+    "zebranie-wiejskie-swietlica",
+    "kalendarz-wydarzen-wiejskich",
+    "rola-soltysa-narzedzia-cyfrowe"
+  ],
   "featured": true,
   "status": "published",
   "publishedAt": "2026-06-02T09:00:00.000Z",
   "seoTitle": "Rezerwacja świetlicy wiejskiej online — poradnik sołtysa",
   "seoDescription": "Konfiguracja kalendarza świetlicy, moderacja rezerwacji i komunikacja z mieszkańcami na naszawies.pl.",
   "internalLinks": [
-    { "href": "/pomoc", "label": "Pomoc — moduł świetlicy" },
-    { "href": "/o-nas", "label": "O platformie" }
+    {
+      "href": "/pomoc",
+      "label": "Pomoc — moduł świetlicy"
+    },
+    {
+      "href": "/o-nas",
+      "label": "O platformie"
+    }
   ],
   "generatedImages": []
 }

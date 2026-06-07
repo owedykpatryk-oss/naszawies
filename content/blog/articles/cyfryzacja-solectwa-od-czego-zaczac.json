@@ -1,0 +1,42 @@
+{
+  "title": "Cyfryzacja sołectwa — od czego zacząć w pierwszym semestrze",
+  "slug": "cyfryzacja-solectwa-od-czego-zaczac",
+  "excerpt": "Plan pięciu kroków dla sołtysa: profil wsi, tablica, świetlica, rynek i podsumowanie na zebraniu — bez rewolucji w jeden weekend.",
+  "coverImage": "/blog/cyfryzacja-solectwa-od-czego-zaczac/cover.webp",
+  "gallery": [],
+  "authorId": "zespol",
+  "categorySlug": "soltys",
+  "tags": [
+    "soltys",
+    "cyfryzacja",
+    "plan",
+    "solectwo"
+  ],
+  "faq": [
+    {
+      "question": "Czy muszę umieć programować?",
+      "answer": "Nie. Panel sołtysa jest graficzny — jak formularz w urzędzie, tylko online."
+    },
+    {
+      "question": "Ile czasu to zajmuje tygodniowo?",
+      "answer": "Po starcie zwykle 15–30 minut tygodniowo na moderację ogłoszeń i wniosków o świetlicę."
+    }
+  ],
+  "relatedSlugs": [
+    "rola-soltysa-narzedzia-cyfrowe",
+    "jak-zalozyc-profil-wsi"
+  ],
+  "featured": true,
+  "status": "published",
+  "publishedAt": "2026-06-12T08:00:00.000Z",
+  "seoTitle": "Cyfryzacja sołectwa — plan pierwszych kroków",
+  "seoDescription": "Praktyczny plan cyfryzacji wsi dla sołtysa: kolejność wdrożeń, komunikacja z mieszkańcami, unikanie przeciążenia.",
+  "internalLinks": [
+    {
+      "href": "/pomoc",
+      "label": "Centrum pomocy"
+    }
+  ],
+  "generatedImages": [],
+  "content": "<p>„Musimy wejść do internetu” — słyszy to wielu sołtysów na zebraniu. Rzadko kto mówi <em>jak</em> to zrobić bez dodatkowej pracy na wieczory. Poniżej realistyczny plan na pierwsze pół roku, oparty na modułach naszawies.pl.</p>\n\n<h2 id=\"miesiac-1\">Miesiąc 1: Fundament</h2>\n<ul class=\"blog-lista-check\">\n<li>Założenie profilu wsi i opis miejscowości</li>\n<li>Pierwsze ogłoszenie o zebraniu z linkiem do profilu</li>\n<li>Zaproszenie 10–15 aktywnych mieszkańców</li>\n</ul>\n\n<h2 id=\"miesiac-2\">Miesiąc 2: Komunikacja</h2>\n<p>Cyfrowa tablica ogłoszeń zamiast powtarzania tych samych informacji telefonicznie. Kalendarz wydarzeń na kwartał do przodu.</p>\n\n<h2 id=\"miesiac-3\">Miesiąc 3: Usługi</h2>\n<p>Świetlica online (jeśli macie salę) i rynek lokalny — często najbardziej oczekiwane przez mieszkańców.</p>\n\n<div class=\"blog-callout blog-callout-wazne\"><strong>Ważne</strong><p>Nie włączaj wszystkiego naraz. Lepiej dwa działające moduły niż pięć pustych zakładek.</p></div>\n\n<h2 id=\"podsumowanie\">Podsumowanie na zebraniu</h2>\n<p>Co kwartał krótko: ile kont, ile ogłoszeń, co działa, czego brakuje. To buduje zaufanie do cyfryzacji — mieszkańcy widzą sens, nie modę.</p>\n\n<p>Więcej narzędzi: <a href=\"/blog/rola-soltysa-narzedzia-cyfrowe\">rola sołtysa w sieci</a>.</p>"
+}

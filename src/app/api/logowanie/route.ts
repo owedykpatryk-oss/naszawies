@@ -6,7 +6,10 @@ import { odczytajAdresIpZNaglowkow } from "@/lib/api/odczytaj-adres-ip";
 import { bezpiecznaSciezkaNastepna } from "@/lib/auth/bezpieczna-sciezka-nastepna";
 import { czyProfilMaAktualnaAkceptacjePrawna } from "@/lib/rodo/czy-ma-akceptacje-prawna";
 import { sprawdzLimitApi } from "@/lib/rate-limit/sprawdz-limit-upstash";
-import { walidujTurnstileZNaglowkow } from "@/lib/turnstile/waliduj-token-serwer";
+import {
+  tokenCaptchaDlaSupabase,
+  walidujTurnstilePrzedAuth,
+} from "@/lib/turnstile/walidacja-auth-supabase";
 
 type CiasteczkaDoUstawienia = {
   name: string;
@@ -51,7 +54,7 @@ export async function POST(request: NextRequest) {
 
   const d = sparsowane.data;
 
-  const turnstile = await walidujTurnstileZNaglowkow(d.cfTurnstileResponse, request.headers);
+  const turnstile = await walidujTurnstilePrzedAuth(d.cfTurnstileResponse, request.headers);
   if (!turnstile.ok) {
     return NextResponse.json({ error: turnstile.komunikat }, { status: 400 });
   }
@@ -88,9 +91,11 @@ export async function POST(request: NextRequest) {
   });
 
   const email = d.email.trim().toLowerCase();
+  const captchaToken = tokenCaptchaDlaSupabase(d.cfTurnstileResponse);
   const { error } = await supabase.auth.signInWithPassword({
     email,
     password: d.haslo,
+    options: captchaToken ? { captchaToken } : undefined,
   });
 
   if (error) {

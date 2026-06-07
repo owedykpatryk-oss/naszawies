@@ -9,7 +9,10 @@ import {
 } from "@/lib/rejestracja/waliduj-wyswietlana-nazwa";
 import { sprawdzLimitApi } from "@/lib/rate-limit/sprawdz-limit-upstash";
 import { createPublicSupabaseClient } from "@/lib/supabase/public-client";
-import { walidujTurnstileZNaglowkow } from "@/lib/turnstile/waliduj-token-serwer";
+import {
+  tokenCaptchaDlaSupabase,
+  walidujTurnstilePrzedAuth,
+} from "@/lib/turnstile/walidacja-auth-supabase";
 
 const intencjaSchema = z.enum(["mieszkaniec", "soltys", "inne", "nie_podano"]);
 
@@ -55,7 +58,7 @@ export async function POST(request: Request) {
 
   const d = sparsowane.data;
 
-  const turnstile = await walidujTurnstileZNaglowkow(d.cfTurnstileResponse, request.headers);
+  const turnstile = await walidujTurnstilePrzedAuth(d.cfTurnstileResponse, request.headers);
   if (!turnstile.ok) {
     return NextResponse.json({ error: turnstile.komunikat }, { status: 400 });
   }
@@ -99,10 +102,12 @@ export async function POST(request: Request) {
   const nastepnyPoPotwierdzeniu = encodeURIComponent(nastepna);
   const legalAt = new Date().toISOString();
 
+  const captchaToken = tokenCaptchaDlaSupabase(d.cfTurnstileResponse);
   const { error } = await supabase.auth.signUp({
     email,
     password: d.haslo,
     options: {
+      ...(captchaToken ? { captchaToken } : {}),
       emailRedirectTo: `${pochodzenie}/auth/potwierdz?next=${nastepnyPoPotwierdzeniu}`,
       data: {
         display_name: nazwaW.nazwa,

@@ -7,8 +7,10 @@ import { BlogAutorKarta } from "@/components/blog/blog-autor-karta";
 import { BlogCtaStopka } from "@/components/blog/blog-cta-stopka";
 import { BlogGaleria } from "@/components/blog/blog-galeria";
 import { BlogNawigacjaArtykulow } from "@/components/blog/blog-nawigacja-artykulow";
+import { BlogPasekCzytania } from "@/components/blog/blog-pasek-czytania";
 import { pobierzSasiednieArtykuly } from "@/lib/blog/pobierz-sasiednie-artykuly";
 import { BlogJsonLd } from "@/components/blog/blog-json-ld";
+import { BlogPodsumowanie } from "@/components/blog/blog-podsumowanie";
 import { BlogPowiazane } from "@/components/blog/blog-powiazane";
 import { BlogSidebar } from "@/components/blog/blog-sidebar";
 import { BlogUdostepnij } from "@/components/blog/blog-udostepnij";
@@ -22,6 +24,8 @@ import {
 import { createInternalLinks } from "@/lib/seo/create-internal-links";
 import { createSeoMeta } from "@/lib/seo/create-seo-meta";
 import { generateBreadcrumbsBlog } from "@/lib/seo/generate-breadcrumbs";
+import { pobierzPopularneTagi } from "@/lib/blog/pobierz-popularne-tagi";
+import { uzupelnijHtmlTresci } from "@/lib/blog/uzupelnij-html-tresci";
 import { sciezkaOkladkiArtykulu } from "@/lib/images/sciezki-blog";
 import { generateAltText } from "@/lib/images/generate-alt-text";
 import Link from "next/link";
@@ -64,8 +68,11 @@ export default function StronaArtykuluBlog({ params }: Props) {
       ? artykul.internalLinks
       : createInternalLinks(artykul.tags, []).map((l) => ({ href: l.href, label: l.etykieta }));
 
+  const trescHtml = uzupelnijHtmlTresci(artykul.content);
+
   return (
     <main className="page-shell max-w-6xl py-8 sm:py-12">
+      <BlogPasekCzytania />
       <BlogJsonLd
         artykul={{
           tytul: artykul.title,
@@ -75,6 +82,8 @@ export default function StronaArtykuluBlog({ params }: Props) {
           autor: artykul.author.name,
           obraz: okladka,
           czasCzytaniaMin: artykul.readingTime,
+          sekcja: artykul.category.name,
+          tagi: artykul.tags,
         }}
         faq={artykul.faq.map((f) => ({ pytanie: f.question, odpowiedz: f.answer }))}
         breadcrumbs={breadcrumbs.filter((b) => b.href)}
@@ -112,9 +121,11 @@ export default function StronaArtykuluBlog({ params }: Props) {
             </div>
           </header>
 
+          <BlogPodsumowanie tekst={artykul.excerpt} />
+
           <div
             className="blog-tresc-artykulu mt-8"
-            dangerouslySetInnerHTML={{ __html: artykul.content }}
+            dangerouslySetInnerHTML={{ __html: trescHtml }}
           />
 
           {linki.length > 0 ? (
@@ -167,6 +178,7 @@ export default function StronaArtykuluBlog({ params }: Props) {
         <BlogSidebar
           kategorie={pobierzKategorieBlog()}
           ostatnie={pobierzOpublikowaneArtykuly().filter((a) => a.slug !== artykul.slug)}
+          tagiPopularne={pobierzPopularneTagi(10)}
           pokazSpis
         />
       </div>

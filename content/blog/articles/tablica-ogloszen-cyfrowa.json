@@ -1,0 +1,38 @@
+{
+  "title": "Tablica ogłoszeń cyfrowa — zamiast kartki przy sklepie",
+  "slug": "tablica-ogloszen-cyfrowa",
+  "excerpt": "Ogłoszenia parafialne, prace sezonowe, zaginione koty — jak prowadzić cyfrową tablicę na profilu wsi, żeby dotrzeć do wszystkich pokoleń.",
+  "coverImage": "/blog/tablica-ogloszen-cyfrowa/cover.webp",
+  "gallery": [],
+  "authorId": "zespol",
+  "categorySlug": "poradniki",
+  "tags": [
+    "ogloszenia",
+    "komunikacja",
+    "tablica",
+    "informacje"
+  ],
+  "faq": [
+    {
+      "question": "Czy ogłoszenia znikają po czasie?",
+      "answer": "Sołtys lub autor może archiwizować nieaktualne wpisy. Warto oznaczać datę ważności w treści ogłoszenia."
+    }
+  ],
+  "relatedSlugs": [
+    "jak-zalozyc-profil-wsi",
+    "kalendarz-wydarzen-wiejskich"
+  ],
+  "featured": false,
+  "status": "published",
+  "publishedAt": "2026-06-11T08:00:00.000Z",
+  "seoTitle": "Cyfrowa tablica ogłoszeń wsi — naszawies.pl",
+  "seoDescription": "Jak zastąpić (lub uzupełnić) tablicę przy sklepie cyfrową tablicą ogłoszeń na profilu wsi.",
+  "internalLinks": [
+    {
+      "href": "/rejestracja",
+      "label": "Załóż konto"
+    }
+  ],
+  "generatedImages": [],
+  "content": "<p>Tablica przy sklepie spożywczym to instytucja — ale nie każdy tam zagląda, a deszcz szybko niszczy kartkę. <strong>Cyfrowa tablica</strong> na profilu wsi działa 24/7, jest czytelna na telefonie i może mieć archiwum.</p>\n\n<h2 id=\"co-oglaszac\">Co ogłaszać online?</h2>\n<ul>\n<li>Zebrania i zmiany terminów</li>\n<li>Poszukiwani zaginionych zwierząt</li>\n<li>Oferty pracy sezonowej w okolicy</li>\n<li>Informacje z urzędu gminy (po zebraniu)</li>\n<li>Sprzedaż sadzonek, wędlin, miodu — z linkiem do rynku</li>\n</ul>\n\n<h2 id=\"jak-pisac\">Jak pisać skuteczne ogłoszenia</h2>\n<ol class=\"blog-lista-kroki\">\n<li><strong>Tytuł:</strong> konkret („Zbiórka śmieci 12 czerwca, godz. 9:00”)</li>\n<li><strong>Treść:</strong> gdzie, kiedy, kogo dotyczy, kontakt</li>\n<li><strong>Data ważności:</strong> usuń lub zaktualizuj po terminie</li>\n</ol>\n\n<div class=\"blog-callout blog-callout-porada\"><strong>Porada</strong><p>Nie zakładaj, że „wszyscy wiedzą”. Starsi mieszkańcy docenią krótkie zdania i duży kontrast — unikaj żargonu.</p></div>\n\n<p>Powiązane: <a href=\"/blog/jak-zalozyc-profil-wsi\">założenie profilu wsi</a>.</p>"
+}

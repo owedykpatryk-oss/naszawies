@@ -7,10 +7,15 @@
     "/blog/zebranie-wiejskie-swietlica/cover.webp",
     "/blog/zebranie-wiejskie-swietlica/visual-01.webp"
   ],
-  "content": "<p>Zebranie wiejskie, komunię, jubileusz KGW albo poprawiny — świetlica bywa zarezerwowana na kilka weekendów do przodu. Gdy terminy żyją w zeszycie u sołtysa i na kartce przy drzwiach, łatwo o nakładające się wydarzenia i nieporozumienia.</p><h2 id=\"jeden-kalendarz\">Jeden kalendarz zamiast trzech zeszytów</h2><p>Na <strong>naszawies.pl</strong> mieszkańcy składają wniosek o termin online, a sołtys akceptuje go w panelu. Wszyscy widzą, kiedy sala jest zajęta — bez dzwonienia po sąsiadach.</p><figure><img src=\"/blog/zebranie-wiejskie-swietlica/visual-01.webp\" alt=\"Planowanie rezerwacji świetlicy — porządek przy stole sołtysa\" width=\"900\" height=\"600\" loading=\"lazy\" /><figcaption>Uporządkowany kalendarz to mniej stresu przed ważnym zebraniem.</figcaption></figure><h2 id=\"regulamin\">Regulamin pod ręką</h2><p>Wgraj regulamin świetlicy jako PDF lub zdjęcie. Mieszkaniec przeczyta zasady przed wysłaniem wniosku — mniej pytań o sprzątanie, kaucję czy godziny ciszy.</p><h2 id=\"po-zebraniu\">Po zebraniu</h2><p>Ważne ustalenia warto wrzucić na profil wsi jako ogłoszenie. Osoby, które nie były obecne, i tak dowiedzą się o terminie zbiórki śmieci czy prac przy drodze.</p><p>Więcej o module rezerwacji: <a href=\"/blog/rezerwacja-swietlicy-poradnik\">poradnik rezerwacji świetlicy</a>.</p>",
+  "content": "<p>Zebranie wiejskie, komunię, jubileusz KGW albo poprawiny — świetlica bywa zarezerwowana na kilka weekendów do przodu. Gdy terminy żyją w zeszycie u sołtysa i na kartce przy drzwiach, łatwo o nakładające się wydarzenia i nieporozumienia.</p>\n\n<h2 id=\"jeden-kalendarz\">Jeden kalendarz zamiast trzech zeszytów</h2>\n<p>Na <strong>naszawies.pl</strong> mieszkańcy składają wniosek o termin online, a sołtys akceptuje go w panelu. Wszyscy widzą, kiedy sala jest zajęta — bez dzwonienia po sąsiadach.</p>\n<figure><img src=\"/blog/zebranie-wiejskie-swietlica/visual-01.webp\" alt=\"Planowanie rezerwacji świetlicy — porządek przy stole sołtysa\" width=\"900\" height=\"600\" loading=\"lazy\" /><figcaption>Uporządkowany kalendarz to mniej stresu przed ważnym zebraniem.</figcaption></figure>\n\n<h2 id=\"regulamin\">Regulamin pod ręką</h2>\n<p>Wgraj regulamin świetlicy jako PDF lub zdjęcie. Mieszkaniec przeczyta zasady przed wysłaniem wniosku — mniej pytań o sprzątanie, kaucję czy godziny ciszy.</p>\n\n<h2 id=\"zebranie\">Zebranie a rezerwacja</h2>\n<ol class=\"blog-lista-kroki\">\n<li>Ogłoś termin zebrania w kalendarzu wydarzeń</li>\n<li>Zarezerwuj świetlicę na ten sam termin</li>\n<li>Po zebraniu — skrót ustaleń na tablicy ogłoszeń</li>\n</ol>\n\n<div class=\"blog-callout blog-callout-porada\"><strong>Porada</strong><p>Na zebraniu pokaż kalendarz na dużym ekranie lub wydruk z kodem QR do profilu wsi.</p></div>\n\n<h2 id=\"po-zebraniu\">Po zebraniu</h2>\n<p>Ważne ustalenia warto wrzucić na profil wsi jako ogłoszenie. Osoby, które nie były obecne, i tak dowiedzą się o terminie zbiórki śmieci czy prac przy drodze.</p>\n\n<p>Więcej: <a href=\"/blog/rezerwacja-swietlicy-poradnik\">poradnik rezerwacji świetlicy</a>.</p>",
   "authorId": "zespol",
   "categorySlug": "soltys",
-  "tags": ["swietlica", "zebranie", "soltys", "kalendarz"],
+  "tags": [
+    "swietlica",
+    "zebranie",
+    "soltys",
+    "kalendarz"
+  ],
   "faq": [
     {
       "question": "Czy mieszkańcy widzą, kto zarezerwował salę?",
@@ -21,7 +26,10 @@
       "answer": "Drugi wniosek czeka na decyzję sołtysa. Dzięki temu unikasz podwójnej rezerwacji bez wiedzy zarządcy obiektu."
     }
   ],
-  "relatedSlugs": ["rezerwacja-swietlicy-poradnik", "rola-soltysa-narzedzia-cyfrowe"],
+  "relatedSlugs": [
+    "rezerwacja-swietlicy-poradnik",
+    "rola-soltysa-narzedzia-cyfrowe"
+  ],
   "featured": true,
   "status": "published",
   "publishedAt": "2026-06-08T08:00:00.000Z",
@@ -30,8 +38,14 @@
   "ogImage": "/blog/zebranie-wiejskie-swietlica/cover.webp",
   "readingTime": null,
   "internalLinks": [
-    { "href": "/pomoc", "label": "Pomoc — świetlica" },
-    { "href": "/rejestracja", "label": "Załóż konto" }
+    {
+      "href": "/pomoc",
+      "label": "Pomoc — świetlica"
+    },
+    {
+      "href": "/rejestracja",
+      "label": "Załóż konto"
+    }
   ],
   "generatedImages": [
     "/blog/zebranie-wiejskie-swietlica/cover.webp",

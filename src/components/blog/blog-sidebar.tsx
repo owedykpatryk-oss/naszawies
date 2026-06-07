@@ -1,14 +1,16 @@
 import Link from "next/link";
 import type { BlogKategoria, BlogArtykulPelny } from "@/lib/blog/typy";
 import { BlogSpisTresci } from "@/components/blog/blog-spis-tresci";
+import { BlogTagiPopularne } from "@/components/blog/blog-tagi-popularne";
 
 type Props = {
   kategorie: BlogKategoria[];
   ostatnie: BlogArtykulPelny[];
+  tagiPopularne?: { nazwa: string; slug: string; liczba: number }[];
   pokazSpis?: boolean;
 };
 
-export function BlogSidebar({ kategorie, ostatnie, pokazSpis = false }: Props) {
+export function BlogSidebar({ kategorie, ostatnie, tagiPopularne = [], pokazSpis = false }: Props) {
   return (
     <aside className="space-y-6 lg:sticky lg:top-6 lg:max-h-[calc(100dvh-2rem)] lg:overflow-y-auto">
       {pokazSpis ? <BlogSpisTresci /> : null}
@@ -28,6 +30,8 @@ export function BlogSidebar({ kategorie, ostatnie, pokazSpis = false }: Props) {
           ))}
         </ul>
       </div>
+
+      {tagiPopularne.length > 0 ? <BlogTagiPopularne tagi={tagiPopularne} /> : null}
 
       {ostatnie.length > 0 ? (
         <div className="rounded-xl border border-stone-200/80 bg-white/90 p-4 dark:border-stone-700 dark:bg-stone-900/40">

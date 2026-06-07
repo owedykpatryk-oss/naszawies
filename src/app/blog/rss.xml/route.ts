@@ -1,5 +1,7 @@
 import { pobierzOpublikowaneArtykuly } from "@/lib/blog/wczytaj-tresci";
+import { sciezkaOkladkiArtykulu } from "@/lib/images/sciezki-blog";
 import { generateCanonical } from "@/lib/seo/generate-canonical";
+import { pobierzBazeUrlWitryny } from "@/lib/seo/konfiguracja-domeny";
 
 export const revalidate = 3600;
 
@@ -14,11 +16,17 @@ function ucieczkaXml(tekst: string): string {
 export async function GET() {
   const artykuly = pobierzOpublikowaneArtykuly().slice(0, 50);
   const kanal = generateCanonical("/blog");
+  const baza = pobierzBazeUrlWitryny();
   const opis = "Blog naszawies.pl — poradniki o życiu na wsi i narzędziach cyfrowych.";
 
   const items = artykuly
     .map((a) => {
       const link = generateCanonical(`/blog/${a.slug}`);
+      const okladkaSciezka = sciezkaOkladkiArtykulu(a.slug, a.ogImage ?? a.coverImage);
+      const okladkaUrl = okladkaSciezka.startsWith("http")
+        ? okladkaSciezka
+        : `${baza}${okladkaSciezka.startsWith("/") ? okladkaSciezka : `/${okladkaSciezka}`}`;
+      const enclosure = `<enclosure url="${ucieczkaXml(okladkaUrl)}" type="image/webp" />`;
       return `<item>
   <title>${ucieczkaXml(a.title)}</title>
   <link>${link}</link>
@@ -26,6 +34,7 @@ export async function GET() {
   <description>${ucieczkaXml(a.excerpt)}</description>
   <pubDate>${new Date(a.publishedAt).toUTCString()}</pubDate>
   <category>${ucieczkaXml(a.category.name)}</category>
+  ${enclosure}
 </item>`;
     })
     .join("\n");

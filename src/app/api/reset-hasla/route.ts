@@ -4,7 +4,10 @@ import { odczytajAdresIpZNaglowkow } from "@/lib/api/odczytaj-adres-ip";
 import { siteUrlDlaSzablonuEmail } from "@/lib/email/szablon-html-naszawies";
 import { sprawdzLimitApi } from "@/lib/rate-limit/sprawdz-limit-upstash";
 import { createPublicSupabaseClient } from "@/lib/supabase/public-client";
-import { walidujTurnstileZNaglowkow } from "@/lib/turnstile/waliduj-token-serwer";
+import {
+  tokenCaptchaDlaSupabase,
+  walidujTurnstilePrzedAuth,
+} from "@/lib/turnstile/walidacja-auth-supabase";
 
 const tresc = z
   .object({
@@ -39,7 +42,7 @@ export async function POST(request: Request) {
 
   const d = sparsowane.data;
 
-  const turnstile = await walidujTurnstileZNaglowkow(d.cfTurnstileResponse, request.headers);
+  const turnstile = await walidujTurnstilePrzedAuth(d.cfTurnstileResponse, request.headers);
   if (!turnstile.ok) {
     return NextResponse.json({ error: turnstile.komunikat }, { status: 400 });
   }
@@ -60,8 +63,10 @@ export async function POST(request: Request) {
 
   const email = d.email.trim().toLowerCase();
   const pochodzenie = siteUrlDlaSzablonuEmail();
+  const captchaToken = tokenCaptchaDlaSupabase(d.cfTurnstileResponse);
   const { error } = await supabase.auth.resetPasswordForEmail(email, {
     redirectTo: `${pochodzenie}/auth/potwierdz?next=${encodeURIComponent("/auth/ustaw-haslo")}`,
+    ...(captchaToken ? { captchaToken } : {}),
   });
 
   if (error) {
