@@ -257,24 +257,6 @@ function powierzchniaPrzyblizona(g: GeoJsonGeometry): number {
   return max;
 }
 
-/** Bez punktu GPS: największy fragment obrysu (unikamy gigantycznego MultiPolygon). */
-function polaczKandydatowBezPunktu(kandydaci: GeoJsonGeometry[]): GeoJsonGeometry | null {
-  if (kandydaci.length === 0) return null;
-  if (kandydaci.length === 1) return kandydaci[0] ?? null;
-  let najlepszy = kandydaci[0];
-  let maxArea = powierzchniaPrzyblizona(najlepszy);
-  for (let i = 1; i < kandydaci.length; i++) {
-    const k = kandydaci[i];
-    if (!k) continue;
-    const a = powierzchniaPrzyblizona(k);
-    if (a > maxArea) {
-      maxArea = a;
-      najlepszy = k;
-    }
-  }
-  return najlepszy ?? null;
-}
-
 /** Maks. powierzchnia obrysu w „stopniach²” (bez projekcji) — odrzuca obrys wielkości gminy. */
 export const MAX_POWIERZCHNIA_OBRYSU_WSI_STOPNIE2 = 0.012;
 
