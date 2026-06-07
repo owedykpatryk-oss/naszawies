@@ -91,6 +91,7 @@ export function ResetHaslaFormularz() {
         <TurnstileAntybot
           key={turnstileKey}
           siteKey={TURNSTILE_SITE_KEY}
+          akcja="reset-hasla"
           onToken={ustawTurnstileToken}
         />
       ) : null}

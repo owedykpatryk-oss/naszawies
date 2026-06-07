@@ -5,7 +5,7 @@ import { htmlSzablonNaszawies, siteUrlDlaSzablonuEmail } from "@/lib/email/szabl
 import { wyslijPrzezResend } from "@/lib/email/wyslij-przez-resend";
 import { sprawdzLimitApi } from "@/lib/rate-limit/sprawdz-limit-upstash";
 import { escapeHtml } from "@/lib/tekst/escape-html";
-import { walidujOdpowiedzTurnstile } from "@/lib/turnstile/waliduj-token-serwer";
+import { walidujTurnstileZNaglowkow } from "@/lib/turnstile/waliduj-token-serwer";
 import { createPublicSupabaseClient } from "@/lib/supabase/public-client";
 
 const trescZapytania = z
@@ -55,12 +55,9 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: komunikat }, { status: 400 });
   }
 
-  const turnstile = await walidujOdpowiedzTurnstile(sparsowane.data.cfTurnstileResponse);
+  const turnstile = await walidujTurnstileZNaglowkow(sparsowane.data.cfTurnstileResponse, request.headers);
   if (!turnstile.ok) {
-    return NextResponse.json(
-      { error: "Weryfikacja antybotowa nie powiodła się. Odśwież stronę i spróbuj ponownie." },
-      { status: 400 },
-    );
+    return NextResponse.json({ error: turnstile.komunikat }, { status: 400 });
   }
 
   const supabase = createPublicSupabaseClient();

@@ -4,7 +4,7 @@ Integracja: **R2** (storage), **Turnstile** (anty-bot), **CDN + Worker** (public
 
 ## Szybki start (checklist)
 
-1. **Turnstile** — [dash.cloudflare.com](https://dash.cloudflare.com/) → Turnstile → widget dla `naszawies.pl`
+1. **Turnstile** — [dash.cloudflare.com](https://dash.cloudflare.com/) → Turnstile → widget dla `naszawies.pl` i `www.naszawies.pl`
    ```env
    NEXT_PUBLIC_TURNSTILE_SITE_KEY=…
    TURNSTILE_SECRET_KEY=…

@@ -1,0 +1,22 @@
+[
+  {
+    "slug": "poradniki",
+    "name": "Poradniki",
+    "description": "Praktyczne wskazówki dla mieszkańców i sołtysów — od profilu wsi po codzienne narzędzia platformy."
+  },
+  {
+    "slug": "soltys",
+    "name": "Rola sołtysa",
+    "description": "Organizacja pracy sołtysa, komunikacja z mieszkańcami i cyfryzacja sołectwa."
+  },
+  {
+    "slug": "spolecznosc",
+    "name": "Społeczność wiejska",
+    "description": "Życie na wsi, sąsiedztwo, wydarzenia lokalne i współpraca w sołectwie."
+  },
+  {
+    "slug": "rynek",
+    "name": "Rynek lokalny",
+    "description": "Ogłoszenia, handel między sąsiadami i lokalna gospodarka na wsi."
+  }
+]

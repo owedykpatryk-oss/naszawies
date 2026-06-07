@@ -1,0 +1,39 @@
+{
+  "title": "Jak założyć cyfrowy profil wsi na naszawies.pl",
+  "slug": "jak-zalozyc-profil-wsi",
+  "excerpt": "Krok po kroku: rejestracja, wybór miejscowości, rola sołtysa lub mieszkańca i pierwsze ustawienia publicznego profilu wsi.",
+  "coverImage": "/blog/jak-zalozyc-profil-wsi/cover.webp",
+  "gallery": [],
+  "content": "<p>Coraz więcej sołectw szuka jednego, przejrzystego miejsca w internecie — bez skomplikowanych portali i bez opłat za sam fakt bycia w sieci. <strong>naszawies.pl</strong> łączy publiczny profil miejscowości z panelem dla mieszkańców i sołtysa.</p><h2 id=\"krok-1\">Krok 1: Załóż konto</h2><p>Wejdź na stronę <a href=\"/rejestracja\">rejestracji</a>, podaj e-mail i hasło. Po potwierdzeniu adresu e-mail możesz zalogować się i przejść do wyboru wsi.</p><h2 id=\"krok-2\">Krok 2: Znajdź swoją miejscowość</h2><p>W katalogu <a href=\"/szukaj\">Szukaj wsi</a> wpisz nazwę miejscowości lub gminy. Wybierz właściwą wieś z listy — system opiera się na danych TERYT, więc łatwiej trafić w dobrą lokalizację.</p><h2 id=\"krok-3\">Krok 3: Wybierz rolę</h2><p>Możesz dołączyć jako <strong>mieszkaniec</strong> albo złożyć wniosek o rolę <strong>sołtysa</strong>. Sołtys po akceptacji zarządza treściami, moderuje ogłoszenia i ma dostęp do narzędzi takich jak rezerwacja świetlicy.</p><h2 id=\"krok-4\">Krok 4: Uzupełnij profil publiczny</h2><p>W panelu sołtysa ustaw opis wsi, zdjęcie okładki i moduły widoczne dla gości: rynek lokalny, kalendarz, świetlica, organizacje. Publiczny adres ma postać czytelnej ścieżki URL z województwem, powiatem i gminą.</p><h2 id=\"krok-5\">Krok 5: Zaproś mieszkańców</h2><p>Udostępnij link do profilu wsi na tablicy ogłoszeń, w grupie sąsiedzkiej lub podczas zebrania wiejskiego. Im więcej aktywnych kont, tym żywsza społeczność na platformie.</p><p>Jeśli potrzebujesz pomocy technicznej, zajrzyj do <a href=\"/pomoc\">centrum pomocy</a> lub napisz przez <a href=\"/kontakt\">formularz kontaktowy</a>.</p>",
+  "authorId": "zespol",
+  "categorySlug": "poradniki",
+  "tags": ["profil-wsi", "rejestracja", "soltys", "mieszkaniec"],
+  "faq": [
+    {
+      "question": "Czy założenie profilu wsi jest płatne?",
+      "answer": "Nie — korzystanie z naszawies.pl dla wsi i mieszkańców jest bezpłatne. Nie pobieramy opłat za sam profil miejscowości w sieci."
+    },
+    {
+      "question": "Kto może zostać sołtysem w systemie?",
+      "answer": "Wniosek składa osoba pełniąca funkcję sołtysa lub upoważniona przez społeczność. Administrator platformy weryfikuje wniosek przed nadaniem uprawnień."
+    },
+    {
+      "question": "Czy profil wsi jest widoczny w Google?",
+      "answer": "Tak — publiczne profile aktywnych wsi są indeksowane i pojawiają się w mapie strony serwisu, co ułatwia znalezienie miejscowości w wyszukiwarce."
+    }
+  ],
+  "relatedSlugs": ["rezerwacja-swietlicy-poradnik", "jak-znalezc-swoja-wies"],
+  "featured": true,
+  "status": "published",
+  "publishedAt": "2026-06-01T08:00:00.000Z",
+  "seoTitle": "Jak założyć profil wsi — poradnik naszawies.pl",
+  "seoDescription": "Instrukcja zakładania cyfrowego profilu polskiej wsi: rejestracja, wybór roli, katalog miejscowości i pierwsze kroki sołtysa.",
+  "ogImage": null,
+  "readingTime": null,
+  "internalLinks": [
+    { "href": "/szukaj", "label": "Szukaj wsi" },
+    { "href": "/rejestracja", "label": "Załóż konto" },
+    { "href": "/pomoc", "label": "Centrum pomocy" }
+  ],
+  "generatedImages": []
+}

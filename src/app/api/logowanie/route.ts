@@ -6,7 +6,7 @@ import { odczytajAdresIpZNaglowkow } from "@/lib/api/odczytaj-adres-ip";
 import { bezpiecznaSciezkaNastepna } from "@/lib/auth/bezpieczna-sciezka-nastepna";
 import { czyProfilMaAktualnaAkceptacjePrawna } from "@/lib/rodo/czy-ma-akceptacje-prawna";
 import { sprawdzLimitApi } from "@/lib/rate-limit/sprawdz-limit-upstash";
-import { walidujOdpowiedzTurnstile } from "@/lib/turnstile/waliduj-token-serwer";
+import { walidujTurnstileZNaglowkow } from "@/lib/turnstile/waliduj-token-serwer";
 
 type CiasteczkaDoUstawienia = {
   name: string;
@@ -51,12 +51,9 @@ export async function POST(request: NextRequest) {
 
   const d = sparsowane.data;
 
-  const turnstile = await walidujOdpowiedzTurnstile(d.cfTurnstileResponse);
+  const turnstile = await walidujTurnstileZNaglowkow(d.cfTurnstileResponse, request.headers);
   if (!turnstile.ok) {
-    return NextResponse.json(
-      { error: "Weryfikacja antybotowa nie powiodła się. Odśwież stronę i spróbuj ponownie." },
-      { status: 400 },
-    );
+    return NextResponse.json({ error: turnstile.komunikat }, { status: 400 });
   }
 
   const ip = odczytajAdresIpZNaglowkow(request.headers);

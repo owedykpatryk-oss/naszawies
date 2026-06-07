@@ -5,7 +5,7 @@ import { htmlSzablonNaszawies, siteUrlDlaSzablonuEmail } from "@/lib/email/szabl
 import { wyslijPrzezResend } from "@/lib/email/wyslij-przez-resend";
 import { sprawdzLimitApi } from "@/lib/rate-limit/sprawdz-limit-upstash";
 import { escapeHtml } from "@/lib/tekst/escape-html";
-import { walidujOdpowiedzTurnstile } from "@/lib/turnstile/waliduj-token-serwer";
+import { walidujTurnstileZNaglowkow } from "@/lib/turnstile/waliduj-token-serwer";
 
 const tresc = z
   .object({
@@ -45,12 +45,9 @@ export async function POST(request: Request) {
 
   const d = sparsowane.data;
 
-  const turnstile = await walidujOdpowiedzTurnstile(d.cfTurnstileResponse);
+  const turnstile = await walidujTurnstileZNaglowkow(d.cfTurnstileResponse, request.headers);
   if (!turnstile.ok) {
-    return NextResponse.json(
-      { error: "Weryfikacja antybotowa nie powiodła się. Odśwież stronę i spróbuj ponownie." },
-      { status: 400 },
-    );
+    return NextResponse.json({ error: turnstile.komunikat }, { status: 400 });
   }
 
   const ip = odczytajAdresIpZNaglowkow(request.headers);

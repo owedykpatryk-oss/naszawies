@@ -1,0 +1,40 @@
+{
+  "title": "Mapa wsi po zalogowaniu — co zobaczysz i po co się opłaca",
+  "slug": "mapa-wsi-po-zalogowaniu",
+  "excerpt": "Warstwy tematyczne, miejsca w okolicy i orientacja w gminie — mapa naszawies.pl to coś więcej niż pinezka na Google Maps.",
+  "coverImage": "/blog/mapa-wsi-po-zalogowaniu/cover.webp",
+  "gallery": [
+    "/blog/mapa-wsi-po-zalogowaniu/cover.webp",
+    "/blog/mapa-wsi-po-zalogowaniu/visual-01.webp"
+  ],
+  "content": "<p>Katalog <a href=\"/szukaj\">Szukaj wsi</a> pozwala znaleźć miejscowość po nazwie. <strong>Mapa interaktywna</strong> — dostępna po zalogowaniu — pokazuje kontekst: sąsiednie wsie, punkty POI, warstwy tematyczne i granice administracyjne.</p><h2 id=\"dla-mieszkanca\">Dla mieszkańca</h2><p>Sprawdzisz, gdzie jest przystanek, świetlica, ciekawe miejsce dodane przez sąsiadów albo organizację lokalną. To skrót, gdy ktoś pyta „jak dojechać na pole” albo „gdzie jest nowa kapliczka”.</p><figure><img src=\"/blog/mapa-wsi-po-zalogowaniu/visual-01.webp\" alt=\"Mapa wsi na telefonie — orientacja w terenie\" width=\"900\" height=\"600\" loading=\"lazy\" /><figcaption>Mapa w telefonie ułatwia pokazanie gościom drogi do wydarzenia we wsi.</figcaption></figure><h2 id=\"dla-soltysa\">Dla sołtysa</h2><p>W panelu możesz zgłaszać i edytować punkty na mapie wsi — np. miejsce zbiórki, plac zabaw po remoncie czy punkt widokowy. Mieszkańcy widzą aktualną wersję bez osobnych plakatów.</p><h2 id=\"prywatnosc\">Dlaczego mapa wymaga logowania?</h2><p>Ograniczenie dostępu chroni zasoby serwera i ogranicza automatyczne pobieranie danych przez boty. Konto jest bezpłatne, a profil wsi pozostaje publiczny pod czytelnym adresem URL.</p><p>Zacznij od <a href=\"/logowanie?next=/mapa\">logowania i przejścia na mapę</a>.</p>",
+  "authorId": "zespol",
+  "categorySlug": "poradniki",
+  "tags": ["mapa", "poi", "nawigacja", "mieszkaniec"],
+  "faq": [
+    {
+      "question": "Czy mapa działa na telefonie?",
+      "answer": "Tak — interfejs jest responsywny. Możesz też zainstalować naszawies.pl jako aplikację PWA z ekranu głównego telefonu."
+    },
+    {
+      "question": "Czy moja lokalizacja jest śledzona?",
+      "answer": "Mapa nie wymaga udostępniania GPS, chyba że sam wybierzesz taką funkcję w przeglądarce. Przeglądasz dane wsi, a nie śledzimy użytkownika w tle."
+    }
+  ],
+  "relatedSlugs": ["jak-znalezc-swoja-wies", "jak-zalozyc-profil-wsi"],
+  "featured": true,
+  "status": "published",
+  "publishedAt": "2026-06-08T10:00:00.000Z",
+  "seoTitle": "Mapa wsi na naszawies.pl — przewodnik po zalogowaniu",
+  "seoDescription": "Interaktywna mapa polskich wsi: POI, warstwy, korzyści dla mieszkańców i sołtysów. Jak zacząć po bezpłatnej rejestracji.",
+  "ogImage": "/blog/mapa-wsi-po-zalogowaniu/cover.webp",
+  "readingTime": null,
+  "internalLinks": [
+    { "href": "/szukaj", "label": "Szukaj wsi" },
+    { "href": "/logowanie", "label": "Logowanie" }
+  ],
+  "generatedImages": [
+    "/blog/mapa-wsi-po-zalogowaniu/cover.webp",
+    "/blog/mapa-wsi-po-zalogowaniu/visual-01.webp"
+  ]
+}

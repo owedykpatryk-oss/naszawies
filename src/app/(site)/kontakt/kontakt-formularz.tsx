@@ -121,7 +121,12 @@ export function KontaktFormularz() {
       {TURNSTILE_SITE_KEY ? (
         <div className="rounded-xl border border-stone-200 bg-stone-50 p-3">
           <p className="mb-2 text-xs text-stone-600">Weryfikacja antyspamowa (Cloudflare)</p>
-          <TurnstileAntybot key={turnstileKey} siteKey={TURNSTILE_SITE_KEY} onToken={ustawTurnstileToken} />
+          <TurnstileAntybot
+            key={turnstileKey}
+            siteKey={TURNSTILE_SITE_KEY}
+            akcja="kontakt"
+            onToken={ustawTurnstileToken}
+          />
         </div>
       ) : null}
       <div className="flex items-start gap-2">

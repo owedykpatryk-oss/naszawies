@@ -1,0 +1,40 @@
+{
+  "title": "KGW na wsi — jak pokazać działalność koła w internecie",
+  "slug": "kgw-integracja-spolecznosci",
+  "excerpt": "Strona organizacji, kalendarz spotkań i fotorelacje — KGW może budować rozpoznawalność wsi bez osobnej strony na Facebooku.",
+  "coverImage": "/blog/kgw-integracja-spolecznosci/cover.webp",
+  "gallery": [
+    "/blog/kgw-integracja-spolecznosci/cover.webp",
+    "/blog/kgw-integracja-spolecznosci/visual-01.webp"
+  ],
+  "content": "<p>Koło Gospodyń Wiejskich to często motor integracji — kiermasze, warsztaty, wspólne gotowanie. W internecie jednak wiele kół nie ma stałego miejsca poza przypadkowymi postami w mediach społecznościowych.</p><h2 id=\"profil-organizacji\">Profil organizacji na profilu wsi</h2><p>Na <strong>naszawies.pl</strong> KGW może mieć podstronę z opisem, zdjęciem okładki i kalendarzem wydarzeń. Link jest stabilny i czytelny — łatwo go podać w urzędzie gminy albo w programie festynu.</p><figure><img src=\"/blog/kgw-integracja-spolecznosci/visual-01.webp\" alt=\"Przygotowania do wiejskiego wydarzenia integracyjnego\" width=\"900\" height=\"600\" loading=\"lazy\" /><figcaption>Wspólne wydarzenia warto zapowiadać z wyprzedzeniem na profilu wsi.</figcaption></figure><h2 id=\"wspolpraca-z-soltysem\">Współpraca z sołtysem</h2><p>Sołtys moderuje role w wiosce — przewodnicząca KGW może otrzymać uprawnienia do aktualizacji treści swojej organizacji. Dzięki temu ogłoszenia nie giną wśród innych tematów sołectwa.</p><h2 id=\"fotokronika\">Fotokronika i nowi członkowie</h2><p>Relacje ze spotkań i kiermaszy przyciągają młodsze osoby. Krótki opis i kilka zdjęć na profilu wsi budują dumę z miejscowości — a to prosta forma promocji turystyki wiejskiej.</p><p>Szukasz swojej miejscowości? Wejdź w <a href=\"/szukaj\">katalog wsi</a> i sprawdź, czy profil jest już aktywny.</p>",
+  "authorId": "zespol",
+  "categorySlug": "spolecznosc",
+  "tags": ["kgw", "organizacje", "integracja", "wydarzenia"],
+  "faq": [
+    {
+      "question": "Czy KGW musi mieć osobny portal?",
+      "answer": "Nie — podstrona organizacji w ramach profilu wsi wystarczy do większości potrzeb: opis, kalendarz, kontakt, zdjęcia."
+    },
+    {
+      "question": "Kto zakłada profil KGW?",
+      "answer": "Zwykle przewodnicząca składa wniosek o rolę organizacyjną; sołtys akceptuje ją w panelu, podobnie jak w przypadku innych funkcji we wsi."
+    }
+  ],
+  "relatedSlugs": ["rola-soltysa-narzedzia-cyfrowe", "zebranie-wiejskie-swietlica"],
+  "featured": false,
+  "status": "published",
+  "publishedAt": "2026-06-08T12:00:00.000Z",
+  "seoTitle": "KGW w internecie — profil organizacji na naszawies.pl",
+  "seoDescription": "Jak Koło Gospodyń Wiejskich może promować działalność na cyfrowym profilu wsi: kalendarz, zdjęcia, współpraca z sołtysem.",
+  "ogImage": "/blog/kgw-integracja-spolecznosci/cover.webp",
+  "readingTime": null,
+  "internalLinks": [
+    { "href": "/szukaj", "label": "Szukaj wsi" },
+    { "href": "/o-nas", "label": "O platformie" }
+  ],
+  "generatedImages": [
+    "/blog/kgw-integracja-spolecznosci/cover.webp",
+    "/blog/kgw-integracja-spolecznosci/visual-01.webp"
+  ]
+}

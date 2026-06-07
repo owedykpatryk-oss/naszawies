@@ -1105,6 +1105,44 @@ html[data-tryb-dostepnosci="wysoki-kontrast"] .btn-panel-secondary {
   }
 }
 
+/* Blog — treść artykułu (bez pluginu typography) */
+.blog-tresc-artykulu {
+  @apply text-base leading-relaxed text-stone-800 dark:text-stone-200;
+}
+.blog-tresc-artykulu p {
+  @apply mb-4;
+}
+.blog-tresc-artykulu h2 {
+  @apply mb-3 mt-8 font-serif text-2xl text-green-950 dark:text-green-50;
+}
+.blog-tresc-artykulu h3 {
+  @apply mb-2 mt-6 font-serif text-xl text-green-950 dark:text-green-50;
+}
+.blog-tresc-artykulu a {
+  @apply font-medium text-green-800 underline decoration-emerald-700/30 underline-offset-2 hover:decoration-emerald-700 dark:text-green-300;
+}
+.blog-tresc-artykulu strong {
+  @apply font-semibold text-stone-900 dark:text-stone-100;
+}
+.blog-tresc-artykulu em {
+  @apply italic;
+}
+.blog-tresc-artykulu ul {
+  @apply mb-4 list-disc space-y-1 pl-6;
+}
+.blog-tresc-artykulu ol {
+  @apply mb-4 list-decimal space-y-1 pl-6;
+}
+.blog-tresc-artykulu figure {
+  @apply my-8 overflow-hidden rounded-2xl border border-stone-200/80 bg-stone-100 dark:border-stone-700 dark:bg-stone-900/40;
+}
+.blog-tresc-artykulu figure img {
+  @apply block h-auto w-full object-cover;
+}
+.blog-tresc-artykulu figcaption {
+  @apply px-4 py-2 text-center text-xs text-stone-500 dark:text-stone-400;
+}
+
 @media print {
   .no-print {
     display: none !important;

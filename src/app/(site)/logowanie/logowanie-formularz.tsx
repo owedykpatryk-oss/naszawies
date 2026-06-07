@@ -128,7 +128,12 @@ export function LogowanieFormularz({ nastepnaSciezka, kodBledu, szczegolBledu, e
       {TURNSTILE_SITE_KEY ? (
         <div className="rounded-xl border border-stone-200/80 bg-white/90 px-3 py-3">
           <p className="mb-2 text-xs text-stone-600">Weryfikacja antyspamowa (Cloudflare)</p>
-          <TurnstileAntybot key={turnstileKey} siteKey={TURNSTILE_SITE_KEY} onToken={ustawTurnstileToken} />
+          <TurnstileAntybot
+            key={turnstileKey}
+            siteKey={TURNSTILE_SITE_KEY}
+            akcja="logowanie"
+            onToken={ustawTurnstileToken}
+          />
         </div>
       ) : null}
       <button

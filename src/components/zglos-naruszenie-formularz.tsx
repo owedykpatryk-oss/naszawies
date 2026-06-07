@@ -127,7 +127,12 @@ export function ZglosNaruszenieFormularz({ urlDomyslny = "" }: { urlDomyslny?: s
       {TURNSTILE_SITE_KEY ? (
         <div className="rounded-lg border border-stone-200 bg-stone-50 p-3">
           <p className="mb-2 text-xs text-stone-600">Weryfikacja antyspamowa</p>
-          <TurnstileAntybot key={turnstileKey} siteKey={TURNSTILE_SITE_KEY} onToken={ustawTurnstileToken} />
+          <TurnstileAntybot
+            key={turnstileKey}
+            siteKey={TURNSTILE_SITE_KEY}
+            akcja="zglos-naruszenie"
+            onToken={ustawTurnstileToken}
+          />
         </div>
       ) : null}
       <label className="flex items-start gap-2 text-sm text-stone-700">

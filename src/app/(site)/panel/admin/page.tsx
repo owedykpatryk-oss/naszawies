@@ -61,6 +61,10 @@ export default async function AdminPage() {
         opis={
           <>
             Tylko wskazane konta widzą tę stronę.{" "}
+            <Link href="/panel/admin/blog" className="font-medium text-green-800 underline">
+              Blog redakcyjny →
+            </Link>
+            {" · "}
             <Link href="/panel/admin/sugestie" className="font-medium text-green-800 underline">
               Opinie użytkowników →
             </Link>

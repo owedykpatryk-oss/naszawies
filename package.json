@@ -10,6 +10,7 @@
     "typecheck": "tsc --noEmit",
     "sync-landing": "node scripts/build-landing-assets.mjs",
     "generuj:marka": "node scripts/przetworz-logo-marki.mjs",
+    "generuj:blog-okladki": "node scripts/generuj-okladki-bloga.mjs",
     "generuj-migracje-schema": "node scripts/generuj-migracje-schema-z-dokumentow.mjs",
     "import-teryt": "node scripts/import-teryt.mjs",
     "import-teryt-powiat": "node scripts/import-teryt-powiat.mjs",

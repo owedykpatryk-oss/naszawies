@@ -1,3 +1,4 @@
+import { processLock } from "@supabase/auth-js";
 import { createBrowserClient } from "@supabase/ssr";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
@@ -11,7 +12,9 @@ export function utworzKlientaSupabasePrzegladarka() {
     throw new Error("Brak NEXT_PUBLIC_SUPABASE_URL lub NEXT_PUBLIC_SUPABASE_ANON_KEY.");
   }
   if (!klientPrzegladarki) {
-    klientPrzegladarki = createBrowserClient(url, anonKey);
+    klientPrzegladarki = createBrowserClient(url, anonKey, {
+      auth: { lock: processLock },
+    });
   }
   return klientPrzegladarki;
 }

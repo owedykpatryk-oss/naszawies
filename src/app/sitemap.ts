@@ -1,4 +1,6 @@
 import type { MetadataRoute } from "next";
+import { pobierzKategorieBlog, pobierzOpublikowaneArtykuly } from "@/lib/blog/wczytaj-tresci";
+import { pobierzBazeUrlWitryny } from "@/lib/seo/konfiguracja-domeny";
 import { createPublicSupabaseClient } from "@/lib/supabase/public-client";
 import { sciezkaProfiluWsi } from "@/lib/wies/sciezka-publiczna";
 import {
@@ -7,7 +9,7 @@ import {
   slugPublicznyOrganizacji,
 } from "@/lib/wies/sciezka-organizacji-publicznej";
 
-const baza = "https://naszawies.pl";
+const baza = pobierzBazeUrlWitryny();
 
 const maxProfiliWMapieStrony = 800;
 const maxOgloszenRynkuWMapieStrony = 1500;
@@ -45,6 +47,18 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       lastModified: teraz,
       changeFrequency: "monthly",
       priority: 0.65,
+    },
+    {
+      url: `${baza}/blog`,
+      lastModified: teraz,
+      changeFrequency: "weekly",
+      priority: 0.8,
+    },
+    {
+      url: `${baza}/blog/rss.xml`,
+      lastModified: teraz,
+      changeFrequency: "daily",
+      priority: 0.5,
     },
     {
       url: `${baza}/pomoc`,
@@ -212,5 +226,29 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
     }
   }
 
-  return [...statyczne, ...stuby, ...wsi, ...rynek, ...organizacje, ...wydarzenia];
+  const blogKategorie: MetadataRoute.Sitemap = pobierzKategorieBlog().map((k) => ({
+    url: `${baza}/blog/kategoria/${k.slug}`,
+    lastModified: teraz,
+    changeFrequency: "weekly" as const,
+    priority: 0.68,
+  }));
+
+  const blog: MetadataRoute.Sitemap = pobierzOpublikowaneArtykuly().map((a) => {
+    const obrazy = Array.from(
+      new Set(
+        [a.coverImage, a.ogImage, ...(a.gallery ?? []), ...(a.generatedImages ?? [])]
+          .filter((x): x is string => Boolean(x?.trim()))
+          .map((src) => (src.startsWith("http") ? src : `${baza}${src.startsWith("/") ? src : `/${src}`}`)),
+      ),
+    );
+    return {
+      url: `${baza}/blog/${a.slug}`,
+      lastModified: new Date(a.publishedAt),
+      changeFrequency: "monthly" as const,
+      priority: 0.72,
+      ...(obrazy.length ? { images: obrazy } : {}),
+    };
+  });
+
+  return [...statyczne, ...stuby, ...blogKategorie, ...blog, ...wsi, ...rynek, ...organizacje, ...wydarzenia];
 }

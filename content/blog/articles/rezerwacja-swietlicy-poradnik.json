@@ -1,0 +1,32 @@
+{
+  "title": "Rezerwacja świetlicy wiejskiej — poradnik dla sołtysa",
+  "slug": "rezerwacja-swietlicy-poradnik",
+  "excerpt": "Jak skonfigurować sale, regulamin, kalendarz rezerwacji i moderację wniosków mieszkańców — bez chaosu w zeszycie i telefonach.",
+  "coverImage": "/blog/rezerwacja-swietlicy-poradnik/cover.webp",
+  "gallery": [],
+  "content": "<p>Świetlica to serce wielu wydarzeń wiejskich: zebrania, urodziny, zajęcia dla dzieci, spotkania KGW. Problem zaczyna się, gdy terminy zapisuje się w kilku miejscach naraz. Moduł świetlicy na <strong>naszawies.pl</strong> porządkuje rezerwacje w jednym kalendarzu.</p><h2 id=\"konfiguracja\">Konfiguracja sali</h2><p>W panelu sołtysa dodaj salę (lub kilka), opisz wyposażenie, wgraj zdjęcia i ewentualny regulamin w formie PDF. Mieszkańcy widzą dostępność przed złożeniem wniosku.</p><h2 id=\"workflow\">Workflow rezerwacji</h2><p>Typowy przebieg: wniosek mieszkańca → status <em>oczekuje</em> → akceptacja lub odrzucenie przez sołtysa → potwierdzenie terminu. Po zakończeniu imprezy można odnotować ewentualne uszkodzenia — dokumentacja zostaje w systemie.</p><h2 id=\"komunikacja\">Komunikacja z mieszkańcami</h2><p>Powiadomienia w panelu informują o nowych wnioskach. Warto ustawić jasne zasady: maksymalny czas trwania imprezy, kaucja, sprzątanie po evencie. Regulamin wgrany do systemu ogranicza liczbę pytań telefonicznych.</p><h2 id=\"planer\">Planer stołów (perspektywa)</h2><p>Platforma rozwija narzędzia do planowania układu stołów pod wydarzenia w świetlicy — warto śledzić aktualizacje w <a href=\"/pomoc\">centrum pomocy</a>.</p>",
+  "authorId": "zespol",
+  "categorySlug": "soltys",
+  "tags": ["swietlica", "rezerwacja", "soltys", "wydarzenia"],
+  "faq": [
+    {
+      "question": "Czy mieszkaniec może sam zarezerwować termin bez akceptacji?",
+      "answer": "Domyślnie rezerwacja wymaga zatwierdzenia przez sołtysa lub współadmina wsi. Dzięki temu unikasz nakładających się terminów i masz kontrolę nad wykorzystaniem obiektu."
+    },
+    {
+      "question": "Ile sal można dodać?",
+      "answer": "Możesz skonfigurować wiele sal lub pomieszczeń przypisanych do jednej wsi — np. świetlica główna i mniejsza świetliczka."
+    }
+  ],
+  "relatedSlugs": ["jak-zalozyc-profil-wsi", "rola-soltysa-narzedzia-cyfrowe"],
+  "featured": true,
+  "status": "published",
+  "publishedAt": "2026-06-02T09:00:00.000Z",
+  "seoTitle": "Rezerwacja świetlicy wiejskiej online — poradnik sołtysa",
+  "seoDescription": "Konfiguracja kalendarza świetlicy, moderacja rezerwacji i komunikacja z mieszkańcami na naszawies.pl.",
+  "internalLinks": [
+    { "href": "/pomoc", "label": "Pomoc — moduł świetlicy" },
+    { "href": "/o-nas", "label": "O platformie" }
+  ],
+  "generatedImages": []
+}

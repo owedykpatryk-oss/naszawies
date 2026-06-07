@@ -1,0 +1,28 @@
+{
+  "title": "Jak znaleźć swoją wieś w katalogu Polski",
+  "slug": "jak-znalezc-swoja-wies",
+  "excerpt": "Wyszukiwarka miejscowości, ścieżki URL według TERYT i różnica między profilem publicznym a panelem po zalogowaniu.",
+  "coverImage": "/blog/jak-znalezc-swoja-wies/cover.webp",
+  "gallery": [],
+  "content": "<p>Zanim dołączysz do społeczności, warto sprawdzić, czy Twoja miejscowość jest już w katalogu. <strong>Szukaj wsi</strong> to publiczna wyszukiwarka po nazwie, gminie i województwie.</p><h2 id=\"szukaj\">Jak szukać</h2><p>Wejdź na <a href=\"/szukaj\">/szukaj</a> i wpisz nazwę wsi. Jeśli jest wiele homonimów, pomogą informacje o gminie i powiecie. Kliknięcie w wynik prowadzi do publicznego profilu (jeśli wieś jest aktywna).</p><h2 id=\"url\">Czytelne adresy URL</h2><p>Profile wsi mają strukturę: województwo / powiat / gmina / slug miejscowości. Dzięki temu linki są zrozumiałe dla ludzi i wyszukiwarek.</p><h2 id=\"mapa\">Mapa po zalogowaniu</h2><p>Interaktywna <a href=\"/mapa\">mapa wsi</a> z warstwami tematycznymi jest dostępna po zalogowaniu — chroni to zasoby i ogranicza nadużycia automatycznego scrapowania.</p><h2 id=\"brak-wsi\">Nie ma Twojej wsi?</h2><p>Skontaktuj się z nami przez <a href=\"/kontakt\">formularz kontaktowy</a> lub złóż wniosek sołtysa — administrator może aktywować profil po weryfikacji.</p>",
+  "authorId": "zespol",
+  "categorySlug": "poradniki",
+  "tags": ["szukaj", "katalog", "wies", "teryt"],
+  "faq": [
+    {
+      "question": "Czy każda wieś w Polsce ma profil?",
+      "answer": "Katalog obejmuje miejscowości z bazy SIMC/TERYT. Publiczny profil pojawia się, gdy wieś jest aktywna i ma skonfigurowaną społeczność na platformie."
+    }
+  ],
+  "relatedSlugs": ["jak-zalozyc-profil-wsi"],
+  "featured": false,
+  "status": "published",
+  "publishedAt": "2026-06-05T12:00:00.000Z",
+  "seoTitle": "Jak znaleźć wieś w katalogu naszawies.pl",
+  "seoDescription": "Instrukcja wyszukiwania miejscowości w Polsce: Szukaj wsi, URL profilu i mapa po zalogowaniu.",
+  "internalLinks": [
+    { "href": "/szukaj", "label": "Szukaj wsi" },
+    { "href": "/kontakt", "label": "Kontakt" }
+  ],
+  "generatedImages": []
+}

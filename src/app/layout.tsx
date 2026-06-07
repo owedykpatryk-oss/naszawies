@@ -6,6 +6,7 @@ import Script from "next/script";
 import { BanerCiasteczek } from "@/components/baner-ciasteczek";
 import { OdswiezSesjeKlient } from "@/components/auth/odswiez-sesje-klient";
 import { PwaServiceWorkerKlient } from "@/components/pwa/pwa-service-worker-klient";
+import { pobierzBazeUrlWitryny } from "@/lib/seo/konfiguracja-domeny";
 import "./globals.css";
 
 const fraunces = Fraunces({
@@ -24,7 +25,7 @@ const inter = Inter({
 const domenaPlausible = process.env.NEXT_PUBLIC_PLAUSIBLE_DOMAIN;
 
 export const metadata: Metadata = {
-  metadataBase: new URL("https://naszawies.pl"),
+  metadataBase: new URL(pobierzBazeUrlWitryny()),
   title: {
     default: "naszawies.pl — cyfrowy dom polskiej wsi",
     template: "%s | naszawies.pl",
@@ -74,6 +75,14 @@ export const metadata: Metadata = {
     capable: true,
     title: "naszawies.pl",
     statusBarStyle: "default",
+  },
+  other: {
+    "mobile-web-app-capable": "yes",
+  },
+  alternates: {
+    types: {
+      "application/rss+xml": [{ url: "/blog/rss.xml", title: "RSS — blog naszawies.pl" }],
+    },
   },
 };
 

@@ -7,7 +7,7 @@ import { KATEGORIE_ZGLOSZENIA_STRONY } from "@/lib/pomoc/przewodniki";
 import { sprawdzLimitApi } from "@/lib/rate-limit/sprawdz-limit-upstash";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin-client";
 import { escapeHtml } from "@/lib/tekst/escape-html";
-import { walidujOdpowiedzTurnstile } from "@/lib/turnstile/waliduj-token-serwer";
+import { walidujTurnstileZNaglowkow } from "@/lib/turnstile/waliduj-token-serwer";
 import { pobierzUzytkownikaDoAkcji } from "@/lib/auth/pobierz-uzytkownika-serwer";
 
 const schema = z
@@ -48,12 +48,9 @@ export async function POST(request: Request) {
 
   const d = parsed.data;
 
-  const turnstile = await walidujOdpowiedzTurnstile(d.cfTurnstileResponse);
+  const turnstile = await walidujTurnstileZNaglowkow(d.cfTurnstileResponse, request.headers);
   if (!turnstile.ok) {
-    return NextResponse.json(
-      { error: "Weryfikacja antybotowa nie powiodła się. Odśwież stronę i spróbuj ponownie." },
-      { status: 400 },
-    );
+    return NextResponse.json({ error: turnstile.komunikat }, { status: 400 });
   }
 
   const user = await pobierzUzytkownikaDoAkcji();

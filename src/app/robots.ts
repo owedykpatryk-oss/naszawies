@@ -1,6 +1,8 @@
 import type { MetadataRoute } from "next";
+import { pobierzBazeUrlWitryny } from "@/lib/seo/konfiguracja-domeny";
 
 export default function robots(): MetadataRoute.Robots {
+  const baza = pobierzBazeUrlWitryny();
   return {
     rules: [
       {
@@ -18,6 +20,6 @@ export default function robots(): MetadataRoute.Robots {
         ],
       },
     ],
-    sitemap: "https://naszawies.pl/sitemap.xml",
+    sitemap: `${baza}/sitemap.xml`,
   };
 }

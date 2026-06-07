@@ -1,0 +1,27 @@
+{
+  "title": "Rynek lokalny — jak sprzedawać i kupować na wsi",
+  "slug": "rynek-lokalny-na-wsi",
+  "excerpt": "Ogłoszenia sąsiedzkie, zaufanie lokalnej społeczności i bezpieczne zasady handlu między mieszkańcami tej samej wsi.",
+  "coverImage": "/blog/rynek-lokalny-na-wsi/cover.webp",
+  "gallery": [],
+  "content": "<p>Na wsi handel często opiera się na zaufaniu: ktoś sprzedaje nadwyżki z ogrodu, ktoś szuka usługny przy domu. <strong>Rynek lokalny</strong> na naszawies.pl zbiera ogłoszenia w jednym miejscu przypisanym do konkretnej miejscowości.</p><h2 id=\"dla-sprzedajacych\">Dla sprzedających</h2><p>Po zalogowaniu dodaj ogłoszenie z opisem, ceną i zdjęciami. Sołtys może moderować wpisy przed publikacją — to filtr antyspamowy i ochrona mieszkańców przed podejrzanymi ofertami.</p><h2 id=\"dla-kupujacych\">Dla kupujących</h2><p>Przeglądaj <a href=\"/rynek\">hub rynku</a> lub ogłoszenia na profilu swojej wsi. Filtry kategorii ułatwiają znalezienie np. warzyw, usług rolniczych czy mebli.</p><h2 id=\"bezpieczenstwo\">Bezpieczeństwo transakcji</h2><p>Spotykaj się w miejscu publicznym, nie przesyłaj zaliczek nieznajomym, zgłaszaj podejrzane ogłoszenia sołtysowi lub przez <a href=\"/zglos-naruszenie\">formularz naruszeń</a>.</p>",
+  "authorId": "zespol",
+  "categorySlug": "rynek",
+  "tags": ["rynek", "ogloszenia", "sprzedaz", "kupno"],
+  "faq": [
+    {
+      "question": "Czy rynek jest dostępny bez logowania?",
+      "answer": "Przeglądanie publicznych ogłoszeń na profilu wsi jest możliwe dla gości. Dodawanie ofert wymaga konta mieszkańca danej miejscowości."
+    }
+  ],
+  "relatedSlugs": ["jak-zalozyc-profil-wsi"],
+  "featured": false,
+  "status": "published",
+  "publishedAt": "2026-06-03T10:00:00.000Z",
+  "seoTitle": "Rynek lokalny na wsi — ogłoszenia na naszawies.pl",
+  "seoDescription": "Jak korzystać z rynku lokalnego: wystawianie ogłoszeń, moderacja przez sołtysa i bezpieczny handel między sąsiadami.",
+  "internalLinks": [
+    { "href": "/rynek", "label": "Rynek lokalny" }
+  ],
+  "generatedImages": []
+}

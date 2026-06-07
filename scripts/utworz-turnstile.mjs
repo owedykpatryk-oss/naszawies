@@ -34,7 +34,7 @@ const KLUCZE_TESTOWE = {
 const LINK_TOKEN_TURNSTILE =
   "https://dash.cloudflare.com/profile/api-tokens/create?permissionGroupKeys=%5B%7B%22key%22%3A%22turnstile%22%2C%22type%22%3A%22edit%22%7D%5D&name=Naszawies+Turnstile&accountId=all&zoneId=all";
 
-const DOMENY = ["naszawies.pl", "localhost", "127.0.0.1"];
+const DOMENY = ["naszawies.pl", "www.naszawies.pl", "localhost", "127.0.0.1"];
 const NAZWA_WIDGETU = "NaszaWies.pl — formularze";
 
 wczytajEnvLocal();

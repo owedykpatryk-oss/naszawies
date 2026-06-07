@@ -65,7 +65,12 @@ export function LogowanieProwiderzy({ pochodzeniePubliczne, nastepnaSciezka }: P
       {TURNSTILE_SITE_KEY ? (
         <div className="rounded-xl border border-stone-200/80 bg-white/90 px-3 py-3">
           <p className="mb-2 text-xs text-stone-600">Weryfikacja antyspamowa (Cloudflare)</p>
-          <TurnstileAntybot key={turnstileKey} siteKey={TURNSTILE_SITE_KEY} onToken={ustawTurnstileToken} />
+          <TurnstileAntybot
+            key={turnstileKey}
+            siteKey={TURNSTILE_SITE_KEY}
+            akcja="logowanie-google"
+            onToken={ustawTurnstileToken}
+          />
         </div>
       ) : null}
       <p className="text-center text-xs font-medium uppercase tracking-wider text-stone-500">Kontynuuj przez</p>

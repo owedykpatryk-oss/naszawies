@@ -12,6 +12,7 @@ import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
 const LINKI_PUBLICZNE = [
   { href: "/rynek", label: "Rynek lokalny" },
   { href: "/szukaj", label: "Szukaj wsi" },
+  { href: "/blog", label: "Blog" },
   { href: "/pomoc", label: "Pomoc" },
   { href: "/kontakt", label: "Kontakt" },
 ] as const;
@@ -21,6 +22,7 @@ function linkiPoZalogowaniu(sciezkaKreatora: string) {
     { href: "/mapa", label: "Mapa wsi" },
     { href: "/rynek", label: "Rynek lokalny" },
     { href: "/szukaj", label: "Szukaj wsi" },
+    { href: "/blog", label: "Blog" },
     { href: "/panel", label: "Panel" },
     { href: sciezkaKreatora, label: "Kreator plakatów" },
     { href: "/pomoc", label: "Pomoc" },
