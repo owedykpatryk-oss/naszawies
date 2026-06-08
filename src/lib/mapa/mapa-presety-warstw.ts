@@ -280,7 +280,6 @@ export function czyPasujeDoPresetu(
   preset: Exclude<PresetWarstwMapy, "wlasny">,
   stan: StanWarstwDoZapisu,
 ): boolean {
-  const probe: StanWarstwDoZapisu = { ...stan };
   const captured: Partial<StanWarstwDoZapisu> = {};
   const u: UstawiaczeWarstw = {
     ustawTrybLowiectwo: (v) => {

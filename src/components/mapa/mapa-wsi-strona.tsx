@@ -31,7 +31,6 @@ import { odliczanieZywHms, tekstOdliczaniaPolowania } from "@/lib/mapa/formatuj-
 import type { ZnacznikRewirLowiecki } from "./mapa-wsi-leaflet";
 import { slugCzesciZBazy } from "@/lib/wies/slug-administracyjny";
 import { etykietaStatusuInwestycji, KATEGORIA_INWESTYCJA } from "@/lib/mapa/inwestycje-poi";
-import { ETYKIETA_LANDUSE, KOLOR_LANDUSE } from "@/lib/mapa/landuse-osm";
 import { useKlientGotowy } from "@/lib/ui/use-klient-gotowy";
 import {
   filtrujZnacznikiAdministracyjnie,
