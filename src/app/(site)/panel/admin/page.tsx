@@ -142,8 +142,9 @@ export default async function AdminPage() {
             </li>
           </ul>
           <p className="mt-3 text-xs text-stone-500">
-            Uzupełnianie: <code className="font-mono">npm run sync:granice</code>,{" "}
-            <code className="font-mono">npm run automatyzuj:katalog</code>
+            Uzupełnianie: <code className="font-mono">npm run sync:granice:wszystkie</code>{" "}
+            (geokodowanie + 500 wsi), <code className="font-mono">npm run sync:granice:katalog</code>{" "}
+            (1000 wsi), cron <code className="font-mono">/api/mapa/sync-granice</code>
           </p>
         </section>
       ) : null}

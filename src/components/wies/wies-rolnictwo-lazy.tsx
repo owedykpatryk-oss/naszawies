@@ -134,9 +134,13 @@ function WykresSkupVsTarg({
 function TrescRolnictwa({
   villageId,
   zalogowany,
+  sciezkaWsi,
+  naPodstroniePelnej = false,
 }: {
   villageId: string;
   zalogowany: boolean;
+  sciezkaWsi?: string;
+  naPodstroniePelnej?: boolean;
 }) {
   const [stan, setStan] = useState<"laduje" | "ok" | "blad">("laduje");
   const [dane, setDane] = useState<DaneRolnictwa | null>(null);
@@ -192,18 +196,41 @@ function TrescRolnictwa({
     PRODUKTY_ROLNE.find((p) => p.key === produktWykres)?.jednostka ?? "zł";
   const regionNazwa = dane.wies.regionGus ?? dane.wies.county;
 
-  return (
-    <OslonaSekcjiWies id="sekcja-rolnictwo" className="mt-10 scroll-mt-24">
+  const naglowek = naPodstroniePelnej ? (
+    <div className="mb-6">
+      <p className="text-xs font-bold uppercase tracking-[0.14em] text-lime-800">Dane i ceny</p>
+      <h2 className="mt-1 font-serif text-2xl text-lime-950">Ceny skupu i miejsca odbioru</h2>
+      <p className="mt-1 text-sm text-stone-600">Statystyki GUS, trendy oraz zgłoszenia sąsiedzkie.</p>
+    </div>
+  ) : (
+    <div className="mb-6 flex flex-wrap items-end justify-between gap-3">
       <TytulSekcjiWies tytul="Rolnictwo w okolicy" opis="Ceny orientacyjne i miejsca odbioru" />
+      {sciezkaWsi ? (
+        <Link
+          href={`${sciezkaWsi}/rolnictwo`}
+          className="shrink-0 rounded-full border border-lime-600/30 bg-lime-50 px-4 py-2 text-sm font-medium text-lime-950 transition hover:bg-lime-100"
+        >
+          Pełny profil rolniczy →
+        </Link>
+      ) : null}
+    </div>
+  );
 
-      <p className="mb-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950">
+  return (
+    <OslonaSekcjiWies
+      id="sekcja-rolnictwo"
+      className={naPodstroniePelnej ? "scroll-mt-24" : "mt-10 scroll-mt-24"}
+    >
+      {naglowek}
+
+      <p className="mb-4 rounded-xl border border-amber-200/90 bg-gradient-to-r from-amber-50 to-amber-50/50 px-4 py-3 text-sm text-amber-950">
         {dane.disclaimer}
       </p>
 
       {dane.psrGminy &&
       (dane.psrGminy.liczba_gospodarstw != null || dane.psrGminy.powierzchnia_ha != null) ? (
-        <div className={`${KARTA_LISTY_WIES} mb-6 p-4`}>
-          <h3 className="mb-2 font-semibold text-stone-900">
+        <div className={`${KARTA_LISTY_WIES} mb-6 border-lime-100/80 p-4`}>
+          <h3 className="mb-2 font-semibold text-lime-950">
             Rolnictwo w gminie {dane.wies.commune ?? dane.wies.county}
           </h3>
           <p className="mb-3 text-xs text-stone-500">
@@ -211,17 +238,17 @@ function TrescRolnictwa({
           </p>
           <dl className="grid gap-3 sm:grid-cols-2">
             {dane.psrGminy.liczba_gospodarstw != null ? (
-              <div className="rounded-xl bg-stone-50 px-3 py-2.5">
-                <dt className="text-xs text-stone-500">Gospodarstwa rolne</dt>
-                <dd className="font-serif text-2xl text-green-950">
+              <div className="rounded-xl border border-lime-100 bg-lime-50/50 px-3 py-2.5">
+                <dt className="text-xs text-lime-800/70">Gospodarstwa rolne</dt>
+                <dd className="font-serif text-2xl text-lime-950">
                   {dane.psrGminy.liczba_gospodarstw.toLocaleString("pl-PL")}
                 </dd>
               </div>
             ) : null}
             {dane.psrGminy.powierzchnia_ha != null ? (
-              <div className="rounded-xl bg-stone-50 px-3 py-2.5">
-                <dt className="text-xs text-stone-500">Powierzchnia użytków rolnych</dt>
-                <dd className="font-serif text-2xl text-green-950">
+              <div className="rounded-xl border border-lime-100 bg-lime-50/50 px-3 py-2.5">
+                <dt className="text-xs text-lime-800/70">Powierzchnia użytków rolnych</dt>
+                <dd className="font-serif text-2xl text-lime-950">
                   {dane.psrGminy.powierzchnia_ha.toLocaleString("pl-PL")}{" "}
                   <span className="text-base font-sans text-stone-600">ha</span>
                 </dd>
@@ -232,14 +259,14 @@ function TrescRolnictwa({
       ) : null}
 
       {dane.cenyGusAktualne.length > 0 ? (
-        <div className={`${KARTA_LISTY_WIES} mb-6 p-4`}>
-          <h3 className="mb-3 font-semibold text-stone-900">
+        <div className={`${KARTA_LISTY_WIES} mb-6 border-lime-100/80 p-4`}>
+          <h3 className="mb-3 font-semibold text-lime-950">
             Średnie ceny skupu — region {regionNazwa}
           </h3>
           <ul className="grid gap-2 sm:grid-cols-2">
             {dane.cenyGusAktualne.map((c) => (
-              <li key={c.product_key} className="text-sm text-stone-700">
-                <span className="font-medium text-stone-900">{c.product_label}</span>
+              <li key={c.product_key} className="rounded-lg bg-lime-50/40 px-2 py-1.5 text-sm text-stone-700">
+                <span className="font-medium text-lime-950">{c.product_label}</span>
                 {": "}
                 {c.value} {c.unit}
                 <span className="text-stone-500">
@@ -262,8 +289,8 @@ function TrescRolnictwa({
                   onClick={() => startTransition(() => setProduktWykres(p.key))}
                   className={`rounded-full px-2.5 py-1 text-xs font-medium transition-colors ${
                     produktWykres === p.key
-                      ? "bg-emerald-700 text-white"
-                      : "bg-stone-100 text-stone-700 hover:bg-stone-200"
+                      ? "bg-lime-800 text-white"
+                      : "bg-lime-100 text-lime-900 hover:bg-lime-200"
                   }`}
                 >
                   {p.label}
@@ -300,8 +327,8 @@ function TrescRolnictwa({
       )}
 
       {dane.poisRolne.length > 0 && (
-        <div className={`${KARTA_LISTY_WIES} mb-6 p-4`}>
-          <h3 className="mb-1 font-semibold text-stone-900">Skupy i sklepy rolnicze</h3>
+        <div className={`${KARTA_LISTY_WIES} mb-6 border-lime-100/80 p-4`}>
+          <h3 className="mb-1 font-semibold text-lime-950">Skupy i sklepy rolnicze</h3>
           {dane.poisZPowiatu && (
             <p className="mb-3 text-xs text-stone-500">
               Punkty z całego powiatu {dane.wies.county} — najpierw w tej wsi.
@@ -318,21 +345,21 @@ function TrescRolnictwa({
         </div>
       )}
 
-      <div className={`${KARTA_LISTY_WIES} p-4`}>
+      <div className={`${KARTA_LISTY_WIES} border-lime-100/80 p-4`}>
         <div className="mb-3 flex flex-wrap items-center justify-between gap-2">
-          <h3 className="font-semibold text-stone-900">Ceny od sąsiadów</h3>
+          <h3 className="font-semibold text-lime-950">Ceny od sąsiadów</h3>
           <div className="flex flex-wrap gap-3">
             {zalogowany && (
               <>
                 <Link
                   href="/panel/mieszkaniec/rolnictwo-ceny"
-                  className="text-sm font-medium text-emerald-800 underline-offset-2 hover:underline"
+                  className="text-sm font-medium text-lime-800 underline-offset-2 hover:underline"
                 >
                   Zgłoś lub potwierdź cenę
                 </Link>
                 <Link
                   href="/panel/mieszkaniec/marketplace"
-                  className="text-sm font-medium text-emerald-800 underline-offset-2 hover:underline"
+                  className="text-sm font-medium text-lime-800 underline-offset-2 hover:underline"
                 >
                   Rynek lokalny
                 </Link>
@@ -376,13 +403,22 @@ function TrescRolnictwa({
 export function WiesRolnictwoLazy({
   villageId,
   zalogowany,
+  sciezkaWsi,
+  naPodstroniePelnej = false,
 }: {
   villageId: string;
   zalogowany: boolean;
+  sciezkaWsi?: string;
+  naPodstroniePelnej?: boolean;
 }) {
   return (
     <LazyWidoczny rootMargin="300px 0px" className="min-h-[12rem]">
-      <TrescRolnictwa villageId={villageId} zalogowany={zalogowany} />
+      <TrescRolnictwa
+        villageId={villageId}
+        zalogowany={zalogowany}
+        sciezkaWsi={sciezkaWsi}
+        naPodstroniePelnej={naPodstroniePelnej}
+      />
     </LazyWidoczny>
   );
 }

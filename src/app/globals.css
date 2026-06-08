@@ -882,6 +882,71 @@ html[data-tryb-dostepnosci="wysoki-kontrast"] .btn-panel-secondary {
     @apply mx-auto block h-1 w-10 rounded-full bg-stone-300;
   }
 
+  .mapa-sidebar-sekcja {
+    @apply rounded-xl border border-stone-200/70 bg-white/60 p-2;
+  }
+
+  .mapa-sidebar-sekcja__naglowek {
+    @apply cursor-pointer list-none text-xs font-semibold uppercase tracking-wide text-stone-500;
+  }
+
+  .mapa-sidebar-sekcja__naglowek::-webkit-details-marker {
+    display: none;
+  }
+
+  .mapa-sidebar-sekcja[open] .mapa-sidebar-sekcja__naglowek {
+    @apply mb-1 text-green-900;
+  }
+
+  .mapa-sidebar-hint__summary {
+    @apply cursor-pointer list-none text-[11px] font-medium text-stone-500 hover:text-stone-700;
+  }
+
+  .mapa-sidebar-hint__summary::-webkit-details-marker {
+    display: none;
+  }
+
+  .mapa-wiersz-wsi {
+    @apply transition-colors duration-150;
+  }
+
+  .mapa-wiersz-wsi:hover {
+    @apply border-green-200/70 bg-green-50/50;
+  }
+
+  .mapa-wiersz-wsi__link:hover {
+    @apply text-green-950;
+  }
+
+  .mapa-fab-btn {
+    @apply flex h-10 w-10 items-center justify-center rounded-full border border-stone-200/95 bg-white/95 text-base shadow-lg backdrop-blur-md transition active:scale-95;
+  }
+
+  .mapa-fab-btn:hover {
+    @apply border-green-700/30 bg-green-50;
+  }
+
+  .mapa-fab-btn--aktywny {
+    @apply border-blue-400/60 bg-blue-50 text-blue-900 ring-2 ring-blue-200/80;
+  }
+
+  .mapa-fab-btn:disabled {
+    @apply opacity-60;
+  }
+
+  .mapa-toast-sync {
+    right: max(0.75rem, env(safe-area-inset-right));
+    bottom: calc(0.75rem + var(--dolna-naw-offset, 0px) + env(safe-area-inset-bottom));
+  }
+
+  @media (min-width: 1024px) {
+    .mapa-toast-sync {
+      left: auto;
+      right: 1rem;
+      bottom: 1rem;
+    }
+  }
+
   .btn-panel-primary {
     @apply inline-flex min-h-[44px] touch-manipulation items-center justify-center rounded-xl bg-green-800 px-4 py-2.5 text-sm font-semibold text-white shadow-sm transition hover:bg-green-900 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-green-800 disabled:cursor-not-allowed disabled:opacity-50;
   }

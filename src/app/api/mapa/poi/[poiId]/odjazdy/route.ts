@@ -5,6 +5,7 @@ import {
   najblizszeOdjazdyReczne,
   parsujRozkladPrzystankuReczny,
 } from "@/lib/transport/rozklad-przystanku-reczny";
+import { linkRozkladPkpDlaStacji } from "@/lib/transport/pkp-plk-api";
 import {
   cacheDoApiOdjazdow,
   reczneDoApiOdjazdow,
@@ -99,11 +100,13 @@ export async function GET(_req: Request, { params }: Params) {
 
     const poiNorm = norm(poi.name);
     const stacjaIds = new Set<string>();
+    let nazwaStacjiPkp = poi.name;
     for (const m of mapowania ?? []) {
       if (m.station_id) stacjaIds.add(m.station_id);
       const mn = norm(m.station_name ?? "");
       if (mn && (poiNorm.includes(mn) || mn.includes(poiNorm))) {
         if (m.station_id) stacjaIds.add(m.station_id);
+        if (m.station_name) nazwaStacjiPkp = m.station_name;
       }
     }
 
@@ -137,12 +140,25 @@ export async function GET(_req: Request, { params }: Params) {
       };
     });
 
+    const { data: statusWsi } = await supabase
+      .from("village_transport_line_status")
+      .select("status_label, status_color")
+      .eq("village_id", poi.village_id)
+      .maybeSingle();
+
     return NextResponse.json(
       {
         typ: "kolej" as const,
         nazwa: poi.name,
         odjazdy,
         fetchedAt: (rows ?? [])[0]?.fetched_at ?? null,
+        linkPkp: linkRozkladPkpDlaStacji(nazwaStacjiPkp),
+        statusKolej: statusWsi?.status_label ?? null,
+        statusKolor: statusWsi?.status_color ?? null,
+        utrudnienie:
+          statusWsi?.status_color === "orange" && statusWsi.status_label
+            ? statusWsi.status_label
+            : null,
       },
       { headers: { "Cache-Control": "public, s-maxage=45, stale-while-revalidate=90" } },
     );

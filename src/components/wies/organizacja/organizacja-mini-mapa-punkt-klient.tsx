@@ -37,6 +37,13 @@ const STYL: Record<
     bg: "bg-rose-50/80",
     text: "text-rose-900",
   },
+  rolnicy: {
+    color: "#3f6212",
+    fill: "#a3e635",
+    border: "border-lime-300/60",
+    bg: "bg-lime-50/80",
+    text: "text-lime-900",
+  },
 };
 
 type Props = HeroMapaOrganizacji & { wysokosc?: number };

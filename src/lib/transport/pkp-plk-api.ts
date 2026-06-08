@@ -1,8 +1,17 @@
+import { scalOdjazdyPkpPlanIRzeczywistosc } from "@/lib/transport/pkp-scal-odjazdy";
+
 const DEFAULT_BASE_URL = "https://pdp-api.plk-sa.pl";
 
 type AnyObj = Record<string, unknown>;
 
 export type PkpStation = { id: string; name: string };
+export type PkpDisruption = {
+  id: string;
+  message: string;
+  typeCode: string | null;
+  startStationId: string | null;
+  endStationId: string | null;
+};
 export type PkpDeparture = {
   departureUid: string;
   whenIso: string;
@@ -25,6 +34,14 @@ function baseUrl(): string {
 function apiKey(): string | null {
   const k = process.env.PKP_PLK_API_KEY?.trim();
   return k && k.length > 0 ? k : null;
+}
+
+export function czyOperacjePkpWlaczone(): boolean {
+  return String(process.env.TRANSPORT_PKP_USE_OPERATIONS ?? "1") !== "0";
+}
+
+export function linkRozkladPkpDlaStacji(nazwaStacji: string): string {
+  return `https://rozklad.pkp.pl/pl/results?from=${encodeURIComponent(nazwaStacji.trim())}`;
 }
 
 function normalize(s: string): string {
@@ -88,25 +105,35 @@ function stationFromUnknown(x: unknown): PkpStation | null {
   return { id, name };
 }
 
+function stacjeZeSlownika(json: unknown): PkpStation[] {
+  const o = json as AnyObj;
+  const items = toArray(o.items ?? o.data ?? o.stations ?? json);
+  const out: PkpStation[] = [];
+  for (const it of items) {
+    const st = stationFromUnknown(it);
+    if (st) out.push(st);
+  }
+  return out;
+}
+
 export async function wyszukajStacjePkpPoNazwie(phrase: string): Promise<PkpStation[]> {
   const q = phrase.trim();
   if (!q) return [];
 
   const candidates = new Map<string, PkpStation>();
   const tries = [
+    `/api/v1/dictionaries/stations?search=${encodeURIComponent(q)}&page=1&pageSize=50`,
     `/api/v1/dictionaries/stations?name=${encodeURIComponent(q)}&page=1&pageSize=50`,
     `/api/v1/dictionaries/stations?query=${encodeURIComponent(q)}&page=1&pageSize=50`,
-    `/api/v1/dictionaries/stations?page=1&pageSize=5000`,
   ];
 
   for (const path of tries) {
     try {
       const json = await fetchJson(path);
-      for (const it of toArray(json)) {
-        const st = stationFromUnknown(it);
-        if (st) candidates.set(st.id, st);
+      for (const st of stacjeZeSlownika(json)) {
+        candidates.set(st.id, st);
       }
-      if (candidates.size > 0 && path !== tries[2]) break;
+      if (candidates.size > 0) break;
     } catch {
       // Spróbuj kolejną strategię.
     }
@@ -123,7 +150,7 @@ export async function wyszukajStacjePkpPoNazwie(phrase: string): Promise<PkpStat
       if (aStarts !== bStarts) return aStarts - bStarts;
       return an.localeCompare(bn, "pl");
     })
-    .slice(0, 8);
+    .slice(0, 12);
 }
 
 function parseIsoCandidate(v: unknown): string | null {
@@ -210,12 +237,91 @@ function departureFromUnknown(x: unknown): PkpDeparture | null {
   };
 }
 
-export async function pobierzOdjazdyDlaStacjiPkp(
+function operacjaStacjiNaOdjazd(
+  train: AnyObj,
   stationId: string,
-  opts?: { hoursAhead?: number },
+  stationDict: Record<string, string> | undefined,
+  generatedAt: string | null,
+): PkpDeparture | null {
+  const sid = Number(stationId);
+  if (!Number.isFinite(sid)) return null;
+
+  const stations = toArray(train.stations ?? train.st);
+  const stEntry = stations.find((s) => {
+    const row = s as AnyObj;
+    const id = row.stationId ?? row.sid;
+    return Number(id) === sid;
+  }) as AnyObj | undefined;
+  if (!stEntry) return null;
+
+  const planned =
+    parseIsoCandidate(stEntry.plannedDeparture ?? stEntry.pd) ||
+    parseIsoCandidate(stEntry.plannedDepartureTime);
+  const actual =
+    parseIsoCandidate(stEntry.actualDeparture ?? stEntry.ad) ||
+    parseIsoCandidate(stEntry.actualDepartureTime);
+  if (!planned && !actual) return null;
+
+  const plannedIso = planned ?? actual!;
+  const realtimeIso = actual ?? null;
+  const delayExplicit =
+    parseNumberCandidate(stEntry.departureDelayMinutes) ?? parseNumberCandidate(stEntry.dd);
+  const computedDelay =
+    realtimeIso != null
+      ? Math.round((Date.parse(realtimeIso) - Date.parse(plannedIso)) / 60000)
+      : null;
+  const delayMinutes = delayExplicit ?? computedDelay;
+
+  const lastSt = stations[stations.length - 1] as AnyObj | undefined;
+  const lastId = lastSt ? String(lastSt.stationId ?? lastSt.sid ?? "") : "";
+  const destination =
+    lastId && stationDict?.[lastId]
+      ? stationDict[lastId]
+      : lastId && stationDict?.[String(Number(lastId))]
+        ? stationDict[String(Number(lastId))]
+        : null;
+
+  const scheduleId = train.scheduleId ?? train.sid;
+  const orderId = train.orderId ?? train.oid;
+  const trainLabel =
+    pickFirstString(train, ["nationalNumber", "trainNumber", "name", "label"]) ??
+    (scheduleId != null && orderId != null ? `Pociąg ${scheduleId}/${orderId}` : "Pociąg");
+
+  const isCancelled =
+    stEntry.isCancelled === true ||
+    stEntry.isCancelled === 1 ||
+    train.trainStatus === "X" ||
+    train.trainStatus === "Q" ||
+    train.s === "X" ||
+    train.s === "Q";
+
+  const departureUid = [
+    String(trainLabel).trim().toLowerCase(),
+    plannedIso,
+    (destination ?? "").trim().toLowerCase(),
+  ].join("|");
+
+  return {
+    departureUid,
+    whenIso: realtimeIso ?? plannedIso,
+    plannedWhenIso: plannedIso,
+    realtimeWhenIso: realtimeIso,
+    trainLabel: String(trainLabel),
+    destination,
+    carrier: pickFirstString(train, ["carrierCode", "carrier"]),
+    platform: pickFirstString(stEntry, ["platform", "departurePlatform", "track"]),
+    delayMinutes,
+    status: normalizeStatus(train.trainStatus ?? train.s),
+    isCancelled,
+    sourceUpdatedAtIso: generatedAt,
+  };
+}
+
+async function pobierzOdjazdyPlanoweDlaStacjiPkp(
+  stationId: string,
+  hoursAhead: number,
 ): Promise<PkpDeparture[]> {
   const from = new Date();
-  const hoursAhead = Math.max(1, Math.min(48, Number(opts?.hoursAhead ?? 24)));
   const to = new Date(from.getTime() + hoursAhead * 60 * 60 * 1000);
   const dateFrom = from.toISOString().slice(0, 10);
   const dateTo = to.toISOString().slice(0, 10);
@@ -229,5 +335,98 @@ export async function pobierzOdjazdyDlaStacjiPkp(
     .map((x) => x as PkpDeparture)
     .filter((d) => Date.parse(d.plannedWhenIso) >= Date.now() - 10 * 60 * 1000)
     .sort((a, b) => Date.parse(a.whenIso) - Date.parse(b.whenIso))
-    .slice(0, 24);
+    .slice(0, 32);
+}
+
+export async function pobierzOdjazdyOperacyjneDlaStacjiPkp(
+  stationId: string,
+): Promise<PkpDeparture[]> {
+  const json = await fetchJson(
+    `/api/v1/operations?stations=${encodeURIComponent(stationId)}&withPlanned=true&page=1&pageSize=500`,
+  );
+  const o = json as AnyObj;
+  const generatedAt = parseIsoCandidate(o.generatedAt ?? o.ts);
+  const stationDict = (o.stations ?? o.st) as Record<string, string> | undefined;
+  const trains = toArray(o.trains ?? o.tr);
+
+  return trains
+    .map((tr) => operacjaStacjiNaOdjazd(tr as AnyObj, stationId, stationDict, generatedAt))
+    .filter(Boolean)
+    .map((x) => x as PkpDeparture)
+    .filter((d) => Date.parse(d.plannedWhenIso) >= Date.now() - 10 * 60 * 1000)
+    .sort((a, b) => Date.parse(a.whenIso) - Date.parse(b.whenIso))
+    .slice(0, 32);
+}
+
+export async function pobierzUtrudnieniaDlaStacjiPkp(
+  stationIds: string[],
+): Promise<PkpDisruption[]> {
+  const ids = stationIds.filter(Boolean);
+  if (ids.length === 0) return [];
+
+  const json = await fetchJson(
+    `/api/v1/disruptions?stations=${encodeURIComponent(ids.join(","))}&dictionaries=false&page=1&pageSize=100`,
+  );
+  const o = json as AnyObj;
+  const lista = toArray(o.disruptions ?? o.ds);
+
+  return lista
+    .map((raw) => {
+      const d = raw as AnyObj;
+      const id = pickFirstString(d, ["disruptionId", "did", "id"]) ?? "";
+      const message = pickFirstString(d, ["message", "msg", "text"]);
+      if (!message) return null;
+      const startId = d.startStationId ?? d.ssid;
+      const endId = d.endStationId ?? d.esid;
+      return {
+        id: id || message.slice(0, 40),
+        message: message.slice(0, 500),
+        typeCode: pickFirstString(d, ["disruptionTypeCode", "dtc", "type"]),
+        startStationId: startId != null ? String(startId) : null,
+        endStationId: endId != null ? String(endId) : null,
+      } satisfies PkpDisruption;
+    })
+    .filter(Boolean)
+    .map((x) => x as PkpDisruption)
+    .slice(0, 8);
+}
+
+/** Bezpośrednie połączenia planowe między dwoma stacjami (np. wieś → miasto powiatowe). */
+export async function pobierzPolaczeniaMiedzyStacjamiPkp(
+  fromStationId: string,
+  toStationId: string,
+  opts?: { hoursAhead?: number },
+): Promise<PkpDeparture[]> {
+  const hoursAhead = Math.max(1, Math.min(48, Number(opts?.hoursAhead ?? 36)));
+  const from = new Date();
+  const to = new Date(from.getTime() + hoursAhead * 60 * 60 * 1000);
+  const dateFrom = from.toISOString().slice(0, 10);
+  const dateTo = to.toISOString().slice(0, 10);
+
+  const json = await fetchJson(
+    `/api/v1/schedules?dateFrom=${dateFrom}&dateTo=${dateTo}&fromStations=${encodeURIComponent(fromStationId)}&toStations=${encodeURIComponent(toStationId)}&page=1&pageSize=120`,
+  );
+  return toArray(json)
+    .map(departureFromUnknown)
+    .filter(Boolean)
+    .map((x) => x as PkpDeparture)
+    .filter((d) => Date.parse(d.plannedWhenIso) >= Date.now() - 10 * 60 * 1000)
+    .sort((a, b) => Date.parse(a.whenIso) - Date.parse(b.whenIso))
+    .slice(0, 12);
+}
+
+export async function pobierzOdjazdyDlaStacjiPkp(
+  stationId: string,
+  opts?: { hoursAhead?: number; tylkoPlan?: boolean },
+): Promise<PkpDeparture[]> {
+  const hoursAhead = Math.max(1, Math.min(48, Number(opts?.hoursAhead ?? 24)));
+  const planowane = await pobierzOdjazdyPlanoweDlaStacjiPkp(stationId, hoursAhead);
+  if (opts?.tylkoPlan || !czyOperacjePkpWlaczone()) return planowane.slice(0, 24);
+
+  try {
+    const operacyjne = await pobierzOdjazdyOperacyjneDlaStacjiPkp(stationId);
+    return scalOdjazdyPkpPlanIRzeczywistosc(planowane, operacyjne).slice(0, 24);
+  } catch {
+    return planowane.slice(0, 24);
+  }
 }

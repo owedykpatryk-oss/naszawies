@@ -232,6 +232,11 @@ export const PRZEWODNIKI: Record<RolaPrzewodnika, SekcjaPrzewodnika[]> = {
           link: { href: "/panel/soltys/rezerwacje", label: "Rezerwacje" },
         },
         {
+          tytul: "Leśnictwo — zakazy i wycinki",
+          opis: "Profil leśny wsi (choinki, LP) oraz ostrzeżenia z terminem — zielone obszary na mapie.",
+          link: { href: "/panel/soltys/lesnictwo", label: "Leśnictwo" },
+        },
+        {
           tytul: "Kalendarz łowiecki i polowania",
           opis:
             "Kalendarz: kto na ambony, zebrania, polowania zbiorowe. Ostrzeżenia na mapie: rejon i termin — alert na profilu wsi.",
@@ -346,6 +351,48 @@ export const PRZEWODNIKI: Record<RolaPrzewodnika, SekcjaPrzewodnika[]> = {
         "Po zakończeniu akcji oznacz jako zarchiwizowane.",
         "Link z profilu wsi prowadzi bezpośrednio do obszaru na mapie.",
         "Użyj szablonu plakatu „polowanie” w kreatorze grafiki.",
+      ],
+    },
+    {
+      id: "lesnictwo-ostrzezenia",
+      tytul: "Leśnictwo — zakazy i wycinki",
+      kroki: [
+        {
+          tytul: "Profil leśny wsi",
+          opis: "Choinki, drewno opałowe, kontakt do LP — stała strona /lesnictwo dla mieszkańców.",
+          link: { href: "/panel/soltys/lesnictwo", label: "Panel — leśnictwo" },
+        },
+        {
+          tytul: "Ostrzeżenia z terminem",
+          opis: "Zakaz wstępu, wycinka, prace zmechanizowane, pożar — z opisem rejonu i opcjonalnym obszarem na mapie.",
+          link: { href: "/panel/soltys/lesnictwo", label: "Dodaj ostrzeżenie" },
+        },
+        {
+          tytul: "Mapa",
+          opis: "Zielone obrysy ostrzeżeń leśnych na mapie katalogu; udostępnij link ?les= do obszaru.",
+          link: { href: "/mapa?ostrzezenia_lesne=1", label: "Mapa — ostrzeżenia leśne" },
+        },
+      ],
+    },
+    {
+      id: "kalendarz-lowiecki",
+      tytul: "Kalendarz ambony i polowań",
+      kroki: [
+        {
+          tytul: "Harmonogram",
+          opis: "Kto siedzi na ambony, polowania zbiorowe, zebrania koła — widoczne dla zalogowanych mieszkańców wsi.",
+          link: { href: "/panel/soltys/lowiectwo/kalendarz", label: "Kalendarz łowiecki" },
+        },
+        {
+          tytul: "Ambony na mapie",
+          opis: "Dodaj ambony jako POI w module mapy wsi — potem wybierzesz je w kalendarzu.",
+          link: { href: "/panel/soltys/mapa", label: "Mapa POI" },
+        },
+        {
+          tytul: "Powiązanie z ostrzeżeniem",
+          opis: "Z listy polowań przejdź do kalendarza z wstępnie wypełnionym terminem.",
+          link: { href: "/panel/soltys/lowiectwo", label: "Ostrzeżenia polowania" },
+        },
       ],
     },
   ],

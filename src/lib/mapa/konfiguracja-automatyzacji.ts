@@ -3,6 +3,13 @@ export function autoTworzPoiPrzystankowZGtfs(): boolean {
   return String(process.env.TRANSPORT_AUTO_CREATE_STOP_POI ?? "1") !== "0";
 }
 
+/** Czy sync PKP może tworzyć POI „stacja_kolejowa” (słownik PKP + współrzędne OSM). */
+export function autoTworzPoiStacjiZKpk(): boolean {
+  return (
+    transportKolejWlaczony() && String(process.env.TRANSPORT_AUTO_CREATE_RAIL_POI ?? "1") !== "0"
+  );
+}
+
 export function transportKolejWlaczony(): boolean {
   return (
     String(process.env.TRANSPORT_SYNC_ENABLED ?? "0") === "1" &&

@@ -35,8 +35,8 @@
     "import:simc": "node scripts/import-simc-supabase-cli.mjs",
     "import:simc:resume": "node scripts/import-simc-supabase-cli.mjs --resume",
     "sync:granice": "node --experimental-strip-types --env-file=.env.local scripts/synchronizuj-granice-wsi-cli.mjs",
-    "sync:granice:wszystkie": "node --experimental-strip-types --env-file=.env.local scripts/synchronizuj-granice-wsi-cli.mjs --tylko-bez-granicy --limit=500",
-    "sync:granice:katalog": "node --experimental-strip-types --env-file=.env.local scripts/synchronizuj-granice-wsi-cli.mjs --tylko-bez-granicy --limit=1000 --delay=200",
+    "sync:granice:wszystkie": "node --experimental-strip-types --env-file=.env.local scripts/synchronizuj-granice-wsi-cli.mjs --tylko-bez-granicy --geokoduj --limit=500",
+    "sync:granice:katalog": "node --experimental-strip-types --env-file=.env.local scripts/synchronizuj-granice-wsi-cli.mjs --tylko-bez-granicy --geokoduj --limit=1000 --delay=200",
     "raport:granice": "node scripts/raport-stan-granic.mjs",
     "uzupelnij:gmina-teryt": "node scripts/uzupelnij-gmina-teryt.mjs",
     "automatyzuj:katalog": "npm run import:simc && npm run uzupelnij:gmina-teryt && npm run sync:granice -- --limit=120 --tylko-bez-granicy"

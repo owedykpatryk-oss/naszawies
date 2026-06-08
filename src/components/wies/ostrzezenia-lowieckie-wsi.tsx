@@ -11,11 +11,13 @@ function formatujZakres(start: string, end: string): string {
 export function OstrzezeniaLowieckieWsi({
   ostrzezenia,
   nazwaWsi,
+  sciezkaWsi,
   maProfilKola = false,
   zalogowany = false,
 }: {
   ostrzezenia: OstrzezenieLowieckie[];
   nazwaWsi: string;
+  sciezkaWsi?: string;
   maProfilKola?: boolean;
   zalogowany?: boolean;
 }) {
@@ -28,6 +30,14 @@ export function OstrzezeniaLowieckieWsi({
         <h2 className="mt-1 font-serif text-xl text-amber-950">Informacja dla mieszkańców i gości</h2>
         <p className="mt-2 text-sm text-amber-950/90">
           W rejonie {nazwaWsi} prowadzone są polowania. Prosimy o ostrożność i unikanie oznaczonych terenów w podanym czasie.
+          {sciezkaWsi ? (
+            <>
+              {" "}
+              <Link href={`${sciezkaWsi}/lowiectwo`} className="font-medium underline hover:text-amber-950">
+                Pełna strona łowiectwa →
+              </Link>
+            </>
+          ) : null}
           {maProfilKola ? (
             <>
               {" "}

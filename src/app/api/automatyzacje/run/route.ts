@@ -72,6 +72,7 @@ async function runAutomation(request: Request) {
         attemptedVillages: number;
         processedVillages: number;
         scannedVillages: number;
+        geocodedGps: number;
         skippedAlreadyHasBoundary: number;
         skippedRecentSync: number;
         skippedMissingTeryt: number;
@@ -86,6 +87,7 @@ async function runAutomation(request: Request) {
     attemptedVillages: 0,
     processedVillages: 0,
     scannedVillages: 0,
+    geocodedGps: 0,
     skippedAlreadyHasBoundary: 0,
     skippedRecentSync: 0,
     skippedMissingTeryt: 0,
@@ -201,9 +203,9 @@ async function runAutomation(request: Request) {
   } else {
     try {
       const summary = await synchronizujPoiOsmAutomatycznie(supabase, {
-        maxVillagesPerRun: Number.parseInt(process.env.POI_AUTO_SYNC_VILLAGES_PER_RUN ?? "", 10) || 8,
-        maxVillagesScanned: Number.parseInt(process.env.POI_AUTO_SYNC_VILLAGES_SCANNED ?? "", 10) || 50,
-        minDaysBetweenSync: Number.parseInt(process.env.POI_AUTO_SYNC_MIN_DAYS ?? "", 10) || 3,
+        maxVillagesPerRun: Number.parseInt(process.env.POI_AUTO_SYNC_VILLAGES_PER_RUN ?? "", 10) || 14,
+        maxVillagesScanned: Number.parseInt(process.env.POI_AUTO_SYNC_VILLAGES_SCANNED ?? "", 10) || 80,
+        minDaysBetweenSync: Number.parseInt(process.env.POI_AUTO_SYNC_MIN_DAYS ?? "", 10) || 2,
       });
       poiAuto = {
         ok: true,
@@ -225,13 +227,14 @@ async function runAutomation(request: Request) {
     }
 
     try {
-      const summary = await synchronizujGranicePrgAutomatycznie(supabase);
+      const summary = await synchronizujGranicePrgAutomatycznie(supabase, { tryb: "katalog" });
       granicePrgAuto = {
         ok: true,
         updatedBoundaries: summary.updatedBoundaries,
         attemptedVillages: summary.attemptedVillages,
         processedVillages: summary.processedVillages,
         scannedVillages: summary.scannedVillages,
+        geocodedGps: summary.geocodedGps,
         skippedAlreadyHasBoundary: summary.skippedAlreadyHasBoundary,
         skippedRecentSync: summary.skippedRecentSync,
         skippedMissingTeryt: summary.skippedMissingTeryt,

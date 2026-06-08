@@ -57,7 +57,7 @@ export async function synchronizujAutobusyAutomatycznie(
   if (opcje?.tylkoVillageIds?.length) {
     zapytanieWsi = zapytanieWsi.in("id", opcje.tylkoVillageIds);
   } else {
-    zapytanieWsi = zapytanieWsi.limit(25);
+    zapytanieWsi = zapytanieWsi.order("updated_at", { ascending: true }).limit(40);
   }
 
   const { data: wsie, error } = await zapytanieWsi;

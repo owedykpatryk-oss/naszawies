@@ -47,6 +47,8 @@ export const ETYKIETA_SEGMENTU_PANELU: Record<string, string> = {
   organizacje: "Organizacje",
   ulubione: "Ulubione",
   lowiectwo: "Polowania",
+  lesnictwo: "Leśnictwo",
+  rolnictwo: "Rolnictwo",
 };
 
 export type OkruszekPanelu = { href: string; label: string };

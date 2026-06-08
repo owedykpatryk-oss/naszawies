@@ -27,6 +27,7 @@ const SKROTY_WEDLUG_TRYBU: Record<TrybOrganizacji, Skrot[]> = {
   ],
   mysliwi: [
     { typ: "sekcja", label: "Profil koła", sekcja: "organizacje" },
+    { typ: "link", label: "Leśnictwo", href: "/panel/soltys/lesnictwo" },
     { typ: "link", label: "Polowania", href: "/panel/soltys/lowiectwo" },
     { typ: "link", label: "Kalendarz łowiecki", href: "/panel/soltys/lowiectwo/kalendarz" },
     { typ: "sekcja", label: "Wydarzenia", sekcja: "wydarzenia" },
@@ -40,6 +41,12 @@ const SKROTY_WEDLUG_TRYBU: Record<TrybOrganizacji, Skrot[]> = {
     { typ: "sekcja", label: "Profil klubu", sekcja: "organizacje" },
     { typ: "sekcja", label: "Plan tygodnia", sekcja: "harmonogram" },
     { typ: "sekcja", label: "Mecze / zawody", sekcja: "wydarzenia" },
+  ],
+  rolnicy: [
+    { typ: "sekcja", label: "Profil koła", sekcja: "organizacje" },
+    { typ: "link", label: "Rolnictwo wsi", href: "/panel/soltys/rolnictwo" },
+    { typ: "link", label: "Ceny od sąsiadów", href: "/panel/mieszkaniec/rolnictwo-ceny" },
+    { typ: "sekcja", label: "Wydarzenia", sekcja: "wydarzenia" },
   ],
 };
 

@@ -67,6 +67,9 @@ export default async function SoltysLowiectwoPage() {
       opis="Zaznacz obszar na mapie i ustaw termin — mieszkańcy zobaczą to na mapie naszawies i na profilu wsi."
       akcje={
         <>
+          <a href="/panel/soltys/lesnictwo" className="btn-panel-secondary text-sm">
+            Leśnictwo
+          </a>
           <a href="/panel/soltys/lowiectwo/kalendarz" className="btn-panel-primary text-sm">
             Kalendarz łowiecki
           </a>

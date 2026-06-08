@@ -430,6 +430,62 @@ export function czyProfilSzkolyUzupelniony(p: ProfilSzkolyJson | null): boolean 
   );
 }
 
+/** Profil koła rolników — `village_community_groups.profile_data`. */
+export const schemaProfilRolnikow = z.object({
+  wersja: z.literal(1).default(1),
+  przewodniczacy: z.string().trim().max(160).nullable().optional(),
+  zebrania: z.string().trim().max(800).nullable().optional(),
+  miejsce_spotkan: z.string().trim().max(300).nullable().optional(),
+  dzialalnosc: z.string().trim().max(1200).nullable().optional(),
+  wspolpraca_arimr: z.string().trim().max(800).nullable().optional(),
+  jak_dolaczyc: z.string().trim().max(800).nullable().optional(),
+  uwagi: z.string().trim().max(800).nullable().optional(),
+}).merge(schemaMetaProfiluOrganizacji);
+
+export type ProfilRolnikowJson = z.infer<typeof schemaProfilRolnikow>;
+
+export function parsujProfilRolnikow(raw: unknown): ProfilRolnikowJson | null {
+  if (raw == null || typeof raw !== "object") return null;
+  const w = schemaProfilRolnikow.safeParse(raw);
+  if (!w.success) return null;
+  return w.data;
+}
+
+export function profilRolnikowZFormularza(fd: FormData): ProfilRolnikowJson {
+  const pole = (k: string) => {
+    const t = String(fd.get(k) ?? "").trim();
+    return t.length ? t : null;
+  };
+  return {
+    wersja: 1,
+    przewodniczacy: pole("rolnicy_przewodniczacy"),
+    zebrania: pole("rolnicy_zebrania"),
+    miejsce_spotkan: pole("rolnicy_miejsce"),
+    dzialalnosc: pole("rolnicy_dzialalnosc"),
+    wspolpraca_arimr: pole("rolnicy_arimr"),
+    jak_dolaczyc: pole("rolnicy_jak_dolaczyc"),
+    uwagi: pole("rolnicy_uwagi"),
+    ...metaOrganizacjiZFormularza(fd, "rolnicy"),
+  };
+}
+
+export function czyProfilRolnikowUzupelniony(p: ProfilRolnikowJson | null): boolean {
+  if (!p) return false;
+  return Boolean(
+    p.przewodniczacy?.trim() ||
+      p.zebrania?.trim() ||
+      p.miejsce_spotkan?.trim() ||
+      p.dzialalnosc?.trim() ||
+      p.jak_dolaczyc?.trim(),
+  );
+}
+
+export function czyOrganizacjaRolnicy(groupType: string, name: string): boolean {
+  if (groupType === "rolnicy") return true;
+  const n = name.toLowerCase();
+  return n.includes("rolnik") || n.includes("rolnicz") || n.includes("agronom");
+}
+
 export { czyOrganizacjaSport } from "@/lib/wies/sport";
 
 export function czyOrganizacjaSzkola(groupType: string, name: string): boolean {

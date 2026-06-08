@@ -41,6 +41,7 @@ import { ProfilKgwKlient } from "@/components/panel/soltys/profil-kgw-klient";
 import { ProfilOspKlient } from "@/components/panel/soltys/profil-osp-klient";
 import { ProfilMysliwiKlient } from "@/components/panel/soltys/profil-mysliwi-klient";
 import { ProfilSzkolyKlient } from "@/components/panel/soltys/profil-szkoly-klient";
+import { ProfilRolnikowKlient } from "@/components/panel/soltys/profil-rolnikow-klient";
 import { ProfilKlubuSportowegoKlient } from "@/components/panel/soltys/profil-klubu-sportowego-klient";
 import { ModeracjaAktywnosciFitnessKlient } from "@/components/panel/soltys/moderacja-aktywnosci-fitness-klient";
 import { PresetyHarmonogramuSportKlient } from "@/components/panel/soltys/presety-harmonogramu-sport-klient";
@@ -155,6 +156,7 @@ export function SoltysSpolecznoscKlient({
       t === "mysliwi" ||
       t === "szkola" ||
       t === "sport" ||
+      t === "rolnicy" ||
       t === "ogolny"
     )
       return t;
@@ -814,6 +816,25 @@ export function SoltysSpolecznoscKlient({
         />
       ) : null}
 
+      {sekcjaAktywna === "organizacje" && tryb === "rolnicy" ? (
+        <ProfilRolnikowKlient
+          villageId={villageId}
+          villageName={villageName}
+          organizacje={organizacjePelne ?? []}
+          sciezkaProfilu={sciezkaProfilu}
+          wiesSciezka={
+            wybranaWies?.voivodeship && wybranaWies.county && wybranaWies.commune && wybranaWies.slug
+              ? {
+                  voivodeship: wybranaWies.voivodeship,
+                  county: wybranaWies.county,
+                  commune: wybranaWies.commune,
+                  slug: wybranaWies.slug,
+                }
+              : null
+          }
+        />
+      ) : null}
+
       {sekcjaAktywna === "organizacje" && tryb === "mysliwi" ? (
         <ProfilMysliwiKlient
           villageId={villageId}
@@ -857,6 +878,7 @@ export function SoltysSpolecznoscKlient({
       tryb !== "osp" &&
       tryb !== "mysliwi" &&
       tryb !== "szkola" &&
+      tryb !== "rolnicy" &&
       tryb !== "sport" ? (
       <form
         id="sekcja-organizacje"

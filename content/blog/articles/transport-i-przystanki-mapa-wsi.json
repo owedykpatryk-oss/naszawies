@@ -1,0 +1,59 @@
+{
+  "title": "Transport i przystanki na mapie wsi — dojazd bez zgadywania",
+  "slug": "transport-i-przystanki-mapa-wsi",
+  "excerpt": "Przystanki autobusowe, stacje kolejowe i odjazdy w jednym widoku — jak mapa naszawies.pl pomaga mieszkańcom i gościom zaplanować dojazd.",
+  "coverImage": "/blog/transport-i-przystanki-mapa-wsi/cover.webp",
+  "gallery": [
+    "/blog/transport-i-przystanki-mapa-wsi/cover.webp",
+    "/blog/transport-i-przystanki-mapa-wsi/visual-01.webp"
+  ],
+  "authorId": "zespol",
+  "categorySlug": "poradniki",
+  "tags": [
+    "transport",
+    "mapa",
+    "przystanek",
+    "kolej",
+    "autobus"
+  ],
+  "faq": [
+    {
+      "question": "Skąd biorą się przystanki na mapie?",
+      "answer": "System uzupełnia punkty z otwartych danych (OSM, GTFS, PKP) oraz propozycji mieszkańców po moderacji. Sołtys może zatwierdzać brakujące miejsca."
+    },
+    {
+      "question": "Czy widać rozkłady jazdy na żywo?",
+      "answer": "Tam, gdzie dostępne są dane przewoźnika lub PKP, mapa pokazuje zbliżone odjazdy i link do rozkładu. Zawsze warto sprawdzić oficjalną stronę przewoźnika przed wyjazdem."
+    },
+    {
+      "question": "Czy mapa transportu działa bez logowania?",
+      "answer": "Podstawowy podgląd mapy wymaga konta — to chroni przed nadużyciami i pozwala dopasować warstwy do Twojej wsi. Rejestracja jest bezpłatna."
+    }
+  ],
+  "relatedSlugs": [
+    "mapa-wsi-po-zalogowaniu",
+    "jak-znalezc-swoja-wies",
+    "kalendarz-wydarzen-wiejskich"
+  ],
+  "featured": true,
+  "status": "published",
+  "publishedAt": "2026-06-15T08:00:00.000Z",
+  "seoTitle": "Transport wiejski na mapie — przystanki i kolej na naszawies.pl",
+  "seoDescription": "Przystanki PKS, autobusy gminne i stacje PKP na mapie wsi. Jak czytać warstwy transportu i planować dojazd na zebranie lub do pracy.",
+  "ogImage": "/blog/transport-i-przystanki-mapa-wsi/cover.webp",
+  "internalLinks": [
+    {
+      "href": "/mapa",
+      "label": "Mapa wsi"
+    },
+    {
+      "href": "/logowanie",
+      "label": "Logowanie"
+    }
+  ],
+  "generatedImages": [
+    "/blog/transport-i-przystanki-mapa-wsi/cover.webp",
+    "/blog/transport-i-przystanki-mapa-wsi/visual-01.webp"
+  ],
+  "content": "<p>Na wsi bez własnego samochodu dojazd do pracy, lekarza czy urzędu bywa układanką: autobus raz dziennie, przystanek „za lasem”, kolej w sąsiedniej miejscowości. Rozkład na papierze szybko się starzeje, a w wyszukiwarce Google nie zawsze widać <em>ten</em> przystanek od strony pola. Mapa na <strong>naszawies.pl</strong> zbiera transport w kontekście konkretnej wsi — razem z świetlicą, sklepem i innymi punktami POI.</p>\n\n<h2 id=\"warstwy\">Warstwy transportu na mapie</h2>\n<p>Po zalogowaniu wejdź na <a href=\"/mapa\">mapę</a> i włącz filtry m.in. przystanków autobusowych, stacji kolejowych i parkingów P+R. Punkty są powiązane z Twoją miejscowością lub jej bezpośrednim sąsiedztwem — nie musisz szukać po całym powiecie.</p>\n<ul class=\"blog-lista-check\">\n<li>Przystanki komunikacji lokalnej i PKS</li>\n<li>Stacje i przystanki kolejowe PKP — z linkiem do rozkładu</li>\n<li>Miejsca postoju i przesiadki (tam gdzie oznaczone w danych)</li>\n<li>Informacje o utrudnieniach — gdy dostępne z API przewoźnika</li>\n</ul>\n\n<figure><img src=\"/blog/transport-i-przystanki-mapa-wsi/visual-01.webp\" alt=\"Mapa wiejskiego przystanku autobusowego przy drodze do gminy\" width=\"900\" height=\"600\" loading=\"lazy\" /><figcaption>Przystanek na mapie ułatwia wytłumaczenie gościom, gdzie wysiąść przed zebraniem we wsi.</figcaption></figure>\n\n<h2 id=\"dla-mieszkanca\">Dla mieszkańca</h2>\n<p>Sprawdzisz, który przystanek jest bliżej domu, ile masz czasu po porannym kursie do miasta i gdzie jest najbliższa stacja kolejowa. Przy planowaniu wyjazdu na <a href=\"/blog/zebranie-wiejskie-swietlica\">zebranie wiejskie</a> możesz wysłać sąsiadowi pinezkę zamiast opisywać drogę przez trzy skrzyżowania.</p>\n\n<h2 id=\"dla-soltysa\">Dla sołtysa i radnych</h2>\n<p>Jeśli po remoncie drogi przystanek się przesunął albo uruchomiono nowy kurs gminny — zgłoś aktualizację w panelu. Społeczność widzi zmianę na mapie szybciej niż doczeka się nowej tabliczki przy słupie. To też argument na zebraniu wójtowi: widać, gdzie mieszkańcy realnie mają problem z dojazdem.</p>\n\n<div class=\"blog-callout blog-callout-porada\"><strong>Porada</strong><p>Przy ogłoszeniu o zebraniu dopisz: „Najbliższy przystanek na mapie wsi” z linkiem do profilu — młodsi mieszkańcy chętniej przyjadą, gdy widzą konkret.</p></div>\n\n<h2 id=\"pkp\">Kolej i autobus — jeden widok</h2>\n<p>Wielu mieszkańców dojeżdża „combo”: PKS do stacji, potem pociąg. Mapa pokazuje oba typy punktów, żeby nie przełączać się między trzema aplikacjami. Rozkłady pochodzą z zewnętrznych źródeł — przed ważnym wyjazdem sprawdź jeszcze oficjalną stronę PKP lub przewoźnika.</p>\n\n<table class=\"blog-tabela\">\n<thead><tr><th>Sytuacja</th><th>Co zrobić na mapie</th></tr></thead>\n<tbody>\n<tr><td>Pierwszy raz jadę do wsi</td><td>Włącz stację kolejową + przystanki, ustaw widok na profil wsi</td></tr>\n<tr><td>Brakuje przystanku</td><td>Zgłoś punkt w panelu lub poproś sołtysa o moderację</td></tr>\n<tr><td>Opóźnienie pociągu</td><td>Sprawdź baner utrudnień przy stacji na mapie, potem PKP</td></tr>\n</tbody>\n</table>\n\n<h2 id=\"ograniczenia\">Czego mapa nie zastąpi</h2>\n<p>Nie zamawia biletów ani taksówek — to planowanie i orientacja. W nagłych sytuacjach zawsze dzwoń pod 112 lub numer alarmowy straży. Dane automatyczne mogą mieć opóźnienie; przy śnieżycy i remontach drogowych licz się z lokalnymi komunikatami gminy.</p>\n\n<hr class=\"blog-separator\" />\n<p>Więcej o mapie: <a href=\"/blog/mapa-wsi-po-zalogowaniu\">mapa wsi po zalogowaniu</a>, <a href=\"/blog/jak-znalezc-swoja-wies\">jak znaleźć swoją wieś</a>.</p>"
+}

@@ -117,6 +117,7 @@ export function SoltysLowiectwoKlient({ wsie, wiersze: poczatkowe }: Props) {
         startsAt: startsAt || String(fd.get("starts_at")),
         endsAt: endsAt || String(fd.get("ends_at")),
         areaGeojson: obszar,
+        dodajDoKalendarza: fd.get("dodaj_do_kalendarza") === "1",
       });
       if ("blad" in w) {
         ustawBlad(w.blad);
@@ -272,6 +273,11 @@ export function SoltysLowiectwoKlient({ wsie, wiersze: poczatkowe }: Props) {
             </label>
           </div>
 
+          <label className="flex items-center gap-2 text-sm text-stone-700">
+            <input type="checkbox" name="dodaj_do_kalendarza" value="1" defaultChecked />
+            Dodaj też do kalendarza łowieckiego (polowanie zbiorowe)
+          </label>
+
           <button type="submit" disabled={czek || !obszar} className="btn-panel-primary">
             Opublikuj na mapie i profilu wsi
           </button>
@@ -315,6 +321,14 @@ export function SoltysLowiectwoKlient({ wsie, wiersze: poczatkowe }: Props) {
                   {r.aktywne && r.maObszarMapy ? (
                     <Link href={`/mapa?polowanie=${encodeURIComponent(r.id)}`} className="btn-panel-secondary text-xs">
                       Podgląd na mapie
+                    </Link>
+                  ) : null}
+                  {r.status === "approved" ? (
+                    <Link
+                      href={`/panel/soltys/lowiectwo/kalendarz?ostrzezenie=${encodeURIComponent(r.id)}&wies=${encodeURIComponent(r.villageId)}`}
+                      className="btn-panel-secondary text-xs"
+                    >
+                      Kalendarz
                     </Link>
                   ) : null}
                   {r.status === "approved" && r.aktywne ? (

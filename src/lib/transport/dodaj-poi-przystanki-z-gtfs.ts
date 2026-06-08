@@ -2,8 +2,8 @@ import type { SupabaseClient } from "@supabase/supabase-js";
 import { autoTworzPoiPrzystankowZGtfs } from "@/lib/mapa/konfiguracja-automatyzacji";
 import { gtfsCsvSkonfigurowany, pobierzPrzystankiGtfsWokolPunktu } from "@/lib/transport/gtfs-csv";
 
-const MAX_NOWYCH_NA_WIES = 12;
-const DEDUP_METRY = 120;
+const MAX_NOWYCH_NA_WIES = 28;
+const DEDUP_METRY = 45;
 
 function odlegloscM(lat1: number, lon1: number, lat2: number, lon2: number): number {
   const R = 6371000;

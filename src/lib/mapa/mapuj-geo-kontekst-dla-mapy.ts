@@ -19,17 +19,25 @@ function etykietaWarstwy(layerName: string, dataset: string): string {
     if (l.startsWith("O3_")) return "PRNG — pozostałe";
     return "PRNG";
   }
-  if (l.includes("strazy_pozarnej") || l.startsWith("K07") || l.startsWith("K06") || l.startsWith("K11")) {
+  if (l.includes("strazy_pozarnej") || l.startsWith("K07") || l.startsWith("K06")) {
     return "PSP / OSP";
   }
-  if (l.includes("policji") || l.startsWith("K02") || l.startsWith("K04") || l.startsWith("K05")) {
+  if (l.includes("obrony_cywilnej") || l.startsWith("K11") || l.startsWith("K12") || l.startsWith("K13")) {
+    return "Obrona cywilna (obszar)";
+  }
+  if (l.includes("policji") || l.startsWith("K01") || l.startsWith("K02") || l.startsWith("K04") || l.startsWith("K05")) {
     return "Policja";
   }
+  if (l.includes("Prokuratura") || l.startsWith("P0")) return "Prokuratura";
   if (l.includes("Nadlesnictwo") || l.startsWith("U06")) return "Nadleśnictwo";
-  if (l.includes("skarbowy") || l.startsWith("U02")) return "Urząd skarbowy";
+  if (l.includes("skarbowy") || l.startsWith("U02") || l.startsWith("U03") || l.startsWith("U04") || l.startsWith("U05")) {
+    return "Urząd skarbowy";
+  }
+  if (l.includes("zlewni") || l.startsWith("U08")) return "PGW — zlewnia";
   if (l.includes("gospodarki_wodnej") || l.startsWith("U09")) return "RZGW";
   if (l.includes("lasow") || l.startsWith("U07")) return "RDLP";
-  if (l.includes("Sad") || l.startsWith("S03")) return "Sąd";
+  if (l.includes("Archiwum") || l.startsWith("U01")) return "Archiwum";
+  if (l.includes("Sad") || l.startsWith("S0")) return "Sąd";
   return "Instytucja PRG";
 }
 

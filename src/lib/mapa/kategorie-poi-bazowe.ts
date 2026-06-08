@@ -23,7 +23,31 @@ export const KATEGORIE_POI_BAZOWE = [
 ] as const;
 
 /** Opcjonalne — import OSM / ręcznie sołtys, nie wpływają na % kompletności mapy. */
-export const KATEGORIE_POI_OPCJONALNE = ["latarnia", "inwestycja"] as const;
+export const KATEGORIE_POI_OPCJONALNE = [
+  "latarnia",
+  "inwestycja",
+  "miejsce_odpoczynku",
+  "zajazd",
+  "gastronomia",
+  "plac_zabaw",
+  "bankomat",
+  "sprzedaz_z_gospodarstwa",
+  "spoldzielnia_rolna",
+  "nazwa_geo",
+  "paczkomat",
+  "ladowarka_ev",
+  "weterynarz",
+  "warsztat",
+  "piekarnia",
+  "bank",
+  "parking_publiczny",
+  "toaleta_publiczna",
+  "camping",
+  "defibrylator",
+  "drogeria",
+  "silownia_zewnetrzna",
+  "targowisko",
+] as const;
 
 /** Kategorie, dla których cron OSM może dodawać kolejne punkty (nie tylko pierwszy brak). */
 export const KATEGORIE_POI_WIELOKROTNE = [
@@ -35,6 +59,27 @@ export const KATEGORIE_POI_WIELOKROTNE = [
   "sklep_rolniczy",
   "latarnia",
   "inwestycja",
+  "miejsce_odpoczynku",
+  "zajazd",
+  "gastronomia",
+  "plac_zabaw",
+  "bankomat",
+  "sprzedaz_z_gospodarstwa",
+  "spoldzielnia_rolna",
+  "nazwa_geo",
+  "paczkomat",
+  "ladowarka_ev",
+  "weterynarz",
+  "warsztat",
+  "piekarnia",
+  "bank",
+  "parking_publiczny",
+  "toaleta_publiczna",
+  "camping",
+  "defibrylator",
+  "drogeria",
+  "silownia_zewnetrzna",
+  "targowisko",
 ] as const;
 
 export type KategoriaPoiBazowa = (typeof KATEGORIE_POI_BAZOWE)[number];
@@ -49,5 +94,11 @@ export const KATEGORIE_PROPONOWALNE_POI = [
   "obszar_lowowy",
   "ambona",
   "posterunek_lowiecki",
+  "miejsce_odpoczynku",
+  "zajazd",
+  "gastronomia",
+  "plac_zabaw",
+  "bankomat",
+  "nazwa_geo",
   "inne",
 ] as const;

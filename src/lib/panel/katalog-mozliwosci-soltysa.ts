@@ -41,6 +41,9 @@ type StanWsi = {
   maStacje: boolean;
   maLadneMiejsce: boolean;
   maPolowanie: boolean;
+  maLesnictwo: boolean;
+  maRolnictwo: boolean;
+  maKalendarzLowiecki: boolean;
   maMieszkanca: boolean;
   maTresc: boolean;
   maZgloszenie: boolean;
@@ -85,6 +88,10 @@ export async function pobierzKatalogMozliwosciSoltysa(
     { count: wydarzenia },
     { count: wspoladmin },
     { count: polowania },
+    { count: lesnictwoProfil },
+    { count: lesnictwoOstrzezenia },
+    { count: rolnictwoProfil },
+    { count: kalendarzLowiecki },
     { count: transportCache },
     { count: sale },
     { count: przystanki },
@@ -150,6 +157,28 @@ export async function pobierzKatalogMozliwosciSoltysa(
       .lte("starts_at", teraz)
       .gte("ends_at", teraz),
     supabase
+      .from("village_forestry_profiles")
+      .select("id", { count: "exact", head: true })
+      .in("village_id", villageIds)
+      .eq("is_published", true),
+    supabase
+      .from("village_forestry_notices")
+      .select("id", { count: "exact", head: true })
+      .in("village_id", villageIds)
+      .eq("status", "approved")
+      .lte("starts_at", teraz)
+      .gte("ends_at", teraz),
+    supabase
+      .from("village_agriculture_profiles")
+      .select("id", { count: "exact", head: true })
+      .in("village_id", villageIds)
+      .eq("is_published", true),
+    supabase
+      .from("village_hunting_schedule_entries")
+      .select("id", { count: "exact", head: true })
+      .in("village_id", villageIds)
+      .gte("ends_at", teraz),
+    supabase
       .from("transport_departures_cache")
       .select("id", { count: "exact", head: true })
       .in("village_id", villageIds)
@@ -186,6 +215,9 @@ export async function pobierzKatalogMozliwosciSoltysa(
     maStacje,
     maLadneMiejsce: maLadne,
     maPolowanie: (polowania ?? 0) > 0,
+    maLesnictwo: (lesnictwoProfil ?? 0) > 0 || (lesnictwoOstrzezenia ?? 0) > 0,
+    maRolnictwo: (rolnictwoProfil ?? 0) > 0,
+    maKalendarzLowiecki: (kalendarzLowiecki ?? 0) > 0,
     maMieszkanca: (mieszkancy ?? 0) > 0,
     maTresc: (posty ?? 0) > 0 || (wiadomosci ?? 0) > 0,
     maZgloszenie: (zgloszenia ?? 0) > 0,
@@ -250,7 +282,7 @@ export async function pobierzKatalogMozliwosciSoltysa(
       automatyczne: true,
       wskazowka: transportPlatforma
         ? undefined
-        : "Administrator platformy musi włączyć API PKP/GTFS w ustawieniach serwera.",
+        : "API PKP/GTFS wyłączone — możesz wpisać rozkład PKS ręcznie w module Transport.",
     },
     {
       id: "ladne_miejsca",
@@ -309,6 +341,31 @@ export async function pobierzKatalogMozliwosciSoltysa(
       automatyczne: false,
     },
     {
+      id: "rolnictwo",
+      kategoria: "organizacja",
+      ikona: "🌾",
+      tytul: "Rolnictwo i skup",
+      coDostajaMieszkancy:
+        "Profil rolniczy wsi: ARiMR, dopłaty, skup, ostrzeżenia sezonowe — na /rolnictwo plus ceny GUS.",
+      coRobiSoltys: "Uzupełnij profil w module Rolnictwo i włącz sekcję w wyglądzie profilu wsi.",
+      href: "/panel/soltys/rolnictwo",
+      status: stan.maRolnictwo ? "wlaczone" : "do_uruchomienia",
+      automatyczne: false,
+      wskazowka: stan.maRolnictwo ? undefined : "Ceny GUS ładują się automatycznie po włączeniu modułu.",
+    },
+    {
+      id: "lesnictwo",
+      kategoria: "bezpieczenstwo",
+      ikona: "🌲",
+      tytul: "Leśnictwo i las",
+      coDostajaMieszkancy:
+        "Profil leśny wsi: choinki, drewno, zakazy wstępu i wycinki — na stronie /lesnictwo i mapie.",
+      coRobiSoltys: "Uzupełnij profil LP i publikuj ostrzeżenia leśne z terminem.",
+      href: "/panel/soltys/lesnictwo",
+      status: stan.maLesnictwo ? "wlaczone" : "do_uruchomienia",
+      automatyczne: false,
+    },
+    {
       id: "polowania",
       kategoria: "bezpieczenstwo",
       ikona: "🦌",
@@ -327,8 +384,9 @@ export async function pobierzKatalogMozliwosciSoltysa(
       coDostajaMieszkancy: "Harmonogram ambony i polowań (po zalogowaniu jako mieszkaniec wsi).",
       coRobiSoltys: "Przydziel myśliwych na ambony i terminy w kalendarzu.",
       href: "/panel/soltys/lowiectwo/kalendarz",
-      status: "do_uruchomienia",
+      status: stan.maKalendarzLowiecki ? "wlaczone" : "do_uruchomienia",
       automatyczne: false,
+      wskazowka: stan.maKalendarzLowiecki ? undefined : "Dodaj wpis (ambona, polowanie zbiorowe) w kalendarzu.",
     },
     {
       id: "rezerwacje",

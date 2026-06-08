@@ -5,6 +5,10 @@ import type { PlakatPubliczny } from "@/components/grafika/galeria-plakatow-wsi"
 import { pobierzFotokronikePublicznaWsi } from "@/lib/fotokronika/pobierz-fotokronike-publiczna";
 import type { ZdjeciePubliczne } from "@/lib/fotokronika/pobierz-fotokronike-publiczna";
 import type { KonkursFotoPubliczny, ZdjecieKonkursu } from "@/lib/konkurs-foto/fazy-konkursu";
+import { pobierzAktywneOstrzezeniaLesne } from "@/lib/lesnictwo/pobierz-ostrzezenia-publiczne";
+import type { OstrzezenieLesne } from "@/lib/lesnictwo/pobierz-ostrzezenia-publiczne";
+import { pobierzProfilLesnictwaPubliczny } from "@/lib/lesnictwo/pobierz-profil-publiczny";
+import { pobierzProfilRolnictwaPubliczny } from "@/lib/rolnictwo/pobierz-profil-publiczny";
 import { pobierzAktywneOstrzezeniaLowieckie } from "@/lib/lowiectwo/pobierz-ostrzezenia-publiczne";
 import type { OstrzezenieLowieckie } from "@/lib/lowiectwo/pobierz-ostrzezenia-publiczne";
 import { createPublicSupabaseClient } from "@/lib/supabase/public-client";
@@ -20,6 +24,9 @@ export type SuroweDanePubliczneProfiluWsi = {
   konkursFoto: { konkurs: KonkursFotoPubliczny; zdjecia: ZdjecieKonkursu[] } | null;
   fotokronikaPubliczna: ZdjeciePubliczne[];
   ostrzezeniaLowieckie: OstrzezenieLowieckie[];
+  ostrzezeniaLesne: OstrzezenieLesne[];
+  maProfilLesnictwa: boolean;
+  maProfilRolnictwa: boolean;
   blogRaw: unknown[];
   historiaRaw: unknown[];
   rynekRaw: unknown[];
@@ -104,6 +111,9 @@ async function pobierzSuroweDanePubliczneProfiluWsi(
       konkursFoto: null,
       fotokronikaPubliczna: [],
       ostrzezeniaLowieckie: [],
+      ostrzezeniaLesne: [],
+      maProfilLesnictwa: false,
+      maProfilRolnictwa: false,
       blogRaw: [],
       historiaRaw: [],
       rynekRaw: [],
@@ -133,6 +143,9 @@ async function pobierzSuroweDanePubliczneProfiluWsi(
     konkursFoto,
     fotokronikaPubliczna,
     ostrzezeniaLowieckie,
+    ostrzezeniaLesne,
+    profilLesny,
+    profilRolniczy,
     { data: blogRaw },
     { data: historiaRaw },
     { data: rynekRaw },
@@ -164,6 +177,9 @@ async function pobierzSuroweDanePubliczneProfiluWsi(
     isActive ? pobierzKonkursBezGlosu(supabase, villageId) : Promise.resolve(null),
     isActive ? pobierzFotokronikePublicznaWsi(supabase, villageId) : Promise.resolve([]),
     isActive ? pobierzAktywneOstrzezeniaLowieckie(supabase, villageId) : Promise.resolve([]),
+    isActive ? pobierzAktywneOstrzezeniaLesne(supabase, villageId) : Promise.resolve([]),
+    isActive ? pobierzProfilLesnictwaPubliczny(supabase, villageId) : Promise.resolve(null),
+    isActive ? pobierzProfilRolnictwaPubliczny(supabase, villageId) : Promise.resolve(null),
     supabase
       .from("village_blog_posts")
       .select("id, title, excerpt, created_at, published_at")
@@ -303,6 +319,9 @@ async function pobierzSuroweDanePubliczneProfiluWsi(
     konkursFoto,
     fotokronikaPubliczna,
     ostrzezeniaLowieckie,
+    ostrzezeniaLesne,
+    maProfilLesnictwa: profilLesny != null,
+    maProfilRolnictwa: profilRolniczy != null,
     blogRaw: blogRaw ?? [],
     historiaRaw: historiaRaw ?? [],
     rynekRaw: rynekRaw ?? [],

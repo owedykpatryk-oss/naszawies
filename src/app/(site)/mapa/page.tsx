@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import { MapaAutomatyzacjaKlient } from "@/components/mapa/mapa-automatyzacja-klient";
+import { MapaStatystykiBanner } from "@/components/mapa/mapa-statystyki-banner";
 import { LinkPomocyKontekstowej } from "@/components/pomoc/link-pomocy-kontekstowej";
 import { MapaWsiStronaDynamic, MapaWsiStronaSkeleton } from "@/components/mapa/mapa-wsi-strona-dynamic";
 import type { StatystykiMapy } from "@/components/mapa/mapa-statystyki-banner";
@@ -14,8 +15,10 @@ import type { ZnacznikAdres, ZnacznikGeoKontekst, ZnacznikZgloszenie } from "@/c
 import { pobierzKolaLowieckieNaMape } from "@/lib/mapa/pobierz-kola-lowieckie-na-mape";
 import { pobierzRewiryNaMape } from "@/lib/mapa/pobierz-rewiry-na-mape";
 import { przygotujPoiLowieckieNaMape } from "@/lib/mapa/poi-lowieckie-widocznosc";
+import { pobierzOstrzezeniaLesneNaMape } from "@/lib/lesnictwo/pobierz-ostrzezenia-na-mape";
 import { pobierzPolowaniaNaMape } from "@/lib/mapa/pobierz-polowania-na-mape";
 import { pobierzPubliczneDaneMapy } from "@/lib/mapa/pobierz-publiczne-dane-mapy";
+import { pobierzWarstwyGeoportalNaMape } from "@/lib/mapa/pobierz-warstwy-geoportal-na-mape";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
 import { pobierzUzytkownikaSerwer } from "@/lib/auth/pobierz-uzytkownika-serwer";
 import { urlLogowaniaZPowrotem } from "@/lib/auth/sciezki-chronione";
@@ -48,20 +51,28 @@ export default async function MapaPage() {
   const { znaczniki, punktyPoi: punktyPoiSurowe, punktyRynek, punktyRynekDzialki, obrysyCmentarzy, bladZapytania } =
     await pobierzPubliczneDaneMapy();
 
-  const [punktyPolowania, punktyKola, rewiryLowieckie] = await Promise.all([
+  const [punktyPolowania, ostrzezeniaLesne, punktyKola, rewiryLowieckie] = await Promise.all([
     pobierzPolowaniaNaMape(znaczniki),
+    pobierzOstrzezeniaLesneNaMape(znaczniki),
     pobierzKolaLowieckieNaMape(znaczniki),
     pobierzRewiryNaMape(znaczniki),
   ]);
 
-  const punktyAdresy: ZnacznikAdres[] = [];
-  const punktyGeoKontekst: ZnacznikGeoKontekst[] = [];
+  let punktyAdresy: ZnacznikAdres[] = [];
+  let punktyGeoKontekst: ZnacznikGeoKontekst[] = [];
   const punktyZgloszenia: ZnacznikZgloszenie[] = [];
   const wioskiCzlonkow = new Set<string>();
+
+  const wiesPoIdMapy = new Map(
+    znaczniki.map((z) => [z.id, { name: z.name, sciezka: z.sciezka } as const]),
+  );
 
   try {
     if (znaczniki.length > 0) {
       const sbAuth = utworzKlientaSupabaseSerwer();
+      const warstwyGeo = await pobierzWarstwyGeoportalNaMape(sbAuth, wiesPoIdMapy);
+      punktyAdresy = warstwyGeo.punktyAdresy;
+      punktyGeoKontekst = warstwyGeo.punktyGeoKontekst;
       const { data: roleRows } = await sbAuth
         .from("user_village_roles")
         .select("village_id")
@@ -109,11 +120,6 @@ export default async function MapaPage() {
     wybierzWsiZMalymPoi(znaczniki, punktyPoi, 8),
   ).slice(0, 10);
 
-  /** Lekkie znaczniki bez GeoJSON — obrysy dociąga klient (/api/mapa/granice-wsi). */
-  const znacznikiDoMapy = znaczniki.map((z) => ({
-    ...z,
-    boundary_geojson: null,
-  }));
   const znacznikiDoSync = znaczniki.map((z) => ({
     id: z.id,
     boundary_geojson: z.boundary_geojson,
@@ -121,9 +127,9 @@ export default async function MapaPage() {
 
   return (
     <main className="mapa-strona-glowna mapa-strona-glowna--immersive flex min-h-0 flex-col">
-      <header className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-b border-stone-200/80 bg-white/90 px-3 py-2 backdrop-blur-sm sm:px-4">
+      <header className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-b border-green-900/8 bg-gradient-to-r from-white via-emerald-50/30 to-white px-3 py-2 backdrop-blur-sm sm:px-4">
         <div className="flex min-w-0 flex-wrap items-center gap-2">
-          <h1 className="font-serif text-lg font-medium leading-tight text-green-950 sm:text-xl">Mapa wiosek</h1>
+          <h1 className="font-serif text-base font-medium leading-tight text-green-950 sm:text-lg">Mapa wiosek</h1>
           <LinkPomocyKontekstowej
             href="/pomoc#mapa"
             label="Pomoc: mapa wsi"
@@ -153,7 +159,8 @@ export default async function MapaPage() {
       ) : null}
 
       {!bladZapytania && znaczniki.length > 0 ? (
-        <div className="mapa-widget-pelny min-h-0 flex-1">
+        <div className="mapa-widget-pelny flex min-h-0 flex-1 flex-col">
+          <MapaStatystykiBanner statystyki={statystykiMapy} />
           <Suspense fallback={<MapaWsiStronaSkeleton />}>
             <MapaAutomatyzacjaKlient
               znaczniki={znacznikiDoSync}
@@ -161,13 +168,14 @@ export default async function MapaPage() {
               statystyki={statystykiMapy}
             />
             <MapaWsiStronaDynamic
-              znaczniki={znacznikiDoMapy}
+              znaczniki={znaczniki}
               punktyPoi={punktyPoi}
               punktyAdresy={punktyAdresy}
               punktyRynek={punktyRynek}
               punktyRynekDzialki={punktyRynekDzialki}
               punktyZgloszenia={punktyZgloszenia}
               punktyPolowania={punktyPolowania}
+              ostrzezeniaLesne={ostrzezeniaLesne}
               punktyKola={punktyKola}
               rewiryLowieckie={rewiryLowieckie}
               punktyCmentarze={obrysyCmentarzy}

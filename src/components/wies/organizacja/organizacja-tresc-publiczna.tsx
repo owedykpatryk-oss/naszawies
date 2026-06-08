@@ -25,6 +25,8 @@ import {
   type DaneKlubuSportowego,
   type WydarzenieSportoweSkrot,
 } from "@/components/wies/karta-klubu-sportowego";
+import { KartaSzkolyPubliczna, type DaneSzkolyPubliczne } from "@/components/wies/karta-szkoly-publiczna";
+import { KartaRolnikowPubliczna, type DaneRolnikowPubliczne } from "@/components/wies/karta-rolnikow-publiczna";
 import type { WpisKalendarzaLowieckiego } from "@/lib/lowiectwo/kalendarz-lowiecki";
 import type { SegmentOrganizacji } from "@/lib/wies/sciezka-organizacji-publicznej";
 import {
@@ -32,6 +34,8 @@ import {
   parsujProfilLowiecki,
   parsujProfilOsp,
   parsujProfilParafii,
+  parsujProfilRolnikow,
+  parsujProfilSzkoly,
 } from "@/lib/wies/profil-organizacji";
 import { parsujProfilKlubuSportowego } from "@/lib/wies/profil-klubu-sportowego";
 import type { WierszOrganizacjiPublicznej } from "@/lib/wies/pobierz-strone-organizacji";
@@ -446,6 +450,40 @@ export function OrganizacjaTrescPubliczna(props: Props) {
         linkRemizaNaMapie={linkRemizaNaMapie ?? linkMiejsceNaMapie}
         nadchodzaceWydarzenia={nadchodzace as WydarzenieOspSkrot[]}
         trybOsadzony
+      />
+    );
+  }
+
+  if (segment === "szkola") {
+    const szkola: DaneSzkolyPubliczne = {
+      id: org.id,
+      name: org.name,
+      short_description: org.short_description,
+      meeting_place: org.meeting_place,
+      schedule_text: org.schedule_text,
+      contact_phone: org.contact_phone,
+      contact_email: org.contact_email,
+      profil: parsujProfilSzkoly(org.profile_data),
+    };
+    return <KartaSzkolyPubliczna szkola={szkola} linkNaMapie={linkMiejsceNaMapie} />;
+  }
+
+  if (segment === "rolnicy") {
+    const kolo: DaneRolnikowPubliczne = {
+      id: org.id,
+      name: org.name,
+      short_description: org.short_description,
+      meeting_place: org.meeting_place,
+      schedule_text: org.schedule_text,
+      contact_phone: org.contact_phone,
+      contact_email: org.contact_email,
+      profil: parsujProfilRolnikow(org.profile_data),
+    };
+    return (
+      <KartaRolnikowPubliczna
+        kolo={kolo}
+        linkNaMapie={linkMiejsceNaMapie}
+        sciezkaRolnictwa={`${sciezkaWsi}/rolnictwo`}
       />
     );
   }

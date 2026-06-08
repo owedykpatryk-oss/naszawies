@@ -34,8 +34,9 @@ export type InstitutionalFetchResult =
 
 const DEFAULT_PRG_WFS_URL = "https://mapy.geoportal.gov.pl/wss/service/PZGIK/PRG/WFS/AdministrativeBoundaries";
 
+/** Nazwy warstw z GetCapabilities usługi PRG AdministrativeBoundaries (bez szkół/poczty — ich tu nie ma). */
 const DOMYSLNE_WARSTWY =
-  "K07_Komenda_powiatowa_strazy_pozarnej,K11_Ochotnicza_straz_pozarna,K02_Komenda_powiatowa_policji,K04_Komenda_rejonowa_policji,K05_Komisariat_policji,U06_Nadlesnictwo,U07_Regionalna_dyrekcja_lasow_panstwowych,U02_Urzad_skarbowy,U09_Regionalny_zarzad_gospodarki_wodnej_PGWWP,S03_Sad_rejonowy,Z02_Szkola_podstawowa,Z03_Przedszkole";
+  "K07_Komenda_powiatowa_strazy_pozarnej,K06_Komenda_wojewodzka_strazy_pozarnej,K01_Komenda_wojewodzka_policji,K02_Komenda_powiatowa_policji,K04_Komenda_rejonowa_policji,K05_Komisariat_policji,P03_Prokuratura_rejonowa,U06_Nadlesnictwo,U07_Regionalna_dyrekcja_lasow_panstwowych,U02_Urzad_skarbowy,U08_Zarzad_zlewni_PGWWP,U09_Regionalny_zarzad_gospodarki_wodnej_PGWWP,S03_Sad_rejonowy,K13_Obszar_dzialania_szefa_obrony_cywilnej_gminy";
 
 function env(name: string): string | null {
   const v = process.env[name]?.trim();
@@ -101,7 +102,7 @@ export async function pobierzWarstwyInstytucjonalnePrgWokolWsi(
     .split(",")
     .map((s) => s.trim())
     .filter(Boolean)
-    .slice(0, 20);
+    .slice(0, 24);
   if (typeNames.length === 0) {
     return { ok: false, reason: "Pusta lista warstw GEOPORTAL_PRG_INSTITUTIONAL_TYPENAMES.", retryable: false };
   }

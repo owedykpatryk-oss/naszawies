@@ -84,10 +84,10 @@ export function MapaAutomatyzacjaKlient({
 
   return (
     <p
-      className={`mx-4 mt-3 rounded-lg border px-3 py-2 text-xs md:mx-6 ${
+      className={`mapa-toast-sync pointer-events-none fixed z-[430] mx-3 max-w-sm rounded-xl border px-3 py-2 text-xs shadow-lg backdrop-blur-md ${
         trwa
-          ? "border-blue-200 bg-blue-50 text-blue-950"
-          : "border-green-200 bg-green-50 text-green-950"
+          ? "border-blue-200/90 bg-blue-50/95 text-blue-950"
+          : "border-green-200/90 bg-green-50/95 text-green-950"
       }`}
       role="status"
     >

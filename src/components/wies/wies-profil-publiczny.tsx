@@ -94,6 +94,7 @@ import {
 } from "@/lib/wies/ustawienia-wsi";
 import { zbudujZakladkiProfiluWsi } from "@/lib/wies/zbuduj-zakladki-profilu-wsi";
 import type { KonkursFotoPubliczny, ZdjecieKonkursu } from "@/lib/konkurs-foto/fazy-konkursu";
+import type { OstrzezenieLesne } from "@/lib/lesnictwo/pobierz-ostrzezenia-publiczne";
 import type { OstrzezenieLowieckie } from "@/lib/lowiectwo/pobierz-ostrzezenia-publiczne";
 import type { ZdjeciePubliczne } from "@/lib/fotokronika/pobierz-fotokronike-publiczna";
 
@@ -141,6 +142,10 @@ const KonkursFotoWsiKlient = dynamic(
   { ssr: false, loading: () => <section className="mt-12 h-40 animate-pulse rounded-2xl bg-stone-100" aria-hidden /> },
 );
 
+const OstrzezeniaLesneWsi = dynamic(
+  () => import("@/components/wies/ostrzezenia-lesne-wsi").then((m) => ({ default: m.OstrzezeniaLesneWsi })),
+  { loading: () => null },
+);
 const OstrzezeniaLowieckieWsi = dynamic(
   () => import("@/components/wies/ostrzezenia-lowieckie-wsi").then((m) => ({ default: m.OstrzezeniaLowieckieWsi })),
   { loading: () => null },
@@ -180,6 +185,9 @@ export function WiesProfilPubliczny({
   konkursFoto = null,
   fotokronikaPubliczna = [],
   ostrzezeniaLowieckie = [],
+  ostrzezeniaLesne = [],
+  maProfilLesnictwa = false,
+  maProfilRolnictwa = false,
   zalogowany = false,
   mieszkaniecWsi = false,
   zapisaneTresci = {},
@@ -212,6 +220,9 @@ export function WiesProfilPubliczny({
   } | null;
   fotokronikaPubliczna?: ZdjeciePubliczne[];
   ostrzezeniaLowieckie?: OstrzezenieLowieckie[];
+  ostrzezeniaLesne?: OstrzezenieLesne[];
+  maProfilLesnictwa?: boolean;
+  maProfilRolnictwa?: boolean;
   blog?: {
     id: string;
     title: string;
@@ -748,9 +759,71 @@ export function WiesProfilPubliczny({
       <OstrzezeniaLowieckieWsi
         ostrzezenia={ostrzezeniaLowieckie}
         nazwaWsi={wies.name}
+        sciezkaWsi={sciezka}
         maProfilKola={kolaLowieckie.length > 0}
         zalogowany={zalogowany}
       />
+      {ostrzezeniaLowieckie.length > 0 ? (
+        <OslonaSekcjiWies className="mt-4">
+          <Link
+            href={`${sciezka}/lowiectwo`}
+            className="flex items-center gap-3 rounded-2xl border border-amber-200 bg-gradient-to-r from-amber-50 to-orange-50/80 px-5 py-4 text-sm shadow-sm transition hover:border-amber-400"
+          >
+            <span className="text-2xl" aria-hidden>
+              🦌
+            </span>
+            <span>
+              <span className="block font-semibold text-amber-950">Łowiectwo i polowania</span>
+              <span className="text-stone-600">Aktywne ostrzeżenia, mapa obszarów i bezpieczeństwo w terenie</span>
+            </span>
+            <span className="ml-auto text-amber-800">→</span>
+          </Link>
+        </OslonaSekcjiWies>
+      ) : null}
+      <OstrzezeniaLesneWsi
+        ostrzezenia={ostrzezeniaLesne}
+        nazwaWsi={wies.name}
+        sciezkaWsi={sciezka}
+        zalogowany={zalogowany}
+      />
+      {maProfilLesnictwa || ostrzezeniaLesne.length > 0 ? (
+        <OslonaSekcjiWies className="mt-6">
+          <Link
+            href={`${sciezka}/lesnictwo`}
+            className="flex items-center gap-3 rounded-2xl border border-emerald-200 bg-gradient-to-r from-emerald-50 to-lime-50/80 px-5 py-4 text-sm shadow-sm transition hover:border-emerald-400"
+          >
+            <span className="text-2xl" aria-hidden>
+              🌲
+            </span>
+            <span>
+              <span className="block font-semibold text-emerald-950">Leśnictwo i las</span>
+              <span className="text-stone-600">
+                Choinki, drewno, zakazy wstępu, wycinki — pełny profil leśny wsi
+              </span>
+            </span>
+            <span className="ml-auto text-emerald-800">→</span>
+          </Link>
+        </OslonaSekcjiWies>
+      ) : null}
+      {maProfilRolnictwa || modul("rolnictwo") ? (
+        <OslonaSekcjiWies className="mt-4">
+          <Link
+            href={`${sciezka}/rolnictwo`}
+            className="flex items-center gap-3 rounded-2xl border border-lime-200 bg-gradient-to-r from-lime-50 to-green-50/80 px-5 py-4 text-sm shadow-sm transition hover:border-lime-400"
+          >
+            <span className="text-2xl" aria-hidden>
+              🌾
+            </span>
+            <span>
+              <span className="block font-semibold text-lime-950">Rolnictwo i skup</span>
+              <span className="text-stone-600">
+                ARiMR, dopłaty, ceny GUS, skup zbóż i mleka — pełny profil rolniczy wsi
+              </span>
+            </span>
+            <span className="ml-auto text-lime-800">→</span>
+          </Link>
+        </OslonaSekcjiWies>
+      ) : null}
       <WiesKontaktSzybkiPasek kontakty={kontaktyUrzedowe} />
 
       {wies.description ? (
@@ -953,7 +1026,9 @@ export function WiesProfilPubliczny({
         <WiesCenyOkolicyLazy villageId={wies.id} zalogowany={zalogowany} />
       ) : null}
 
-      {modul("rolnictwo") ? <WiesRolnictwoLazy villageId={wies.id} zalogowany={zalogowany} /> : null}
+      {modul("rolnictwo") ? (
+        <WiesRolnictwoLazy villageId={wies.id} zalogowany={zalogowany} sciezkaWsi={sciezka} />
+      ) : null}
 
       <OslonaSekcjiWies id="kontakty-urzedowe-wsi" pusta={kontaktyUrzedowe.length === 0}>
         <TytulSekcjiWies

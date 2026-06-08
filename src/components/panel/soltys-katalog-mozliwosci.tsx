@@ -122,8 +122,11 @@ export function SoltysKatalogMozliwosci({ katalog, kompaktowy }: Props) {
 
       {!katalog.transportPlatforma ? (
         <p className="mt-3 rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-xs text-amber-950">
-          Rozkłady PKP/PKS na serwerze wymagają konfiguracji u administratora platformy (klucz API / GTFS).
-          Pozostałe moduły działają normalnie.
+          Automatyczne rozkłady PKP/GTFS wymagają konfiguracji u administratora platformy. Możesz jednak{" "}
+          <Link href="/panel/soltys/transport" className="font-medium underline">
+            wpisać rozkład PKS ręcznie
+          </Link>{" "}
+          przy przystankach na mapie.
         </p>
       ) : null}
 

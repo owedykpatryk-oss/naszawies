@@ -18,6 +18,8 @@ import {
   parsujProfilLowiecki,
   parsujProfilOsp,
   parsujProfilParafii,
+  parsujProfilRolnikow,
+  parsujProfilSzkoly,
   parsujRewirGeojsonZProfilu,
 } from "@/lib/wies/profil-organizacji";
 import { parsujProfilKlubuSportowego } from "@/lib/wies/profil-klubu-sportowego";
@@ -115,6 +117,14 @@ function podtytulOrganizacji(segment: SegmentOrganizacji, org: WierszOrganizacji
     const p = parsujProfilKlubuSportowego(pd);
     if (p?.trener) return `Trener: ${p.trener}`;
     if (p?.dyscyplina) return p.dyscyplina;
+  }
+  if (segment === "szkola") {
+    const p = parsujProfilSzkoly(pd);
+    if (p?.dyrektor) return `Dyrektor: ${p.dyrektor}`;
+  }
+  if (segment === "rolnicy") {
+    const p = parsujProfilRolnikow(pd);
+    if (p?.przewodniczacy) return `Przewodniczący: ${p.przewodniczacy}`;
   }
   return null;
 }

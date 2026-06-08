@@ -95,6 +95,18 @@ const AKCJE_SOLTYS: AkcjaPanelu[] = [
     ikona: "🖼️",
   },
   {
+    href: "/panel/soltys/rolnictwo",
+    tytul: "Rolnictwo",
+    opis: "ARiMR, dopłaty, skup — profil rolniczy wsi i ceny GUS.",
+    ikona: "🌾",
+  },
+  {
+    href: "/panel/soltys/lesnictwo",
+    tytul: "Leśnictwo",
+    opis: "Zakazy wstępu, wycinki, choinki — profil leśny wsi.",
+    ikona: "🌲",
+  },
+  {
     href: "/panel/soltys/lowiectwo",
     tytul: "Polowania",
     opis: "Ostrzeżenia dla mieszkańców i turystów.",

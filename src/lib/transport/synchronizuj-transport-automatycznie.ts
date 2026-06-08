@@ -1,7 +1,17 @@
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { czyscStaryCacheTransportu } from "@/lib/transport/czysc-stare-odjazdy";
-import { frazaStacjiDlaPowiatu, odjazdPasujeDoCelu } from "@/lib/transport/huby-powiatowe";
-import { pobierzOdjazdyDlaStacjiPkp, wyszukajStacjePkpPoNazwie } from "@/lib/transport/pkp-plk-api";
+import {
+  frazaStacjiDlaPowiatu,
+  odjazdPasujeDoCelu,
+  rozwiazStacjePowiatu,
+} from "@/lib/transport/huby-powiatowe";
+import { utworzBrakujacePoiStacjiZKpk } from "@/lib/transport/dodaj-poi-stacji-z-pkp";
+import {
+  pobierzOdjazdyDlaStacjiPkp,
+  pobierzPolaczeniaMiedzyStacjamiPkp,
+  pobierzUtrudnieniaDlaStacjiPkp,
+  wyszukajStacjePkpPoNazwie,
+} from "@/lib/transport/pkp-plk-api";
 import { wyslijWebPushDlaUzytkownika } from "@/lib/pwa/wyslij-web-push";
 import { sciezkaProfiluWsi } from "@/lib/wies/sciezka-publiczna";
 
@@ -41,6 +51,8 @@ export type TransportAutoSyncSummary = {
   statusOrange: number;
   statusRed: number;
   fallbackVillages: number;
+  stacjePoiUtworzono: number;
+  polaczeniaHubZapisane: number;
   errors: string[];
 };
 
@@ -206,6 +218,8 @@ export async function synchronizujTransportAutomatycznie(
     statusOrange: 0,
     statusRed: 0,
     fallbackVillages: 0,
+    stacjePoiUtworzono: 0,
+    polaczeniaHubZapisane: 0,
     errors: [],
   };
 
@@ -288,6 +302,30 @@ export async function synchronizujTransportAutomatycznie(
     const realtimeDue = !Number.isFinite(lastRealtime) || now - lastRealtime >= realtimeCooldownMs;
     if (!opcje?.wymus && !plannedDue && !realtimeDue) continue;
 
+    const railIstniejace = poiByVillage.get(v.id) ?? [];
+    try {
+      const poiPkp = await utworzBrakujacePoiStacjiZKpk(supabase, {
+        villageId: v.id,
+        villageName: v.name,
+        commune: v.commune,
+        lat,
+        lon,
+        istniejace: railIstniejace,
+      });
+      summary.stacjePoiUtworzono += poiPkp.utworzono;
+      if (poiPkp.utworzono > 0) {
+        const { data: noweRail } = await supabase
+          .from("pois")
+          .select("id, village_id, name, latitude, longitude")
+          .eq("village_id", v.id)
+          .eq("category", "stacja_kolejowa");
+        if (noweRail?.length) poiByVillage.set(v.id, noweRail as StationPoiRow[]);
+      }
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      summary.errors.push(`${v.name} (POI PKP): ${msg}`);
+    }
+
     const candidates = (poiByVillage.get(v.id) ?? [])
       .map((p) => {
         const plat = Number(p.latitude);
@@ -367,10 +405,15 @@ export async function synchronizujTransportAutomatycznie(
     summary.villagesProcessed += 1;
 
     let allDepartures: Awaited<ReturnType<typeof pobierzOdjazdyDlaStacjiPkp>> = [];
+    const stationIdsVillage = new Set<string>();
 
     for (const ms of reczneStacje ?? []) {
       try {
-        const departures = await pobierzOdjazdyDlaStacjiPkp(ms.station_id, { hoursAhead: 24 });
+        stationIdsVillage.add(ms.station_id);
+        const departures = await pobierzOdjazdyDlaStacjiPkp(ms.station_id, {
+          hoursAhead: 24,
+          tylkoPlan: !realtimeDue,
+        });
         allDepartures = allDepartures.concat(departures);
         summary.stationsObserved += 1;
         if (departures.length > 0) {
@@ -412,6 +455,7 @@ export async function synchronizujTransportAutomatycznie(
         if (!station) continue;
 
         summary.stationsObserved += 1;
+        stationIdsVillage.add(station.id);
         const { data: istniejaca } = await supabase
           .from("village_transport_stations")
           .select("is_manual_override")
@@ -436,7 +480,10 @@ export async function synchronizujTransportAutomatycznie(
           );
         }
 
-        const departures = await pobierzOdjazdyDlaStacjiPkp(station.id, { hoursAhead: 24 });
+        const departures = await pobierzOdjazdyDlaStacjiPkp(station.id, {
+          hoursAhead: 24,
+          tylkoPlan: !realtimeDue,
+        });
         allDepartures = allDepartures.concat(departures);
 
         if (departures.length > 0) {
@@ -473,6 +520,56 @@ export async function synchronizujTransportAutomatycznie(
       }
     }
 
+    if (stationIdsVillage.size > 0) {
+      try {
+        const hub = await rozwiazStacjePowiatu(v.county ?? "");
+        const lokalna = Array.from(stationIdsVillage)[0];
+        if (hub && lokalna && hub.id !== lokalna) {
+          const pol = await pobierzPolaczeniaMiedzyStacjamiPkp(lokalna, hub.id, { hoursAhead: 36 });
+          if (pol.length > 0) {
+            const payload = pol.map((d) => ({
+              village_id: v.id,
+              station_id: lokalna,
+              station_name: hub.name,
+              departure_uid: `hub|${d.departureUid}`,
+              train_label: d.trainLabel,
+              destination: d.destination ?? hub.name,
+              carrier: d.carrier,
+              platform: d.platform,
+              planned_at: d.plannedWhenIso,
+              realtime_at: d.realtimeWhenIso,
+              delay_min: d.delayMinutes,
+              status: d.status,
+              is_cancelled: d.isCancelled,
+              source_updated_at: d.sourceUpdatedAtIso,
+              fetched_at: new Date().toISOString(),
+              raw: { ...d, relation: "powiat_hub" },
+            }));
+            const { error: hubErr } = await supabase
+              .from("transport_departures_cache")
+              .upsert(payload, { onConflict: "village_id,station_id,departure_uid" });
+            if (!hubErr) {
+              summary.polaczeniaHubZapisane += payload.length;
+              allDepartures = allDepartures.concat(pol);
+            }
+          }
+        }
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        summary.errors.push(`${v.name} (hub PKP): ${msg}`);
+      }
+    }
+
+    let utrudnienia: Awaited<ReturnType<typeof pobierzUtrudnieniaDlaStacjiPkp>> = [];
+    if (stationIdsVillage.size > 0) {
+      try {
+        utrudnienia = await pobierzUtrudnieniaDlaStacjiPkp(Array.from(stationIdsVillage));
+      } catch (e) {
+        const msg = e instanceof Error ? e.message : String(e);
+        summary.errors.push(`${v.name} (utrudnienia PKP): ${msg}`);
+      }
+    }
+
     const upcoming = allDepartures
       .filter((d) => Date.parse(d.plannedWhenIso) >= Date.now() - 5 * 60 * 1000)
       .sort((a, b) => Date.parse(a.whenIso) - Date.parse(b.whenIso))
@@ -504,6 +601,10 @@ export async function synchronizujTransportAutomatycznie(
       statusColor = "red";
       statusLabel = "Są odwołane połączenia";
       summary.statusRed += 1;
+    } else if (utrudnienia.length > 0) {
+      statusColor = "orange";
+      statusLabel = utrudnienia[0].message.slice(0, 140);
+      summary.statusOrange += 1;
     } else if (delayedCount > 0) {
       statusColor = "orange";
       statusLabel = "Występują opóźnienia";

@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { FormEvent, useMemo, useState, useTransition } from "react";
+import { FormEvent, useEffect, useMemo, useState, useTransition } from "react";
 import {
   dodajWpisKalendarzaLowieckiego,
   usunWpisKalendarzaLowieckiego,
@@ -25,6 +25,8 @@ type Props = {
   ostrzezenia: { id: string; villageId: string; title: string; startsAt: string }[];
   miesiac: string;
   sciezkaMiesiaca: (ym: string) => string;
+  poczatkoweOstrzezenieId?: string;
+  poczatkowaWiesId?: string;
 };
 
 function kluczDnia(d: Date): string {
@@ -84,6 +86,8 @@ export function KalendarzLowieckiKlient({
   ostrzezenia,
   miesiac,
   sciezkaMiesiaca,
+  poczatkoweOstrzezenieId,
+  poczatkowaWiesId,
 }: Props) {
   const [wybranyDzien, ustawWybranyDzien] = useState(() => kluczDnia(new Date()));
   const [villageId, ustawVillageId] = useState(wsie[0]?.id ?? "");
@@ -125,6 +129,24 @@ export function KalendarzLowieckiKlient({
   const wybranaAmbona = ambony.find((a) => a.id === poiId);
 
   const ostrzezeniaWsi = ostrzezenia.filter((o) => o.villageId === villageId);
+
+  useEffect(() => {
+    if (!poczatkowaWiesId || !wsie.some((w) => w.id === poczatkowaWiesId)) return;
+    ustawVillageId(poczatkowaWiesId);
+    if (!poczatkoweOstrzezenieId) return;
+    const o = ostrzezenia.find((x) => x.id === poczatkoweOstrzezenieId);
+    if (!o) return;
+    ustawHuntingNoticeId(o.id);
+    ustawEntryKind("polowanie_zbiorowe");
+    ustawTitle(o.title);
+    const s = new Date(o.startsAt);
+    const e = new Date(o.startsAt);
+    e.setHours(s.getHours() + 6, s.getMinutes(), 0, 0);
+    if (e <= s) e.setTime(s.getTime() + 6 * 60 * 60 * 1000);
+    ustawStartsAt(doDatetimeLocal(s));
+    ustawEndsAt(doDatetimeLocal(e));
+    ustawWybranyDzien(kluczDnia(s));
+  }, [poczatkowaWiesId, poczatkoweOstrzezenieId, ostrzezenia, wsie]);
 
   function ustawTerminDnia(dzienKlucz: string, godzStart = 6, godzKoniec = 18) {
     const d = new Date(dzienKlucz + "T12:00:00");

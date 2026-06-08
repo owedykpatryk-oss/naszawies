@@ -24,8 +24,8 @@ export type WiesDoSyncGranic = {
 };
 
 export type WynikSyncGranicyJednejWsi =
-  | { ok: true; source: string; zaktualizowanoCentroid: boolean }
-  | { ok: false; reason: string; retryable: boolean };
+  | { ok: true; source: string; zaktualizowanoCentroid: boolean; uzytoGeokodu: boolean }
+  | { ok: false; reason: string; retryable: boolean; uzytoGeokodu: boolean };
 
 function doNum(v: unknown): number | null {
   if (v == null) return null;
@@ -43,10 +43,13 @@ export async function aplikujGranicePrgDlaWsi(
 ): Promise<WynikSyncGranicyJednejWsi> {
   let lat = doNum(village.latitude);
   let lon = doNum(village.longitude);
+  let uzytoGeokodu = false;
 
   if ((lat == null || lon == null) && opcje?.geokodujGdyBrakGps) {
+    await new Promise((r) => setTimeout(r, 1100));
     const kontekst = [opcje.commune, opcje.county, opcje.voivodeship].filter(Boolean).join(", ");
     const gps = await geokodujLokalizacjeTekst(village.name, kontekst || null);
+    uzytoGeokodu = true;
     if (gps) {
       lat = gps.latitude;
       lon = gps.longitude;
@@ -57,7 +60,8 @@ export async function aplikujGranicePrgDlaWsi(
     return {
       ok: false,
       reason: "Brak współrzędnych wsi — potrzebny punkt GPS do pobrania obrębu ewidencyjnego z PRG.",
-      retryable: false,
+      retryable: uzytoGeokodu,
+      uzytoGeokodu,
     };
   }
 
@@ -67,7 +71,7 @@ export async function aplikujGranicePrgDlaWsi(
     gminaTerytKod: village.gmina_teryt_kod ?? null,
   });
   if (!wynik.ok) {
-    return { ok: false, reason: wynik.reason, retryable: wynik.retryable };
+    return { ok: false, reason: wynik.reason, retryable: wynik.retryable, uzytoGeokodu };
   }
 
   if (czyZrodloGranicyGminy(wynik.sourceTypeName)) {
@@ -76,6 +80,7 @@ export async function aplikujGranicePrgDlaWsi(
       reason:
         "Odrzucono granicę: pobrany obrys obejmuje całą gminę, a nie obręb ewidencyjny wsi.",
       retryable: false,
+      uzytoGeokodu,
     };
   }
 
@@ -84,6 +89,7 @@ export async function aplikujGranicePrgDlaWsi(
       ok: false,
       reason: "Odrzucono granicę: obrys jest zbyt duży (prawdopodobnie granica gminy, nie wsi).",
       retryable: false,
+      uzytoGeokodu,
     };
   }
 
@@ -93,6 +99,7 @@ export async function aplikujGranicePrgDlaWsi(
       reason:
         "Odrzucono granicę: punkt GPS wsi nie leży w pobranym obrysie (prawdopodobnie inny obręb ewidencyjny niż sołectwo).",
       retryable: false,
+      uzytoGeokodu,
     };
   }
 
@@ -110,15 +117,21 @@ export async function aplikujGranicePrgDlaWsi(
   });
 
   if (error) {
-    return { ok: false, reason: `ustaw_granice_wsi: ${error.message}`, retryable: true };
+    return { ok: false, reason: `ustaw_granice_wsi: ${error.message}`, retryable: true, uzytoGeokodu };
   }
   if (zapisano !== true) {
-    return { ok: false, reason: "Nie znaleziono wsi o podanym TERYT w bazie.", retryable: false };
+    return {
+      ok: false,
+      reason: "Nie znaleziono wsi o podanym TERYT w bazie.",
+      retryable: false,
+      uzytoGeokodu,
+    };
   }
 
   return {
     ok: true,
     source,
-    zaktualizowanoCentroid: lat == null && c != null,
+    zaktualizowanoCentroid: doNum(village.latitude) == null && c != null,
+    uzytoGeokodu,
   };
 }

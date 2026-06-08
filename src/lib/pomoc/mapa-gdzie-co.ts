@@ -85,6 +85,30 @@ export const MAPA_GDZIE_CO: WpisMapyGdzieCo[] = [
     rola: "soltys",
   },
   {
+    cel: "Zakaz wstępu do lasu / wycinka / ostrzeżenie leśne",
+    sciezka: "Panel → Sołtys → Leśnictwo",
+    href: "/panel/soltys/lesnictwo",
+    rola: "soltys",
+  },
+  {
+    cel: "Profil rolniczy — ARiMR, dopłaty, skup",
+    sciezka: "Panel → Sołtys → Rolnictwo",
+    href: "/panel/soltys/rolnictwo",
+    rola: "soltys",
+  },
+  {
+    cel: "Zaplanować obsadę ambony lub polowanie zbiorowe",
+    sciezka: "Panel → Sołtys → Kalendarz łowiecki",
+    href: "/panel/soltys/lowiectwo/kalendarz",
+    rola: "soltys",
+  },
+  {
+    cel: "Wpisać rozkład PKS przy przystanku",
+    sciezka: "Panel → Sołtys → Transport",
+    href: "/panel/soltys/transport",
+    rola: "soltys",
+  },
+  {
     cel: "Znaleźć swoją wieś",
     sciezka: "Szukaj wsi (po zalogowaniu)",
     href: "/szukaj",

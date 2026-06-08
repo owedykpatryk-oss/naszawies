@@ -97,6 +97,9 @@ export function grupyNawigacjiSoltysa(l: LicznikiSoltysa | null, laczniePrzeglad
         { href: "/panel/soltys/grafika", label: "Kreator grafiki" },
         { href: "/panel/soltys/konkursy", label: "Konkursy zdjęć" },
         { href: "/panel/soltys/transport", label: "Transport PKP" },
+        { href: "/panel/soltys/lesnictwo", label: "Leśnictwo" },
+        { href: "/panel/soltys/rolnictwo", label: "Rolnictwo" },
+        { href: "/panel/soltys/lowiectwo", label: "Polowania" },
       ],
     },
     {
@@ -109,6 +112,7 @@ export function grupyNawigacjiSoltysa(l: LicznikiSoltysa | null, laczniePrzeglad
         { href: "/panel/soltys/spolecznosc?tryb=sport", label: "Sport" },
         { href: "/panel/soltys/spolecznosc?tryb=parafia", label: "Parafia" },
         { href: "/panel/soltys/spolecznosc?tryb=kgw", label: "KGW" },
+        { href: "/panel/soltys/spolecznosc?tryb=rolnicy", label: "Rolnicy" },
         { href: "/panel/soltys/spolecznosc?tryb=osp", label: "OSP" },
         { href: "/panel/soltys/kanaly-rss", label: "Kanały RSS" },
         { href: "/panel/rada", label: "Rada sołecka" },

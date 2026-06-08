@@ -26,6 +26,7 @@ const schemaDodaj = z.object({
   startsAt: z.string(),
   endsAt: z.string(),
   areaGeojson: z.unknown().optional().nullable(),
+  dodajDoKalendarza: z.boolean().optional(),
 });
 
 export async function dodajOstrzezenieLowieckieSoltys(dane: z.infer<typeof schemaDodaj>): Promise<WynikLow> {
@@ -48,25 +49,46 @@ export async function dodajOstrzezenieLowieckieSoltys(dane: z.infer<typeof schem
     return { blad: "Zaznacz obszar polowania na mapie (min. 3 narożniki)." };
   }
 
-  const { error } = await supabase.from("village_hunting_notices").insert({
-    village_id: p.data.villageId,
-    created_by: user.id,
-    title: p.data.title,
-    area_description: p.data.areaDescription,
-    safety_note: p.data.safetyNote?.length ? p.data.safetyNote : null,
-    contact_phone: p.data.contactPhone?.length ? p.data.contactPhone : null,
-    contact_name: p.data.contactName?.length ? p.data.contactName : null,
-    starts_at: start.toISOString(),
-    ends_at: end.toISOString(),
-    area_geojson: areaGeojson,
-    status: "approved",
-    moderated_by: user.id,
-    moderated_at: new Date().toISOString(),
-  });
+  const { data: inserted, error } = await supabase
+    .from("village_hunting_notices")
+    .insert({
+      village_id: p.data.villageId,
+      created_by: user.id,
+      title: p.data.title,
+      area_description: p.data.areaDescription,
+      safety_note: p.data.safetyNote?.length ? p.data.safetyNote : null,
+      contact_phone: p.data.contactPhone?.length ? p.data.contactPhone : null,
+      contact_name: p.data.contactName?.length ? p.data.contactName : null,
+      starts_at: start.toISOString(),
+      ends_at: end.toISOString(),
+      area_geojson: areaGeojson,
+      status: "approved",
+      moderated_by: user.id,
+      moderated_at: new Date().toISOString(),
+    })
+    .select("id")
+    .single();
 
   if (error) {
     console.error("[dodajOstrzezenieLowieckieSoltys]", error.message);
     return { blad: "Nie udało się zapisać." };
+  }
+
+  if (p.data.dodajDoKalendarza && inserted?.id) {
+    const { error: errKal } = await supabase.from("village_hunting_schedule_entries").insert({
+      village_id: p.data.villageId,
+      entry_kind: "polowanie_zbiorowe",
+      title: p.data.title,
+      starts_at: start.toISOString(),
+      ends_at: end.toISOString(),
+      hunting_notice_id: inserted.id,
+      hunter_name: p.data.contactName?.trim() || null,
+      hunter_phone: p.data.contactPhone?.trim() || null,
+      notes: p.data.safetyNote?.trim() || null,
+      created_by: user.id,
+    });
+    if (errKal) console.error("[dodajOstrzezenieLowieckieSoltys/kalendarz]", errKal.message);
+    else revalidatePath("/panel/soltys/lowiectwo/kalendarz");
   }
 
   revalidatePath("/panel/soltys/lowiectwo");

@@ -9,7 +9,7 @@ export type HeroMapaOrganizacji = {
   lng: number;
   linkPelnaMapa: string;
   etykietaLink: string;
-  wariant: "parafia" | "osp" | "sport" | "kgw";
+  wariant: "parafia" | "osp" | "sport" | "kgw" | "rolnicy";
   nazwaMiejsca?: string | null;
   /** Dodatkowe pinezki (np. cmentarz obok kościoła). */
   dodatkowePiny?: HeroMapaDodatkowyPin[];
@@ -37,6 +37,8 @@ const HERO_KATEGORIE: Record<Exclude<SegmentOrganizacji, "lowiectwo">, string[]>
   osp: ["osp"],
   sport: ["boisko", "hala_sportowa"],
   kgw: ["swietlica", "dom_kultury"],
+  szkola: ["szkola"],
+  rolnicy: ["sklep_rolniczy", "zagroda"],
 };
 
 function poiPoKategorii(pois: ZnacznikPoi[], kategoria: string): ZnacznikPoi | null {
@@ -90,6 +92,12 @@ export function linkiMapyOrganizacji(
       return {
         linkMiejsceNaMapie: spotkania ? linkPoi(spotkania) : null,
       };
+    case "rolnicy": {
+      const skup = poiPoKategorii(pois, "sklep_rolniczy") ?? poiPoKategorii(pois, "zagroda");
+      return {
+        linkMiejsceNaMapie: skup ? linkPoi(skup) : null,
+      };
+    }
     default:
       return {};
   }
@@ -144,6 +152,7 @@ export function heroMapaOrganizacji(
     osp: "Remiza na mapie ↗",
     sport: "Boisko na mapie ↗",
     kgw: "Miejsce spotkań na mapie ↗",
+    rolnicy: "Skup / gospodarstwo na mapie ↗",
   };
 
   return {

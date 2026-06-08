@@ -24,6 +24,7 @@ import { pobierzModulySpolecznosciWsi } from "@/lib/wies/pobierz-moduly-spoleczn
 import { pobierzAktywnosciFitnessWsi, pobierzPodsumowanieAktywnosciFitnessWsi } from "@/lib/wies/pobierz-aktywnosci-fitness-wsi";
 import { pobierzDanePubliczneProfiluWsi } from "@/lib/wies/pobierz-dane-publiczne-profilu-wsi";
 import { pobierzUstawieniaWsi } from "@/lib/wies/pobierz-ustawienia-wsi";
+import { czyModulWsiWlaczony } from "@/lib/wies/ustawienia-wsi";
 import { maCiasteczkaSesjiSupabaseSerwer } from "@/lib/auth/ciasteczka-sesji";
 import { pobierzUzytkownikaSerwer } from "@/lib/auth/pobierz-uzytkownika-serwer";
 import { pobierzLinkiPrzydatneDlaWsiGminy } from "@/lib/wies/pobierz-linki-przydatne";
@@ -40,6 +41,12 @@ import {
   StronaOrganizacjiPubliczna,
 } from "@/components/wies/organizacja/strona-organizacji-publiczna";
 import { pobierzHarmonogramLowieckiProfilWsi } from "@/lib/lowiectwo/pobierz-kalendarz-harmonogram";
+import { StronaLesnictwaWsi } from "@/components/wies/strona-lesnictwa-wsi";
+import { StronaLowiectwaWsi } from "@/components/wies/strona-lowiectwa-wsi";
+import { StronaRolnictwaWsi } from "@/components/wies/strona-rolnictwa-wsi";
+import { pobierzAktywneOstrzezeniaLesne } from "@/lib/lesnictwo/pobierz-ostrzezenia-publiczne";
+import { pobierzProfilLesnictwaPubliczny } from "@/lib/lesnictwo/pobierz-profil-publiczny";
+import { pobierzProfilRolnictwaPubliczny } from "@/lib/rolnictwo/pobierz-profil-publiczny";
 import { pobierzAktywneOstrzezeniaLowieckie } from "@/lib/lowiectwo/pobierz-ostrzezenia-publiczne";
 import { czyWydarzenieKgw, czyWydarzenieLowieckie, czyWydarzenieOsp, czyWydarzenieParafialne, etykietaRodzajuWydarzenia } from "@/lib/wies/teksty-organizacji";
 import { normalizujKategorieLinku, type LinkPrzydatnyPubliczny } from "@/lib/wies/linki-przydatne";
@@ -288,6 +295,42 @@ export async function generateMetadata({ params }: Props): Promise<Metadata> {
       };
     }
   }
+  if (s.length === 5 && s[4] === "rolnictwo") {
+    if (!supabase) return { title: "Rolnictwo" };
+    const wiesMeta = await znajdzWiesPoSciezce(supabase, s[0], s[1], s[2], s[3]);
+    if (wiesMeta) {
+      const sciezka = `${sciezkaProfiluWsi(wiesMeta)}/rolnictwo`;
+      return {
+        title: `Rolnictwo — ${wiesMeta.name}`,
+        description: `Profil rolniczy wsi ${wiesMeta.name}: ARiMR, dopłaty WPR, skup, ostrzeżenia sezonowe i ceny GUS.`,
+        alternates: { canonical: sciezka },
+      };
+    }
+  }
+  if (s.length === 5 && s[4] === "lesnictwo") {
+    if (!supabase) return { title: "Leśnictwo" };
+    const wiesMeta = await znajdzWiesPoSciezce(supabase, s[0], s[1], s[2], s[3]);
+    if (wiesMeta) {
+      const sciezka = `${sciezkaProfiluWsi(wiesMeta)}/lesnictwo`;
+      return {
+        title: `Leśnictwo — ${wiesMeta.name}`,
+        description: `Profil leśny wsi ${wiesMeta.name}: choinki, drewno, zakazy wstępu i ostrzeżenia leśne.`,
+        alternates: { canonical: sciezka },
+      };
+    }
+  }
+  if (s.length === 5 && s[4] === "lowiectwo") {
+    if (!supabase) return { title: "Łowiectwo" };
+    const wiesMeta = await znajdzWiesPoSciezce(supabase, s[0], s[1], s[2], s[3]);
+    if (wiesMeta) {
+      const sciezka = `${sciezkaProfiluWsi(wiesMeta)}/lowiectwo`;
+      return {
+        title: `Łowiectwo — ${wiesMeta.name}`,
+        description: `Koła łowieckie, ostrzeżenia polowań i kalendarz harmonogramu we wsi ${wiesMeta.name}.`,
+        alternates: { canonical: sciezka },
+      };
+    }
+  }
   if (s.length === 6 && s[4] === "rynek") {
     const id = z.string().uuid().safeParse(s[5]);
     if (id.success) {
@@ -498,6 +541,9 @@ export default async function WiesCatchAllPage({ params, searchParams }: Props) 
       : null;
     const fotokronikaPubliczna = danePubliczne.fotokronikaPubliczna;
     const ostrzezeniaLowieckie = danePubliczne.ostrzezeniaLowieckie;
+    const ostrzezeniaLesne = danePubliczne.ostrzezeniaLesne;
+    const maProfilLesnictwa = danePubliczne.maProfilLesnictwa;
+    const maProfilRolnictwa = danePubliczne.maProfilRolnictwa;
     const blogRaw = danePubliczne.blogRaw;
     const historiaRaw = danePubliczne.historiaRaw;
     const rynekRaw = danePubliczne.rynekRaw;
@@ -768,6 +814,9 @@ export default async function WiesCatchAllPage({ params, searchParams }: Props) 
           konkursFoto={konkursFoto}
           fotokronikaPubliczna={fotokronikaPubliczna}
           ostrzezeniaLowieckie={ostrzezeniaLowieckie}
+          ostrzezeniaLesne={ostrzezeniaLesne}
+          maProfilLesnictwa={maProfilLesnictwa}
+          maProfilRolnictwa={maProfilRolnictwa}
           blog={blog}
           historia={historia}
           rynek={rynek}
@@ -896,6 +945,95 @@ export default async function WiesCatchAllPage({ params, searchParams }: Props) 
           linkiMapy,
           linkPlanCmentarza,
         }}
+      />
+    );
+  }
+
+  if (reszta.length === 1 && reszta[0] === "lowiectwo") {
+    const ostrzezeniaLow = await pobierzAktywneOstrzezeniaLowieckie(supabase, wies.id);
+    let zalogowanyLow = false;
+    if (await maCiasteczkaSesjiSupabaseSerwer()) {
+      zalogowanyLow = !!(await pobierzUzytkownikaSerwer());
+    }
+    if (ostrzezeniaLow.length === 0) notFound();
+
+    const { data: kola } = await supabase
+      .from("village_community_groups")
+      .select("id")
+      .eq("village_id", wies.id)
+      .eq("group_type", "lowiectwo")
+      .limit(1);
+
+    return (
+      <StronaLowiectwaWsi
+        wies={wies}
+        ostrzezenia={ostrzezeniaLow}
+        maProfilKola={(kola ?? []).length > 0}
+        zalogowany={zalogowanyLow}
+      />
+    );
+  }
+
+  if (reszta.length === 1 && reszta[0] === "lesnictwo") {
+    const [ostrzezeniaLesne, profilLesny] = await Promise.all([
+      pobierzAktywneOstrzezeniaLesne(supabase, wies.id),
+      pobierzProfilLesnictwaPubliczny(supabase, wies.id),
+    ]);
+    let zalogowanyLes = false;
+    if (await maCiasteczkaSesjiSupabaseSerwer()) {
+      zalogowanyLes = !!(await pobierzUzytkownikaSerwer());
+    }
+    if (ostrzezeniaLesne.length === 0 && !profilLesny) notFound();
+
+    return (
+      <StronaLesnictwaWsi
+        wies={wies}
+        profil={profilLesny?.profil ?? null}
+        ostrzezenia={ostrzezeniaLesne}
+        zalogowany={zalogowanyLes}
+      />
+    );
+  }
+
+  if (reszta.length === 1 && reszta[0] === "rolnictwo") {
+    const [profilRolniczy, ustawieniaRol] = await Promise.all([
+      pobierzProfilRolnictwaPubliczny(supabase, wies.id),
+      pobierzUstawieniaWsi(supabase, wies.id),
+    ]);
+    const { data: kolaRolnikow } = await supabase
+      .from("village_community_groups")
+      .select("id, name, public_slug")
+      .eq("village_id", wies.id)
+      .eq("group_type", "rolnicy")
+      .eq("is_active", true);
+
+    const modulRolnictwo = czyModulWsiWlaczony(ustawieniaRol, "rolnictwo");
+    if (!profilRolniczy && !modulRolnictwo && (kolaRolnikow ?? []).length === 0) notFound();
+
+    let zalogowanyRol = false;
+    if (await maCiasteczkaSesjiSupabaseSerwer()) {
+      zalogowanyRol = !!(await pobierzUzytkownikaSerwer());
+    }
+
+    const kolaSkrot = (kolaRolnikow ?? [])
+      .map((k) => {
+        const sciezkaKola = sciezkaPelnejStronyOrganizacji(wies, {
+          id: k.id as string,
+          name: k.name as string,
+          group_type: "rolnicy",
+          public_slug: k.public_slug as string | null,
+        });
+        if (!sciezkaKola) return null;
+        return { id: k.id as string, name: k.name as string, sciezka: sciezkaKola };
+      })
+      .filter((k): k is { id: string; name: string; sciezka: string } => k != null);
+
+    return (
+      <StronaRolnictwaWsi
+        wies={wies}
+        profil={profilRolniczy?.profil ?? null}
+        kolaRolnikow={kolaSkrot}
+        zalogowany={zalogowanyRol}
       />
     );
   }

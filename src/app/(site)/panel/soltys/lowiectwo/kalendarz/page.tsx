@@ -13,7 +13,7 @@ export const metadata: Metadata = {
 };
 
 type Props = {
-  searchParams?: { miesiac?: string };
+  searchParams?: { miesiac?: string; ostrzezenie?: string; wies?: string };
 };
 
 export default async function KalendarzLowieckiPage({ searchParams }: Props) {
@@ -85,6 +85,8 @@ export default async function KalendarzLowieckiPage({ searchParams }: Props) {
           ostrzezenia={ostrzezenia}
           miesiac={miesiac}
           sciezkaMiesiaca={(ym) => `/panel/soltys/lowiectwo/kalendarz?miesiac=${ym}`}
+          poczatkoweOstrzezenieId={searchParams?.ostrzezenie}
+          poczatkowaWiesId={searchParams?.wies}
         />
       }
     />

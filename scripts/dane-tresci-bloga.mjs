@@ -517,4 +517,164 @@ export const noweArtykuly = [
 
 <p>Zobacz też: <a href="/blog/kgw-integracja-spolecznosci">KGW w internecie</a>.</p>`,
   },
+  {
+    title: "OSP na profilu wsi — jak pokazać działalność straży w internecie",
+    slug: "osp-na-profilu-wsi",
+    excerpt:
+      "Profil organizacji, kontakt do naczelnika, zdjęcia z akcji i zapowiedzi szkoleń — Ochotnicza Straż Pożarna może być widoczna na naszawies.pl obok KGW i parafii.",
+    coverImage: "/blog/osp-na-profilu-wsi/cover.webp",
+    gallery: ["/blog/osp-na-profilu-wsi/cover.webp", "/blog/osp-na-profilu-wsi/visual-01.webp"],
+    authorId: "zespol",
+    categorySlug: "spolecznosc",
+    tags: ["osp", "straż pożarna", "organizacje", "bezpieczeństwo", "wolontariat"],
+    faq: [
+      {
+        question: "Kto może edytować profil OSP?",
+        answer:
+          "Sołtys nadaje rolę naczelnika OSP lub współadmina organizacji. Dzięki temu aktualizacje nie wymagają logowania się na konto sołtysa.",
+      },
+      {
+        question: "Czy profil OSP jest widoczny publicznie?",
+        answer:
+          "Tak — publiczna podstrona organizacji na profilu wsi jest dostępna dla gości, podobnie jak KGW czy parafia. Nie publikuj danych wrażliwych z akcji ratowniczych.",
+      },
+      {
+        question: "Czy można zbierać wolontariuszy przez platformę?",
+        answer:
+          "W opisie i ogłoszeniach podaj kontakt do naczelnika oraz terminy szkoleń. Formularz zgłoszeniowy możesz linkować z urzędu gminy lub PSP.",
+      },
+    ],
+    relatedSlugs: ["kgw-integracja-spolecznosci", "kalendarz-wydarzen-wiejskich", "tablica-ogloszen-cyfrowa"],
+    featured: false,
+    status: "published",
+    publishedAt: "2026-06-14T08:00:00.000Z",
+    seoTitle: "OSP na profilu wsi — widoczność straży pożarnej online",
+    seoDescription:
+      "Jak Ochotnicza Straż Pożarna może prowadzić profil na naszawies.pl: kontakt, wydarzenia, współpraca z sołtysem i bezpieczna komunikacja z mieszkańcami.",
+    ogImage: "/blog/osp-na-profilu-wsi/cover.webp",
+    internalLinks: [
+      { href: "/rejestracja", label: "Załóż konto" },
+      { href: "/pomoc", label: "Centrum pomocy" },
+    ],
+    generatedImages: ["/blog/osp-na-profilu-wsi/cover.webp", "/blog/osp-na-profilu-wsi/visual-01.webp"],
+    content: `<p>Ochotnicza Straż Pożarna to dla wielu wsi twarz bezpieczeństwa — gaszenie pożarów, pomoc przy wypadkach, straże przy dożynkach. W sieci często brakuje jednego, stałego miejsca z kontaktem i aktualnymi informacjami. Na <strong>naszawies.pl</strong> OSP może mieć profil organizacji przypisany do wsi, obok KGW, parafii i innych podmiotów lokalnych.</p>
+
+<div class="blog-pullquote">Dobry profil OSP to nie zastępstwo alarmu 112 — to miejsce, gdzie sąsiad znajdzie numer do naczelnika i datę najbliższego szkolenia.</div>
+
+<h2 id="co-wpisac">Co umieścić na profilu OSP?</h2>
+<ul class="blog-lista-check">
+<li>Krótki opis jednostki: od kiedu działa, ile osób w zespole</li>
+<li>Kontakt do naczelnika lub zastępcy — telefon, e-mail (bez danych prywatnych całej ekipy)</li>
+<li>Zdjęcie sprzętu lub remizy — mieszkańcy rozpoznają „swoją” straż</li>
+<li>Link do strony PSP lub gminy, jeśli macie wspólne materiały szkoleniowe</li>
+</ul>
+
+<h2 id="wspolpraca">Współpraca z sołtysem</h2>
+<p>Sołtys zarządza rolami we wsi. Naczelnik OSP może otrzymać uprawnienia do edycji treści swojej organizacji — bez przekazywania hasła do panelu sołtysa. To ten sam model co przy <a href="/blog/kgw-integracja-spolecznosci">KGW na profilu wsi</a>.</p>
+<figure><img src="/blog/osp-na-profilu-wsi/visual-01.webp" alt="Ochotnicza Straż Pożarna — remiza i zespół przy sprzęcie ratowniczym" width="900" height="600" loading="lazy" /><figcaption>Profil OSP warto uzupełnić zdjęciem remizy lub sprzętu — buduje rozpoznawalność w okolicy.</figcaption></figure>
+
+<h2 id="wydarzenia">Szkolenia, straże i zbiórki</h2>
+<p>Zapowiedzi szkoleń dla wolontariuszy, straże przy festynach czy zbiórki na sprzęt — to treści, które dobrze trafiają na <a href="/blog/tablica-ogloszen-cyfrowa">cyfrową tablicę ogłoszeń</a> i do <a href="/blog/kalendarz-wydarzen-wiejskich">kalendarza wydarzeń</a>. Dzięki temu mieszkańcy widzą, kiedy OSP jest zajęta służbą, a kiedy szuka nowych ludzi do zespołu.</p>
+
+<div class="blog-callout blog-callout-uwaga"><strong>Ważne</strong><p>Nie publikuj szczegółów trwających akcji ratowniczych, wizerunku poszkodowanych ani informacji poufnych. Po zakończeniu interwencji wystarczy krótka informacja podziękowania dla zaangażowanych — jeśli pozwala na to regulamin PSP.</p></div>
+
+<h2 id="rekrutacja">Jak mówić o wolontariacie</h2>
+<ol class="blog-lista-kroki">
+<li>Napisz wprost: „Szukamy ochotników” — bez żargonu wojskowego</li>
+<li>Podaj wiek, wymagania zdrowotne i gdzie się zgłosić</li>
+<li>Dodaj termin pierwszego spotkania informacyjnego</li>
+<li>Odnoś się do tradycji wsi — wielu strażaków to rodziny wielopokoleniowe</li>
+</ol>
+
+<h2 id="bezpieczenstwo">Bezpieczeństwo i RODO</h2>
+<p>Na profilu publicznym nie umieszczaj list członków z adresami zamieszkania. Zdjęcia z imprez publikuj po zgodzie osób widocznych na fotografii — szczególnie dzieci. Więcej o ostrożności w sieci: <a href="/polityka-prywatnosci">polityka prywatności</a> serwisu.</p>
+
+<hr class="blog-separator" />
+<p>Powiązane: <a href="/blog/fotokronika-i-historia-wsi">fotokronika wsi</a>, <a href="/blog/jak-zalozyc-profil-wsi">założenie profilu miejscowości</a>.</p>`,
+  },
+  {
+    title: "Transport i przystanki na mapie wsi — dojazd bez zgadywania",
+    slug: "transport-i-przystanki-mapa-wsi",
+    excerpt:
+      "Przystanki autobusowe, stacje kolejowe i odjazdy w jednym widoku — jak mapa naszawies.pl pomaga mieszkańcom i gościom zaplanować dojazd.",
+    coverImage: "/blog/transport-i-przystanki-mapa-wsi/cover.webp",
+    gallery: [
+      "/blog/transport-i-przystanki-mapa-wsi/cover.webp",
+      "/blog/transport-i-przystanki-mapa-wsi/visual-01.webp",
+    ],
+    authorId: "zespol",
+    categorySlug: "poradniki",
+    tags: ["transport", "mapa", "przystanek", "kolej", "autobus"],
+    faq: [
+      {
+        question: "Skąd biorą się przystanki na mapie?",
+        answer:
+          "System uzupełnia punkty z otwartych danych (OSM, GTFS, PKP) oraz propozycji mieszkańców po moderacji. Sołtys może zatwierdzać brakujące miejsca.",
+      },
+      {
+        question: "Czy widać rozkłady jazdy na żywo?",
+        answer:
+          "Tam, gdzie dostępne są dane przewoźnika lub PKP, mapa pokazuje zbliżone odjazdy i link do rozkładu. Zawsze warto sprawdzić oficjalną stronę przewoźnika przed wyjazdem.",
+      },
+      {
+        question: "Czy mapa transportu działa bez logowania?",
+        answer:
+          "Podstawowy podgląd mapy wymaga konta — to chroni przed nadużyciami i pozwala dopasować warstwy do Twojej wsi. Rejestracja jest bezpłatna.",
+      },
+    ],
+    relatedSlugs: ["mapa-wsi-po-zalogowaniu", "jak-znalezc-swoja-wies", "kalendarz-wydarzen-wiejskich"],
+    featured: true,
+    status: "published",
+    publishedAt: "2026-06-15T08:00:00.000Z",
+    seoTitle: "Transport wiejski na mapie — przystanki i kolej na naszawies.pl",
+    seoDescription:
+      "Przystanki PKS, autobusy gminne i stacje PKP na mapie wsi. Jak czytać warstwy transportu i planować dojazd na zebranie lub do pracy.",
+    ogImage: "/blog/transport-i-przystanki-mapa-wsi/cover.webp",
+    internalLinks: [
+      { href: "/mapa", label: "Mapa wsi" },
+      { href: "/logowanie", label: "Logowanie" },
+    ],
+    generatedImages: [
+      "/blog/transport-i-przystanki-mapa-wsi/cover.webp",
+      "/blog/transport-i-przystanki-mapa-wsi/visual-01.webp",
+    ],
+    content: `<p>Na wsi bez własnego samochodu dojazd do pracy, lekarza czy urzędu bywa układanką: autobus raz dziennie, przystanek „za lasem”, kolej w sąsiedniej miejscowości. Rozkład na papierze szybko się starzeje, a w wyszukiwarce Google nie zawsze widać <em>ten</em> przystanek od strony pola. Mapa na <strong>naszawies.pl</strong> zbiera transport w kontekście konkretnej wsi — razem z świetlicą, sklepem i innymi punktami POI.</p>
+
+<h2 id="warstwy">Warstwy transportu na mapie</h2>
+<p>Po zalogowaniu wejdź na <a href="/mapa">mapę</a> i włącz filtry m.in. przystanków autobusowych, stacji kolejowych i parkingów P+R. Punkty są powiązane z Twoją miejscowością lub jej bezpośrednim sąsiedztwem — nie musisz szukać po całym powiecie.</p>
+<ul class="blog-lista-check">
+<li>Przystanki komunikacji lokalnej i PKS</li>
+<li>Stacje i przystanki kolejowe PKP — z linkiem do rozkładu</li>
+<li>Miejsca postoju i przesiadki (tam gdzie oznaczone w danych)</li>
+<li>Informacje o utrudnieniach — gdy dostępne z API przewoźnika</li>
+</ul>
+
+<figure><img src="/blog/transport-i-przystanki-mapa-wsi/visual-01.webp" alt="Mapa wiejskiego przystanku autobusowego przy drodze do gminy" width="900" height="600" loading="lazy" /><figcaption>Przystanek na mapie ułatwia wytłumaczenie gościom, gdzie wysiąść przed zebraniem we wsi.</figcaption></figure>
+
+<h2 id="dla-mieszkanca">Dla mieszkańca</h2>
+<p>Sprawdzisz, który przystanek jest bliżej domu, ile masz czasu po porannym kursie do miasta i gdzie jest najbliższa stacja kolejowa. Przy planowaniu wyjazdu na <a href="/blog/zebranie-wiejskie-swietlica">zebranie wiejskie</a> możesz wysłać sąsiadowi pinezkę zamiast opisywać drogę przez trzy skrzyżowania.</p>
+
+<h2 id="dla-soltysa">Dla sołtysa i radnych</h2>
+<p>Jeśli po remoncie drogi przystanek się przesunął albo uruchomiono nowy kurs gminny — zgłoś aktualizację w panelu. Społeczność widzi zmianę na mapie szybciej niż doczeka się nowej tabliczki przy słupie. To też argument na zebraniu wójtowi: widać, gdzie mieszkańcy realnie mają problem z dojazdem.</p>
+
+<div class="blog-callout blog-callout-porada"><strong>Porada</strong><p>Przy ogłoszeniu o zebraniu dopisz: „Najbliższy przystanek na mapie wsi” z linkiem do profilu — młodsi mieszkańcy chętniej przyjadą, gdy widzą konkret.</p></div>
+
+<h2 id="pkp">Kolej i autobus — jeden widok</h2>
+<p>Wielu mieszkańców dojeżdża „combo”: PKS do stacji, potem pociąg. Mapa pokazuje oba typy punktów, żeby nie przełączać się między trzema aplikacjami. Rozkłady pochodzą z zewnętrznych źródeł — przed ważnym wyjazdem sprawdź jeszcze oficjalną stronę PKP lub przewoźnika.</p>
+
+<table class="blog-tabela">
+<thead><tr><th>Sytuacja</th><th>Co zrobić na mapie</th></tr></thead>
+<tbody>
+<tr><td>Pierwszy raz jadę do wsi</td><td>Włącz stację kolejową + przystanki, ustaw widok na profil wsi</td></tr>
+<tr><td>Brakuje przystanku</td><td>Zgłoś punkt w panelu lub poproś sołtysa o moderację</td></tr>
+<tr><td>Opóźnienie pociągu</td><td>Sprawdź baner utrudnień przy stacji na mapie, potem PKP</td></tr>
+</tbody>
+</table>
+
+<h2 id="ograniczenia">Czego mapa nie zastąpi</h2>
+<p>Nie zamawia biletów ani taksówek — to planowanie i orientacja. W nagłych sytuacjach zawsze dzwoń pod 112 lub numer alarmowy straży. Dane automatyczne mogą mieć opóźnienie; przy śnieżycy i remontach drogowych licz się z lokalnymi komunikatami gminy.</p>
+
+<hr class="blog-separator" />
+<p>Więcej o mapie: <a href="/blog/mapa-wsi-po-zalogowaniu">mapa wsi po zalogowaniu</a>, <a href="/blog/jak-znalezc-swoja-wies">jak znaleźć swoją wieś</a>.</p>`,
+  },
 ];

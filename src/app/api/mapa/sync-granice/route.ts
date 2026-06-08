@@ -1,6 +1,7 @@
 import { NextResponse } from "next/server";
 import { czyZapytanieCronAutoryzowane } from "@/lib/api/autoryzacja-cron";
 import { pobierzIpIUserAgentZRequestu, zapiszCronRun } from "@/lib/api/zapisz-cron-run";
+import { pobierzStatystykiGranicWsi } from "@/lib/mapa/pobierz-statystyki-granic-wsi";
 import { synchronizujGranicePrgAutomatycznie } from "@/lib/mapa/synchronizuj-granice-prg-automatycznie";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin-client";
 
@@ -18,15 +19,18 @@ async function uruchom(request: Request) {
   }
 
   try {
-    const summary = await synchronizujGranicePrgAutomatycznie(supabase, { tryb: "mapa" });
+    const [summary, statystyki] = await Promise.all([
+      synchronizujGranicePrgAutomatycznie(supabase, { tryb: "mapa" }),
+      pobierzStatystykiGranicWsi(supabase),
+    ]);
     await zapiszCronRun(supabase, {
       endpoint: ENDPOINT,
       started_at: startedAt,
       status: "success",
-      affected_rows: { updatedBoundaries: summary.updatedBoundaries, summary },
+      affected_rows: { updatedBoundaries: summary.updatedBoundaries, summary, statystyki },
       ...meta,
     });
-    return NextResponse.json({ ok: true, ...summary, ranAt: new Date().toISOString() });
+    return NextResponse.json({ ok: true, ...summary, statystyki, ranAt: new Date().toISOString() });
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
     console.error("[api/mapa/sync-granice]", msg);

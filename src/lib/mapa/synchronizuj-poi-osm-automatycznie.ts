@@ -24,33 +24,55 @@ type PoiRow = {
 const KATEGORIE_BAZOWE = KATEGORIE_POI_BAZOWE;
 
 const LIMITY_KATEGORII: Record<string, number> = {
-  szkola: 2,
-  przedszkole: 2,
-  kosciol: 2,
+  szkola: 3,
+  przedszkole: 3,
+  kosciol: 3,
   swietlica: 2,
   osp: 2,
   biblioteka: 2,
-  boisko: 3,
+  boisko: 6,
   urzad: 2,
   apteka: 2,
   poczta: 2,
   przychodnia: 2,
-  stacja_paliw: 2,
-  cmentarz: 2,
-  przystanek: 6,
-  stacja_kolejowa: 3,
-  sklep: 4,
-  skup_zboz: 3,
-  sklep_rolniczy: 3,
-  osp_punkt_czerpania_wody: 35,
+  stacja_paliw: 4,
+  cmentarz: 3,
+  /** Autobusy, perony, GTFS — wiele punktów na wieś i okolice. */
+  przystanek: 24,
+  stacja_kolejowa: 4,
+  sklep: 8,
+  skup_zboz: 4,
+  sklep_rolniczy: 4,
+  osp_punkt_czerpania_wody: 40,
   latarnia: 80,
-  inwestycja: 12,
+  inwestycja: 15,
+  miejsce_odpoczynku: 8,
+  zajazd: 6,
+  gastronomia: 10,
+  plac_zabaw: 6,
+  bankomat: 6,
+  sprzedaz_z_gospodarstwa: 6,
+  spoldzielnia_rolna: 3,
+  nazwa_geo: 8,
+  paczkomat: 5,
+  ladowarka_ev: 5,
+  weterynarz: 2,
+  warsztat: 5,
+  piekarnia: 5,
+  bank: 2,
+  parking_publiczny: 8,
+  toaleta_publiczna: 5,
+  camping: 4,
+  defibrylator: 8,
+  drogeria: 4,
+  silownia_zewnetrzna: 4,
+  targowisko: 3,
 };
 
 const LIMITY_DOMYSLNE = {
-  maxVillagesScanned: 50,
-  maxVillagesPerRun: 8,
-  minDaysBetweenSync: 3,
+  maxVillagesScanned: 80,
+  maxVillagesPerRun: 14,
+  minDaysBetweenSync: 2,
 };
 
 type SyncVillageStats = {
@@ -85,8 +107,8 @@ function odlegloscMetry(lat1: number, lon1: number, lat2: number, lon2: number):
 }
 
 function promienDlaWsi(population: number | null): number {
-  if (!population || population <= 0) return 2600;
-  return Math.min(6000, Math.max(1800, 1400 + Math.sqrt(population) * 42));
+  if (!population || population <= 0) return 3200;
+  return Math.min(7500, Math.max(2200, 1600 + Math.sqrt(population) * 48));
 }
 
 function czyOsmOpis(desc: string | null): boolean {
@@ -121,10 +143,15 @@ function czyWymagaSynchronizacjiOsm(existing: PoiRow[]): boolean {
 }
 
 function promienDuplikatuKategorii(category: string): number {
+  if (category === "przystanek") return 35;
+  if (category === "defibrylator") return 15;
   if (category === "osp_punkt_czerpania_wody") return 35;
   if (category === "latarnia") return 12;
   if (category === "inwestycja") return 45;
-  return 120;
+  if (category === "parking_publiczny") return 90;
+  if (category === "paczkomat" || category === "bankomat") return 50;
+  if (category === "miejsce_odpoczynku" || category === "zajazd" || category === "gastronomia") return 80;
+  return 100;
 }
 
 function filtrujKandydatyDoZapisu(

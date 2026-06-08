@@ -7,7 +7,7 @@ type GrupaDoFiltrowania = {
 
 import { czyOrganizacjaSport } from "@/lib/wies/sport";
 
-export type TrybOrganizacji = "ogolny" | "kgw" | "osp" | "parafia" | "mysliwi" | "szkola" | "sport";
+export type TrybOrganizacji = "ogolny" | "kgw" | "osp" | "parafia" | "mysliwi" | "szkola" | "sport" | "rolnicy";
 
 export const TRYBY_PRACY_OPCJE: ReadonlyArray<{ id: TrybOrganizacji; label: string }> = [
   { id: "ogolny", label: "Ogólny (cała wieś)" },
@@ -15,6 +15,7 @@ export const TRYBY_PRACY_OPCJE: ReadonlyArray<{ id: TrybOrganizacji; label: stri
   { id: "szkola", label: "Szkoła / przedszkole" },
   { id: "sport", label: "Klub sportowy" },
   { id: "kgw", label: "KGW" },
+  { id: "rolnicy", label: "Rolnicy" },
   { id: "mysliwi", label: "Myśliwi" },
   { id: "osp", label: "OSP" },
 ];
@@ -76,6 +77,14 @@ export const KOLEJNOSC_DZIALAN_TRYBU: Record<TrybOrganizacji, { tytul: string; k
       "Publikuj ogłoszenia na tablicy (rodzice, klasy) w panelu tablicy szkoły.",
     ],
   },
+  rolnicy: {
+    tytul: "Tryb rolników — kolejność działań",
+    kroki: [
+      "Uzupełnij profil koła: przewodniczący, zebrania i jak dołączyć.",
+      "W module Rolnictwo dodaj kontakty ARiMR, dopłaty i skup dla całej wsi.",
+      "Zachęć mieszkańców do zgłaszania cen skupu w okolicy.",
+    ],
+  },
 };
 
 function nazwaSugerujeLowiectwo(name: string): boolean {
@@ -89,6 +98,7 @@ export function domyslnyTypGrupyDlaTrybu(tryb: TrybOrganizacji): string {
   if (tryb === "parafia") return "parafia";
   if (tryb === "mysliwi") return "lowiectwo";
   if (tryb === "szkola") return "szkola";
+  if (tryb === "rolnicy") return "rolnicy";
   if (tryb === "sport") return "sport";
   return "inne";
 }
@@ -107,6 +117,8 @@ export function filtrujGrupyDlaTrybu(
       return g.group_type === "lowiectwo" || (g.group_type === "kolo" && nazwaSugerujeLowiectwo(g.name));
     if (tryb === "szkola")
       return g.group_type === "szkola" || g.name.toLowerCase().includes("szkoł") || g.name.toLowerCase().includes("przedszkol");
+    if (tryb === "rolnicy")
+      return g.group_type === "rolnicy" || g.name.toLowerCase().includes("rolnik") || g.name.toLowerCase().includes("rolnicz");
     if (tryb === "sport") return czyOrganizacjaSport(g.group_type, g.name);
     return (
       (g.group_type === "osp" || g.name.toLowerCase().includes("osp")) &&

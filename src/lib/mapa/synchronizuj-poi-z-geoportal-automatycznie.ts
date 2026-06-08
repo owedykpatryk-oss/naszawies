@@ -75,7 +75,7 @@ export async function synchronizujPoiZGeoportalAutomatycznie(
   const maxVillages = opts?.tylkoVillageIds?.length
     ? opts.tylkoVillageIds.length
     : parseIntEnv("GEOPORTAL_POI_SYNC_VILLAGES_PER_RUN", 4, 1, 30);
-  const maxGeoPerVillage = parseIntEnv("GEOPORTAL_POI_SYNC_FEATURES_PER_VILLAGE", 40, 5, 200);
+  const maxGeoPerVillage = parseIntEnv("GEOPORTAL_POI_SYNC_FEATURES_PER_VILLAGE", 60, 5, 250);
   const promienDuplikatuM = parseIntEnv("GEOPORTAL_POI_SYNC_DEDUP_METERS", 450, 80, 2000);
 
   let zapytanieWsi = supabase.from("villages").select("id, name").eq("is_active", true);
@@ -139,6 +139,7 @@ export async function synchronizujPoiZGeoportalAutomatycznie(
       lat: number;
       lon: number;
       sourceExternalId: string;
+      ospWaterSourceType?: "hydrant" | "staw" | "zbiornik" | "rzeka" | "inne";
     }[] = [];
 
     for (const g of geo) {
@@ -176,6 +177,7 @@ export async function synchronizujPoiZGeoportalAutomatycznie(
         lat,
         lon,
         sourceExternalId: kandydat.sourceExternalId,
+        ospWaterSourceType: kandydat.ospWaterSourceType,
       });
     }
 
@@ -190,9 +192,12 @@ export async function synchronizujPoiZGeoportalAutomatycznie(
         latitude: p.lat,
         longitude: p.lon,
         source: "geoportal",
-        confidence: 0.72,
+        confidence: p.category === "osp_punkt_czerpania_wody" ? 0.62 : 0.72,
         verified_at: null,
         is_local_override: false,
+        ...(p.category === "osp_punkt_czerpania_wody" && p.ospWaterSourceType
+          ? { osp_water_source_type: p.ospWaterSourceType }
+          : {}),
       })),
     );
 

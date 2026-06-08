@@ -6,6 +6,9 @@ type VillageRow = {
   name: string;
   teryt_id: string | null;
   gmina_teryt_kod?: string | null;
+  commune?: string | null;
+  county?: string | null;
+  voivodeship?: string | null;
   boundary_geojson: unknown | null;
   latitude: number | null;
   longitude: number | null;
@@ -31,13 +34,14 @@ export type PrgBoundarySyncSummary = {
   processedVillages: number;
   scannedVillages: number;
   updatedBoundaries: number;
+  geocodedGps: number;
   skippedAlreadyHasBoundary: number;
   skippedRecentSync: number;
   skippedMissingTeryt: number;
   errors: string[];
 };
 
-type TrybSync = "cron" | "mapa";
+type TrybSync = "cron" | "mapa" | "katalog";
 
 type OpcjeSync = {
   tryb?: TrybSync;
@@ -50,18 +54,31 @@ function parseIntEnv(name: string, fallback: number, min: number, max: number): 
   return Math.min(max, Math.max(min, n));
 }
 
+function czyGeokodujGdyBrakGps(): boolean {
+  const raw = process.env.GEOPORTAL_BOUNDARY_GEOCODE_WHEN_NO_GPS?.trim();
+  if (raw === "0") return false;
+  return true;
+}
+
 function limityDlaTrybu(tryb: TrybSync): { maxPerRun: number; maxScanned: number; minDays: number } {
+  if (tryb === "katalog") {
+    return {
+      maxPerRun: parseIntEnv("GEOPORTAL_BOUNDARY_SYNC_KATALOG_PER_RUN", 60, 1, 120),
+      maxScanned: parseIntEnv("GEOPORTAL_BOUNDARY_SYNC_KATALOG_SCANNED", 500, 10, 500),
+      minDays: parseIntEnv("GEOPORTAL_BOUNDARY_SYNC_KATALOG_MIN_DAYS", 0, 0, 7),
+    };
+  }
   if (tryb === "mapa") {
     return {
-      maxPerRun: parseIntEnv("GEOPORTAL_BOUNDARY_SYNC_MAPA_PER_RUN", 20, 1, 60),
-      maxScanned: parseIntEnv("GEOPORTAL_BOUNDARY_SYNC_MAPA_SCANNED", 150, 10, 400),
-      minDays: parseIntEnv("GEOPORTAL_BOUNDARY_SYNC_MAPA_MIN_DAYS", 3, 0, 30),
+      maxPerRun: parseIntEnv("GEOPORTAL_BOUNDARY_SYNC_MAPA_PER_RUN", 40, 1, 80),
+      maxScanned: parseIntEnv("GEOPORTAL_BOUNDARY_SYNC_MAPA_SCANNED", 300, 10, 500),
+      minDays: parseIntEnv("GEOPORTAL_BOUNDARY_SYNC_MAPA_MIN_DAYS", 1, 0, 30),
     };
   }
   return {
-    maxPerRun: parseIntEnv("GEOPORTAL_BOUNDARY_SYNC_VILLAGES_PER_RUN", 8, 1, 30),
-    maxScanned: parseIntEnv("GEOPORTAL_BOUNDARY_SYNC_VILLAGES_SCANNED", 60, 10, 300),
-    minDays: parseIntEnv("GEOPORTAL_BOUNDARY_SYNC_MIN_DAYS", 14, 1, 180),
+    maxPerRun: parseIntEnv("GEOPORTAL_BOUNDARY_SYNC_VILLAGES_PER_RUN", 30, 1, 80),
+    maxScanned: parseIntEnv("GEOPORTAL_BOUNDARY_SYNC_VILLAGES_SCANNED", 250, 10, 500),
+    minDays: parseIntEnv("GEOPORTAL_BOUNDARY_SYNC_MIN_DAYS", 1, 0, 180),
   };
 }
 
@@ -71,7 +88,6 @@ function msFromIso(iso: string | null | undefined): number {
   return Number.isFinite(t) ? t : 0;
 }
 
-
 export async function synchronizujGranicePrgAutomatycznie(
   supabase: SupabaseClient,
   opcje: OpcjeSync = {},
@@ -79,6 +95,7 @@ export async function synchronizujGranicePrgAutomatycznie(
   const tryb = opcje.tryb ?? "cron";
   const { maxPerRun, maxScanned, minDays } = limityDlaTrybu(tryb);
   const forceRefresh = process.env.GEOPORTAL_BOUNDARY_FORCE_REFRESH?.trim() === "1";
+  const geokodujGdyBrakGps = czyGeokodujGdyBrakGps();
   const minSyncMs = minDays * 24 * 60 * 60 * 1000;
 
   const summary: PrgBoundarySyncSummary = {
@@ -86,6 +103,7 @@ export async function synchronizujGranicePrgAutomatycznie(
     processedVillages: 0,
     scannedVillages: 0,
     updatedBoundaries: 0,
+    geocodedGps: 0,
     skippedAlreadyHasBoundary: 0,
     skippedRecentSync: 0,
     skippedMissingTeryt: 0,
@@ -95,12 +113,14 @@ export async function synchronizujGranicePrgAutomatycznie(
   const { data: wsie, error: errWsie } = forceRefresh
     ? await supabase
         .from("villages")
-        .select("id, name, teryt_id, gmina_teryt_kod, boundary_geojson, latitude, longitude, boundary_source")
-        .eq("is_active", true)
+        .select(
+          "id, name, teryt_id, gmina_teryt_kod, commune, county, voivodeship, boundary_geojson, latitude, longitude, boundary_source",
+        )
         .not("teryt_id", "is", null)
         .or(
           "boundary_geojson.is.null,boundary_source.is.null,boundary_source.eq.demo,boundary_source.like.%_gmina",
         )
+        .order("is_active", { ascending: false })
         .order("updated_at", { ascending: true })
         .limit(maxScanned)
     : await supabase.rpc("villages_kolejka_sync_granic_prg", { p_limit: maxScanned });
@@ -136,7 +156,6 @@ export async function synchronizujGranicePrgAutomatycznie(
       continue;
     }
 
-
     const state = syncByVillage.get(village.id);
     const lastSyncMs = msFromIso(state?.last_boundary_sync_at);
     if (!forceRefresh && lastSyncMs > 0 && Date.now() - lastSyncMs < minSyncMs) {
@@ -147,14 +166,27 @@ export async function synchronizujGranicePrgAutomatycznie(
     summary.attemptedVillages += 1;
     const nowIso = new Date().toISOString();
 
-    const wynik = await aplikujGranicePrgDlaWsi(supabase, {
-      id: village.id,
-      name: village.name,
-      teryt_id: village.teryt_id.trim(),
-      gmina_teryt_kod: village.gmina_teryt_kod ?? null,
-      latitude: village.latitude,
-      longitude: village.longitude,
-    });
+    const wynik = await aplikujGranicePrgDlaWsi(
+      supabase,
+      {
+        id: village.id,
+        name: village.name,
+        teryt_id: village.teryt_id.trim(),
+        gmina_teryt_kod: village.gmina_teryt_kod ?? null,
+        latitude: village.latitude,
+        longitude: village.longitude,
+      },
+      {
+        geokodujGdyBrakGps,
+        commune: village.commune ?? undefined,
+        county: village.county ?? undefined,
+        voivodeship: village.voivodeship ?? undefined,
+      },
+    );
+
+    if (wynik.uzytoGeokodu && (wynik.ok || wynik.retryable)) {
+      summary.geocodedGps += 1;
+    }
 
     if (!wynik.ok) {
       summary.errors.push(`${village.name}: ${wynik.reason}`);
@@ -185,7 +217,8 @@ export async function synchronizujGranicePrgAutomatycznie(
     summary.processedVillages += 1;
     summary.updatedBoundaries += 1;
 
-    await new Promise((r) => setTimeout(r, tryb === "mapa" ? 200 : 350));
+    const delayMs = tryb === "mapa" ? 200 : wynik.uzytoGeokodu ? 350 : 250;
+    await new Promise((r) => setTimeout(r, delayMs));
   }
 
   return summary;

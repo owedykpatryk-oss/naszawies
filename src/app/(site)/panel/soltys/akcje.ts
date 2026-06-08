@@ -29,6 +29,7 @@ import {
   schemaProfilParafii,
   schemaProfilKgw,
   schemaProfilLowiecki,
+  schemaProfilRolnikow,
   schemaProfilSzkoly,
 } from "@/lib/wies/profil-organizacji";
 import { sciezkaProfiluWsi } from "@/lib/wies/sciezka-publiczna";
@@ -2607,6 +2608,10 @@ function mapProfileData(groupType: string, raw: unknown): Record<string, unknown
     const w = schemaProfilSzkoly.safeParse(raw);
     if (w.success) return w.data as unknown as Record<string, unknown>;
   }
+  if (groupType === "rolnicy" && raw != null) {
+    const w = schemaProfilRolnikow.safeParse(raw);
+    if (w.success) return w.data as unknown as Record<string, unknown>;
+  }
   if (raw != null && typeof raw === "object") return raw as Record<string, unknown>;
   return {};
 }
@@ -2623,6 +2628,10 @@ function daneSpotkaniaOrganizacji(
     groupType === "kgw" && typeof profil.miejsce_spotkan === "string" ? profil.miejsce_spotkan.trim() : "";
   const zebraniaKgw =
     groupType === "kgw" && typeof profil.zebrania === "string" ? profil.zebrania.trim() : "";
+  const miejsceRolnikow =
+    groupType === "rolnicy" && typeof profil.miejsce_spotkan === "string" ? profil.miejsce_spotkan.trim() : "";
+  const zebraniaRolnikow =
+    groupType === "rolnicy" && typeof profil.zebrania === "string" ? profil.zebrania.trim() : "";
   const siedzibaLow =
     groupType === "lowiectwo" && typeof profil.siedziba_kola === "string" ? profil.siedziba_kola.trim() : "";
   const zebraniaLow =
@@ -2638,12 +2647,14 @@ function daneSpotkaniaOrganizacji(
     meetingPlaceInput?.trim() ||
     (miejsceParafii.length ? miejsceParafii : null) ||
     (miejsceKgw.length ? miejsceKgw : null) ||
+    (miejsceRolnikow.length ? miejsceRolnikow : null) ||
     (siedzibaLow.length ? siedzibaLow : null) ||
     (adresSzkoly.length ? adresSzkoly : null);
   const scheduleText =
     scheduleTextInput?.trim() ||
     (kancelariaParafii.length ? kancelariaParafii : null) ||
     (zebraniaKgw.length ? zebraniaKgw : null) ||
+    (zebraniaRolnikow.length ? zebraniaRolnikow : null) ||
     (zebraniaLow.length ? zebraniaLow : null) ||
     (godzinySzkoly.length ? godzinySzkoly : null);
 

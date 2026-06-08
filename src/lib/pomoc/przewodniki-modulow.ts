@@ -7,7 +7,13 @@ export type IdModuluPomocy =
   | "ogloszenia"
   | "lista-zakupow"
   | "rezerwacje-soltys"
-  | "spolecznosc";
+  | "spolecznosc"
+  | "lesnictwo"
+  | "rolnictwo"
+  | "lowiectwo"
+  | "kalendarz-lowiecki"
+  | "transport"
+  | "szkola";
 
 export type PrzewodnikModulu = {
   tytul: string;
@@ -97,6 +103,60 @@ export const PRZEWODNIKI_MODULOW: Record<IdModuluPomocy, PrzewodnikModulu> = {
     ],
     linkPelny: { href: "/pomoc?rola=soltys", label: "Pełny przewodnik sołtysa" },
   },
+  rolnictwo: {
+    tytul: "Rolnictwo i skup",
+    kroki: [
+      { tytul: "Profil rolniczy wsi", opis: "ARiMR, ODR, terminy dopłat i skup — widoczne na /rolnictwo po publikacji." },
+      { tytul: "Koło rolników", opis: "W Społeczność (tryb rolnicy) dodaj organizację z zebraniami i kontaktem." },
+      { tytul: "Ceny sąsiedzkie", opis: "Mieszkańcy mogą zgłaszać ceny skupu — potwierdzenia budują wiarygodność." },
+    ],
+    linkPelny: { href: "/pomoc?rola=soltys", label: "Pełny przewodnik sołtysa" },
+  },
+  lesnictwo: {
+    tytul: "Leśnictwo i las",
+    kroki: [
+      { tytul: "Profil leśny", opis: "Uzupełnij nadleśnictwo, choinki, drewno i zasady pobytu — widoczne na /lesnictwo po publikacji." },
+      { tytul: "Ostrzeżenia", opis: "Zakaz wstępu, wycinka, pożar — z terminem i opcjonalnym obszarem na mapie (zielony obrys)." },
+      { tytul: "Mapa", opis: "Warstwa „Ostrzeżenia leśne” na mapie katalogu; link ?les= do konkretnego obszaru." },
+    ],
+    linkPelny: { href: "/pomoc?rola=soltys", label: "Pełny przewodnik sołtysa" },
+  },
+  lowiectwo: {
+    tytul: "Polowania na mapie",
+    kroki: [
+      { tytul: "Obszar i termin", opis: "Zaznacz polygon na mapie, ustaw daty skrótem (dziś, jutro, weekend)." },
+      { tytul: "Publikacja", opis: "Mieszkańcy widzą czerwony obszar na mapie i baner na profilu wsi." },
+      { tytul: "Kalendarz", opis: "Opcjonalnie dodaj wpis do kalendarza łowieckiego (polowanie zbiorowe)." },
+    ],
+    linkPelny: { href: "/pomoc?rola=mysliwi", label: "Przewodnik myśliwi" },
+  },
+  "kalendarz-lowiecki": {
+    tytul: "Kalendarz łowiecki",
+    kroki: [
+      { tytul: "Obsada ambony", opis: "Wybierz ambonę z POI mapy, myśliwego i godziny — mieszkańcy wsi widzą harmonogram po zalogowaniu." },
+      { tytul: "Polowania zbiorowe", opis: "Powiąż wpis z ostrzeżeniem na mapie lub dodaj osobno." },
+      { tytul: "Zebrania i szkolenia", opis: "Inne rodzaje wpisów (zebranie koła, patrol) w tym samym kalendarzu." },
+    ],
+    linkPelny: { href: "/pomoc?rola=mysliwi", label: "Przewodnik myśliwi" },
+  },
+  transport: {
+    tytul: "Transport PKP i PKS",
+    kroki: [
+      { tytul: "Automatyczne odjazdy", opis: "Przy włączonym API PKP/GTFS odśwież rozkład w panelu Transport." },
+      { tytul: "Ręczny rozkład PKS", opis: "Bez API możesz wpisać godziny przy przystanku i dodać zdjęcie tabliczki." },
+      { tytul: "Mapa", opis: "Przystanki i odjazdy widać na mapie wsi i w profilu publicznym." },
+    ],
+    linkPelny: { href: "/pomoc?rola=soltys", label: "Pełny przewodnik sołtysa" },
+  },
+  szkola: {
+    tytul: "Tablica szkoły",
+    kroki: [
+      { tytul: "Ogłoszenia", opis: "Dodaj komunikaty dla rodziców — filtry klas, data ważności." },
+      { tytul: "Profil placówki", opis: "W Społeczność (tryb szkoły) uzupełnij kontakt, dyrektora, zajęcia." },
+      { tytul: "Profil publiczny", opis: "Tablica i profil szkoły na stronie wsi oraz kod QR do embedu." },
+    ],
+    linkPelny: { href: "/pomoc?rola=soltys", label: "Pełny przewodnik sołtysa" },
+  },
 };
 
 /** Mapowanie ścieżek panelu na moduły pomocy. */
@@ -110,5 +170,11 @@ export function modulPomocyZeSciezki(pathname: string): IdModuluPomocy | null {
   if (pathname.includes("/lista-zakupow")) return "lista-zakupow";
   if (pathname.includes("/rezerwacje")) return "rezerwacje-soltys";
   if (pathname.includes("/spolecznosc")) return "spolecznosc";
+  if (pathname.includes("/rolnictwo")) return "rolnictwo";
+  if (pathname.includes("/lesnictwo")) return "lesnictwo";
+  if (pathname.includes("/lowiectwo/kalendarz")) return "kalendarz-lowiecki";
+  if (pathname.includes("/lowiectwo")) return "lowiectwo";
+  if (pathname.includes("/transport")) return "transport";
+  if (pathname.includes("/szkola")) return "szkola";
   return null;
 }

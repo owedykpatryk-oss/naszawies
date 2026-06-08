@@ -3,7 +3,7 @@ import { sciezkaProfiluWsi } from "@/lib/wies/sciezka-publiczna";
 import { czyOrganizacjaOsp, czyOrganizacjaSport } from "@/lib/wies/profil-organizacji";
 
 /** Segment URL → typy grup w bazie (null = filtrowanie heurystyczne). */
-export const SEGMENTY_ORGANIZACJI = ["kgw", "parafia", "lowiectwo", "osp", "sport"] as const;
+export const SEGMENTY_ORGANIZACJI = ["kgw", "parafia", "lowiectwo", "osp", "sport", "szkola", "rolnicy"] as const;
 
 export type SegmentOrganizacji = (typeof SEGMENTY_ORGANIZACJI)[number];
 
@@ -13,6 +13,8 @@ const TYPY_PO_SEGMENCIE: Record<SegmentOrganizacji, string[] | "heurystyka"> = {
   lowiectwo: ["lowiectwo"],
   osp: ["osp"],
   sport: "heurystyka",
+  szkola: ["szkola"],
+  rolnicy: ["rolnicy"],
 };
 
 export function czySegmentOrganizacji(s: string): s is SegmentOrganizacji {
@@ -23,6 +25,8 @@ export function segmentDlaOrganizacji(groupType: string, name: string): SegmentO
   if (groupType === "kgw") return "kgw";
   if (groupType === "parafia") return "parafia";
   if (groupType === "lowiectwo") return "lowiectwo";
+  if (groupType === "szkola") return "szkola";
+  if (groupType === "rolnicy") return "rolnicy";
   if (czyOrganizacjaOsp(groupType, name) || groupType === "osp") return "osp";
   if (czyOrganizacjaSport(groupType, name) || groupType === "sport") return "sport";
   return null;
