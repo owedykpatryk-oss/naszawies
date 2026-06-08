@@ -132,11 +132,41 @@ Wspólny **Redirect URI** w obu konsolach (podmień ref projektu Supabase z **Se
 #### Facebook
 
 1. [Meta for Developers](https://developers.facebook.com/) → **Create App** → typ **Consumer** (lub inny z produktem Facebook Login).
-2. Dodaj produkt **Facebook Login** → **Settings** → **Valid OAuth Redirect URIs** — ten sam URI Supabase co wyżej.
-3. **Settings → Basic** — skopiuj **App ID** i **App Secret** (kliknij **Show**).
-4. **App Domains:** `naszawies.pl`, `www.naszawies.pl` (oraz domena Vercel preview, jeśli testujesz).
+2. Dodaj produkt **Facebook Login** → **Settings**:
+   - **Valid OAuth Redirect URIs** (dokładnie jeden wiersz, bez spacji na końcu):
+
+     `https://qxvdjghfsrrxrivfahmn.supabase.co/auth/v1/callback`
+
+   - **Client OAuth Login** = **Yes**, **Web OAuth Login** = **Yes**
+   - **Use Strict Mode for redirect URIs** = **Yes** (zostaw włączone — URI musi być identyczny)
+3. **Settings → Basic**:
+   - **App ID** i **App Secret** → Supabase → **Authentication** → **Providers** → **Facebook**
+   - **App Domains** (bez `https://`, każda domena osobno w polu — Meta łączy je przecinkami):
+
+     `naszawies.pl`, `www.naszawies.pl`, `qxvdjghfsrrxrivfahmn.supabase.co`
+
+     **Ważne:** bez domeny `….supabase.co` Meta pokazuje błąd *„Domena tego adresu URL nie jest uwzględniona w domenach aplikacji”*, bo `redirect_uri` OAuth idzie na Supabase, nie na `naszawies.pl`.
+
+   - **Privacy Policy URL:** `https://www.naszawies.pl/polityka-prywatnosci`
+   - **Terms of Service URL** (jeśli pole jest): `https://www.naszawies.pl/regulamin`
+4. **Add platform → Website** (jeśli nie ma):
+   - **Site URL:** `https://www.naszawies.pl/`
 5. Supabase → **Authentication** → **Providers** → **Facebook** → włącz, wklej App ID i Secret → **Save**.
-6. W Meta **Roles → Test Users** możesz testować w trybie Development. Na produkcję: przełącz aplikację na **Live** (czasem wymaga **App Review** i polityki prywatności pod adresem publicznym).
+6. W Meta **Roles → Test Users** możesz testować w trybie **Development**. Na produkcję: przełącz aplikację na **Live** (czasem wymaga **App Review**).
+
+**Błąd Meta:** *„Nie można załadować adresu URL — domena nie jest uwzględniona w domenach aplikacji”* → dopisz w **App Domains** brakującą domenę (najczęściej `qxvdjghfsrrxrivfahmn.supabase.co`), zapisz, odczekaj 1–2 min i spróbuj ponownie w oknie incognito.
+
+**„Currently Ineligible for Submission”** (brakujące pola w **Settings → Basic**) — uzupełnij wszystko i kliknij **Save changes** na dole strony:
+
+| Pole Meta | Co wpisać / wgrać |
+|-----------|-------------------|
+| **App icon (1024×1024)** | Wygeneruj: `npm run generuj:marka` → wgraj plik `public/marka/facebook-app-icon-1024.png` |
+| **Privacy Policy URL** | `https://www.naszawies.pl/polityka-prywatnosci` |
+| **User data deletion** | `https://www.naszawies.pl/polityka-prywatnosci#usun-dane` (instrukcja usunięcia konta w profilu lub mail na rodo@naszawies.pl) |
+| **Category** | np. **Social** lub **Utilities** |
+| **Website platform** | **Add platform → Website**, Site URL: `https://www.naszawies.pl/` |
+
+Do testów w trybie **Development** wystarczy uzupełnienie Basic + **Roles → Test Users**. Tryb **Live** (wszyscy użytkownicy Facebooka) wymaga dodatkowo App Review i często statusu „Eligible for Submission”.
 
 **Uwaga:** Facebook czasem nie zwraca adresu e-mail (konto bez maila lub odmowa zgody). Wtedy Supabase może odrzucić rejestrację — użytkownik powinien użyć Google lub e-mail/hasło.
 

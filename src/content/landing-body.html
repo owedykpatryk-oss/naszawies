@@ -1,6 +1,7 @@
 <!-- Placeholdery __LANDING_STAT_*__ podmienia src/app/page.tsx (po npm run sync-landing zachowaj te ciągi). -->
 <a href="#jak" class="skip-link">Przejdź do treści głównej</a>
-<nav>
+<div class="landing-scroll-progress" id="landing-scroll-progress" aria-hidden="true"></div>
+<nav id="landing-nav">
   <div class="container nav-inner">
     <a href="/" class="logo">
       <div class="logo-mark">
@@ -50,6 +51,20 @@
 </nav>
 
 <header class="hero">
+  <div class="hero-photo-mobile" aria-hidden="true">
+    <img
+      src="/landing/hero-wies.jpg"
+      alt=""
+      width="1920"
+      height="1080"
+      loading="eager"
+      fetchpriority="high"
+      decoding="async"
+    />
+    <div class="hero-photo-mobile__caption">
+      <span class="hero-photo-mobile__badge">Polska wieś · 0 zł</span>
+    </div>
+  </div>
   <div class="container">
     <div class="hero-grid">
       <div class="hero-text">
@@ -82,20 +97,32 @@
               <span class="hero-sciezka__cta">Przeglądaj rynki →</span>
             </a>
           </div>
+          <p class="hero-dwie-sciezki__scroll-hint" aria-hidden="true">Przesuń, aby zobaczyć więcej →</p>
           <p class="hero-dwie-sciezki__mapa">Mapa wsi — po zalogowaniu w panelu, te same miejscowości w widoku mapy.</p>
         </div>
         <p class="hero-note">Chcesz priorytetu przy wdrożeniu? <a href="#zapisz">Zapisz wieś na listę</a> — opcjonalnie, dla chętnych na wsparcie przy starcie.</p>
         <div class="hero-meta">
           <div class="meta-item"><span class="meta-value meta-value--anim" data-count="40437">0</span><span class="meta-label">sołectw w Polsce</span></div>
-          <div class="meta-item"><span class="meta-value">__LANDING_STAT_WSIE_LACZNIE__</span><span class="meta-label">w katalogu serwisu</span></div>
+          <div class="meta-item">__LANDING_STAT_WSIE_LACZNIE__<span class="meta-label">w katalogu serwisu</span></div>
           <div class="meta-item"><span class="meta-value">0 zł</span><span class="meta-label">na zawsze dla wsi</span></div>
-          <div class="meta-item"><span class="meta-value">__LANDING_STAT_WSIE_AKTYWNE__</span><span class="meta-label">aktywnych profili wsi</span></div>
-          <div class="meta-item"><span class="meta-value">__LANDING_STAT_OGLOSZENIA_RYNKU__</span><span class="meta-label">ogłoszeń na rynku</span></div>
-          <div class="meta-item"><span class="meta-value">__LANDING_STAT_FIRMY_RYNKU__</span><span class="meta-label">firm i sklepów</span></div>
+          <div class="meta-item">__LANDING_STAT_WSIE_AKTYWNE__<span class="meta-label">aktywnych profili wsi</span></div>
+          <div class="meta-item">__LANDING_STAT_OGLOSZENIA_RYNKU__<span class="meta-label">ogłoszeń na rynku</span></div>
+          <div class="meta-item">__LANDING_STAT_FIRMY_RYNKU__<span class="meta-label">firm i sklepów</span></div>
         </div>
       </div>
 
       <div class="hero-visual">
+        <div class="hero-visual__photo" aria-hidden="true">
+          <img
+            src="/landing/hero-wies.jpg"
+            alt=""
+            width="1920"
+            height="1080"
+            loading="eager"
+            decoding="async"
+          />
+        </div>
+        <div class="hero-visual__stack">
         <div class="village-scene village-scene--anim">
           <svg viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg">
             <circle cx="320" cy="90" r="28" fill="#f4d77a" opacity="0.7"/>
@@ -159,6 +186,7 @@
           </div>
           <div class="text"><strong>Przypomnienie jutro</strong><span>Wywóz śmieci · podatek · w panelu</span></div>
         </div>
+        </div>
       </div>
     </div>
   </div>
@@ -171,6 +199,21 @@
     <span class="trust-strip__item"><strong>Bez reklam</strong> i bez sprzedaży danych</span>
     <span class="trust-strip__item"><strong>__LANDING_STAT_OGLOSZENIA_RYNKU__</strong> ogłoszeń na rynku lokalnym</span>
     <span class="trust-strip__item"><strong>Panel + PWA</strong> — powiadomienia w przeglądarce</span>
+  </div>
+</section>
+
+<section class="social-login-band" aria-labelledby="social-login-tytul">
+  <div class="container social-login-band__inner">
+    <div class="social-login-band__tekst">
+      <p class="social-login-band__eyebrow" id="social-login-tytul">Szybkie logowanie</p>
+      <p class="social-login-band__lead">Google, Facebook lub email — konto w 2 minuty, bez opłat.</p>
+    </div>
+    <div class="social-login-band__badges" aria-hidden="true">
+      <span class="social-login-band__badge social-login-band__badge--google">Google</span>
+      <span class="social-login-band__badge social-login-band__badge--facebook">Facebook</span>
+      <span class="social-login-band__badge social-login-band__badge--email">Email</span>
+    </div>
+    <a href="/logowanie" class="btn btn-secondary social-login-band__cta">Przejdź do logowania</a>
   </div>
 </section>
 
@@ -226,7 +269,7 @@
       <h2>Trzy kroki do <em>cyfrowej wsi</em>.</h2>
       <p>Proste, bez zbędnych formalności. Sołtys się rejestruje, mieszkańcy dołączają, wieś zaczyna żyć online.</p>
     </div>
-    <div class="steps">
+    <div class="steps ujawnij-scroll">
       <div class="step">
         <div class="step-number">01</div>
         <h3>Sołtys się rejestruje</h3>
@@ -432,7 +475,7 @@
       <h2>Wszystko czego potrzebuje <em>twoja wieś</em>.</h2>
       <p>Od tablicy ogłoszeń po interaktywną mapę cmentarza. Funkcje zaprojektowane we współpracy z sołtysami z całej Polski.</p>
     </div>
-    <div class="features-grid">
+    <div class="features-grid ujawnij-scroll">
       <div class="feature-card">
         <div class="feature-icon"><svg width="26" height="26" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg></div>
         <h3>Kalendarz świetlicy</h3>
@@ -667,8 +710,8 @@
       <h2>Najczęstsze <em>wątpliwości</em>.</h2>
     </div>
     <div class="faq-list">
-      <div class="faq-item"><div class="faq-question">Czy to naprawdę jest darmowe?<span class="faq-toggle"></span></div><div class="faq-answer"><div class="faq-answer-inner">Tak, i pozostanie darmowe dla sołtysów i mieszkańców wsi. Platforma utrzymuje się z dobrowolnych darowizn. Jeśli chcesz wesprzeć projekt, możesz zrobić to w dowolnym momencie — nie ma żadnej presji ani przypomnień.</div></div></div>
-      <div class="faq-item"><div class="faq-question">Jak weryfikujecie że ktoś jest naprawdę sołtysem?<span class="faq-toggle"></span></div><div class="faq-answer"><div class="faq-answer-inner">Lista sołtysów jest publiczna w Biuletynie Informacji Publicznej każdej gminy. Kiedy zgłaszasz się jako sołtys, sprawdzamy to ręcznie — zwykle zajmuje to kilka minut. W razie wątpliwości dzwonimy do urzędu gminy. Tylko po potwierdzeniu dostajesz pełne uprawnienia.</div></div></div>
+      <div class="faq-item open"><div class="faq-question" role="button" tabindex="0" aria-expanded="true">Czy to naprawdę jest darmowe?<span class="faq-toggle"></span></div><div class="faq-answer"><div class="faq-answer-inner">Tak, i pozostanie darmowe dla sołtysów i mieszkańców wsi. Platforma utrzymuje się z dobrowolnych darowizn. Jeśli chcesz wesprzeć projekt, możesz zrobić to w dowolnym momencie — nie ma żadnej presji ani przypomnień.</div></div></div>
+      <div class="faq-item"><div class="faq-question" role="button" tabindex="0" aria-expanded="false">Jak weryfikujecie że ktoś jest naprawdę sołtysem?<span class="faq-toggle"></span></div><div class="faq-answer"><div class="faq-answer-inner">Lista sołtysów jest publiczna w Biuletynie Informacji Publicznej każdej gminy. Kiedy zgłaszasz się jako sołtys, sprawdzamy to ręcznie — zwykle zajmuje to kilka minut. W razie wątpliwości dzwonimy do urzędu gminy. Tylko po potwierdzeniu dostajesz pełne uprawnienia.</div></div></div>
       <div class="faq-item"><div class="faq-question">Co jeśli w naszej wsi jest już grupa na Facebooku?<span class="faq-toggle"></span></div><div class="faq-answer"><div class="faq-answer-inner">Grupy facebookowe świetnie sprawdzają się do rozmów. My zajmujemy się tym czym Facebook się nie zajmuje: rezerwacją świetlicy, kalendarzem wydarzeń, inwentarzem, dokumentami, fotokroniką, mapą wsi. Możesz używać obu narzędzi — nie konkurują, uzupełniają się.</div></div></div>
       <div class="faq-item"><div class="faq-question">Jak mieszkańcy dowiedzą się że platforma istnieje?<span class="faq-toggle"></span></div><div class="faq-answer"><div class="faq-answer-inner">Wysyłamy Ci gotowy do wydrukowania plakat z QR kodem prowadzącym do strony Twojej wsi. Wieszasz go na tablicy ogłoszeń obok świetlicy albo przy kościele. Mieszkańcy skanują telefonem i od razu widzą co się dzieje we wsi.</div></div></div>
       <div class="faq-item"><div class="faq-question">Co z danymi osobowymi i RODO?<span class="faq-toggle"></span></div><div class="faq-answer"><div class="faq-answer-inner">Zbieramy minimum danych — imię, email, wieś. Dane są przechowywane w Polsce, zgodnie z RODO. Nie udostępniamy ich nikomu, nie sprzedajemy, nie używamy do reklam. Możesz w każdej chwili pobrać wszystkie swoje dane albo zażądać ich usunięcia.</div></div></div>
@@ -730,6 +773,16 @@
 </div>
 
 <button type="button" class="landing-back-top" id="landing-back-top" aria-label="Wróć na górę" hidden>↑</button>
+
+<section class="footer-cta-band ujawnij-scroll" aria-label="Zacznij korzystać">
+  <div class="container footer-cta-band__inner">
+    <p class="footer-cta-band__tekst"><strong>Gotowy na cyfrową wieś?</strong> Konto działa od razu — rejestracja zajmie 2 minuty.</p>
+    <div class="footer-cta-band__actions">
+      <a href="/rejestracja" class="btn btn-primary">Załóż konto — 0 zł</a>
+      <a href="/logowanie" class="btn btn-secondary">Mam już konto</a>
+    </div>
+  </div>
+</section>
 
 <footer>
   <div class="container">

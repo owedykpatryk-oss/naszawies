@@ -147,8 +147,32 @@
     document.querySelectorAll(".faq-item").forEach(function (item) {
       const q = item.querySelector(".faq-question");
       if (!q) return;
-      q.addEventListener("click", function () {
-        item.classList.toggle("open");
+
+      if (!q.hasAttribute("role")) {
+        q.setAttribute("role", "button");
+        q.setAttribute("tabindex", "0");
+      }
+      q.setAttribute("aria-expanded", item.classList.contains("open") ? "true" : "false");
+
+      function toggleItem() {
+        var willOpen = !item.classList.contains("open");
+        document.querySelectorAll(".faq-item").forEach(function (other) {
+          other.classList.remove("open");
+          var oq = other.querySelector(".faq-question");
+          if (oq) oq.setAttribute("aria-expanded", "false");
+        });
+        if (willOpen) {
+          item.classList.add("open");
+          q.setAttribute("aria-expanded", "true");
+        }
+      }
+
+      q.addEventListener("click", toggleItem);
+      q.addEventListener("keydown", function (e) {
+        if (e.key === "Enter" || e.key === " ") {
+          e.preventDefault();
+          toggleItem();
+        }
       });
     });
   }
@@ -332,7 +356,10 @@
     if (!toggle || !menu) return;
 
     function syncNavHeight() {
-      var navEl = document.querySelector("#strona-glowna nav") || document.querySelector("nav");
+      var navEl =
+        document.getElementById("landing-nav") ||
+        document.querySelector("#strona-glowna nav") ||
+        document.querySelector("nav");
       if (navEl) {
         document.documentElement.style.setProperty("--landing-nav-height", navEl.offsetHeight + "px");
       }
@@ -612,6 +639,66 @@
     startAuto();
   }
 
+  function initScrollProgress() {
+    var bar = document.getElementById("landing-scroll-progress");
+    if (!bar) return;
+
+    function update() {
+      var doc = document.documentElement;
+      var scrollTop = doc.scrollTop || document.body.scrollTop;
+      var max = doc.scrollHeight - doc.clientHeight;
+      var pct = max > 0 ? (scrollTop / max) * 100 : 0;
+      bar.style.width = pct + "%";
+    }
+
+    update();
+    window.addEventListener("scroll", update, { passive: true });
+    window.addEventListener("resize", update);
+  }
+
+  function initNavScrollSpy() {
+    var nav = document.getElementById("landing-nav");
+    var links = document.querySelectorAll('#nav-menu a[href^="#"]');
+    if (!links.length) return;
+
+    var sections = [];
+    links.forEach(function (link) {
+      var id = (link.getAttribute("href") || "").slice(1);
+      if (!id) return;
+      var el = document.getElementById(id);
+      if (el) sections.push({ el: el, link: link });
+    });
+
+    function navOffset() {
+      var raw = getComputedStyle(document.documentElement).getPropertyValue("--landing-nav-height");
+      var n = parseFloat(raw);
+      return isFinite(n) ? n : 76;
+    }
+
+    function update() {
+      if (nav) nav.classList.toggle("nav--scrolled", window.scrollY > 16);
+
+      var y = window.scrollY + navOffset() + 48;
+      var current = null;
+      sections.forEach(function (s) {
+        if (s.el.offsetTop <= y) current = s;
+      });
+
+      links.forEach(function (l) {
+        l.classList.remove("is-active");
+        l.removeAttribute("aria-current");
+      });
+      if (current && current.link) {
+        current.link.classList.add("is-active");
+        current.link.setAttribute("aria-current", "location");
+      }
+    }
+
+    update();
+    window.addEventListener("scroll", update, { passive: true });
+    window.addEventListener("resize", update);
+  }
+
   initPlannerLazy();
   initFaq();
   initTabs();
@@ -620,6 +707,8 @@
   initMobileNav();
   initStickyCta();
   initBackToTop();
+  initScrollProgress();
+  initNavScrollSpy();
   initWowScroll();
   initStatCounters();
   initProductPreview();

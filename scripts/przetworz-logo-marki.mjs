@@ -87,7 +87,7 @@ if (!existsSync(zrodloEmblem)) {
 
 const emblemOut = path.join(MARKA, "emblem-naszawies.png");
 await zapiszZPrzezroczystymTlem(zrodloEmblem, emblemOut, "bialy", 24);
-for (const px of [32, 64, 192, 512]) await rozmiar(emblemOut, px);
+for (const px of [32, 64, 192, 512, 1024]) await rozmiar(emblemOut, px);
 
 if (existsSync(ZRODLO_PELNE)) {
   const pelneOut = path.join(MARKA, "logo-pelne.png");
@@ -99,6 +99,31 @@ if (existsSync(ZRODLO_PELNE)) {
 }
 
 await zapiszLogoApp(path.join(MARKA, "emblem-naszawies-512.png"));
+
+/** Ikona 1024×1024 z tłem (wymóg Meta / Facebook App). */
+async function zapiszIkoneFacebook() {
+  const emblem512 = path.join(MARKA, "emblem-naszawies-512.png");
+  const out = path.join(MARKA, "facebook-app-icon-1024.png");
+  await sharp({
+    create: {
+      width: 1024,
+      height: 1024,
+      channels: 4,
+      background: { r: 45, g: 90, b: 45, alpha: 255 },
+    },
+  })
+    .composite([
+      {
+        input: await sharp(emblem512).resize(820, 820, { fit: "contain" }).png().toBuffer(),
+        gravity: "centre",
+      },
+    ])
+    .png()
+    .toFile(out);
+  console.log("✓ facebook-app-icon-1024.png");
+}
+
+await zapiszIkoneFacebook();
 
 const emailSvg = path.join(__dirname, "..", "public", "email", "znak-naszawies.svg");
 const emailPng = path.join(__dirname, "..", "public", "email", "znak-naszawies.png");

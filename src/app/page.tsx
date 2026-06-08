@@ -5,8 +5,8 @@ import { pobierzStatystykiKataloguWsi } from "@/lib/landing/statystyki-katalogu-
 import { pobierzSzablonHtmlLandingu } from "@/lib/landing/pobierz-szablon-html-landingu";
 import { wstrzyknijStatystykiWHtmlLandingu } from "@/lib/landing/wstrzyknij-placeholdery-html";
 import "../styles/landing-trasy.css";
-import "../styles/landing-wow.css";
 import "../styles/landing.css";
+import "../styles/landing-wow.css";
 
 export const revalidate = 120;
 

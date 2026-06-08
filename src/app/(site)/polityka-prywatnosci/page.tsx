@@ -105,7 +105,7 @@ export default function PolitykaPrywatnosciPage() {
           </ul>
         </section>
 
-        <section>
+        <section id="usun-dane">
           <h2 className="font-serif text-xl text-green-900">5. Prawa osoby, której dane dotyczą</h2>
           <p className="mt-2 leading-relaxed text-stone-700">
             Przysługuje Pani/Panu: dostęp, sprostowanie, usunięcie, ograniczenie, sprzeciw, przenoszenie danych (w
