@@ -699,6 +699,50 @@
     window.addEventListener("resize", update);
   }
 
+  function initFaqFilter() {
+    var input = document.getElementById("faq-filter");
+    var empty = document.getElementById("faq-filter-empty");
+    if (!input) return;
+
+    var items = document.querySelectorAll(".faq-item");
+
+    function applyFilter() {
+      var q = input.value.trim().toLowerCase();
+      var visible = 0;
+      items.forEach(function (item) {
+        var text = (item.textContent || "").toLowerCase();
+        var show = !q || text.indexOf(q) >= 0;
+        item.classList.toggle("is-filtered-out", !show);
+        if (show) visible += 1;
+      });
+      if (empty) empty.hidden = visible > 0;
+    }
+
+    input.addEventListener("input", applyFilter);
+    applyFilter();
+  }
+
+  function initHeroPathScrollHint() {
+    var grid = document.querySelector(".hero-dwie-sciezki__grid");
+    var hint = document.querySelector(".hero-dwie-sciezki__scroll-hint");
+    if (!grid || !hint) return;
+
+    function syncHint() {
+      var overflow = grid.scrollWidth > grid.clientWidth + 4;
+      hint.hidden = !overflow || grid.scrollLeft > 8;
+    }
+
+    syncHint();
+    window.addEventListener("resize", syncHint);
+    grid.addEventListener(
+      "scroll",
+      function () {
+        if (grid.scrollLeft > 8) hint.hidden = true;
+      },
+      { passive: true },
+    );
+  }
+
   initPlannerLazy();
   initFaq();
   initTabs();
@@ -709,6 +753,8 @@
   initBackToTop();
   initScrollProgress();
   initNavScrollSpy();
+  initFaqFilter();
+  initHeroPathScrollHint();
   initWowScroll();
   initStatCounters();
   initProductPreview();

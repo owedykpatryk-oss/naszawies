@@ -51,10 +51,10 @@
 </nav>
 
 <header class="hero">
-  <div class="hero-photo-mobile" aria-hidden="true">
+  <div class="hero-photo-mobile">
     <img
       src="/landing/hero-wies.jpg"
-      alt=""
+      alt="Złote pole o zachodzie słońca — polska wieś"
       width="1920"
       height="1080"
       loading="eager"
@@ -112,10 +112,10 @@
       </div>
 
       <div class="hero-visual">
-        <div class="hero-visual__photo" aria-hidden="true">
+        <div class="hero-visual__photo">
           <img
             src="/landing/hero-wies.jpg"
-            alt=""
+            alt="Złote pole o zachodzie słońca — polska wieś"
             width="1920"
             height="1080"
             loading="eager"
@@ -190,14 +190,18 @@
       </div>
     </div>
   </div>
+  <a href="#start" class="hero-scroll-cue">
+    <span>Co dalej</span>
+    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" aria-hidden="true"><path d="M12 5v14M5 12l7 7 7-7"/></svg>
+  </a>
 </header>
 
 <section class="trust-strip" aria-label="Dlaczego naszawies.pl">
   <div class="container trust-strip__inner">
-    <span class="trust-strip__item"><strong>0 zł</strong> dla wsi — bez planów premium</span>
-    <span class="trust-strip__item"><strong>RODO</strong> — eksport i usunięcie danych w panelu</span>
+    <a href="/rejestracja" class="trust-strip__item trust-strip__item--link"><strong>0 zł</strong> dla wsi — bez planów premium</a>
+    <a href="/polityka-prywatnosci" class="trust-strip__item trust-strip__item--link"><strong>RODO</strong> — eksport i usunięcie danych w panelu</a>
     <span class="trust-strip__item"><strong>Bez reklam</strong> i bez sprzedaży danych</span>
-    <span class="trust-strip__item"><strong>__LANDING_STAT_OGLOSZENIA_RYNKU__</strong> ogłoszeń na rynku lokalnym</span>
+    <a href="/rynek" class="trust-strip__item trust-strip__item--link"><strong>__LANDING_STAT_OGLOSZENIA_RYNKU__</strong> ogłoszeń na rynku lokalnym</a>
     <span class="trust-strip__item"><strong>Panel + PWA</strong> — powiadomienia w przeglądarce</span>
   </div>
 </section>
@@ -208,10 +212,10 @@
       <p class="social-login-band__eyebrow" id="social-login-tytul">Szybkie logowanie</p>
       <p class="social-login-band__lead">Google, Facebook lub email — konto w 2 minuty, bez opłat.</p>
     </div>
-    <div class="social-login-band__badges" aria-hidden="true">
-      <span class="social-login-band__badge social-login-band__badge--google">Google</span>
-      <span class="social-login-band__badge social-login-band__badge--facebook">Facebook</span>
-      <span class="social-login-band__badge social-login-band__badge--email">Email</span>
+    <div class="social-login-band__badges">
+      <a href="/logowanie" class="social-login-band__badge social-login-band__badge--google">Google</a>
+      <a href="/logowanie" class="social-login-band__badge social-login-band__badge--facebook">Facebook</a>
+      <a href="/rejestracja" class="social-login-band__badge social-login-band__badge--email">Email</a>
     </div>
     <a href="/logowanie" class="btn btn-secondary social-login-band__cta">Przejdź do logowania</a>
   </div>
@@ -708,6 +712,18 @@
     <div class="section-header">
       <span class="section-eyebrow">Pytania które padają</span>
       <h2>Najczęstsze <em>wątpliwości</em>.</h2>
+    </div>
+    <div class="faq-search">
+      <label class="faq-search__label" for="faq-filter">Szukaj w pytaniach</label>
+      <input
+        type="search"
+        id="faq-filter"
+        class="faq-search__input"
+        placeholder="Szukaj w pytaniach…"
+        autocomplete="off"
+        enterkeyhint="search"
+      />
+      <p class="faq-search__empty" id="faq-filter-empty" hidden>Brak pytań pasujących do wyszukiwania.</p>
     </div>
     <div class="faq-list">
       <div class="faq-item open"><div class="faq-question" role="button" tabindex="0" aria-expanded="true">Czy to naprawdę jest darmowe?<span class="faq-toggle"></span></div><div class="faq-answer"><div class="faq-answer-inner">Tak, i pozostanie darmowe dla sołtysów i mieszkańców wsi. Platforma utrzymuje się z dobrowolnych darowizn. Jeśli chcesz wesprzeć projekt, możesz zrobić to w dowolnym momencie — nie ma żadnej presji ani przypomnień.</div></div></div>
