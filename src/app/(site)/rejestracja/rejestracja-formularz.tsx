@@ -119,7 +119,7 @@ export function RejestracjaFormularz({
 
   if (sukces) {
     return (
-      <div className="mt-8 rounded-2xl border border-green-200 bg-green-50 p-6 text-center text-stone-800">
+      <div className="auth-strona__formularz text-center text-stone-800">
         <p className="font-medium text-green-900">Sprawdź skrzynkę e-mail</p>
         <p className="mt-2 text-sm leading-relaxed">
           Wysłaliśmy wiadomość z linkiem potwierdzającym. Kliknij w link, aby dokończyć rejestrację. Jeśli nic
@@ -162,10 +162,7 @@ export function RejestracjaFormularz({
   }
 
   return (
-    <form
-      className="mt-8 space-y-4 rounded-2xl border border-stone-200 bg-white p-6 shadow-sm"
-      onSubmit={onSubmit}
-    >
+    <form className="auth-strona__formularz space-y-4" onSubmit={onSubmit}>
       <div className="sr-only" aria-hidden="true">
         <label htmlFor="reg-bottrap">Pozostaw puste</label>
         <input type="text" id="reg-bottrap" name="bottrap" tabIndex={-1} autoComplete="off" />

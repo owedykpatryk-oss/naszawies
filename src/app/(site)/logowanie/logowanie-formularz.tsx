@@ -15,7 +15,7 @@ type Props = {
 
 const OPISY_BLEDOW: Record<string, string> = {
   "potwierdz-email": "Link potwierdzający wygasł lub jest nieprawidłowy. Spróbuj zalogować się lub zarejestrować ponownie.",
-  "sesja-zewnetrzna": "Nie udało się dokończyć logowania przez Google. Spróbuj ponownie.",
+  "sesja-zewnetrzna": "Nie udało się dokończyć logowania przez konto zewnętrzne (Google/Facebook). Spróbuj ponownie.",
   konfiguracja: "Logowanie jest chwilowo niedostępne. Spróbuj ponownie później.",
 };
 
@@ -80,10 +80,7 @@ export function LogowanieFormularz({
   }
 
   return (
-    <form
-      className="mt-4 space-y-4 rounded-2xl border border-stone-200/80 bg-stone-50/50 p-5 ring-1 ring-stone-900/[0.03] sm:mt-6 sm:p-6"
-      onSubmit={onSubmit}
-    >
+    <form className="auth-strona__formularz space-y-4" onSubmit={onSubmit}>
       {blad ? (
         <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-800" role="alert">
           {blad}

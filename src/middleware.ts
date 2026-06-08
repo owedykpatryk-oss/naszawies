@@ -11,6 +11,7 @@ import {
   NAGLOWEK_USER_SIGNUP_INTENT,
   NAGLOWEK_USER_SIGNUP_VILLAGE_ID,
 } from "@/lib/auth/naglowki-sesji-middleware";
+import { NAGLOWEK_PATHNAME, NAGLOWEK_SEARCH } from "@/lib/auth/sciezka-powrotu-naglowki";
 import {
   sciezkaApiWymagaLogowania,
   sciezkaWymagaLogowania,
@@ -26,8 +27,13 @@ type CiasteczkaDoUstawienia = {
 
 const METODY_DOZWOLONE = new Set(["GET", "HEAD", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"]);
 
-function odpowiedzZBazowymiNaglowkami(odpowiedz: NextResponse, sciezka: string): NextResponse {
-  odpowiedz.headers.set("x-pathname", sciezka);
+function odpowiedzZBazowymiNaglowkami(
+  odpowiedz: NextResponse,
+  sciezka: string,
+  search = "",
+): NextResponse {
+  odpowiedz.headers.set(NAGLOWEK_PATHNAME, sciezka);
+  if (search) odpowiedz.headers.set(NAGLOWEK_SEARCH, search);
   return dolaczNaglowkiBezpieczenstwa(odpowiedz);
 }
 
@@ -65,7 +71,8 @@ function odpowiedzZNastepnym(
   user: User | null,
 ): NextResponse {
   const requestHeaders = new Headers(request.headers);
-  requestHeaders.set("x-pathname", request.nextUrl.pathname);
+  requestHeaders.set(NAGLOWEK_PATHNAME, request.nextUrl.pathname);
+  requestHeaders.set(NAGLOWEK_SEARCH, request.nextUrl.search);
   dolaczNaglowkiUzytkownika(requestHeaders, user);
   const odpowiedz = NextResponse.next({
     request: {

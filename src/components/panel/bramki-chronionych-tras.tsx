@@ -3,6 +3,7 @@ import { headers } from "next/headers";
 import { redirect } from "next/navigation";
 import { BramkaOnboardingu } from "@/components/panel/bramka-onboardingu";
 import { BramkaZgodPrawnych } from "@/components/panel/bramka-zgod-prawnych";
+import { sciezkaPowrotuZNaglowkow } from "@/lib/auth/sciezka-powrotu-naglowki";
 import { urlLogowaniaZPowrotem } from "@/lib/auth/sciezki-chronione";
 import { pobierzUzytkownikaSerwer } from "@/lib/auth/pobierz-uzytkownika-serwer";
 
@@ -11,7 +12,7 @@ export async function BramkiChronionychTras() {
   const sciezka = headers().get("x-pathname") ?? "/";
   const user = await pobierzUzytkownikaSerwer();
   if (!user) {
-    redirect(urlLogowaniaZPowrotem(sciezka));
+    redirect(urlLogowaniaZPowrotem(sciezkaPowrotuZNaglowkow(sciezka)));
   }
 
   return (

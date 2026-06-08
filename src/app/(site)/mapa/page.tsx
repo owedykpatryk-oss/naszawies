@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import { Suspense } from "react";
+import { BramkiChronionychTras } from "@/components/panel/bramki-chronionych-tras";
 import { MapaAutomatyzacjaKlient } from "@/components/mapa/mapa-automatyzacja-klient";
 import { MapaStatystykiBanner } from "@/components/mapa/mapa-statystyki-banner";
 import { LinkPomocyKontekstowej } from "@/components/pomoc/link-pomocy-kontekstowej";
@@ -22,8 +23,6 @@ import { pobierzPubliczneDaneMapy } from "@/lib/mapa/pobierz-publiczne-dane-mapy
 import { pobierzWarstwyGeoportalNaMape } from "@/lib/mapa/pobierz-warstwy-geoportal-na-mape";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
 import { pobierzUzytkownikaSerwer } from "@/lib/auth/pobierz-uzytkownika-serwer";
-import { urlLogowaniaZPowrotem } from "@/lib/auth/sciezki-chronione";
-import { redirect } from "next/navigation";
 
 export const metadata: Metadata = {
   title: "Mapa wsi",
@@ -47,7 +46,6 @@ function doLiczby(v: string | number | null | undefined): number {
 
 export default async function MapaPage() {
   const user = await pobierzUzytkownikaSerwer();
-  if (!user) redirect(urlLogowaniaZPowrotem("/mapa"));
 
   const { znaczniki, punktyPoi: punktyPoiSurowe, punktyRynek, punktyRynekDzialki, obrysyCmentarzy, bladZapytania } =
     await pobierzPubliczneDaneMapy();
@@ -69,7 +67,7 @@ export default async function MapaPage() {
   );
 
   try {
-    if (znaczniki.length > 0) {
+    if (znaczniki.length > 0 && user) {
       const sbAuth = utworzKlientaSupabaseSerwer();
       const warstwyGeo = await pobierzWarstwyGeoportalNaMape(sbAuth, wiesPoIdMapy);
       punktyAdresy = warstwyGeo.punktyAdresy;
@@ -140,7 +138,9 @@ export default async function MapaPage() {
   }));
 
   return (
-    <main className="mapa-strona-glowna mapa-strona-glowna--immersive flex min-h-0 flex-col">
+    <>
+      <BramkiChronionychTras />
+    <main className="mapa-strona-glowna mapa-strona-glowna--immersive flex min-h-0 flex-1 flex-col">
       <header className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-b border-green-900/8 bg-gradient-to-r from-white via-emerald-50/30 to-white px-3 py-2 backdrop-blur-sm sm:px-4">
         <div className="flex min-w-0 flex-wrap items-center gap-2">
           <h1 className="font-serif text-base font-medium leading-tight text-green-950 sm:text-lg">Mapa wiosek</h1>
@@ -199,5 +199,6 @@ export default async function MapaPage() {
         </div>
       ) : null}
     </main>
+    </>
   );
 }

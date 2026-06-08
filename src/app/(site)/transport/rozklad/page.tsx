@@ -10,6 +10,11 @@ function pojedynczy(v: string | string[] | undefined): string {
   return Array.isArray(v) ? v[0] ?? "" : v ?? "";
 }
 
+export const metadata = {
+  title: "Rozkład stacji PKP",
+  robots: { index: true, follow: true },
+};
+
 export default async function RozkladStacjiPage({ searchParams }: Props) {
   const stacjaFraza = pojedynczy(searchParams?.stacja).trim();
 
@@ -42,8 +47,8 @@ export default async function RozkladStacjiPage({ searchParams }: Props) {
           ← Transport
         </Link>
         {" · "}
-        <Link href="/mapa" className="text-green-800 underline">
-          Mapa wsi
+        <Link href="/szukaj" className="text-green-800 underline">
+          Szukaj wsi
         </Link>
       </p>
       <h1 className="font-serif text-3xl text-green-950">Rozkład stacji kolejowej (PKP)</h1>

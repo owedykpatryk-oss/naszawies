@@ -3,6 +3,7 @@
 import dynamic from "next/dynamic";
 import { useMemo, useState, useTransition } from "react";
 import Link from "next/link";
+import { linkChroniony } from "@/lib/auth/sciezki-chronione";
 import { PlanCmentarzaRysunek } from "@/components/cmentarz/plan-cmentarza-rysunek";
 import { filtrujGroby, type PlanCmentarzaPubliczny } from "@/lib/cmentarz/pobierz-cmentarz-publiczny";
 import { zapalWirtualnyZnicz } from "@/app/(site)/panel/soltys/cmentarz/akcje-cmentarz";
@@ -17,9 +18,10 @@ type Props = {
   sciezkaWsi: string;
   villageId: string;
   plan: PlanCmentarzaPubliczny;
+  zalogowany?: boolean;
 };
 
-export function CmentarzPublicznyKlient({ nazwaWsi, sciezkaWsi, villageId, plan }: Props) {
+export function CmentarzPublicznyKlient({ nazwaWsi, sciezkaWsi, villageId, plan, zalogowany = false }: Props) {
   const [szukaj, ustawSzukaj] = useState("");
   const [podswietl, ustawPodswietl] = useState<string | null>(null);
   const [wybranyGrob, ustawWybranyGrob] = useState<string | null>(null);
@@ -73,7 +75,11 @@ export function CmentarzPublicznyKlient({ nazwaWsi, sciezkaWsi, villageId, plan 
           </button>
           {grobyZGps > 0 ? (
             <Link
-              href={`/mapa?village=${encodeURIComponent(villageId)}&warstwa=cmentarz`}
+              href={linkChroniony(
+                "/mapa",
+                zalogowany,
+                `?village=${encodeURIComponent(villageId)}&warstwa=cmentarz`,
+              )}
               className="rounded-lg border border-emerald-300 bg-emerald-50 px-3 py-1.5 text-xs font-medium text-emerald-900 hover:bg-emerald-100"
             >
               Groby z GPS na mapie ({grobyZGps})

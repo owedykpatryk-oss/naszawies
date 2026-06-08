@@ -42,6 +42,8 @@ import { tekstPrecyzjiPoiMapy, czyKategoriaPoiLowiecka } from "@/lib/mapa/poi-lo
 import { bezpiecznyHref } from "@/lib/tekst/bezpieczny-url";
 import {
   CZY_KIEG_WMS_DOSTEPNY,
+  KIEG_LAYER_DZIALKI,
+  KIEG_LAYER_OBREBY,
   KIEG_WMS_MIN_ZOOM,
   KIEG_WMS_URL,
   PANE_KIEG_WMS,
@@ -480,7 +482,8 @@ type InstancjaLeaflet = {
   podkladSatelita: import("leaflet").TileLayer;
   podkladEtykietySatelita: import("leaflet").TileLayer;
   geoportalWmsLayer: import("leaflet").TileLayer.WMS | null;
-  egibWmsLayer: import("leaflet").TileLayer.WMS | null;
+  egibDzialkiWmsLayer: import("leaflet").TileLayer.WMS | null;
+  egibObrebyWmsLayer: import("leaflet").TileLayer.WMS | null;
   adresyGroup: import("leaflet").LayerGroup;
   geoKontekstGroup: import("leaflet").LayerGroup;
   landuseGroup: import("leaflet").LayerGroup;
@@ -525,6 +528,8 @@ const GEO_WMS_URL = process.env.NEXT_PUBLIC_GEOPORTAL_WMS_URL?.trim() ?? "";
 const GEO_WMS_LAYERS = process.env.NEXT_PUBLIC_GEOPORTAL_WMS_LAYERS?.trim() ?? "";
 const CZY_GEO_WMS_DOSTEPNY = GEO_WMS_URL.length > 0 && GEO_WMS_LAYERS.length > 0;
 const KLUCZ_EGIB_STORAGE = "naszawies-mapa-egib";
+const KLUCZ_DZIALKI_STORAGE = "naszawies-mapa-dzialki";
+const KLUCZ_OBREBY_STORAGE = "naszawies-mapa-obreby";
 const KLUCZ_WARSTWY_STORAGE = "naszawies-mapa-warstwy";
 
 type ZapisaneWarstwyMapy = {
@@ -554,24 +559,44 @@ function zapiszWarstwyMapy(warstwy: ZapisaneWarstwyMapy): void {
   }
 }
 
-function wczytajZapisanyEgib(): boolean {
+function wczytajZapisaneDzialki(): boolean {
   if (typeof window === "undefined") return true;
   try {
-    const v = window.sessionStorage.getItem(KLUCZ_EGIB_STORAGE);
+    const v = window.sessionStorage.getItem(KLUCZ_DZIALKI_STORAGE);
     if (v === "0") return false;
     if (v === "1") return true;
+    const legacy = window.sessionStorage.getItem(KLUCZ_EGIB_STORAGE);
+    if (legacy === "0") return false;
+    if (legacy === "1") return true;
   } catch {
     /* ignore */
   }
   return true;
 }
 
-function ustawWarstweEgib(inst: InstancjaLeaflet, pokaz: boolean) {
-  const warstwa = inst.egibWmsLayer;
-  if (!warstwa) return;
-  const onMap = inst.map.hasLayer(warstwa);
-  if (pokaz && !onMap) warstwa.addTo(inst.map);
-  else if (!pokaz && onMap) inst.map.removeLayer(warstwa);
+function wczytajZapisaneObreby(): boolean {
+  if (typeof window === "undefined") return false;
+  try {
+    const v = window.sessionStorage.getItem(KLUCZ_OBREBY_STORAGE);
+    if (v === "1") return true;
+    if (v === "0") return false;
+  } catch {
+    /* ignore */
+  }
+  return false;
+}
+
+function ustawWarstwyKieg(inst: InstancjaLeaflet, opts: { dzialki: boolean; obreby: boolean }) {
+  const pary: [import("leaflet").TileLayer.WMS | null, boolean][] = [
+    [inst.egibDzialkiWmsLayer, opts.dzialki],
+    [inst.egibObrebyWmsLayer, opts.obreby],
+  ];
+  for (const [warstwa, pokaz] of pary) {
+    if (!warstwa) continue;
+    const onMap = inst.map.hasLayer(warstwa);
+    if (pokaz && !onMap) warstwa.addTo(inst.map);
+    else if (!pokaz && onMap) inst.map.removeLayer(warstwa);
+  }
 }
 
 function wczytajZapisanyPodklad(): RodzajPodkladuMapy {
@@ -1040,7 +1065,7 @@ function htmlPopupPoi(z: ZnacznikPoi): string {
         <a href="${z.sciezkaWsi.replace(/"/g, "")}">Strona wsi</a>
         ${katNorm === "szkola" || katNorm === "przedszkole" ? `<span aria-hidden="true"> · </span><a href="${z.sciezkaWsi.replace(/"/g, "")}#sekcja-szkola">Tablica szkoły</a>` : ""}
         <span aria-hidden="true"> · </span>
-        <a href="/mapa?poiId=${encodeURIComponent(z.id)}">Na mapie</a>
+        <a href="${stronaMiejsca}#lokalizacja">Na mapie</a>
         <span aria-hidden="true"> · </span>
         <a href="${osm}" target="_blank" rel="noopener noreferrer">OSM ↗</a>
         ${czyStacja ? `<span aria-hidden="true"> · </span><a href="${stacjaLink}">Rozkład PKP 🚆</a>` : ""}
@@ -1090,7 +1115,13 @@ const MapaWsiLeafletInner = forwardRef<
     promienKm?: number | null;
     pokazGranice?: boolean;
     onPokazGraniceChange?: (v: boolean) => void;
-    /** Warstwa EGiB (obręby + działki) z Geoportalu — domyślnie włączona. */
+    /** Granice działek EGiB (WMS KIEG) — domyślnie włączone od zoomu 11. */
+    pokazGraniceDzialek?: boolean;
+    onPokazGraniceDzialekChange?: (v: boolean) => void;
+    /** Obręby ewidencyjne EGiB — opcjonalnie obok działek. */
+    pokazGraniceObrebow?: boolean;
+    onPokazGraniceObrebowChange?: (v: boolean) => void;
+    /** Skrót: włącza działki (kompatybilność osadzonych map). */
     pokazEgib?: boolean;
     pokazPoi?: boolean;
     pokazRynek?: boolean;
@@ -1101,6 +1132,9 @@ const MapaWsiLeafletInner = forwardRef<
     /** Sterowane z panelu bocznego — kontekst PRNG / instytucje. */
     pokazGeoKontekst?: boolean;
     onPokazGeoKontekstChange?: (v: boolean) => void;
+    /** Ukrywa panel „Warstwy” na mapie — sterowanie z sidebara. */
+    sterowanieWarstwZewnetrzne?: boolean;
+    onZoomChange?: (zoom: number) => void;
   }
 >(function MapaWsiLeaflet(
   {
@@ -1131,6 +1165,10 @@ const MapaWsiLeafletInner = forwardRef<
     promienKm = null,
     pokazGranice = true,
     onPokazGraniceChange,
+    pokazGraniceDzialek: pokazGraniceDzialekProp,
+    onPokazGraniceDzialekChange,
+    pokazGraniceObrebow: pokazGraniceObrebowProp,
+    onPokazGraniceObrebowChange,
     pokazEgib = true,
     pokazPoi = true,
     pokazRynek = true,
@@ -1139,6 +1177,8 @@ const MapaWsiLeafletInner = forwardRef<
     onPokazAdresyKinChange,
     pokazGeoKontekst: pokazGeoKontekstProp,
     onPokazGeoKontekstChange,
+    sterowanieWarstwZewnetrzne = false,
+    onZoomChange,
   },
   ref,
 ) {
@@ -1153,14 +1193,38 @@ const MapaWsiLeafletInner = forwardRef<
     useEffect(() => {
       setPokazGraniceStan(pokazGranice);
     }, [pokazGranice]);
-    const [pokazEgibStan, setPokazEgibStan] = useState(pokazEgib);
+    const sterowaneDzialki = pokazGraniceDzialekProp !== undefined;
+    const sterowaneObreby = pokazGraniceObrebowProp !== undefined;
+    const [pokazDzialkiWew, setPokazDzialkiWew] = useState(
+      () => (pokazGraniceDzialekProp ?? pokazEgib) && wczytajZapisaneDzialki(),
+    );
+    const [pokazObrebyWew, setPokazObrebyWew] = useState(
+      () => (pokazGraniceObrebowProp ?? false) && wczytajZapisaneObreby(),
+    );
+    const pokazDzialkiStan = sterowaneDzialki
+      ? (pokazGraniceDzialekProp ?? pokazEgib)
+      : pokazDzialkiWew;
+    const pokazObrebyStan = sterowaneObreby ? (pokazGraniceObrebowProp ?? false) : pokazObrebyWew;
+    const pokazKiegStan = pokazDzialkiStan || pokazObrebyStan;
     useEffect(() => {
-      setPokazEgibStan(pokazEgib && wczytajZapisanyEgib());
-    }, [pokazEgib]);
+      if (!sterowaneDzialki) {
+        setPokazDzialkiWew((pokazGraniceDzialekProp ?? pokazEgib) && wczytajZapisaneDzialki());
+      }
+    }, [pokazEgib, pokazGraniceDzialekProp, sterowaneDzialki]);
+    useEffect(() => {
+      if (!sterowaneObreby) {
+        setPokazObrebyWew((pokazGraniceObrebowProp ?? false) && wczytajZapisaneObreby());
+      }
+    }, [pokazGraniceObrebowProp, sterowaneObreby]);
     const [zoomMapy, setZoomMapy] = useState(7);
     const zapisaneWarstwy = useMemo(() => wczytajZapisaneWarstwy(), []);
     const [pokazPoiStan, setPokazPoiStan] = useState(zapisaneWarstwy.poi ?? pokazPoi);
     const [pokazRynekStan, setPokazRynekStan] = useState(zapisaneWarstwy.rynek ?? pokazRynek);
+    useEffect(() => {
+      if (!sterowanieWarstwZewnetrzne) return;
+      setPokazPoiStan(pokazPoi);
+      setPokazRynekStan(pokazRynek);
+    }, [sterowanieWarstwZewnetrzne, pokazPoi, pokazRynek]);
     const [pokazAdresyWew, ustawPokazAdresyWew] = useState(zapisaneWarstwy.adresy ?? false);
     const [pokazGeoKontekstWew, ustawPokazGeoKontekstWew] = useState(zapisaneWarstwy.geo ?? false);
     const pokazAdresyStan = pokazAdresyKinProp ?? pokazAdresyWew;
@@ -1228,8 +1292,12 @@ const MapaWsiLeafletInner = forwardRef<
     rewiryRef.current = rewiryLowieckie;
     const pokazGraniceRef = useRef(pokazGraniceStan);
     pokazGraniceRef.current = pokazGraniceStan;
-    const pokazEgibRef = useRef(pokazEgibStan);
-    pokazEgibRef.current = pokazEgibStan;
+    const pokazKiegRef = useRef(pokazKiegStan);
+    pokazKiegRef.current = pokazKiegStan;
+    const pokazDzialkiRef = useRef(pokazDzialkiStan);
+    pokazDzialkiRef.current = pokazDzialkiStan;
+    const pokazObrebyRef = useRef(pokazObrebyStan);
+    pokazObrebyRef.current = pokazObrebyStan;
     const trybLowiectwoRef = useRef(trybLowiectwo);
     trybLowiectwoRef.current = trybLowiectwo;
     const pokazPoiRef = useRef(pokazPoiStan);
@@ -1259,13 +1327,20 @@ const MapaWsiLeafletInner = forwardRef<
     bboxWidokuRef.current = bboxPoczatkowy;
 
     useEffect(() => {
+      if (sterowanieWarstwZewnetrzne) return;
       zapiszWarstwyMapy({
         poi: pokazPoiStan,
         rynek: pokazRynekStan,
         adresy: pokazAdresyStan,
         geo: pokazGeoKontekstStan,
       });
-    }, [pokazPoiStan, pokazRynekStan, pokazAdresyStan, pokazGeoKontekstStan]);
+    }, [
+      sterowanieWarstwZewnetrzne,
+      pokazPoiStan,
+      pokazRynekStan,
+      pokazAdresyStan,
+      pokazGeoKontekstStan,
+    ]);
 
     useImperativeHandle(ref, () => ({
       pokazNaMapie(idWsi: string) {
@@ -1383,6 +1458,8 @@ const MapaWsiLeafletInner = forwardRef<
           zoomControl: true,
           scrollWheelZoom: false,
           attributionControl: true,
+          touchZoom: true,
+          dragging: true,
         });
         map.zoomControl.setPosition("bottomright");
         map.attributionControl.setPosition("bottomleft");
@@ -1417,11 +1494,18 @@ const MapaWsiLeafletInner = forwardRef<
               opacity: 1,
             })
           : null;
-        const egibWmsLayer = CZY_KIEG_WMS_DOSTEPNY
+        const atrybucjaEgib =
+          'Granice EGiB &copy; <a href="https://www.geoportal.gov.pl/">GUGiK</a>';
+        const egibDzialkiWmsLayer = CZY_KIEG_WMS_DOSTEPNY
           ? L.tileLayer.wms(KIEG_WMS_URL, {
-              ...opcjeWarstwyKiegWms(),
-              attribution:
-                'Granice EGiB &copy; <a href="https://www.geoportal.gov.pl/">GUGiK</a>',
+              ...opcjeWarstwyKiegWms(KIEG_LAYER_DZIALKI),
+              attribution: atrybucjaEgib,
+            })
+          : null;
+        const egibObrebyWmsLayer = CZY_KIEG_WMS_DOSTEPNY
+          ? L.tileLayer.wms(KIEG_WMS_URL, {
+              ...opcjeWarstwyKiegWms(KIEG_LAYER_OBREBY),
+              attribution: atrybucjaEgib,
             })
           : null;
 
@@ -1467,10 +1551,14 @@ const MapaWsiLeafletInner = forwardRef<
         container.addEventListener("mouseleave", leave);
 
         const onZoom = () => {
-          setZoomMapy(map.getZoom());
+          const z = map.getZoom();
+          setZoomMapy(z);
+          onZoomChange?.(z);
         };
         map.on("zoomend", onZoom);
-        setZoomMapy(map.getZoom());
+        const zoomStart = map.getZoom();
+        setZoomMapy(zoomStart);
+        onZoomChange?.(zoomStart);
 
         const resizeHandler = () => {
           bezpieczneInvalidateSize(map);
@@ -1491,7 +1579,8 @@ const MapaWsiLeafletInner = forwardRef<
           podkladSatelita,
           podkladEtykietySatelita,
           geoportalWmsLayer,
-          egibWmsLayer,
+          egibDzialkiWmsLayer,
+          egibObrebyWmsLayer,
           adresyGroup,
           geoKontekstGroup,
           landuseGroup,
@@ -1507,7 +1596,10 @@ const MapaWsiLeafletInner = forwardRef<
           ostatniPodpisWarstwyPoi: null,
         };
         ustawPodkladMapy(instancja.current, podkladStart);
-        ustawWarstweEgib(instancja.current, pokazEgibRef.current);
+        ustawWarstwyKieg(instancja.current, {
+          dzialki: pokazDzialkiRef.current,
+          obreby: pokazObrebyRef.current,
+        });
         setRodzajPodkladu(podkladStart);
 
         const z0 = znacznikiRef.current;
@@ -1539,13 +1631,13 @@ const MapaWsiLeafletInner = forwardRef<
           {},
           {
             pokazGranice: pokazGraniceRef.current,
-            pokazEgib: pokazEgibRef.current,
+            pokazEgib: pokazKiegRef.current,
             trybLowiectwo: trybLowiectwoRef.current,
           },
         );
         syncWarstwaPoi(L, instancja.current, p0);
         const egibWidocznyInit =
-          pokazEgibRef.current && czyKiegWidocznyNaZoomie(map.getZoom());
+          pokazKiegRef.current && czyKiegWidocznyNaZoomie(map.getZoom());
         syncGraniceWsiNaMapie(L, instancja.current, z0, graniceWsiRef.current, {
           pokazGranice: pokazGraniceRef.current,
           egibWidoczny: egibWidocznyInit,
@@ -1609,7 +1701,7 @@ const MapaWsiLeafletInner = forwardRef<
         ikona,
         bboxPoczatkowy,
         graniceWsi,
-        { pokazGranice: pokazGraniceStan, pokazEgib: pokazEgibStan, trybLowiectwo },
+        { pokazGranice: pokazGraniceStan, pokazEgib: pokazKiegStan, trybLowiectwo },
       );
     }, [
       znaczniki,
@@ -1630,7 +1722,7 @@ const MapaWsiLeafletInner = forwardRef<
       rewiryLowieckie,
       bboxPoczatkowy,
       pokazGraniceStan,
-      pokazEgibStan,
+      pokazKiegStan,
       trybLowiectwo,
       pokazRynekStan,
     ]);
@@ -1639,12 +1731,12 @@ const MapaWsiLeafletInner = forwardRef<
       const inst = instancja.current;
       const L = leafletRef.current;
       if (!inst || !L || !mapaGotowa || znaczniki.length === 0) return;
-      const egibWidoczny = pokazEgibStan && czyKiegWidocznyNaZoomie(inst.map.getZoom());
+      const egibWidoczny = pokazKiegStan && czyKiegWidocznyNaZoomie(inst.map.getZoom());
       syncGraniceWsiNaMapie(L, inst, znaczniki, graniceWsi, {
         pokazGranice: pokazGraniceStan,
         egibWidoczny,
       });
-    }, [graniceWsi, znaczniki, pokazGraniceStan, pokazEgibStan, zoomMapy, mapaGotowa]);
+    }, [graniceWsi, znaczniki, pokazGraniceStan, pokazKiegStan, zoomMapy, mapaGotowa]);
 
     useEffect(() => {
       const inst = instancja.current;
@@ -1694,13 +1786,15 @@ const MapaWsiLeafletInner = forwardRef<
     useEffect(() => {
       const inst = instancja.current;
       if (!inst) return;
-      ustawWarstweEgib(inst, pokazEgibStan);
+      ustawWarstwyKieg(inst, { dzialki: pokazDzialkiStan, obreby: pokazObrebyStan });
       try {
-        window.sessionStorage.setItem(KLUCZ_EGIB_STORAGE, pokazEgibStan ? "1" : "0");
+        window.sessionStorage.setItem(KLUCZ_DZIALKI_STORAGE, pokazDzialkiStan ? "1" : "0");
+        window.sessionStorage.setItem(KLUCZ_OBREBY_STORAGE, pokazObrebyStan ? "1" : "0");
+        window.sessionStorage.setItem(KLUCZ_EGIB_STORAGE, pokazKiegStan ? "1" : "0");
       } catch {
         /* ignore */
       }
-    }, [pokazEgibStan]);
+    }, [pokazDzialkiStan, pokazObrebyStan, pokazKiegStan]);
 
     useEffect(() => {
       const onChange = () => {
@@ -1713,6 +1807,35 @@ const MapaWsiLeafletInner = forwardRef<
       document.addEventListener("fullscreenchange", onChange);
       return () => document.removeEventListener("fullscreenchange", onChange);
     }, []);
+
+    /** Mobile: dolna nawigacja i pasek adresu zmieniają wysokość — Leaflet bez tego zostaje z pustym/szarym podkładem. */
+    useEffect(() => {
+      if (!mapaGotowa) return;
+      const shell = refShell.current;
+      const map = instancja.current?.map;
+      if (!shell || !map) return;
+
+      const odswiez = () => {
+        requestAnimationFrame(() => bezpieczneInvalidateSize(map));
+      };
+
+      const ro =
+        typeof ResizeObserver !== "undefined" ? new ResizeObserver(odswiez) : null;
+      ro?.observe(shell);
+
+      const vv = window.visualViewport;
+      vv?.addEventListener("resize", odswiez);
+      vv?.addEventListener("scroll", odswiez);
+
+      const opoznienia = [0, 200, 600].map((ms) => window.setTimeout(odswiez, ms));
+
+      return () => {
+        ro?.disconnect();
+        vv?.removeEventListener("resize", odswiez);
+        vv?.removeEventListener("scroll", odswiez);
+        opoznienia.forEach((id) => window.clearTimeout(id));
+      };
+    }, [mapaGotowa]);
 
     const togglePelnyEkran = () => {
       const el = refShell.current;
@@ -1785,76 +1908,94 @@ const MapaWsiLeafletInner = forwardRef<
               </button>
             ) : null}
           </div>
-          <div className="mapa-kontrolki-panel">
-            <button
-              type="button"
-              className="mapa-kontrolki-panel__naglowek"
-              aria-expanded={warstwyOtwarte}
-              onClick={() => setWarstwyOtwarte((v) => !v)}
-            >
-              Warstwy
-              <span aria-hidden className="text-stone-400">
-                {warstwyOtwarte ? "▴" : "▾"}
-              </span>
-            </button>
-            {warstwyOtwarte ? (
-              <div className="mapa-kontrolki-panel__tresc" role="group" aria-label="Warstwy na mapie">
-                <button
-                  type="button"
-                  onClick={() => setPokazEgibStan((v) => !v)}
-                  className={`mapa-warstwa-chip ${pokazEgibStan ? "mapa-warstwa-chip--on mapa-warstwa-chip--fuchsia" : ""}`}
-                  title="Granice EGiB — widoczne od zoomu 11"
-                >
-                  EGiB
-                </button>
-                <button
-                  type="button"
-                  onClick={() => {
-                    setPokazGraniceStan((v) => {
-                      const next = !v;
-                      onPokazGraniceChange?.(next);
-                      return next;
-                    });
-                  }}
-                  className={`mapa-warstwa-chip ${pokazGraniceStan ? "mapa-warstwa-chip--on mapa-warstwa-chip--green" : ""}`}
-                >
-                  Obrysy wsi
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setPokazPoiStan((v) => !v)}
-                  className={`mapa-warstwa-chip ${pokazPoiStan ? "mapa-warstwa-chip--on mapa-warstwa-chip--green" : ""}`}
-                >
-                  POI
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setPokazRynekStan((v) => !v)}
-                  className={`mapa-warstwa-chip ${pokazRynekStan ? "mapa-warstwa-chip--on mapa-warstwa-chip--orange" : ""}`}
-                >
-                  Rynek
-                </button>
-                {punktyAdresy.length > 0 ? (
+          {!sterowanieWarstwZewnetrzne ? (
+            <div className="mapa-kontrolki-panel">
+              <button
+                type="button"
+                className="mapa-kontrolki-panel__naglowek"
+                aria-expanded={warstwyOtwarte}
+                onClick={() => setWarstwyOtwarte((v) => !v)}
+              >
+                Warstwy
+                <span aria-hidden className="text-stone-400">
+                  {warstwyOtwarte ? "▴" : "▾"}
+                </span>
+              </button>
+              {warstwyOtwarte ? (
+                <div className="mapa-kontrolki-panel__tresc" role="group" aria-label="Warstwy na mapie">
                   <button
                     type="button"
-                    onClick={() => setPokazAdresyStan((v) => !v)}
-                    className={`mapa-warstwa-chip ${pokazAdresyStan ? "mapa-warstwa-chip--on mapa-warstwa-chip--sky" : ""}`}
+                    onClick={() => {
+                      const next = !pokazDzialkiStan;
+                      if (sterowaneDzialki) onPokazGraniceDzialekChange?.(next);
+                      else setPokazDzialkiWew(next);
+                    }}
+                    className={`mapa-warstwa-chip ${pokazDzialkiStan ? "mapa-warstwa-chip--on mapa-warstwa-chip--fuchsia" : ""}`}
+                    title="Granice działek EGiB — widoczne od zoomu 11"
                   >
-                    KIN ({punktyAdresy.length})
+                    Działki
                   </button>
-                ) : null}
-                {punktyGeoKontekst.length > 0 ? (
                   <button
                     type="button"
-                    onClick={() => setPokazGeoKontekstStan((v) => !v)}
-                    className={`mapa-warstwa-chip ${pokazGeoKontekstStan ? "mapa-warstwa-chip--on mapa-warstwa-chip--teal" : ""}`}
+                    onClick={() => {
+                      const next = !pokazObrebyStan;
+                      if (sterowaneObreby) onPokazGraniceObrebowChange?.(next);
+                      else setPokazObrebyWew(next);
+                    }}
+                    className={`mapa-warstwa-chip ${pokazObrebyStan ? "mapa-warstwa-chip--on mapa-warstwa-chip--fuchsia" : ""}`}
+                    title="Obręby ewidencyjne EGiB — widoczne od zoomu 11"
                   >
-                    PRNG ({punktyGeoKontekst.length})
+                    Obręby
                   </button>
-                ) : null}
-              </div>
-            ) : null}
-          </div>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setPokazGraniceStan((v) => {
+                        const next = !v;
+                        onPokazGraniceChange?.(next);
+                        return next;
+                      });
+                    }}
+                    className={`mapa-warstwa-chip ${pokazGraniceStan ? "mapa-warstwa-chip--on mapa-warstwa-chip--green" : ""}`}
+                  >
+                    Obrysy wsi
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPokazPoiStan((v) => !v)}
+                    className={`mapa-warstwa-chip ${pokazPoiStan ? "mapa-warstwa-chip--on mapa-warstwa-chip--green" : ""}`}
+                  >
+                    POI
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setPokazRynekStan((v) => !v)}
+                    className={`mapa-warstwa-chip ${pokazRynekStan ? "mapa-warstwa-chip--on mapa-warstwa-chip--orange" : ""}`}
+                  >
+                    Rynek
+                  </button>
+                  {punktyAdresy.length > 0 ? (
+                    <button
+                      type="button"
+                      onClick={() => setPokazAdresyStan((v) => !v)}
+                      className={`mapa-warstwa-chip ${pokazAdresyStan ? "mapa-warstwa-chip--on mapa-warstwa-chip--sky" : ""}`}
+                    >
+                      KIN ({punktyAdresy.length})
+                    </button>
+                  ) : null}
+                  {punktyGeoKontekst.length > 0 ? (
+                    <button
+                      type="button"
+                      onClick={() => setPokazGeoKontekstStan((v) => !v)}
+                      className={`mapa-warstwa-chip ${pokazGeoKontekstStan ? "mapa-warstwa-chip--on mapa-warstwa-chip--teal" : ""}`}
+                    >
+                      PRNG ({punktyGeoKontekst.length})
+                    </button>
+                  ) : null}
+                </div>
+              ) : null}
+            </div>
+          ) : null}
           <button type="button" onClick={togglePelnyEkran} className="mapa-kontrolki-btn">
             {pelnyEkran ? "Zmniejsz" : "Pełny ekran"}
           </button>
@@ -1883,7 +2024,7 @@ const MapaWsiLeafletInner = forwardRef<
                 <span className="mapa-legenda-swatch mapa-legenda-swatch--granica" /> Obrys PRG wsi
               </li>
               <li>
-                <span className="mapa-legenda-swatch mapa-legenda-swatch--egib" /> Granice EGiB (zoom 11+)
+                <span className="mapa-legenda-swatch mapa-legenda-swatch--egib" /> Działki / obręby EGiB (zoom 11+)
               </li>
               <li>
                 <span className="mapa-legenda-swatch mapa-legenda-swatch--gps" /> Twoja lokalizacja
@@ -1923,7 +2064,7 @@ const MapaWsiLeafletInner = forwardRef<
           Zoom {zoomMapy}
         </div>
         <p className="mapa-wsi-podpowiedz-wow pointer-events-none absolute bottom-3 left-1/2 z-[390] hidden max-w-[min(100%,22rem)] -translate-x-1/2 rounded-full border border-green-900/10 bg-white/90 px-3 py-1 text-center text-[10px] font-medium text-stone-600 shadow-sm backdrop-blur-sm sm:block">
-          {pokazEgibStan && zoomMapy < KIEG_WMS_MIN_ZOOM
+          {pokazKiegStan && zoomMapy < KIEG_WMS_MIN_ZOOM
             ? `Przybliż do zoom ${KIEG_WMS_MIN_ZOOM}+, aby zobaczyć działki EGiB.`
             : "Kółko myszy zoomuje mapę, gdy kursor jest nad nią."}
         </p>

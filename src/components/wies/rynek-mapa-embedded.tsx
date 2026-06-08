@@ -2,6 +2,7 @@
 
 import dynamic from "next/dynamic";
 import Link from "next/link";
+import { linkChroniony } from "@/lib/auth/sciezki-chronione";
 import type { ZnacznikRynek, ZnacznikRynekDzialka, ZnacznikWsi } from "@/components/mapa/mapa-wsi-leaflet";
 
 const MapaWsiLeaflet = dynamic(
@@ -28,6 +29,7 @@ export function RynekMapaEmbedded({
   punktyRynekDzialki,
   kompakt = false,
   className = "",
+  zalogowany = false,
 }: {
   nazwaWsi: string;
   sciezkaWsi: string;
@@ -38,6 +40,7 @@ export function RynekMapaEmbedded({
   /** Mniejszy nagłówek — panel boczny na desktopie. */
   kompakt?: boolean;
   className?: string;
+  zalogowany?: boolean;
 }) {
   const liczbaPinezek = punktyRynek.length;
   const liczbaDzialek = punktyRynekDzialki.length;
@@ -62,7 +65,7 @@ export function RynekMapaEmbedded({
           </p>
         </div>
         <Link
-          href={`/mapa?wies=${encodeURIComponent(villageId)}`}
+          href={linkChroniony("/mapa", zalogowany, `?wies=${encodeURIComponent(villageId)}`)}
           className="text-xs font-semibold text-green-800 underline hover:text-green-950"
         >
           Pełna mapa →

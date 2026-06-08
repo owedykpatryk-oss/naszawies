@@ -1,12 +1,12 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { StronaAuthUklad } from "@/components/auth/strona-auth-uklad";
 import { bezpiecznaSciezkaNastepna } from "@/lib/auth/bezpieczna-sciezka-nastepna";
 import { pobierzUzytkownikaSerwer } from "@/lib/auth/pobierz-uzytkownika-serwer";
 import { ponowJesliRedirect } from "@/lib/next/ponow-redirect";
 import { pobierzPochodzeniePubliczne } from "@/lib/zadanie/pochodzenie-publiczne";
 import { LogowanieKlient } from "./logowanie-klient";
-import { LogoNaszawiesWycentrowane } from "@/components/marka/logo-naszawies";
 
 export const metadata: Metadata = {
   title: "Logowanie",
@@ -36,45 +36,32 @@ export default async function LogowaniePage({ searchParams }: Props) {
     }
   } catch (error) {
     ponowJesliRedirect(error);
-    // Brak zmiennych env — strona pokaże komunikat z formularza OAuth / konfiguracji
   }
 
   return (
-    <main className="mx-auto min-w-0 max-w-md py-12 text-stone-800 sm:py-16">
-      <LogoNaszawiesWycentrowane />
-      <div className="relative overflow-hidden rounded-3xl border border-stone-200/80 bg-gradient-to-b from-white to-stone-50/90 p-6 shadow-[0_20px_50px_-20px_rgba(21,60,40,0.18)] ring-1 ring-stone-900/[0.04] sm:p-8">
-        <div
-          className="pointer-events-none absolute -right-20 -top-20 h-56 w-56 rounded-full bg-emerald-500/10 blur-3xl"
-          aria-hidden
-        />
-        <h1 className="relative font-serif text-3xl tracking-tight text-green-950 sm:text-[2rem]">Logowanie</h1>
-        <p className="relative mt-2 text-sm leading-relaxed text-stone-600">
-          Zaloguj się przez Google albo e-mail i hasło. Po pierwszym wejściu wybierzesz swoją miejscowość i rolę
-          (mieszkaniec, sołtys lub tylko przeglądanie) — każde konto jest przypisane do Ciebie, nie do jednej wsi.
+    <StronaAuthUklad
+      tytul="Logowanie"
+      opis={
+        <p>
+          Zaloguj się przez Google, Facebook albo e-mail. Po pierwszym wejściu wybierzesz miejscowość i rolę — konto
+          jest przypisane do Ciebie, nie do jednej wsi.
         </p>
-        <div className="relative mt-6">
-          <LogowanieKlient
-            pochodzeniePubliczne={pochodzenie}
-            nastepnaSciezka={nastepna}
-            kodBledu={kodBledu}
-            szczegolBledu={szczegolBledu}
-            emailStartowy={emailStartowy}
-          />
-        </div>
-        <div className="relative mt-6 rounded-2xl border border-stone-200/80 bg-white/80 p-4 text-sm text-stone-700">
-          <p className="font-medium text-stone-900">Po co się logować?</p>
-          <ul className="mt-2 list-disc space-y-1 pl-4 text-xs text-stone-600">
-            <li>Masz panel mieszkańca lub sołtysa zależnie od roli.</li>
-            <li>Dostajesz powiadomienia o zmianach i decyzjach.</li>
-            <li>Wracasz do swoich spraw bez ponownego szukania.</li>
-          </ul>
-        </div>
-      </div>
-      <p className="mt-6 text-center text-sm text-stone-500">
-        <Link href="/" className="text-green-800 underline">
-          Strona główna
-        </Link>
-      </p>
-    </main>
+      }
+      stopka={
+        <>
+          <Link href="/rejestracja">Załóż konto</Link>
+          {" · "}
+          <Link href="/">Strona główna</Link>
+        </>
+      }
+    >
+      <LogowanieKlient
+        pochodzeniePubliczne={pochodzenie}
+        nastepnaSciezka={nastepna}
+        kodBledu={kodBledu}
+        szczegolBledu={szczegolBledu}
+        emailStartowy={emailStartowy}
+      />
+    </StronaAuthUklad>
   );
 }

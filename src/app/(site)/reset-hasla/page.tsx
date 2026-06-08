@@ -1,6 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
-import { LogoNaszawiesWycentrowane } from "@/components/marka/logo-naszawies";
+import { StronaAuthUklad } from "@/components/auth/strona-auth-uklad";
 import { ResetHaslaFormularz } from "./reset-hasla-formularz";
 
 export const metadata: Metadata = {
@@ -10,18 +10,26 @@ export const metadata: Metadata = {
 
 export default function ResetHaslaPage() {
   return (
-    <main className="mx-auto min-w-0 max-w-md py-12 text-stone-800 sm:py-16">
-      <LogoNaszawiesWycentrowane />
-      <p className="mb-6 text-sm text-stone-500">
-        <Link href="/logowanie" className="text-green-800 underline">
-          ← Logowanie
-        </Link>
-      </p>
-      <h1 className="font-serif text-3xl text-green-950">Reset hasła</h1>
-      <p className="mt-2 text-sm text-stone-600">
-        Podaj adres e-mail konta — wyślemy link z instrukcją do ustawienia nowego hasła.
-      </p>
+    <StronaAuthUklad
+      tytul="Reset hasła"
+      naglowekHero="Odzyskaj dostęp"
+      leadHero="Wyślemy link na Twój e-mail — ustawisz nowe hasło i wrócisz do panelu w kilka chwil."
+      eyebrow="Bezpiecznie · link jednorazowy"
+      korzysci={[
+        { ikona: "🔐", tekst: "Link ważny przez ograniczony czas — tylko dla Twojego konta." },
+        { ikona: "📬", tekst: "Sprawdź też folder spam, jeśli wiadomość nie dotrze od razu." },
+      ]}
+      opis={<p>Podaj adres e-mail konta — wyślemy instrukcję ustawienia nowego hasła.</p>}
+      powrot={{ href: "/logowanie", label: "Wróć do logowania" }}
+      stopka={
+        <>
+          <Link href="/rejestracja">Załóż nowe konto</Link>
+          {" · "}
+          <Link href="/pomoc">Pomoc</Link>
+        </>
+      }
+    >
       <ResetHaslaFormularz />
-    </main>
+    </StronaAuthUklad>
   );
 }

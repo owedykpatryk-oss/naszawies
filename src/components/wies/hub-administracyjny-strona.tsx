@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { linkChroniony } from "@/lib/auth/sciezki-chronione";
 import type { HubGminy, HubPowiatu, HubWojewodztwa } from "@/lib/wies/hub-administracyjny";
 import { SekcjaLinkiPrzydatne } from "@/components/wies/sekcja-linki-przydatne";
 import type { LinkPrzydatnyPubliczny } from "@/lib/wies/linki-przydatne";
@@ -51,9 +52,11 @@ function Okruszki({
 export function HubGminyStrona({
   hub,
   linkiPrzydatne = [],
+  zalogowany = false,
 }: {
   hub: HubGminy;
   linkiPrzydatne?: LinkPrzydatnyPubliczny[];
+  zalogowany?: boolean;
 }) {
   const aktywne = hub.wies.filter((w) => w.is_active).length;
 
@@ -95,7 +98,7 @@ export function HubGminyStrona({
           ← Wszystkie gminy w powiecie {hub.powiat}
         </Link>
         {" · "}
-        <Link href="/mapa" className="text-green-800 underline">
+        <Link href={linkChroniony("/mapa", zalogowany)} className="text-green-800 underline">
           Mapa wsi
         </Link>
       </p>
@@ -160,7 +163,7 @@ export function HubPowiatuStrona({ hub }: { hub: HubPowiatu }) {
   );
 }
 
-export function HubWojewodztwaStrona({ hub }: { hub: HubWojewodztwa }) {
+export function HubWojewodztwaStrona({ hub, zalogowany = false }: { hub: HubWojewodztwa; zalogowany?: boolean }) {
   return (
     <main className="mx-auto min-w-0 w-full max-w-7xl px-4 py-10 sm:px-6 sm:py-14">
       <Okruszki woj={hub.wojewodztwo} />
@@ -200,7 +203,7 @@ export function HubWojewodztwaStrona({ hub }: { hub: HubWojewodztwa }) {
           Szukaj miejscowości
         </Link>
         {" · "}
-        <Link href="/mapa" className="text-green-800 underline">
+        <Link href={linkChroniony("/mapa", zalogowany)} className="text-green-800 underline">
           Mapa
         </Link>
       </p>

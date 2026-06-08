@@ -1,6 +1,5 @@
 import { NextResponse } from "next/server";
 import { z } from "zod";
-import { wymagajLogowaniaApi } from "@/lib/auth/wymagaj-logowania-api";
 import { formatujGodzinyOtwarcia } from "@/lib/mapa/formatuj-godziny-otwarcia";
 import { createPublicSupabaseClient } from "@/lib/supabase/public-client";
 import { pobierzKalendarzZajetosciDlaHali } from "@/components/swietlica/kalendarz-zajetosci-publiczny";
@@ -11,9 +10,6 @@ type Params = { params: { poiId: string } };
 const fmt = new Intl.DateTimeFormat("pl-PL", { dateStyle: "short", timeStyle: "short" });
 
 export async function GET(_req: Request, { params }: Params) {
-  const auth = await wymagajLogowaniaApi();
-  if (!auth.ok) return auth.response;
-
   const parsed = z.string().uuid().safeParse(params.poiId);
   if (!parsed.success) {
     return NextResponse.json({ blad: "Nieprawidłowy punkt." }, { status: 400 });
@@ -109,6 +105,6 @@ export async function GET(_req: Request, { params }: Params) {
   }
 
   return NextResponse.json(wynik, {
-    headers: { "Cache-Control": "private, max-age=60, stale-while-revalidate=120" },
+    headers: { "Cache-Control": "public, max-age=60, stale-while-revalidate=120" },
   });
 }

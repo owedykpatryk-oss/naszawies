@@ -32,10 +32,8 @@ export function RejestracjaKlient({
   return (
     <>
       {TURNSTILE_SITE_KEY ? (
-        <div className="mt-6 rounded-lg border border-stone-200 bg-stone-50 p-3">
-          <p className="mb-2 text-xs text-stone-600">
-            Weryfikacja antyspamowa (Cloudflare) — wystarczy raz przed rejestracją
-          </p>
+        <div className="auth-strona__turnstile">
+          <p className="auth-strona__turnstile-etykieta">Krok 1 · Weryfikacja antyspamowa</p>
           <TurnstileAntybot
             key={turnstileKey}
             siteKey={TURNSTILE_SITE_KEY}
@@ -53,7 +51,7 @@ export function RejestracjaKlient({
         onTurnstileZuzyty={zresetujTurnstile}
       />
 
-      <p className="mt-8 text-center text-sm text-stone-500">lub zarejestruj się e-mailem</p>
+      <p className="auth-strona__separator">lub e-mail</p>
 
       <RejestracjaFormularz
         nastepnaSciezka={nastepnaSciezka}

@@ -1,6 +1,7 @@
 import type { User } from "@supabase/supabase-js";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { z } from "zod";
+import { czyStronaModuluPubliczna } from "@/lib/auth/sciezki-chronione";
 import { pobierzVillageIdsRoliPaneluSoltysa } from "@/lib/panel/rola-panelu-soltysa";
 
 export type IntencjaOnboardingu = "mieszkaniec" | "soltys" | "przegladam";
@@ -16,6 +17,7 @@ export function sciezkaPomijaOnboarding(pathname: string): boolean {
 
 export function sciezkaWymagaOnboardingu(pathname: string): boolean {
   if (sciezkaPomijaOnboarding(pathname)) return false;
+  if (czyStronaModuluPubliczna(pathname)) return false;
   if (pathname === "/mapa" || pathname.startsWith("/mapa/")) return true;
   if (pathname === "/transport" || pathname.startsWith("/transport/")) return true;
   if (pathname === "/grafika" || pathname.startsWith("/grafika/")) return true;

@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { pobierzUzytkownikaSerwer } from "@/lib/auth/pobierz-uzytkownika-serwer";
+import { linkChroniony } from "@/lib/auth/sciezki-chronione";
 import { RynekHubJsonLd } from "@/components/wies/rynek-hub-json-ld";
 import { RynekHubKlient } from "@/components/wies/rynek-hub-klient";
 import { NaglowekStronyRynku } from "@/components/wies/rynek-ui";
@@ -22,6 +24,7 @@ export const metadata: Metadata = {
 };
 
 export default async function RynekHubPage() {
+  const zalogowany = Boolean(await pobierzUzytkownikaSerwer());
   const supabase = createPublicSupabaseClient();
   const hub =
     supabase != null
@@ -41,7 +44,7 @@ export default async function RynekHubPage() {
             Szukaj wsi
           </Link>
           {" · "}
-          <Link href="/mapa" className="text-green-800 underline">
+          <Link href={linkChroniony("/mapa", zalogowany)} className="text-green-800 underline">
             Mapa
           </Link>
         </p>

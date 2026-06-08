@@ -10,6 +10,7 @@ import {
   NAGLOWEK_USER_SIGNUP_INTENT,
   NAGLOWEK_USER_SIGNUP_VILLAGE_ID,
 } from "@/lib/auth/naglowki-sesji-middleware";
+import { sciezkaPowrotuZNaglowkow } from "@/lib/auth/sciezka-powrotu-naglowki";
 import { urlLogowaniaZPowrotem } from "@/lib/auth/sciezki-chronione";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
 
@@ -66,15 +67,18 @@ export const pobierzSesjeSerwer = cache(async () => {
 
 /** Jedno odczytanie użytkownika na żądanie RSC (deduplikacja layout + strony). */
 export const pobierzUzytkownikaSerwer = cache(async (): Promise<User | null> => {
+  /** Middleware już zweryfikował sesję na chronionych trasach — nagłówek zapobiega fałszywemu redirectowi na /logowanie. */
+  const zNaglowka = uzytkownikZNaglowkowMiddleware();
+  if (zNaglowka) return zNaglowka;
   const zSesji = (await pobierzSesjeSerwer())?.user ?? null;
   if (zSesji) return zSesji;
-  const zGetUser = await uzytkownikZGetUser();
-  if (zGetUser) return zGetUser;
-  return uzytkownikZNaglowkowMiddleware();
+  return uzytkownikZGetUser();
 });
 
 /** Server Actions / Route Handlers — sesja z ciasteczek, potem nagłówki middleware. */
 export async function pobierzUzytkownikaDoAkcji(): Promise<User | null> {
+  const zNaglowka = uzytkownikZNaglowkowMiddleware();
+  if (zNaglowka) return zNaglowka;
   try {
     const supabase = utworzKlientaSupabaseSerwer();
     const {
@@ -86,17 +90,16 @@ export async function pobierzUzytkownikaDoAkcji(): Promise<User | null> {
     } = await supabase.auth.getUser();
     if (user) return user;
   } catch {
-    // kontynuuj z nagłówkiem middleware
+    /* ignore */
   }
-  return uzytkownikZNaglowkowMiddleware();
+  return null;
 }
 
 /** Strony panelu — layout już chroni, ale helper daje typ User bez duplikacji redirectów. */
 export async function pobierzUzytkownikaPanelu(): Promise<User> {
   const user = await pobierzUzytkownikaSerwer();
   if (user) return user;
-  const sciezka = headers().get("x-pathname") ?? "/panel";
-  redirect(urlLogowaniaZPowrotem(sciezka));
+  redirect(urlLogowaniaZPowrotem(sciezkaPowrotuZNaglowkow("/panel")));
 }
 
 /** Wymaga zalogowanego użytkownika w Server Action (komunikat jak dotąd w formularzach). */

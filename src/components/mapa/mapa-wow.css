@@ -5,6 +5,24 @@
     animation: mapaShellWejscie 0.9s cubic-bezier(0.22, 1, 0.36, 1) forwards;
   }
 
+  /* Blur przy wejściu psuje render kafelków Leaflet na części urządzeń mobilnych */
+  @media (max-width: 1023px) {
+    .mapa-wsi-map-shell {
+      animation: mapaShellWejscieMobile 0.55s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+    }
+
+    @keyframes mapaShellWejscieMobile {
+      from {
+        opacity: 0;
+        transform: translateY(6px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+  }
+
   @keyframes mapaShellWejscie {
     from {
       opacity: 0;

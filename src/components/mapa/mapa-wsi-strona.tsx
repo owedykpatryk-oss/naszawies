@@ -49,6 +49,16 @@ import {
 } from "@/lib/mapa/statystyki-poi-mapy";
 import { obliczSredniaKompletnoscMapy } from "@/lib/mapa/wybierz-wsi-do-uzupelnienia";
 import {
+  liczAktywneWarstwy,
+  zastosujPresetWarstw,
+  type PresetWarstwMapy,
+  type UstawiaczeWarstw,
+} from "@/lib/mapa/mapa-presety-warstw";
+import { MapaPanelWarstw } from "@/components/mapa/mapa-panel-warstw";
+import { MapaSidebarSkroty } from "@/components/mapa/mapa-sidebar-skroty";
+import { MapaEgibToast } from "@/components/mapa/mapa-egib-toast";
+import { CZY_KIEG_WMS_DOSTEPNY, KIEG_WMS_MIN_ZOOM } from "@/lib/geoportal/kieg-wms";
+import {
   MapaWsiLeaflet,
   type MapaWsiLeafletRef,
   type ObrysLanduseMapy,
@@ -133,7 +143,7 @@ function ListaPolowanSidebar({
   }, [klientGotowy, polowania.length]);
 
   return (
-    <ul className="mt-2 max-h-44 space-y-1 overflow-y-auto rounded-lg border border-red-200/80 bg-red-50/50 p-2">
+    <ul className="mapa-skroty-lista mapa-skroty-lista--polowania max-h-44 overflow-y-auto">
       {polowania.map((p) => {
         const odlicz = klientGotowy ? tekstOdliczaniaPolowania(p.startsAt, p.endsAt) : null;
         const zywe = klientGotowy ? odliczanieZywHms(p.startsAt, p.endsAt) : null;
@@ -141,16 +151,14 @@ function ListaPolowanSidebar({
           <li key={p.id}>
             <button
               type="button"
-              className={`w-full rounded-md px-2 py-1.5 text-left text-xs transition hover:bg-red-100/80 ${
-                p.faza === "aktywne" ? "bg-red-100/60 text-red-950 ring-1 ring-red-200/80" : "text-red-950"
-              }`}
+              className={`mapa-skroty-lista__btn ${p.faza === "aktywne" ? "mapa-skroty-lista__btn--aktywne" : ""}`}
               onClick={() => onPokaz(p.id)}
             >
-              <span className="font-medium">
+              <span className="mapa-skroty-lista__tytul">
                 {p.faza === "aktywne" ? "🔴 " : "🟠 "}
                 {p.title}
               </span>
-              <span className="block text-[11px] text-red-900/80">{p.villageName}</span>
+              <span className="mapa-skroty-lista__meta">{p.villageName}</span>
               {zywe ? (
                 <span
                   suppressHydrationWarning
@@ -370,6 +378,12 @@ export function MapaWsiStrona({
   const [pokazGraniceWsi, ustawPokazGraniceWsi] = useState(
     () => searchParams.get("granice_wsi") !== "0",
   );
+  const [pokazGraniceDzialek, ustawPokazGraniceDzialek] = useState(
+    () => searchParams.get("dzialki") !== "0",
+  );
+  const [pokazGraniceObrebow, ustawPokazGraniceObrebow] = useState(
+    () => searchParams.get("obreby") === "1",
+  );
   const [pokazNadlesnictwa, ustawPokazNadlesnictwa] = useState(
     () => searchParams.get("nadlesnictwa") === "1" || searchParams.get("warstwa") === "lowiectwo",
   );
@@ -386,6 +400,16 @@ export function MapaWsiStrona({
     const n = raw ? Number.parseInt(raw, 10) : 0;
     return PROMIENIE_KM.includes(n as (typeof PROMIENIE_KM)[number]) ? n : 0;
   });
+  const [pokazPoiWarstwa, ustawPokazPoiWarstwa] = useState(
+    () => searchParams.get("poi_warstwa") !== "0",
+  );
+  const [pokazRynekDzialki, ustawPokazRynekDzialki] = useState(
+    () => searchParams.get("rynek_dzialki") !== "0",
+  );
+  const [pokazCmentarze, ustawPokazCmentarze] = useState(
+    () => searchParams.get("cmentarze") !== "0",
+  );
+  const [zoomMapy, ustawZoomMapy] = useState(7);
 
   const szukajOdroczone = useDeferredValue(szukaj);
   const filtrNazwaOdroczony = useDeferredValue(filtrNazwa);
@@ -907,12 +931,22 @@ export function MapaWsiStrona({
       else params.delete("zgloszenia");
       if (!pokazRynekMapa) params.set("rynek", "0");
       else params.delete("rynek");
+      if (!pokazRynekDzialki) params.set("rynek_dzialki", "0");
+      else params.delete("rynek_dzialki");
+      if (!pokazPoiWarstwa) params.set("poi_warstwa", "0");
+      else params.delete("poi_warstwa");
+      if (!pokazCmentarze) params.set("cmentarze", "0");
+      else params.delete("cmentarze");
       if (tylkoObrysPrg) params.set("obrys", "1");
       if (tylkoOferty) params.set("oferty", "1");
       if (pokazObrysGminy) params.set("gmina_obrys", "1");
       if (pokazObrysPowiatu) params.set("powiat_obrys", "1");
       if (pokazObrysWojewodztwa) params.set("woj_obrys", "1");
       if (!pokazGraniceWsi) params.set("granice_wsi", "0");
+      if (!pokazGraniceDzialek) params.set("dzialki", "0");
+      else params.delete("dzialki");
+      if (pokazGraniceObrebow) params.set("obreby", "1");
+      else params.delete("obreby");
       if (pokazNadlesnictwa) params.set("nadlesnictwa", "1");
       if (pokazLesnictwa) params.set("lesnictwa", "1");
       if (pokazObwodyLowieckie) params.set("obwody_lowieckie", "1");
@@ -941,12 +975,17 @@ export function MapaWsiStrona({
     pokazKola,
     pokazZgloszenia,
     pokazRynekMapa,
+    pokazRynekDzialki,
+    pokazPoiWarstwa,
+    pokazCmentarze,
     tylkoObrysPrg,
     tylkoOferty,
     pokazObrysGminy,
     pokazObrysPowiatu,
     pokazObrysWojewodztwa,
     pokazGraniceWsi,
+    pokazGraniceDzialek,
+    pokazGraniceObrebow,
     pokazNadlesnictwa,
     pokazLesnictwa,
     pokazObwodyLowieckie,
@@ -1069,7 +1108,120 @@ export function MapaWsiStrona({
   const punktyKolaWidoczne = pokazKola ? punktyKolaFiltrowane : [];
   const punktyZgloszeniaWidoczne = pokazZgloszenia ? punktyZgloszenia : [];
   const punktyRynekWidoczne = pokazRynekMapa ? punktyRynek : [];
-  const punktyRynekDzialkiWidoczne = pokazRynekMapa ? punktyRynekDzialki : [];
+  const punktyRynekDzialkiWidoczne =
+    pokazRynekMapa && pokazRynekDzialki ? punktyRynekDzialki : [];
+  const punktyCmentarzeWidoczne = pokazCmentarze ? punktyCmentarzeFiltrowane : [];
+
+  const ustawiaczeWarstw = useMemo(
+    (): UstawiaczeWarstw => ({
+      ustawTrybLowiectwo,
+      ustawPokazPolowania,
+      ustawPokazOstrzezeniaLesne,
+      ustawPokazKola,
+      ustawPokazZgloszenia,
+      ustawPokazRynekMapa,
+      ustawPokazRynekDzialki,
+      ustawPokazGraniceWsi,
+      ustawPokazGraniceDzialek,
+      ustawPokazGraniceObrebow,
+      ustawPokazObrysGminy,
+      ustawPokazObrysPowiatu,
+      ustawPokazObrysWojewodztwa,
+      ustawPokazNadlesnictwa,
+      ustawPokazLesnictwa,
+      ustawPokazObwodyLowieckie,
+      ustawPokazZagospodarowanie,
+      ustawPokazAdresyKin,
+      ustawPokazGeoKontekst,
+      ustawPokazPoiWarstwa,
+      ustawPokazCmentarze,
+      ustawPokazOswietlenie,
+      setFiltrPoi,
+      ustawTylkoObrysPrg,
+      ustawTylkoOferty,
+      ustawPromienKm,
+      ustawPodklad: (rodzaj) => mapRef.current?.ustawPodklad(rodzaj),
+    }),
+    [],
+  );
+
+  const stanWarstwPanelu = useMemo(
+    () => ({
+      trybLowiectwo,
+      pokazPolowania,
+      pokazOstrzezeniaLesne,
+      pokazKola,
+      pokazZgloszenia,
+      pokazRynekMapa,
+      pokazRynekDzialki,
+      pokazGraniceWsi,
+      pokazGraniceDzialek,
+      pokazGraniceObrebow,
+      pokazObrysGminy,
+      pokazObrysPowiatu,
+      pokazObrysWojewodztwa,
+      pokazNadlesnictwa,
+      pokazLesnictwa,
+      pokazObwodyLowieckie,
+      pokazZagospodarowanie,
+      pokazAdresyKin,
+      pokazGeoKontekst,
+      pokazPoiWarstwa,
+      pokazCmentarze,
+      pokazOswietlenie,
+      filtrPoi: filtrPoiEfektywny,
+      tylkoObrysPrg,
+      tylkoOferty,
+      promienKm,
+      tylkoAktywnePolowania,
+      pokazZakonczoneInwestycje,
+    }),
+    [
+      trybLowiectwo,
+      pokazPolowania,
+      pokazOstrzezeniaLesne,
+      pokazKola,
+      pokazZgloszenia,
+      pokazRynekMapa,
+      pokazRynekDzialki,
+      pokazGraniceWsi,
+      pokazGraniceDzialek,
+      pokazGraniceObrebow,
+      pokazObrysGminy,
+      pokazObrysPowiatu,
+      pokazObrysWojewodztwa,
+      pokazNadlesnictwa,
+      pokazLesnictwa,
+      pokazObwodyLowieckie,
+      pokazZagospodarowanie,
+      pokazAdresyKin,
+      pokazGeoKontekst,
+      pokazPoiWarstwa,
+      pokazCmentarze,
+      pokazOswietlenie,
+      filtrPoiEfektywny,
+      tylkoObrysPrg,
+      tylkoOferty,
+      promienKm,
+      tylkoAktywnePolowania,
+      pokazZakonczoneInwestycje,
+    ],
+  );
+
+  const liczbaWarstwAktywnych = useMemo(() => liczAktywneWarstwy(stanWarstwPanelu), [stanWarstwPanelu]);
+
+  const widokWOkolicy = useCallback(() => {
+    zastosujPresetWarstw("dzialka", ustawiaczeWarstw);
+    ustawPromienKm(25);
+    window.setTimeout(() => mapRef.current?.przyblizDoUzytkownika(), 200);
+  }, [ustawiaczeWarstw]);
+
+  const zastosujPreset = useCallback(
+    (preset: PresetWarstwMapy) => {
+      if (preset !== "wlasny") zastosujPresetWarstw(preset, ustawiaczeWarstw);
+    },
+    [ustawiaczeWarstw],
+  );
 
   const wyczyscSzukaj = useCallback(() => {
     setSzukaj("");
@@ -1143,7 +1295,7 @@ export function MapaWsiStrona({
   }
 
   return (
-    <div className="flex h-full min-h-0 flex-col">
+    <div className="flex min-h-0 flex-1 flex-col">
       {panelFiltrOtwarty ? (
         <button
           type="button"
@@ -1160,34 +1312,37 @@ export function MapaWsiStrona({
           aria-expanded={false}
           onClick={() => ustawPanelFiltrOtwarty(true)}
         >
-          Filtry · {odfiltrowane.length}
+          <>
+            <span className="mapa-fab-filtry__glowny">Warstwy ({liczbaWarstwAktywnych})</span>
+            <span className="mapa-fab-filtry__dopisek">{odfiltrowane.length} wsi w widoku</span>
+          </>
         </button>
       ) : null}
 
       <div className="flex min-h-0 flex-1 flex-col lg:h-full lg:flex-row lg:items-stretch">
       <aside
         className={`${
-          panelFiltrOtwarty ? "fixed inset-x-0 z-[46] flex max-h-[min(72dvh,520px)] rounded-t-2xl border-t border-stone-200/90 shadow-[0_-12px_40px_rgba(45,90,45,0.14)]" : "hidden"
+          panelFiltrOtwarty ? "fixed inset-x-0 z-[46] flex rounded-t-2xl border-t border-stone-200/90 shadow-[0_-12px_40px_rgba(45,90,45,0.14)]" : "hidden"
         } mapa-panel-filtry-sheet shrink-0 flex-col bg-gradient-to-b from-white via-white to-emerald-50/25 backdrop-blur-md lg:relative lg:flex lg:max-h-none lg:h-full lg:w-[min(100%,320px)] xl:w-[min(100%,340px)] lg:rounded-none lg:border-r lg:border-t-0 lg:border-stone-200/60 lg:shadow-none`}
       >
-        <div className="sticky top-0 z-10 border-b border-stone-100/90 bg-white/95 p-4 backdrop-blur-sm">
+        <div className="mapa-sidebar-naglowek">
           <div className="mb-2 flex items-center justify-between gap-2 lg:hidden">
             <span className="mapa-panel-filtry-sheet__uchwyt" aria-hidden />
             <button
               type="button"
-              className="rounded-lg px-2 py-1 text-xs font-medium text-stone-600 hover:bg-stone-100"
+              className="rounded-lg px-2.5 py-1 text-xs font-semibold text-stone-600 hover:bg-stone-100"
               onClick={() => ustawPanelFiltrOtwarty(false)}
             >
               Zamknij
             </button>
           </div>
-          <div className="mb-3 flex flex-wrap gap-2" role="tablist" aria-label="Sposób wyboru wsi">
+          <div className="mapa-segment-kontrolka" role="tablist" aria-label="Sposób wyboru wsi">
             <button
               type="button"
               role="tab"
               aria-selected={tryb === "katalog"}
-              className={`rounded-full px-3 py-1.5 text-xs font-medium ${
-                tryb === "katalog" ? "bg-green-800 text-white" : "border border-stone-300 bg-white text-stone-700"
+              className={`mapa-segment-kontrolka__btn ${
+                tryb === "katalog" ? "mapa-segment-kontrolka__btn--aktywny" : "mapa-segment-kontrolka__btn--nieaktywny"
               }`}
               onClick={() => ustawTryb("katalog")}
             >
@@ -1197,8 +1352,8 @@ export function MapaWsiStrona({
               type="button"
               role="tab"
               aria-selected={tryb === "szukaj"}
-              className={`rounded-full px-3 py-1.5 text-xs font-medium ${
-                tryb === "szukaj" ? "bg-green-800 text-white" : "border border-stone-300 bg-white text-stone-700"
+              className={`mapa-segment-kontrolka__btn ${
+                tryb === "szukaj" ? "mapa-segment-kontrolka__btn--aktywny" : "mapa-segment-kontrolka__btn--nieaktywny"
               }`}
               onClick={() => ustawTryb("szukaj")}
             >
@@ -1250,606 +1405,109 @@ export function MapaWsiStrona({
               </div>
             </>
           )}
-
-          <details className="mapa-sidebar-sekcja mt-3" open>
-            <summary className="mapa-sidebar-sekcja__naglowek">Warstwy mapy</summary>
-          <div className="mt-2 flex flex-wrap gap-1.5" role="group" aria-label="Warstwy mapy">
-            <button
-              type="button"
-              role="switch"
-              aria-checked={trybLowiectwo}
-              onClick={() => {
-                const next = !trybLowiectwo;
-                ustawTrybLowiectwo(next);
-                if (next) {
-                  ustawPokazPolowania(true);
-                  ustawPokazKola(true);
-                  ustawPokazZgloszenia(false);
-                  ustawPokazRynekMapa(false);
-                }
-              }}
-              className={`mapa-pill-warstwa ${trybLowiectwo ? "border-amber-800/50 bg-gradient-to-br from-amber-100 to-orange-50 text-amber-950 shadow-md ring-1 ring-amber-700/20" : "mapa-pill-warstwa--off"}`}
-            >
-              <span aria-hidden>🦌</span>
-              Łowiectwo
-              {liczbaPolowanAktywnych > 0 ? (
-                <span className="ml-1 rounded-full bg-red-600 px-1.5 py-0.5 text-[10px] font-bold text-white">
-                  {liczbaPolowanAktywnych}
-                </span>
-              ) : null}
-            </button>
-            <button
-              type="button"
-              role="switch"
-              aria-checked={pokazPolowania}
-              onClick={() => ustawPokazPolowania((v) => !v)}
-              className={`mapa-pill-warstwa ${pokazPolowania ? "border-red-300/80 bg-gradient-to-br from-red-50 to-rose-50 text-red-950 shadow-sm" : "mapa-pill-warstwa--off"}`}
-            >
-              <span aria-hidden>🎯</span>
-              Polowania
-            </button>
-            <button
-              type="button"
-              role="switch"
-              aria-checked={pokazOstrzezeniaLesne}
-              onClick={() => ustawPokazOstrzezeniaLesne((v) => !v)}
-              className={`mapa-pill-warstwa ${pokazOstrzezeniaLesne ? "border-emerald-600/50 bg-gradient-to-br from-emerald-50 to-lime-50 text-emerald-950 shadow-sm" : "mapa-pill-warstwa--off"}`}
-            >
-              <span aria-hidden>🌲</span>
-              Ostrzeżenia leśne
-              {liczbaLesnychAktywnych > 0 ? (
-                <span className="ml-1 rounded-full bg-emerald-700 px-1.5 py-0.5 text-[10px] font-bold text-white">
-                  {liczbaLesnychAktywnych}
-                </span>
-              ) : null}
-            </button>
-            {trybLowiectwo || pokazPolowania ? (
-              <button
-                type="button"
-                role="switch"
-                aria-checked={tylkoAktywnePolowania}
-                onClick={() => ustawTylkoAktywnePolowania((v) => !v)}
-                className={`mapa-pill-warstwa text-[11px] ${tylkoAktywnePolowania ? "border-red-500/60 bg-red-100 text-red-950" : "mapa-pill-warstwa--off"}`}
-              >
-                Tylko trwające
-              </button>
-            ) : null}
-            <button
-              type="button"
-              role="switch"
-              aria-checked={pokazKola}
-              onClick={() => ustawPokazKola((v) => !v)}
-              className={`mapa-pill-warstwa ${pokazKola ? "border-amber-900/30 bg-gradient-to-br from-amber-50 to-stone-50 text-amber-950 shadow-sm" : "mapa-pill-warstwa--off"}`}
-            >
-              <span aria-hidden>🏕</span>
-              Koła ({punktyKola.length})
-            </button>
-            <button
-              type="button"
-              role="switch"
-              aria-checked={pokazZgloszenia}
-              onClick={() => ustawPokazZgloszenia((v) => !v)}
-              className={`mapa-pill-warstwa ${pokazZgloszenia ? "border-amber-300/80 bg-gradient-to-br from-amber-50 to-yellow-50 text-amber-950 shadow-sm" : "mapa-pill-warstwa--off"}`}
-            >
-              <span aria-hidden>📢</span>
-              Zgłoszenia
-            </button>
-            <button
-              type="button"
-              role="switch"
-              aria-checked={pokazRynekMapa}
-              onClick={() => ustawPokazRynekMapa((v) => !v)}
-              className={`mapa-pill-warstwa ${pokazRynekMapa ? "border-orange-300/80 bg-gradient-to-br from-orange-50 to-amber-50 text-orange-950 shadow-sm" : "mapa-pill-warstwa--off"}`}
-            >
-              <span aria-hidden>🏷️</span>
-              Rynek
-            </button>
-            <button
-              type="button"
-              role="switch"
-              aria-checked={pokazGraniceWsi}
-              onClick={() => ustawPokazGraniceWsi((v) => !v)}
-              className={`mapa-pill-warstwa ${pokazGraniceWsi ? "border-green-800/50 bg-gradient-to-br from-green-50 to-emerald-50 font-semibold text-green-950 shadow-sm" : "mapa-pill-warstwa--off"}`}
-            >
-              <span aria-hidden>🌾</span>
-              Granice wsi (PRG)
-            </button>
-            <button
-              type="button"
-              role="switch"
-              aria-checked={tylkoObrysPrg}
-              onClick={() => ustawTylkoObrysPrg((v) => !v)}
-              className={`mapa-pill-warstwa ${tylkoObrysPrg ? "mapa-pill-warstwa--on" : "mapa-pill-warstwa--off"}`}
-            >
-              <span aria-hidden>🗺️</span>
-              Tylko z obrysem PRG
-            </button>
-            <button
-              type="button"
-              role="switch"
-              aria-checked={tylkoOferty}
-              onClick={() => ustawTylkoOferty((v) => !v)}
-              className={`mapa-pill-warstwa ${tylkoOferty ? "mapa-pill-warstwa--on" : "mapa-pill-warstwa--off"}`}
-            >
-              <span aria-hidden>🛒</span>
-              Tylko z ofertami targu
-            </button>
-            {filtrAdmin.wojSlug && !filtrAdmin.powSlug ? (
-              <button
-                type="button"
-                role="switch"
-                aria-checked={pokazObrysWojewodztwa}
-                onClick={() => ustawPokazObrysWojewodztwa((v) => !v)}
-                className={`mapa-pill-warstwa ${pokazObrysWojewodztwa ? "border-sky-300/80 bg-gradient-to-br from-sky-50 to-blue-50 text-sky-950 shadow-sm" : "mapa-pill-warstwa--off"}`}
-              >
-                <span aria-hidden>🗺️</span>
-                Granica województwa (PRG)
-              </button>
-            ) : null}
-            {filtrAdmin.powSlug && !filtrAdmin.gminaSlug ? (
-              <button
-                type="button"
-                role="switch"
-                aria-checked={pokazObrysPowiatu}
-                onClick={() => ustawPokazObrysPowiatu((v) => !v)}
-                className={`mapa-pill-warstwa ${pokazObrysPowiatu ? "border-violet-300/80 bg-gradient-to-br from-violet-50 to-purple-50 text-violet-950 shadow-sm" : "mapa-pill-warstwa--off"}`}
-              >
-                <span aria-hidden>🗺️</span>
-                Granica powiatu (PRG)
-              </button>
-            ) : null}
-            {filtrAdmin.gminaSlug ? (
-              <button
-                type="button"
-                role="switch"
-                aria-checked={pokazObrysGminy}
-                onClick={() => ustawPokazObrysGminy((v) => !v)}
-                className={`mapa-pill-warstwa ${pokazObrysGminy ? "border-amber-300/80 bg-gradient-to-br from-amber-50 to-stone-50 text-amber-950 shadow-sm" : "mapa-pill-warstwa--off"}`}
-              >
-                <span aria-hidden>🏛️</span>
-                Granica gminy (PRG)
-              </button>
-            ) : null}
-            <button
-              type="button"
-              role="switch"
-              aria-checked={pokazObwodyLowieckie}
-              onClick={() => ustawPokazObwodyLowieckie((v) => !v)}
-              className={`mapa-pill-warstwa ${pokazObwodyLowieckie ? "border-amber-400/70 bg-gradient-to-br from-amber-50 to-yellow-50 text-amber-950 shadow-sm" : "mapa-pill-warstwa--off"}`}
-            >
-              <span aria-hidden>🦌</span>
-              Obwody łowieckie
-            </button>
-            <button
-              type="button"
-              role="switch"
-              aria-checked={pokazLesnictwa}
-              onClick={() => ustawPokazLesnictwa((v) => !v)}
-              className={`mapa-pill-warstwa ${pokazLesnictwa ? "border-emerald-700/35 bg-gradient-to-br from-emerald-50 to-green-50 text-emerald-950 shadow-sm" : "mapa-pill-warstwa--off"}`}
-            >
-              <span aria-hidden>🌿</span>
-              Leśnictwa (BDL)
-            </button>
-            <button
-              type="button"
-              role="switch"
-              aria-checked={pokazNadlesnictwa}
-              onClick={() => ustawPokazNadlesnictwa((v) => !v)}
-              className={`mapa-pill-warstwa ${pokazNadlesnictwa ? "border-lime-800/35 bg-gradient-to-br from-lime-50 to-green-50 text-lime-950 shadow-sm" : "mapa-pill-warstwa--off"}`}
-            >
-              <span aria-hidden>🌲</span>
-              Nadleśnictwa (LP)
-            </button>
-            <button
-              type="button"
-              role="switch"
-              aria-checked={pokazZagospodarowanie}
-              onClick={() => ustawPokazZagospodarowanie((v) => !v)}
-              className={`mapa-pill-warstwa ${pokazZagospodarowanie ? "border-emerald-300/80 bg-gradient-to-br from-emerald-50 to-lime-50 text-emerald-950 shadow-sm" : "mapa-pill-warstwa--off"}`}
-            >
-              <span aria-hidden>🌾</span>
-              Zagospodarowanie
-            </button>
-            {punktyAdresyFiltrowane.length > 0 ? (
-              <button
-                type="button"
-                role="switch"
-                aria-checked={pokazAdresyKin}
-                onClick={() => ustawPokazAdresyKin((v) => !v)}
-                className={`mapa-pill-warstwa ${pokazAdresyKin ? "border-sky-300/80 bg-gradient-to-br from-sky-50 to-blue-50 text-sky-950 shadow-sm" : "mapa-pill-warstwa--off"}`}
-              >
-                <span aria-hidden>📍</span>
-                KIN ({punktyAdresyFiltrowane.length})
-              </button>
-            ) : null}
-            {punktyGeoKontekstFiltrowane.length > 0 ? (
-              <button
-                type="button"
-                role="switch"
-                aria-checked={pokazGeoKontekst}
-                onClick={() => ustawPokazGeoKontekst((v) => !v)}
-                className={`mapa-pill-warstwa ${pokazGeoKontekst ? "border-teal-300/80 bg-gradient-to-br from-teal-50 to-cyan-50 text-teal-950 shadow-sm" : "mapa-pill-warstwa--off"}`}
-              >
-                <span aria-hidden>🏛️</span>
-                PRNG ({punktyGeoKontekstFiltrowane.length})
-              </button>
-            ) : null}
-          </div>
-          </details>
-
-          {odfiltrowane.length > 0 && odfiltrowane.length <= 200 ? (
-            <div className="mt-2 rounded-lg border border-green-200/80 bg-green-50/40 px-3 py-2 text-[11px] text-green-950">
-              <p>
-                <strong>Kompletność mapy</strong> (średnia dla {odfiltrowane.length}{" "}
-                {odfiltrowane.length === 1 ? "wsi" : "wsi"}):{" "}
-                <span className="font-bold tabular-nums">{kompletnoscFiltru.srednia}%</span>
-                {kompletnoscFiltru.ponizej50 > 0 ? (
-                  <>
-                    {" "}
-                    · {kompletnoscFiltru.ponizej50} poniżej 50% (brak obrysu, GPS lub podstawowych POI)
-                  </>
-                ) : null}
-              </p>
-            </div>
-          ) : null}
-
-          <details className="mapa-sidebar-sekcja mt-2">
-            <summary className="mapa-sidebar-sekcja__naglowek">Filtry POI</summary>
-          <div className="mt-2 flex flex-wrap gap-1.5" role="group" aria-label="Szybki filtr kategorii POI">
-            {(
-              [
-                { id: "wszystkie", label: "Wszystkie POI" },
-                { id: "transport", label: "🚌 Transport" },
-                ...(liczbaDroga > 0 ? [{ id: "droga", label: `🛣 Droga i nocleg (${liczbaDroga})` } as const] : []),
-                ...(liczbaUslug > 0 ? [{ id: "uslugi", label: `🏪 Usługi (${liczbaUslug})` } as const] : []),
-                ...(liczbaRatunekWoda > 0
-                  ? [{ id: "woda_osp", label: `💧 Woda i ratunek (${liczbaRatunekWoda})` } as const]
-                  : liczbaWodyOsp > 0
-                    ? [{ id: "woda_osp", label: `💧 Woda OSP (${liczbaWodyOsp})` } as const]
-                    : []),
-                { id: "sklep", label: "🛒 Sklepy" },
-                { id: "apteka", label: "💊 Apteki" },
-                { id: "szkola", label: "🏫 Szkoły" },
-                { id: "przystanek", label: "🚏 Przystanki" },
-                { id: "cmentarz", label: "🕯 Cmentarze" },
-                ...(liczbaInwestycji > 0
-                  ? [
-                      {
-                        id: KATEGORIA_INWESTYCJA,
-                        label: `🏗 Inwestycje (${liczbaInwestycji})`,
-                      } as const,
-                    ]
-                  : []),
-                ...(liczbaLatarn > 0
-                  ? [{ id: KATEGORIA_LATARNIA, label: `💡 Oświetlenie (${liczbaLatarn})` } as const]
-                  : []),
-              ] as const
-            ).map(({ id, label }) => (
-              <button
-                key={id}
-                type="button"
-                onClick={() => setFiltrPoi(id)}
-                className={`mapa-pill-warstwa text-[11px] ${
-                  filtrPoiEfektywny === id ? "mapa-pill-warstwa--on" : "mapa-pill-warstwa--off"
-                }`}
-              >
-                {label}
-              </button>
-            ))}
-            {liczbaLatarn > 0 && filtrPoiEfektywny === "wszystkie" ? (
-              <button
-                type="button"
-                role="switch"
-                aria-checked={pokazOswietlenie}
-                onClick={() => ustawPokazOswietlenie((v) => !v)}
-                className={`mapa-pill-warstwa text-[11px] ${
-                  pokazOswietlenie ? "mapa-pill-warstwa--on" : "mapa-pill-warstwa--off"
-                }`}
-              >
-                💡 Latarnie na mapie
-              </button>
-            ) : null}
-          </div>
-
-          {liczbaInwestycji > 0 ? (
-            <div className="mt-1.5 flex flex-wrap gap-1.5">
-              <button
-                type="button"
-                role="switch"
-                aria-checked={pokazZakonczoneInwestycje}
-                onClick={() => ustawPokazZakonczoneInwestycje((v) => !v)}
-                className={`mapa-pill-warstwa text-[11px] ${
-                  pokazZakonczoneInwestycje ? "mapa-pill-warstwa--on" : "mapa-pill-warstwa--off"
-                }`}
-              >
-                Pokaż zakończone inwestycje
-              </button>
-            </div>
-          ) : null}
-          </details>
-
-          {pokazZagospodarowanie ? (
-            <div className="mt-2 rounded-lg border border-emerald-200/80 bg-emerald-50/50 p-2 text-[11px] text-emerald-950">
-              {statusLanduse === "wczytuje" ? (
-                <p>Wczytuję strefy z OpenStreetMap…</p>
-              ) : statusLanduse === "blad" ? (
-                <p className="text-amber-900">{bladLanduse || "Brak danych zagospodarowania."}</p>
-              ) : (
-                <p>
-                  {obrysyLanduse.length > 0
-                    ? `${obrysyLanduse.length} stref w okolicy (OSM) — orientacyjnie, nie zastępuje MPZP gminy.`
-                    : "Brak polygonów landuse w tym obszarze OSM."}
-                </p>
-              )}
-              <ul className="mt-1.5 flex flex-wrap gap-x-3 gap-y-1">
-                {(["forest", "farmland", "residential", "industrial", "meadow"] as const).map((k) => (
-                  <li key={k} className="flex items-center gap-1">
-                    <span
-                      className="inline-block h-2.5 w-2.5 rounded-sm border"
-                      style={{
-                        backgroundColor: KOLOR_LANDUSE[k]?.fill ?? "#94a3b8",
-                        borderColor: KOLOR_LANDUSE[k]?.stroke ?? "#64748b",
-                      }}
-                    />
-                    {ETYKIETA_LANDUSE[k]}
-                  </li>
-                ))}
-              </ul>
-            </div>
-          ) : null}
-
-          {filtrPoiEfektywny === "transport" && liczbaPoiTransportu === 0 && odfiltrowane.length > 0 ? (
-            <div className="mt-2 rounded-lg border border-sky-200/90 bg-sky-50/80 p-2.5 text-[11px] leading-relaxed text-sky-950">
-              <p className="font-semibold">Brak przystanków i stacji w tym widoku</p>
-              <p className="mt-1 text-sky-900/90">
-                Rozkłady PKS i PKP pojawiają się po synchronizacji transportu (wymaga konfiguracji operatora) lub gdy
-                sołtys doda przystanek ręcznie w{" "}
-                <Link href="/panel/soltys/moja-wies" className="font-medium underline">
-                  Moja wieś → mapa POI
-                </Link>
-                .
-              </p>
-            </div>
-          ) : null}
-
-          {trybLowiectwo ? (
-            <details className="mapa-sidebar-hint mt-2">
-              <summary className="mapa-sidebar-hint__summary">Bezpieczeństwo w terenie (łowiectwo)</summary>
-            <p className="mt-1 rounded-lg border border-amber-200/90 bg-amber-50/80 p-2 text-[11px] leading-relaxed text-amber-950">
-              <strong>Bezpieczeństwo w terenie:</strong> ambony i posterunki na mapie dla większości użytkowników to{" "}
-              <strong>strefa orientacyjna (~500 m)</strong>, nie dokładne miejsce. Członkowie danej wsi widzą pinezkę
-              dokładnie. Tereny łowieckie (🌲) i obszary (zielone kółka) są dla wszystkich — informacyjnie, obok
-              ostrzeżeń o polowaniu.
-              {rewiryFiltrowane.length > 0 ? (
-                <>
-                  {" "}
-                  Zielony <strong>polygon przerywany</strong> to rewir z profilu koła ({rewiryFiltrowane.length}).
-                </>
-              ) : null}
-            </p>
-            </details>
-          ) : null}
-
-          {liczbaInwestycji > 0 ? (
-            <details className="mapa-sidebar-hint mt-1">
-              <summary className="mapa-sidebar-hint__summary">O inwestycjach na mapie</summary>
-            <p className="mt-1 text-[11px] text-stone-500">
-              Inwestycje: planowane budowy i roboty w toku — pinezki 🏗 z OpenStreetMap lub dodane przez sołtysa. W opisie
-              można podać termin i link do uchwały gminy.
-            </p>
-            </details>
-          ) : null}
-
-          {liczbaLatarn > 0 ? (
-            <details className="mapa-sidebar-hint mt-1">
-              <summary className="mapa-sidebar-hint__summary">O latarniach na mapie</summary>
-            <p className="mt-1 text-[11px] text-stone-500">
-              Latarnie pochodzą z OpenStreetMap lub są dodane przez sołtysa. Uszkodzoną lampę zgłoś w{" "}
-              <Link href="/panel/mieszkaniec/zgloszenia" className="text-green-800 underline">
-                Zgłoszeniach
-              </Link>
-              .
-            </p>
-            </details>
-          ) : null}
-
-          {linkHubGminy ? (
-            <p className="mt-2 text-xs">
-              <Link href={linkHubGminy} className="font-medium text-green-900 underline">
-                Strona gminy — lista miejscowości
-              </Link>
-            </p>
-          ) : null}
-
-          {(punktyZgloszenia.length > 0 || punktyPolowania.length > 0 || ostrzezeniaLesne.length > 0) && (
-            <p className="mt-2 text-xs text-stone-600">
-              {punktyZgloszenia.length > 0 ? (
-                <span>
-                  <span className="inline-block h-2 w-2 rounded-full bg-amber-500 align-middle" /> zgłoszenia (członek
-                  wsi)
-                </span>
-              ) : null}
-              {punktyZgloszenia.length > 0 && punktyPolowania.length > 0 ? " · " : null}
-              {punktyPolowania.length > 0 ? (
-                <span>
-                  <span className="inline-block h-3 w-4 rounded-sm border-2 border-red-800 bg-red-500/40 align-middle" /> polowania (czerwony = trwa, pomarańczowy = plan)
-                </span>
-              ) : null}
-              {(punktyZgloszenia.length > 0 || punktyPolowania.length > 0) && ostrzezeniaLesne.length > 0 ? " · " : null}
-              {ostrzezeniaLesne.length > 0 ? (
-                <span>
-                  <span className="inline-block h-3 w-4 rounded-sm border-2 border-emerald-800 bg-emerald-500/40 align-middle" /> ostrzeżenia leśne (zielony = zakaz / wycinka)
-                </span>
-              ) : null}
-              {punktyKola.length > 0 ? (
-                <span>
-                  {" · "}
-                  <span className="inline-block align-middle" aria-hidden>
-                    🦌
-                  </span>{" "}
-                  koła łowieckie
-                </span>
-              ) : null}
-            </p>
-          )}
-
-          {inwestycjeNaMapie.length > 0 ? (
-            <ul className="mt-2 max-h-36 space-y-1 overflow-y-auto rounded-lg border border-orange-200/80 bg-orange-50/55 p-2">
-              {inwestycjeNaMapie.slice(0, 12).map((p) => {
-                const status = etykietaStatusuInwestycji(p.investmentStatus);
-                return (
-                  <li key={p.id}>
-                    <button
-                      type="button"
-                      className="w-full rounded-md px-2 py-1.5 text-left text-xs text-orange-950 transition hover:bg-orange-100/80"
-                      onClick={() => mapRef.current?.pokazPoi(p.id)}
-                    >
-                      <span className="font-medium">🏗 {p.name}</span>
-                      {status ? (
-                        <span className="ml-1 rounded-full bg-orange-100 px-1.5 py-0.5 text-[10px] font-medium text-orange-900">
-                          {status}
-                        </span>
-                      ) : null}
-                      <span className="block text-[11px] text-orange-900/80">{p.villageName}</span>
-                    </button>
-                  </li>
-                );
-              })}
-            </ul>
-          ) : null}
-
-          {ladneMiejsca.length > 0 ? (
-            <ul className="mt-2 max-h-32 space-y-1 overflow-y-auto rounded-lg border border-amber-200/80 bg-amber-50/60 p-2">
-              {ladneMiejsca.map((p) => (
-                <li key={p.id}>
-                  <button
-                    type="button"
-                    className="w-full rounded-md px-2 py-1.5 text-left text-xs text-amber-950 transition hover:bg-amber-100/80"
-                    onClick={() => mapRef.current?.pokazPoi(p.id)}
-                  >
-                    <span className="font-medium">✨ {p.name}</span>
-                    <span className="block text-[11px] text-amber-900/80">{p.villageName}</span>
-                  </button>
-                </li>
-              ))}
-            </ul>
-          ) : null}
-
-          {punktyPolowaniaPosortowane.length > 0 ? (
-            <ListaPolowanSidebar
-              polowania={punktyPolowaniaPosortowane}
-              klientGotowy={klientGotowy}
-              onPokaz={(id) => mapRef.current?.pokazPolowanie(id)}
-            />
-          ) : null}
-
-          {punktyKolaFiltrowane.length > 0 && pokazKola ? (
-            <ul className="mt-2 max-h-32 space-y-1 overflow-y-auto rounded-lg border border-amber-200/80 bg-amber-50/55 p-2">
-              {punktyKolaFiltrowane.slice(0, 16).map((k) => (
-                <li key={k.id}>
-                  <button
-                    type="button"
-                    className="w-full rounded-md px-2 py-1.5 text-left text-xs text-amber-950 transition hover:bg-amber-100/80"
-                    onClick={() => mapRef.current?.pokazPunkt(k.lat, k.lon, 14)}
-                  >
-                    <span className="font-medium">🦌 {k.name}</span>
-                    <span className="block text-[11px] text-amber-900/80">{k.villageName}</span>
-                  </button>
-                </li>
-              ))}
-            </ul>
-          ) : null}
-
-          <div className="mt-2">
-            <label htmlFor="mapa-filtr-poi" className="sr-only">
-              Filtr kategorii punktów POI
-            </label>
-            <select
-              id="mapa-filtr-poi"
-              value={filtrPoiEfektywny}
-              onChange={(e) => setFiltrPoi(e.target.value)}
-              className="w-full rounded-xl border border-stone-200/90 bg-white/90 px-3 py-2 text-sm text-stone-800 shadow-sm outline-none focus:border-green-600 focus:ring-2"
-            >
-              <option value="wszystkie">Wszystkie punkty POI</option>
-              <option value="transport">🚌🚆 Transport (PKS + PKP)</option>
-              {kategoriePoi.map((k) => (
-                <option key={k} value={k}>
-                  {etykietaKategoriiPoi(k)}
-                </option>
-              ))}
-            </select>
-          </div>
-
-          <p className="mt-2 text-xs text-stone-500">
-            Wyświetlono <strong>{odfiltrowane.length}</strong> z {znaczniki.length} wsi na mapie.
-            Filtry zapisują się w adresie — możesz wysłać link komuś innemu.
-          </p>
-
-          <div className="mt-3 flex flex-wrap items-center gap-2">
-            {pozycjaUzytkownika ? (
-              <>
-                <button
-                  type="button"
-                  onClick={() => mapRef.current?.przyblizDoUzytkownika()}
-                  className="rounded-lg border border-blue-200 bg-blue-50 px-2.5 py-1 text-[11px] font-medium text-blue-900"
-                >
-                  Przybliż do mnie
-                </button>
-                <button
-                  type="button"
-                  onClick={wylaczGps}
-                  className="rounded-lg border border-stone-200 bg-white px-2.5 py-1 text-[11px] font-medium text-stone-700"
-                >
-                  Wyłącz GPS
-                </button>
-                <select
-                  value={promienKm}
-                  onChange={(e) => ustawPromienKm(Number.parseInt(e.target.value, 10) || 0)}
-                  className="rounded-lg border border-stone-200 bg-white px-2 py-1 text-[11px] text-stone-700"
-                  aria-label="Promień od lokalizacji"
-                >
-                  <option value={0}>Bez limitu km</option>
-                  <option value={10}>Do 10 km</option>
-                  <option value={25}>Do 25 km</option>
-                  <option value={50}>Do 50 km</option>
-                  <option value={100}>Do 100 km</option>
-                </select>
-              </>
-            ) : (
-              <button
-                type="button"
-                onClick={wlaczLokalizacje}
-                disabled={statusGps === "wczytuje"}
-                className="rounded-lg border border-green-800/35 bg-gradient-to-br from-green-50 to-emerald-50/80 px-2.5 py-1 text-[11px] font-semibold text-green-900 disabled:opacity-60"
-              >
-                {statusGps === "wczytuje" ? "Pobieranie GPS…" : "📍 Moja lokalizacja"}
-              </button>
-            )}
-            <button
-              type="button"
-              onClick={() => void kopiujLinkMapy()}
-              className="rounded-lg border border-stone-200 bg-white px-2.5 py-1 text-[11px] font-medium text-stone-700"
-            >
-              {kopiujLink === "ok" ? "Skopiowano!" : kopiujLink === "blad" ? "Błąd kopiowania" : "Kopiuj link"}
-            </button>
-            {(filtrAdmin.wojSlug || szukaj.trim() || tylkoObrysPrg || tylkoOferty || promienKm > 0) && (
-              <button
-                type="button"
-                onClick={wyczyscFiltry}
-                className="rounded-lg border border-amber-200 bg-amber-50 px-2.5 py-1 text-[11px] font-medium text-amber-950"
-              >
-                Wyczyść filtry
-              </button>
-            )}
-            {statusGps === "blad" ? (
-              <span className="text-[11px] text-amber-800">Brak zgody na lokalizację.</span>
-            ) : null}
-          </div>
         </div>
 
-        <ul key={kluczListy} className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-2 pb-3">
+        <div className="mapa-sidebar-przewijanie">
+          <MapaPanelWarstw
+            filtrAdmin={filtrAdmin}
+            zoomMapy={zoomMapy}
+            liczbaPolowanAktywnych={liczbaPolowanAktywnych}
+            liczbaLesnychAktywnych={liczbaLesnychAktywnych}
+            liczbaKol={punktyKola.length}
+            liczbaAdresyKin={punktyAdresyFiltrowane.length}
+            liczbaGeoKontekst={punktyGeoKontekstFiltrowane.length}
+            liczbaCmentarzy={punktyCmentarzeFiltrowane.length}
+            liczbaInwestycji={liczbaInwestycji}
+            liczbaLatarn={liczbaLatarn}
+            liczbaDroga={liczbaDroga}
+            liczbaUslug={liczbaUslug}
+            liczbaRatunekWoda={liczbaRatunekWoda}
+            liczbaWodyOsp={liczbaWodyOsp}
+            filtrPoiEfektywny={filtrPoiEfektywny}
+            kategoriePoi={kategoriePoi}
+            etykietaKategoriiPoi={etykietaKategoriiPoi}
+            kompletnoscSrednia={kompletnoscFiltru}
+            liczbaWsiFiltr={odfiltrowane.length}
+            stan={stanWarstwPanelu}
+            ustaw={{
+              ...ustawiaczeWarstw,
+              ustawTylkoAktywnePolowania,
+              ustawPokazZakonczoneInwestycje,
+            }}
+            onPreset={zastosujPreset}
+            onWlasny={() => {}}
+            onWidokWOkolicy={widokWOkolicy}
+            maGps={Boolean(pozycjaUzytkownika)}
+          />
+
+          <p className="mapa-statystyka-panelu">
+            Wyświetlono <strong className="text-stone-800">{odfiltrowane.length}</strong> z {znaczniki.length} wsi.
+            Ustawienia zapisują się w adresie — możesz wysłać link.
+          </p>
+
+          <div className="mapa-panel-akcje">
+            <div className="mapa-panel-akcje__rzad">
+              {pozycjaUzytkownika ? (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => mapRef.current?.przyblizDoUzytkownika()}
+                    className="mapa-btn-akcja mapa-btn-akcja--gps"
+                  >
+                    📍 Przybliż do mnie
+                  </button>
+                  <button type="button" onClick={wylaczGps} className="mapa-btn-akcja mapa-btn-akcja--secondary">
+                    Wyłącz GPS
+                  </button>
+                  <select
+                    value={promienKm}
+                    onChange={(e) => ustawPromienKm(Number.parseInt(e.target.value, 10) || 0)}
+                    className="mapa-select-panel min-h-[32px] w-auto shrink-0"
+                    aria-label="Promień od lokalizacji"
+                  >
+                    <option value={0}>Bez limitu km</option>
+                    <option value={10}>Do 10 km</option>
+                    <option value={25}>Do 25 km</option>
+                    <option value={50}>Do 50 km</option>
+                    <option value={100}>Do 100 km</option>
+                  </select>
+                </>
+              ) : (
+                <button
+                  type="button"
+                  onClick={wlaczLokalizacje}
+                  disabled={statusGps === "wczytuje"}
+                  className="mapa-btn-akcja mapa-btn-akcja--primary disabled:opacity-60"
+                >
+                  {statusGps === "wczytuje" ? "Pobieranie GPS…" : "📍 Moja lokalizacja"}
+                </button>
+              )}
+              <button
+                type="button"
+                onClick={() => void kopiujLinkMapy()}
+                className="mapa-btn-akcja mapa-btn-akcja--secondary"
+              >
+                {kopiujLink === "ok" ? "Skopiowano!" : kopiujLink === "blad" ? "Błąd" : "Kopiuj link"}
+              </button>
+              {(filtrAdmin.wojSlug || szukaj.trim() || tylkoObrysPrg || tylkoOferty || promienKm > 0) && (
+                <button type="button" onClick={wyczyscFiltry} className="mapa-btn-akcja mapa-btn-akcja--warn">
+                  Wyczyść filtry
+                </button>
+              )}
+            </div>
+            {statusGps === "blad" ? (
+              <p className="mt-2 text-[11px] text-amber-800">Brak zgody na lokalizację.</p>
+            ) : null}
+          </div>
+
+
+          <div className="mapa-lista-wsi-naglowek mt-4">
+            <span className="mapa-lista-wsi-naglowek__tytul">Lista wsi</span>
+            <span className="mapa-lista-wsi-naglowek__liczba">{wierszeListy.length}</span>
+          </div>
+          <ul key={kluczListy} className="space-y-1.5 pb-2">
           {wierszeListy.length === 0 ? (
-            <li className="p-4 text-sm text-amber-900">
+            <li className="mapa-sidebar-pusty">
               Brak wsi pasujących do filtrów.{" "}
               <button type="button" className="font-medium text-green-900 underline" onClick={wyczyscFiltry}>
                 Wyczyść filtry
@@ -1861,59 +1519,127 @@ export function MapaWsiStrona({
               .
             </li>
           ) : (
-            wierszeListy.map((z, index) => (
-              <li key={z.id}>
-                <div
-                  className="mapa-wiersz-wsi flex gap-1.5 rounded-xl border border-transparent py-1 pl-1 pr-0 opacity-0 animate-mapa-row motion-reduce:animate-none motion-reduce:opacity-100"
+            wierszeListy.map((z, index) => {
+              const km = pozycjaUzytkownika
+                ? Math.round(odlegloscKm(pozycjaUzytkownika.lat, pozycjaUzytkownika.lon, z.lat, z.lon))
+                : null;
+              const admin = [z.commune, z.county, z.voivodeship].filter(Boolean).join(" · ") || "—";
+              return (
+                <li
+                  key={z.id}
+                  className="opacity-0 animate-mapa-row motion-reduce:animate-none motion-reduce:opacity-100"
                   style={{ animationDelay: `${Math.min(index, 18) * 38}ms` }}
                 >
-                  <button
-                    type="button"
-                    onClick={() => naMapie(z.id)}
-                    className="mapa-wiersz-wsi__btn shrink-0 self-center rounded-lg border border-green-800/25 bg-gradient-to-b from-green-50 to-emerald-50/90 px-2.5 py-1.5 text-[11px] font-semibold text-green-900 shadow-sm"
-                    title="Przybliż mapę i otwórz opis wsi"
-                  >
-                    📍
-                  </button>
-                  <Link
-                    href={z.sciezka}
-                    className="mapa-wiersz-wsi__link flex min-w-0 flex-1 flex-col gap-0.5 rounded-lg px-2 py-2 text-sm transition-colors"
-                  >
-                    <span className="font-medium text-stone-900">
-                      {podswietlDopasowanie(z.name, frazaDoPodswietlenia)}
-                    </span>
-                    <span className="text-xs text-stone-500">
-                      {frazaDoPodswietlenia
-                        ? podswietlDopasowanie(
-                            [z.commune, z.county, z.voivodeship].filter(Boolean).join(" · ") || "—",
-                            frazaDoPodswietlenia,
-                          )
-                        : [z.commune, z.county, z.voivodeship].filter(Boolean).join(" · ") || "—"}
-                      {pozycjaUzytkownika ? (
-                        <>
-                          {" · "}
-                          {Math.round(odlegloscKm(pozycjaUzytkownika.lat, pozycjaUzytkownika.lon, z.lat, z.lon))} km
-                        </>
-                      ) : null}
-                      {" · "}
-                      {z.public_offers_count > 0
-                        ? `${z.public_offers_count} ofert · `
-                        : "brak ofert · "}
-                      {z.boundary_geojson ? "obrys PRG" : "obrys szacunkowy"}
-                    </span>
-                  </Link>
-                </div>
-              </li>
-            ))
+                  <div className="mapa-karta-wsi">
+                    <button
+                      type="button"
+                      onClick={() => naMapie(z.id)}
+                      className="mapa-karta-wsi__mapa"
+                      title="Przybliż mapę i otwórz opis wsi"
+                      aria-label={`Pokaż ${z.name} na mapie`}
+                    >
+                      📍
+                    </button>
+                    <Link href={z.sciezka} className="mapa-karta-wsi__link">
+                      <span className="mapa-karta-wsi__nazwa">
+                        {podswietlDopasowanie(z.name, frazaDoPodswietlenia)}
+                      </span>
+                      <span className="mapa-karta-wsi__meta">
+                        {frazaDoPodswietlenia ? podswietlDopasowanie(admin, frazaDoPodswietlenia) : admin}
+                      </span>
+                      <span className="mapa-karta-wsi__odznaki">
+                        {km != null ? (
+                          <span className="mapa-karta-wsi__odznaka mapa-karta-wsi__odznaka--km">{km} km</span>
+                        ) : null}
+                        {z.public_offers_count > 0 ? (
+                          <span className="mapa-karta-wsi__odznaka mapa-karta-wsi__odznaka--oferty">
+                            {z.public_offers_count} ofert
+                          </span>
+                        ) : null}
+                        <span
+                          className={`mapa-karta-wsi__odznaka ${z.boundary_geojson ? "mapa-karta-wsi__odznaka--prg" : "mapa-karta-wsi__odznaka--szacunek"}`}
+                        >
+                          {z.boundary_geojson ? "obrys PRG" : "szacunek"}
+                        </span>
+                      </span>
+                    </Link>
+                  </div>
+                </li>
+              );
+            })
           )}
-        </ul>
+
+          <MapaSidebarSkroty
+            pokazZagospodarowanie={pokazZagospodarowanie}
+            statusLanduse={statusLanduse}
+            bladLanduse={bladLanduse}
+            obrysyLanduseLen={obrysyLanduse.length}
+            filtrTransportPusty={filtrPoiEfektywny === "transport" && liczbaPoiTransportu === 0 && odfiltrowane.length > 0}
+            trybLowiectwo={trybLowiectwo}
+            rewiryCount={rewiryFiltrowane.length}
+            liczbaInwestycji={liczbaInwestycji}
+            liczbaLatarn={liczbaLatarn}
+            linkHubGminy={linkHubGminy}
+            pokazLegendeSymboli={
+              punktyZgloszenia.length > 0 || punktyPolowania.length > 0 || ostrzezeniaLesne.length > 0 || punktyKola.length > 0
+            }
+            inwestycje={inwestycjeNaMapie.slice(0, 12).map((p) => ({
+              id: p.id,
+              name: p.name,
+              villageName: p.villageName,
+              badge: etykietaStatusuInwestycji(p.investmentStatus) ?? undefined,
+              ikona: "🏗",
+              onClick: () => mapRef.current?.pokazPoi(p.id),
+            }))}
+            ladneMiejsca={ladneMiejsca.map((p) => ({
+              id: p.id,
+              name: p.name,
+              villageName: p.villageName,
+              ikona: "✨",
+              onClick: () => mapRef.current?.pokazPoi(p.id),
+            }))}
+            kola={
+              pokazKola
+                ? punktyKolaFiltrowane.slice(0, 16).map((k) => ({
+                    id: k.id,
+                    name: k.name,
+                    villageName: k.villageName,
+                    ikona: "🦌",
+                    onClick: () => mapRef.current?.pokazPunkt(k.lat, k.lon, 14),
+                  }))
+                : []
+            }
+            polowania={punktyPolowaniaPosortowane}
+            listaPolowan={
+              punktyPolowaniaPosortowane.length > 0 ? (
+                <ListaPolowanSidebar
+                  polowania={punktyPolowaniaPosortowane}
+                  klientGotowy={klientGotowy}
+                  onPokaz={(id) => mapRef.current?.pokazPolowanie(id)}
+                />
+              ) : null
+            }
+          />
+
+          </ul>
+        </div>
       </aside>
 
-      <div className="mapa-widget-pelny relative flex min-h-[min(360px,50dvh)] flex-1 flex-col bg-stone-200/40 lg:min-h-0">
+      <div className="mapa-widget-pelny relative flex min-h-0 flex-1 flex-col bg-stone-200/40">
         {odfiltrowane.length === 0 ? (
-          <p className="m-3 rounded-xl border border-amber-200 bg-amber-50 p-4 text-sm text-amber-950">
-            Brak wsi do pokazania na mapie — zmień filtry w panelu po lewej.
-          </p>
+          <div className="mapa-pusty-widok">
+            <p className="mapa-pusty-widok__tytul">Brak wsi w tym widoku</p>
+            <p className="mapa-pusty-widok__opis">
+              Zmień filtry, wybierz inną gminę albo wyczyść ograniczenia promienia GPS.
+            </p>
+            <button
+              type="button"
+              className="mapa-btn-akcja mapa-btn-akcja--primary"
+              onClick={() => ustawPanelFiltrOtwarty(true)}
+            >
+              Otwórz panel warstw
+            </button>
+          </div>
         ) : (
           <div className="relative flex min-h-0 flex-1 flex-col">
             <MapaLowiectwoOverlay
@@ -1926,7 +1652,16 @@ export function MapaWsiStrona({
                 if (pierwsze) mapRef.current?.pokazPolowanie(pierwsze.id);
               }}
             />
-            <div className="mapa-fab-pasek absolute bottom-[4.5rem] left-2 z-[415] flex flex-col gap-1.5 sm:bottom-20 sm:left-3 lg:bottom-[3.25rem]">
+            <div className="mapa-fab-pasek absolute left-2 z-[415] flex flex-col gap-1.5 sm:left-3">
+              <button
+                type="button"
+                onClick={() => ustawPanelFiltrOtwarty(true)}
+                className="mapa-fab-btn lg:hidden"
+                title={`Warstwy mapy (${liczbaWarstwAktywnych})`}
+                aria-label={`Otwórz panel warstw, ${liczbaWarstwAktywnych} aktywnych`}
+              >
+                🗺
+              </button>
               <button
                 type="button"
                 onClick={() => {
@@ -1953,6 +1688,18 @@ export function MapaWsiStrona({
                 ⊞
               </button>
             </div>
+            <MapaEgibToast
+              widoczny={
+                CZY_KIEG_WMS_DOSTEPNY &&
+                (pokazGraniceDzialek || pokazGraniceObrebow) &&
+                zoomMapy < KIEG_WMS_MIN_ZOOM
+              }
+              zoomMapy={zoomMapy}
+              onPrzybliz={() => {
+                const cel = pozycjaUzytkownika ?? (odfiltrowane[0] ? { lat: odfiltrowane[0].lat, lon: odfiltrowane[0].lon } : null);
+                if (cel) mapRef.current?.pokazPunkt(cel.lat, cel.lon, KIEG_WMS_MIN_ZOOM);
+              }}
+            />
             <MapaWsiLeaflet
               ref={mapRef}
               znaczniki={znacznikiNaMape}
@@ -1967,7 +1714,11 @@ export function MapaWsiStrona({
               punktyKola={punktyKolaWidoczne}
               rewiryLowieckie={rewiryFiltrowane}
               trybLowiectwo={trybLowiectwo}
-              punktyCmentarze={punktyCmentarzeFiltrowane}
+              punktyCmentarze={punktyCmentarzeWidoczne}
+              pokazPoi={pokazPoiWarstwa}
+              pokazRynek={pokazRynekMapa}
+              sterowanieWarstwZewnetrzne
+              onZoomChange={ustawZoomMapy}
               punktyGeoKontekst={punktyGeoKontekstFiltrowane}
               obrysyGminy={pokazObrysGminy && !obrysGminyUrzedowy ? obrysyGminy : []}
               obrysGminyUrzedowy={pokazObrysGminy ? obrysGminyUrzedowy : null}
@@ -1978,6 +1729,10 @@ export function MapaWsiStrona({
               obwodyLowieckieObrysy={pokazObwodyLowieckie ? obwodyLowieckieObrysy : []}
               pokazGranice={pokazGraniceWsi}
               onPokazGraniceChange={ustawPokazGraniceWsi}
+              pokazGraniceDzialek={pokazGraniceDzialek}
+              onPokazGraniceDzialekChange={ustawPokazGraniceDzialek}
+              pokazGraniceObrebow={pokazGraniceObrebow}
+              onPokazGraniceObrebowChange={ustawPokazGraniceObrebow}
               obrysyLanduse={obrysyLanduse}
               pokazLanduse={pokazZagospodarowanie}
               pozycjaUzytkownika={pozycjaUzytkownika}

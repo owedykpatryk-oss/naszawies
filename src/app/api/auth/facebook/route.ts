@@ -1,7 +1,7 @@
 import { NextRequest } from "next/server";
 import { rozpocznijLogowanieOAuth } from "@/lib/auth/rozpocznij-logowanie-oauth";
 
-/** Google OAuth — po walidacji Turnstile zwraca URL przekierowania. */
+/** Facebook OAuth — po walidacji Turnstile zwraca URL przekierowania. */
 export async function POST(request: NextRequest) {
-  return rozpocznijLogowanieOAuth(request, "google");
+  return rozpocznijLogowanieOAuth(request, "facebook");
 }

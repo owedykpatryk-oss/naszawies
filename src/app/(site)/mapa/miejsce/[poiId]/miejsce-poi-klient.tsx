@@ -4,7 +4,10 @@ import Image from "next/image";
 import Link from "next/link";
 import { FormEvent, useState, useTransition } from "react";
 import { dodajKomentarzPodPoi } from "@/app/(site)/panel/soltys/akcje-poi-miejsca";
+import { MiejscePoiMapaLokalizacji } from "@/components/mapa/miejsce-poi-mapa-lokalizacji";
+import type { ZnacznikPoi } from "@/components/mapa/mapa-wsi-leaflet";
 import { etykietaKategoriiPoi } from "@/lib/mapa/kategorie-poi";
+import { linkChroniony, urlLogowaniaZPowrotem } from "@/lib/auth/sciezki-chronione";
 
 export type KomentarzPoiWiersz = {
   id: string;
@@ -28,6 +31,7 @@ type Props = {
   lon: number;
   komentarze: KomentarzPoiWiersz[];
   zalogowany: boolean;
+  pinezkaMapy: ZnacznikPoi;
   zrodloTekst: string;
   zrodloKlasy: string;
   wymagaWeryfikacji: boolean;
@@ -48,6 +52,7 @@ export function MiejscePoiKlient({
   lon,
   komentarze: poczatkowe,
   zalogowany,
+  pinezkaMapy,
   zrodloTekst,
   zrodloKlasy,
   wymagaWeryfikacji,
@@ -83,12 +88,19 @@ export function MiejscePoiKlient({
   return (
     <article className="animate-mapa-reveal space-y-6 motion-reduce:animate-none">
       <p className="text-sm text-stone-500">
-        <Link href="/mapa" className="text-green-800 underline">
-          ← Mapa
-        </Link>
-        {" · "}
+        {zalogowany ? (
+          <>
+            <Link
+              href={linkChroniony("/mapa", zalogowany, `?poiId=${encodeURIComponent(poiId)}`)}
+              className="text-green-800 underline"
+            >
+              ← Mapa katalogu
+            </Link>
+            {" · "}
+          </>
+        ) : null}
         <Link href={villageSciezka} className="text-green-800 underline">
-          {villageName}
+          {zalogowany ? villageName : `← ${villageName}`}
         </Link>
       </p>
 
@@ -132,16 +144,39 @@ export function MiejscePoiKlient({
             </p>
           ) : null}
           {photoCaption ? <p className="mt-2 text-sm italic text-stone-600">{photoCaption}</p> : null}
-          <p className="mt-4">
-            <Link
-              href={`/mapa?poiId=${encodeURIComponent(poiId)}&lat=${lat}&lon=${lon}`}
-              className="btn-panel-secondary inline-block text-sm"
-            >
+          <p className="mt-4 flex flex-wrap gap-2">
+            <a href="#lokalizacja" className="btn-panel-secondary inline-block text-sm">
               Pokaż na mapie
-            </Link>
+            </a>
+            {zalogowany ? (
+              <Link
+                href={linkChroniony("/mapa", zalogowany, `?poiId=${encodeURIComponent(poiId)}`)}
+                className="btn-panel-secondary inline-block text-sm"
+              >
+                Otwórz w mapie katalogu
+              </Link>
+            ) : null}
           </p>
         </div>
       </header>
+
+      <section
+        id="lokalizacja"
+        className="scroll-mt-20 rounded-2xl border border-stone-200/80 bg-white p-5 shadow-sm sm:p-6"
+        aria-labelledby="lokalizacja-tytul"
+      >
+        <h2 id="lokalizacja-tytul" className="font-serif text-lg text-green-950">
+          Lokalizacja na mapie
+        </h2>
+        <p className="mt-1 text-sm text-stone-600">
+          {Number.isFinite(lat) && Number.isFinite(lon)
+            ? `${lat.toFixed(5)}, ${lon.toFixed(5)} (WGS84)`
+            : "Brak współrzędnych w bazie."}
+        </p>
+        <div className="mt-4">
+          <MiejscePoiMapaLokalizacji pinezka={pinezkaMapy} />
+        </div>
+      </section>
 
       <section className="rounded-2xl border border-stone-200/80 bg-white p-5 shadow-sm sm:p-6">
         <h2 className="font-serif text-lg text-green-950">Komentarze ({komentarze.length})</h2>
@@ -173,7 +208,7 @@ export function MiejscePoiKlient({
           </form>
         ) : (
           <p className="mt-4 text-sm text-stone-600">
-            <Link href={`/logowanie?next=/mapa/miejsce/${poiId}`} className="font-medium text-green-800 underline">
+            <Link href={urlLogowaniaZPowrotem(`/mapa/miejsce/${poiId}`)} className="font-medium text-green-800 underline">
               Zaloguj się
             </Link>
             , aby dodać komentarz.

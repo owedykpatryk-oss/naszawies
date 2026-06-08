@@ -5,13 +5,21 @@ import { pobierzUzytkownikaSerwer } from "@/lib/auth/pobierz-uzytkownika-serwer"
 import { sciezkaProfiluWsi } from "@/lib/wies/sciezka-publiczna";
 import { formatujGodzinyOtwarcia } from "@/lib/mapa/formatuj-godziny-otwarcia";
 import { opisZrodlaPoi } from "@/lib/mapa/etykieta-zrodla-poi";
+import type { ZnacznikPoi } from "@/components/mapa/mapa-wsi-leaflet";
 import { MiejscePoiKlient, type KomentarzPoiWiersz } from "./miejsce-poi-klient";
 import { RozkladPrzystankuPubliczny } from "@/components/mapa/rozklad-przystanku-publiczny";
 
 type Props = { params: { poiId: string } };
 
-export async function generateMetadata(): Promise<Metadata> {
-  return { title: "Miejsce na mapie" };
+export async function generateMetadata({ params }: Props): Promise<Metadata> {
+  const supabase = createPublicSupabaseClient();
+  if (!supabase) return { title: "Miejsce na mapie" };
+  const { data: poi } = await supabase.from("pois").select("name").eq("id", params.poiId).maybeSingle();
+  const tytul = poi?.name ? `${poi.name} — mapa wsi` : "Miejsce na mapie";
+  return {
+    title: tytul,
+    robots: { index: true, follow: true },
+  };
 }
 
 export default async function MiejscePoiPage({ params }: Props) {
@@ -63,6 +71,22 @@ export default async function MiejscePoiPage({ params }: Props) {
     is_local_override: (poi as { is_local_override?: boolean | null }).is_local_override ?? null,
   });
 
+  const pinezkaMapy: ZnacznikPoi = {
+    id: poi.id,
+    villageId: poi.village_id,
+    villageName: (v as { name?: string } | null)?.name ?? "Wieś",
+    sciezkaWsi: villageSciezka,
+    category: poi.category,
+    name: poi.name,
+    description: poi.description,
+    lat,
+    lon,
+    photoUrl: (poi as { photo_url?: string | null }).photo_url ?? null,
+    photoCaption: (poi as { photo_caption?: string | null }).photo_caption ?? null,
+    phone: (poi as { phone?: string | null }).phone?.trim() || null,
+    openingHours: (poi as { opening_hours?: unknown }).opening_hours,
+  };
+
   return (
     <main className="mx-auto min-h-[70vh] w-full max-w-3xl px-4 py-10 sm:px-6 sm:py-14">
       <MiejscePoiKlient
@@ -80,6 +104,7 @@ export default async function MiejscePoiPage({ params }: Props) {
         lon={lon}
         komentarze={komentarze}
         zalogowany={zalogowany}
+        pinezkaMapy={pinezkaMapy}
         zrodloTekst={zrodlo.tekst}
         zrodloKlasy={zrodlo.klasy}
         wymagaWeryfikacji={zrodlo.wymagaWeryfikacji}

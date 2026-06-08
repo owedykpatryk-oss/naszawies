@@ -1,6 +1,8 @@
 import type { Metadata } from "next";
 import Link from "next/link";
 import { HeroModuluPublicznego } from "@/components/wspolne/hero-modulu-publicznego";
+import { pobierzUzytkownikaSerwer } from "@/lib/auth/pobierz-uzytkownika-serwer";
+import { linkChroniony } from "@/lib/auth/sciezki-chronione";
 import { SzukajKatalog } from "./szukaj-katalog";
 
 export const revalidate = 300;
@@ -22,11 +24,15 @@ type Props = { searchParams?: { q?: string | string[] } };
 export default async function SzukajPage({ searchParams }: Props) {
   const qParam = searchParams?.q;
   const qPoczatkowe = Array.isArray(qParam) ? qParam[0] : qParam;
+  const zalogowany = Boolean(await pobierzUzytkownikaSerwer());
 
   return (
     <main className="page-shell px-4 py-6 sm:px-6 sm:py-10">
       <div className="mb-4 flex flex-wrap items-center gap-x-3 gap-y-1 text-sm text-stone-500">
-        <Link href="/mapa" className="font-medium text-green-800 underline decoration-emerald-600/40 underline-offset-2">
+        <Link
+          href={linkChroniony("/mapa", zalogowany)}
+          className="font-medium text-green-800 underline decoration-emerald-600/40 underline-offset-2"
+        >
           Mapa wsi
         </Link>
         <span aria-hidden>·</span>

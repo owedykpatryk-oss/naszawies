@@ -1,3 +1,5 @@
+import { czyStronaModuluPubliczna } from "@/lib/auth/sciezki-chronione";
+
 export function sciezkaPomijaAkceptacjePrawnej(pathname: string): boolean {
   if (pathname === "/panel/akceptacja-regulaminu" || pathname.startsWith("/panel/akceptacja-regulaminu/")) {
     return true;
@@ -8,6 +10,7 @@ export function sciezkaPomijaAkceptacjePrawnej(pathname: string): boolean {
 
 export function sciezkaWymagaAkceptacjiPrawnej(pathname: string): boolean {
   if (sciezkaPomijaAkceptacjePrawnej(pathname)) return false;
+  if (czyStronaModuluPubliczna(pathname)) return false;
   if (pathname === "/panel" || pathname.startsWith("/panel/")) return true;
   if (pathname === "/mapa" || pathname.startsWith("/mapa/")) return true;
   if (pathname === "/transport" || pathname.startsWith("/transport/")) return true;

@@ -8,8 +8,12 @@ export const KIEG_WMS_URL =
   process.env.NEXT_PUBLIC_GEOPORTAL_EGIB_WMS_URL?.trim() ||
   "https://integracja.gugik.gov.pl/cgi-bin/KrajowaIntegracjaEwidencjiGruntow";
 
+export const KIEG_LAYER_OBREBY = "obreby";
+export const KIEG_LAYER_DZIALKI = "dzialki";
+
 export const KIEG_WMS_LAYERS =
-  process.env.NEXT_PUBLIC_GEOPORTAL_EGIB_WMS_LAYERS?.trim() || "obreby,dzialki";
+  process.env.NEXT_PUBLIC_GEOPORTAL_EGIB_WMS_LAYERS?.trim() ||
+  `${KIEG_LAYER_OBREBY},${KIEG_LAYER_DZIALKI}`;
 
 /** Poniżej tego zoomu kafelki EGiB są ukryte (wydajność + czytelność krajobrazu). */
 export const KIEG_WMS_MIN_ZOOM = 11;
@@ -18,7 +22,7 @@ export const CZY_KIEG_WMS_DOSTEPNY = KIEG_WMS_URL.length > 0 && KIEG_WMS_LAYERS.
 
 export const PANE_KIEG_WMS = "naszawiesEgib";
 
-export function opcjeWarstwyKiegWms(): {
+export function opcjeWarstwyKiegWms(warstwy: string = KIEG_WMS_LAYERS): {
   layers: string;
   format: string;
   transparent: boolean;
@@ -29,7 +33,7 @@ export function opcjeWarstwyKiegWms(): {
   pane: string;
 } {
   return {
-    layers: KIEG_WMS_LAYERS,
+    layers: warstwy,
     format: "image/png",
     transparent: true,
     version: "1.3.0",

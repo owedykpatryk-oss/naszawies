@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { BramkiChronionychTras } from "@/components/panel/bramki-chronionych-tras";
 import { LinkPomocyKontekstowej } from "@/components/pomoc/link-pomocy-kontekstowej";
 import { HeroModuluPublicznego } from "@/components/wspolne/hero-modulu-publicznego";
 import { RozkladSzukajFormularz } from "@/components/transport/rozklad-szukaj-formularz";
@@ -23,6 +24,8 @@ export default async function TransportHubPage() {
       : null;
 
   return (
+    <>
+      <BramkiChronionychTras />
     <main className="page-shell py-6 sm:py-10">
       <HeroModuluPublicznego
         etykieta="Transport"
@@ -103,5 +106,6 @@ export default async function TransportHubPage() {
         .
       </p>
     </main>
+    </>
   );
 }

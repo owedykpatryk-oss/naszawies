@@ -458,6 +458,8 @@ export default async function WiesCatchAllPage({ params, searchParams }: Props) 
       );
     }
 
+    const zalogowanyHub = Boolean(await pobierzUzytkownikaSerwer());
+
     if (segmenty.length === 3) {
       const hub = await pobierzHubGminyCached(segmenty[0]!, segmenty[1]!, segmenty[2]!);
       if (hub) {
@@ -465,7 +467,7 @@ export default async function WiesCatchAllPage({ params, searchParams }: Props) 
           supabase,
           hub.wies.map((w) => w.id),
         );
-        return <HubGminyStrona hub={hub} linkiPrzydatne={linkiPrzydatne} />;
+        return <HubGminyStrona hub={hub} linkiPrzydatne={linkiPrzydatne} zalogowany={zalogowanyHub} />;
       }
     }
     if (segmenty.length === 2) {
@@ -474,7 +476,7 @@ export default async function WiesCatchAllPage({ params, searchParams }: Props) 
     }
     if (segmenty.length === 1) {
       const hub = await pobierzHubWojewodztwaCached(segmenty[0]!);
-      if (hub) return <HubWojewodztwaStrona hub={hub} />;
+      if (hub) return <HubWojewodztwaStrona hub={hub} zalogowany={zalogowanyHub} />;
     }
 
     notFound();
@@ -1111,6 +1113,7 @@ export default async function WiesCatchAllPage({ params, searchParams }: Props) 
                 znacznikWsi={znacznikMapy}
                 punktyRynek={punktyRynek}
                 punktyRynekDzialki={punktyRynekDzialki}
+                zalogowany={!!userRynek}
                 className="mt-0"
               />
             </div>
@@ -1125,6 +1128,7 @@ export default async function WiesCatchAllPage({ params, searchParams }: Props) 
                 znacznikWsi={znacznikMapy}
                 punktyRynek={punktyRynek}
                 punktyRynekDzialki={punktyRynekDzialki}
+                zalogowany={!!userRynek}
                 kompakt
                 className="mt-0"
               />
@@ -1319,9 +1323,16 @@ export default async function WiesCatchAllPage({ params, searchParams }: Props) 
       notFound();
     }
     const sciezka = sciezkaProfiluWsi(wies);
+    const zalogowanyCmentarz = Boolean(await pobierzUzytkownikaSerwer());
     return (
       <main className="mx-auto min-w-0 w-full max-w-7xl px-4 py-12 text-stone-800 sm:px-6 sm:py-16">
-        <CmentarzPublicznyKlient nazwaWsi={wies.name} sciezkaWsi={sciezka} villageId={wies.id} plan={plan} />
+        <CmentarzPublicznyKlient
+          nazwaWsi={wies.name}
+          sciezkaWsi={sciezka}
+          villageId={wies.id}
+          plan={plan}
+          zalogowany={zalogowanyCmentarz}
+        />
       </main>
     );
   }

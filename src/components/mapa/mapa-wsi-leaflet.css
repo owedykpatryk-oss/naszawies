@@ -4,6 +4,13 @@
   overflow: hidden;
   border-radius: 0;
   box-shadow: inset 0 0 0 1px rgba(45, 90, 45, 0.06);
+  touch-action: none;
+}
+
+@media (min-width: 1024px) {
+  .mapa-wsi-map-shell .leaflet-control-zoom {
+    margin: 0 10px 52px 0 !important;
+  }
 }
 
 .mapa-wsi-canvas {
@@ -11,7 +18,8 @@
 }
 
 .mapa-wsi-map-shell .leaflet-control-zoom {
-  margin: 0 10px 52px 0 !important;
+  margin: 0 max(10px, env(safe-area-inset-right))
+    calc(4.75rem + var(--dolna-naw-offset, 0px) + env(safe-area-inset-bottom)) 0 !important;
   border: none;
   border-radius: 10px;
   overflow: hidden;

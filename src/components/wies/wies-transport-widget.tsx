@@ -131,7 +131,7 @@ export function WiesTransportWidget({
 
   const frazaStacji = encodeURIComponent(odjazdy[0]?.station_name ?? stacjePkp[0]?.station_name ?? stacjeKolejowe[0]?.name ?? "");
   const linkRozklad = frazaStacji
-    ? linkChroniony("/transport/rozklad", zalogowany, `?stacja=${frazaStacji}`)
+    ? `/transport/rozklad?stacja=${encodeURIComponent(frazaStacji)}`
     : linkChroniony("/transport", zalogowany);
   const linkMapy = linkChroniony("/mapa", zalogowany);
 

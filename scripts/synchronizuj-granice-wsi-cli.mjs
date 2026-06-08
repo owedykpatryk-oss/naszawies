@@ -87,6 +87,13 @@ function zaokraglijGranice(geo, miejsca = 5) {
   return walk(geo);
 }
 
+function parseFiltrArg(prefix) {
+  const arg = process.argv.find((a) => a.startsWith(`${prefix}=`));
+  if (!arg) return null;
+  const v = arg.slice(prefix.length + 1).trim();
+  return v.length > 0 ? v.replace(/'/g, "''") : null;
+}
+
 async function pobierzWsie(opts) {
   const limit = opts.limit;
   const where = opts.force
@@ -97,14 +104,22 @@ async function pobierzWsie(opts) {
           OR boundary_source LIKE '%\\_gmina' ESCAPE '\\')
          AND teryt_id IS NOT NULL AND btrim(teryt_id) <> ''`;
 
+  const filtry = [];
+  if (opts.commune) filtry.push(`commune = '${opts.commune}'`);
+  if (opts.county) filtry.push(`county = '${opts.county}'`);
+  if (opts.voivodeship) filtry.push(`voivodeship = '${opts.voivodeship}'`);
+  if (opts.tylkoSimc7) filtry.push("length(teryt_id) = 7");
+  const whereLokalizacja = filtry.length ? ` AND ${filtry.join(" AND ")}` : "";
+
   const sql = `
     SELECT id, name, teryt_id, gmina_teryt_kod, latitude, longitude, boundary_source,
            commune, county, voivodeship
     FROM public.villages
-    WHERE ${where}
+    WHERE ${where}${whereLokalizacja}
     ORDER BY
       is_active DESC,
       soltys_user_id IS NOT NULL DESC,
+      length(teryt_id) DESC,
       updated_at ASC
     LIMIT ${limit};
   `;
@@ -152,9 +167,24 @@ async function main() {
   const force = process.argv.includes("--force");
   const tylkoBezGranicy = process.argv.includes("--tylko-bez-granicy");
   const geokoduj = process.argv.includes("--geokoduj");
+  const tylkoSimc7 = process.argv.includes("--tylko-simc-7");
+  const commune = parseFiltrArg("--commune") ?? parseFiltrArg("--gmina");
+  const county = parseFiltrArg("--county") ?? parseFiltrArg("--powiat");
+  const voivodeship = parseFiltrArg("--voivodeship") ?? parseFiltrArg("--woj");
 
-  const wsie = await pobierzWsie({ limit, force, tylkoBezGranicy });
-  console.log(`Do sync: ${wsie.length} wsi (limit ${limit}).`);
+  const wsie = await pobierzWsie({
+    limit,
+    force,
+    tylkoBezGranicy,
+    commune,
+    county,
+    voivodeship,
+    tylkoSimc7,
+  });
+  const filtrTxt = [commune && `gmina=${commune}`, county && `powiat=${county}`, voivodeship && `woj=${voivodeship}`]
+    .filter(Boolean)
+    .join(", ");
+  console.log(`Do sync: ${wsie.length} wsi (limit ${limit}${filtrTxt ? `, ${filtrTxt}` : ""}).`);
 
   let updated = 0;
   const errors = [];

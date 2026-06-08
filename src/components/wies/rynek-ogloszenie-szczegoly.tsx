@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { linkChroniony } from "@/lib/auth/sciezki-chronione";
 import { useEffect, useState } from "react";
 import {
   etykietaKategoriiSprzetu,
@@ -342,7 +343,11 @@ export function RynekOgloszenieSzczegoly({
               </a>
               {" · "}
               <Link
-                href={`/mapa?wies=${villageId}&lat=${ogloszenie.latitude}&lon=${ogloszenie.longitude}&zoom=15`}
+                href={linkChroniony(
+                  "/mapa",
+                  zalogowany,
+                  `?wies=${villageId}&lat=${ogloszenie.latitude}&lon=${ogloszenie.longitude}&zoom=15`,
+                )}
                 className="text-green-800 underline"
               >
                 Mapa wsi

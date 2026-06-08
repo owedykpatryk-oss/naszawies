@@ -113,20 +113,34 @@ Propagacja: od kilku minut do kilku godzin. W Vercel → **Domains** status zmie
 
 4. Zapisz (**Save**).
 
-### Logowanie Google (OAuth)
+### Logowanie Google i Facebook (OAuth)
 
-W aplikacji jest przycisk Google na `/logowanie` i `/rejestracja` (logowanie przez konto GitHub **nie jest** oferowane użytkownikom). W **Supabase** włącz tylko dostawcę Google.
+Na `/logowanie` i `/rejestracja` są przyciski **Google** i **Facebook** (GitHub nie jest oferowany użytkownikom).
 
-1. [Google Cloud Console](https://console.cloud.google.com/) → projekt (lub nowy) → **APIs & Services** → **Credentials** → **Create Credentials** → **OAuth client ID** → typ **Web application**.
-2. **Authorized redirect URIs** — dodaj dokładnie (podmień ref na swój z **Settings → API** w Supabase):
+**Koszt:** logowanie przez Google i Facebook jest **bezpłatne** (brak opłaty za pojedyncze logowanie). Płacisz tylko za swój plan Supabase/Vercel jak dotąd. Meta może wymagać weryfikacji aplikacji przed trybem **Live** dla wszystkich użytkowników Facebooka.
 
-   `https://qxvdjghfsrrxrivfahmn.supabase.co/auth/v1/callback`
+Wspólny **Redirect URI** w obu konsolach (podmień ref projektu Supabase z **Settings → API**):
 
-3. Skopiuj **Client ID** i **Client Secret**.
-4. Supabase → **Authentication** → **Providers** → **Google** → włącz, wklej ID i sekret → **Save**.
-5. Supabase → **Providers** → **GitHub** → **wyłącz** (jeśli był włączony wcześniej).
+`https://TWOJ_REF.supabase.co/auth/v1/callback`
 
-Po zapisaniu odśwież `/logowanie` i sprawdź przycisk Google (pierwsze logowanie utworzy konto w `auth.users` i wiersz w `public.users` dzięki triggerowi).
+#### Google
+
+1. [Google Cloud Console](https://console.cloud.google.com/) → **Credentials** → **OAuth client ID** → **Web application**.
+2. **Authorized redirect URIs** — URI Supabase powyżej.
+3. Supabase → **Authentication** → **Providers** → **Google** → włącz, wklej Client ID i Secret → **Save**.
+
+#### Facebook
+
+1. [Meta for Developers](https://developers.facebook.com/) → **Create App** → typ **Consumer** (lub inny z produktem Facebook Login).
+2. Dodaj produkt **Facebook Login** → **Settings** → **Valid OAuth Redirect URIs** — ten sam URI Supabase co wyżej.
+3. **Settings → Basic** — skopiuj **App ID** i **App Secret** (kliknij **Show**).
+4. **App Domains:** `naszawies.pl`, `www.naszawies.pl` (oraz domena Vercel preview, jeśli testujesz).
+5. Supabase → **Authentication** → **Providers** → **Facebook** → włącz, wklej App ID i Secret → **Save**.
+6. W Meta **Roles → Test Users** możesz testować w trybie Development. Na produkcję: przełącz aplikację na **Live** (czasem wymaga **App Review** i polityki prywatności pod adresem publicznym).
+
+**Uwaga:** Facebook czasem nie zwraca adresu e-mail (konto bez maila lub odmowa zgody). Wtedy Supabase może odrzucić rejestrację — użytkownik powinien użyć Google lub e-mail/hasło.
+
+Po zapisaniu odśwież `/logowanie`. Pierwsze logowanie tworzy wiersz w `auth.users` i `public.users` (trigger `handle_new_user`).
 
 ### Krok 6 — Resend (opcjonalnie, żeby działał `/kontakt`)
 

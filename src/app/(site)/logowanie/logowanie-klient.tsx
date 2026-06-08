@@ -15,7 +15,7 @@ type Props = {
   emailStartowy?: string;
 };
 
-/** Jedna weryfikacja Turnstile współdzielona przez Google i logowanie e-mail. */
+/** Jedna weryfikacja Turnstile współdzielona przez OAuth i logowanie e-mail. */
 export function LogowanieKlient({
   pochodzeniePubliczne,
   nastepnaSciezka,
@@ -34,10 +34,8 @@ export function LogowanieKlient({
   return (
     <>
       {TURNSTILE_SITE_KEY ? (
-        <div className="rounded-xl border border-stone-200/80 bg-white/90 px-3 py-3">
-          <p className="mb-2 text-xs text-stone-600">
-            Weryfikacja antyspamowa (Cloudflare) — wystarczy raz przed logowaniem
-          </p>
+        <div className="auth-strona__turnstile">
+          <p className="auth-strona__turnstile-etykieta">Krok 1 · Weryfikacja antyspamowa</p>
           <TurnstileAntybot
             key={turnstileKey}
             siteKey={TURNSTILE_SITE_KEY}
@@ -47,19 +45,15 @@ export function LogowanieKlient({
         </div>
       ) : null}
 
-      <div className="mt-6">
-        <LogowanieProwiderzy
-          pochodzeniePubliczne={pochodzeniePubliczne}
-          nastepnaSciezka={nastepnaSciezka}
-          turnstileToken={turnstileToken}
-          wymagajTurnstile={Boolean(TURNSTILE_SITE_KEY)}
-          onTurnstileZuzyty={zresetujTurnstile}
-        />
-      </div>
+      <LogowanieProwiderzy
+        pochodzeniePubliczne={pochodzeniePubliczne}
+        nastepnaSciezka={nastepnaSciezka}
+        turnstileToken={turnstileToken}
+        wymagajTurnstile={Boolean(TURNSTILE_SITE_KEY)}
+        onTurnstileZuzyty={zresetujTurnstile}
+      />
 
-      <p className="mt-8 text-center text-xs font-medium uppercase tracking-wider text-stone-500">
-        lub e-mail
-      </p>
+      <p className="auth-strona__separator">lub e-mail</p>
 
       <LogowanieFormularz
         nastepnaSciezka={nastepnaSciezka}

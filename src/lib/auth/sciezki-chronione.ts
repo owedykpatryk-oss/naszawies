@@ -10,6 +10,25 @@ const PREFIXY_STRON = [
   "/transport",
 ] as const;
 
+/** Karta miejsca POI — publiczna (bez logowania i Turnstile). */
+const PREFIXY_MAPY_PUBLICZNE = ["/mapa/miejsce"] as const;
+
+/** Rozkład PKP po nazwie stacji — publiczny podgląd (bez pełnego hubu transportu). */
+const PREFIXY_TRANSPORTU_PUBLICZNE = ["/transport/rozklad"] as const;
+
+export function czyStronaMiejscePoiPubliczna(pathname: string): boolean {
+  return PREFIXY_MAPY_PUBLICZNE.some((p) => pathname === p || pathname.startsWith(`${p}/`));
+}
+
+export function czyStronaTransportuPubliczna(pathname: string): boolean {
+  return PREFIXY_TRANSPORTU_PUBLICZNE.some((p) => pathname === p || pathname.startsWith(`${p}/`));
+}
+
+/** Strony tylko do odczytu — bez logowania, onboardingu ani akceptacji RODO. */
+export function czyStronaModuluPubliczna(pathname: string): boolean {
+  return czyStronaMiejscePoiPubliczna(pathname) || czyStronaTransportuPubliczna(pathname);
+}
+
 /** API wies/mapa — wyjątek: rejestracja (server actions). */
 export const PREFIXY_API_CHRONIONE = [
   "/api/wies/katalog",
@@ -17,6 +36,9 @@ export const PREFIXY_API_CHRONIONE = [
 ] as const;
 
 export function sciezkaWymagaLogowania(pathname: string): boolean {
+  if (czyStronaModuluPubliczna(pathname)) {
+    return false;
+  }
   if (PREFIXY_STRON.some((p) => pathname === p || pathname.startsWith(`${p}/`))) {
     return true;
   }
