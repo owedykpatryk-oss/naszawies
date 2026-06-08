@@ -25,6 +25,7 @@ export default async function Home() {
 
   return (
     <>
+      <link rel="preload" as="image" href="/landing/hero-wies.jpg" fetchPriority="high" />
       <Script id="naszawies-turnstile-public" strategy="beforeInteractive">
         {`window.__NEXT_PUBLIC_TURNSTILE_SITE_KEY__=${JSON.stringify(turnstileSiteKey)};window.__waitlistTurnstileToken="";`}
       </Script>
