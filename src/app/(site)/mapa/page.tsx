@@ -7,6 +7,7 @@ import { MapaWsiStronaDynamic, MapaWsiStronaSkeleton } from "@/components/mapa/m
 import type { StatystykiMapy } from "@/components/mapa/mapa-statystyki-banner";
 import {
   obliczStatystykiMapy,
+  obliczSredniaKompletnoscMapy,
   polaczIdWsiDoUzupelnienia,
   wybierzWsiBezTransportuNaMapie,
   wybierzWsiZMalymPoi,
@@ -114,7 +115,20 @@ export default async function MapaPage() {
   const punktyPoi = przygotujPoiLowieckieNaMape(punktyPoiSurowe, wioskiCzlonkow);
 
   const liczbaWsi = znaczniki.length;
-  const statystykiMapy: StatystykiMapy = obliczStatystykiMapy(znaczniki, punktyPoi);
+  const { srednia: sredniaKompletnosc } = obliczSredniaKompletnoscMapy(
+    znaczniki.map((z) => ({
+      id: z.id,
+      name: z.name,
+      boundary_geojson: z.boundary_geojson,
+      latitude: z.lat,
+      longitude: z.lon,
+    })),
+    punktyPoi,
+  );
+  const statystykiMapy: StatystykiMapy = {
+    ...obliczStatystykiMapy(znaczniki, punktyPoi),
+    sredniaKompletnosc,
+  };
   const villageIdsDoUzupelnienia = polaczIdWsiDoUzupelnienia(
     wybierzWsiBezTransportuNaMapie(znaczniki, punktyPoi, 8),
     wybierzWsiZMalymPoi(znaczniki, punktyPoi, 8),

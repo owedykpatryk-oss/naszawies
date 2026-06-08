@@ -40,6 +40,15 @@ import {
 } from "@/components/mapa/mapa-filtr-administracyjny";
 import { sciezkaGminy } from "@/lib/wies/sciezka-publiczna";
 import {
+  odczytajIdPoiZParametrow,
+  odczytajKategoriePoiZParametrow,
+} from "@/lib/mapa/parametry-url-mapy";
+import {
+  indeksKategoriiPoiPoWsi,
+  obliczStatystykiPoiNaMapie,
+} from "@/lib/mapa/statystyki-poi-mapy";
+import { obliczSredniaKompletnoscMapy } from "@/lib/mapa/wybierz-wsi-do-uzupelnienia";
+import {
   MapaWsiLeaflet,
   type MapaWsiLeafletRef,
   type ObrysLanduseMapy,
@@ -89,6 +98,77 @@ function kodTerytWoj(wsi: ZnacznikWsi[]): string | null {
 
 function czyPrzerwanyFetch(err: unknown): boolean {
   return err instanceof DOMException && err.name === "AbortError";
+}
+
+function normalizujQueryUrl(search: string): string {
+  const p = new URLSearchParams(search.startsWith("?") ? search.slice(1) : search);
+  return Array.from(p.entries())
+    .sort(([a], [b]) => a.localeCompare(b))
+    .map(([k, v]) => `${k}=${v}`)
+    .join("&");
+}
+
+function czyTenSamUrlMapy(pathname: string, query: string): boolean {
+  if (typeof window === "undefined") return false;
+  return (
+    pathname === window.location.pathname &&
+    normalizujQueryUrl(query) === normalizujQueryUrl(window.location.search)
+  );
+}
+
+function ListaPolowanSidebar({
+  polowania,
+  klientGotowy,
+  onPokaz,
+}: {
+  polowania: ZnacznikPolowanie[];
+  klientGotowy: boolean;
+  onPokaz: (id: string) => void;
+}) {
+  const [, ustawTick] = useState(0);
+  useEffect(() => {
+    if (!klientGotowy || polowania.length === 0) return;
+    const t = window.setInterval(() => ustawTick((n) => n + 1), 1000);
+    return () => window.clearInterval(t);
+  }, [klientGotowy, polowania.length]);
+
+  return (
+    <ul className="mt-2 max-h-44 space-y-1 overflow-y-auto rounded-lg border border-red-200/80 bg-red-50/50 p-2">
+      {polowania.map((p) => {
+        const odlicz = klientGotowy ? tekstOdliczaniaPolowania(p.startsAt, p.endsAt) : null;
+        const zywe = klientGotowy ? odliczanieZywHms(p.startsAt, p.endsAt) : null;
+        return (
+          <li key={p.id}>
+            <button
+              type="button"
+              className={`w-full rounded-md px-2 py-1.5 text-left text-xs transition hover:bg-red-100/80 ${
+                p.faza === "aktywne" ? "bg-red-100/60 text-red-950 ring-1 ring-red-200/80" : "text-red-950"
+              }`}
+              onClick={() => onPokaz(p.id)}
+            >
+              <span className="font-medium">
+                {p.faza === "aktywne" ? "🔴 " : "🟠 "}
+                {p.title}
+              </span>
+              <span className="block text-[11px] text-red-900/80">{p.villageName}</span>
+              {zywe ? (
+                <span
+                  suppressHydrationWarning
+                  className="mt-0.5 block font-mono text-[11px] font-bold tabular-nums text-red-800"
+                >
+                  {zywe.etykieta}: {zywe.hms}
+                </span>
+              ) : odlicz ? (
+                <span suppressHydrationWarning className="block text-[10px] font-semibold text-red-800">
+                  {odlicz}
+                </span>
+              ) : null}
+            </button>
+          </li>
+        );
+      })}
+    </ul>
+  );
 }
 
 async function pobierzGraniceWsiApi(
@@ -231,8 +311,14 @@ export function MapaWsiStrona({
     if (warstwa === "oswietlenie") return KATEGORIA_LATARNIA;
     if (warstwa === "inwestycje") return KATEGORIA_INWESTYCJA;
     if (warstwa === "lowiectwo") return "wszystkie";
-    return searchParams.get("poi") ?? "wszystkie";
+    return odczytajKategoriePoiZParametrow(searchParams) ?? "wszystkie";
   });
+  const [pokazAdresyKin, ustawPokazAdresyKin] = useState(
+    () => searchParams.get("adresy") === "1",
+  );
+  const [pokazGeoKontekst, ustawPokazGeoKontekst] = useState(
+    () => searchParams.get("geo_kontekst") === "1",
+  );
   const [pokazOswietlenie, ustawPokazOswietlenie] = useState(
     () => searchParams.get("warstwa") === "oswietlenie" || searchParams.get("latarnie") === "1",
   );
@@ -294,7 +380,6 @@ export function MapaWsiStrona({
     () =>
       searchParams.get("obwody_lowieckie") === "1" || searchParams.get("warstwa") === "lowiectwo",
   );
-  const [odliczanieTick, ustawOdliczanieTick] = useState(0);
   const [tylkoAktywnePolowania, ustawTylkoAktywnePolowania] = useState(false);
   const [promienKm, ustawPromienKm] = useState<number>(() => {
     const raw = searchParams.get("km");
@@ -601,40 +686,18 @@ export function MapaWsiStrona({
     };
   }, [pokazObwodyLowieckie, srodekObszaruMapy, promienWarstwLesnychM, wojSlugDlaObwodow]);
 
-  const kategoriePoi = useMemo(
-    () => Array.from(new Set(punktyPoi.map((p) => p.category))).sort((a, b) => a.localeCompare(b, "pl")),
-    [punktyPoi],
-  );
+  const statystykiPoi = useMemo(() => obliczStatystykiPoiNaMapie(punktyPoi), [punktyPoi]);
+  const kategoriePoi = statystykiPoi.kategorie;
+  const liczbaLatarn = statystykiPoi.liczbaLatarn;
+  const liczbaInwestycji = statystykiPoi.liczbaInwestycji;
+  const liczbaWodyOsp = statystykiPoi.liczbaWodyOsp;
+  const liczbaDroga = statystykiPoi.liczbaDroga;
+  const liczbaUslug = statystykiPoi.liczbaUslug;
+  const liczbaRatunekWoda = statystykiPoi.liczbaRatunekWoda;
 
-  const liczbaLatarn = useMemo(
-    () => punktyPoi.filter((p) => p.category.trim().toLowerCase() === KATEGORIA_LATARNIA).length,
-    [punktyPoi],
-  );
+  const indeksKategoriiPoi = useMemo(() => indeksKategoriiPoiPoWsi(punktyPoi), [punktyPoi]);
 
-  const liczbaInwestycji = useMemo(
-    () => punktyPoi.filter((p) => p.category.trim().toLowerCase() === KATEGORIA_INWESTYCJA).length,
-    [punktyPoi],
-  );
-
-  const liczbaWodyOsp = useMemo(
-    () => punktyPoi.filter((p) => p.category.trim().toLowerCase() === "osp_punkt_czerpania_wody").length,
-    [punktyPoi],
-  );
-
-  const liczbaDroga = useMemo(
-    () => punktyPoi.filter((p) => nalezyDoGrupyPoi(p.category, KATEGORIE_POI_DROGA_NOCLEG)).length,
-    [punktyPoi],
-  );
-
-  const liczbaUslug = useMemo(
-    () => punktyPoi.filter((p) => nalezyDoGrupyPoi(p.category, KATEGORIE_POI_USLUGI)).length,
-    [punktyPoi],
-  );
-
-  const liczbaRatunekWoda = useMemo(
-    () => punktyPoi.filter((p) => nalezyDoGrupyPoi(p.category, KATEGORIE_POI_RATUNEK_WODA)).length,
-    [punktyPoi],
-  );
+  const idWsiFiltrowanych = useMemo(() => new Set(odfiltrowane.map((z) => z.id)), [odfiltrowane]);
 
   const filtrujInwestycjeWidocznosc = useCallback(
     (lista: ZnacznikPoi[]) =>
@@ -701,46 +764,47 @@ export function MapaWsiStrona({
     return filtrujInwestycjeWidocznosc(lista);
   }, [punktyPoi, filtrPoiEfektywny, pokazOswietlenie, filtrujInwestycjeWidocznosc, trybLowiectwo]);
 
-  const punktyPoiFiltrowane = useMemo(() => {
-    const idWsi = new Set(odfiltrowane.map((z) => z.id));
-    return punktyPoiPoKategorii.filter((p) => idWsi.has(p.villageId));
-  }, [punktyPoiPoKategorii, odfiltrowane]);
+  const punktyPoiFiltrowane = useMemo(
+    () => punktyPoiPoKategorii.filter((p) => idWsiFiltrowanych.has(p.villageId)),
+    [punktyPoiPoKategorii, idWsiFiltrowanych],
+  );
 
-  const punktyAdresyFiltrowane = useMemo(() => {
-    const idWsi = new Set(odfiltrowane.map((z) => z.id));
-    return punktyAdresy.filter((a) => idWsi.has(a.villageId));
-  }, [punktyAdresy, odfiltrowane]);
+  const punktyAdresyFiltrowane = useMemo(
+    () => punktyAdresy.filter((a) => idWsiFiltrowanych.has(a.villageId)),
+    [punktyAdresy, idWsiFiltrowanych],
+  );
 
-  const punktyCmentarzeFiltrowane = useMemo(() => {
-    const idWsi = new Set(odfiltrowane.map((z) => z.id));
-    return punktyCmentarze.filter((c) => idWsi.has(c.villageId));
-  }, [punktyCmentarze, odfiltrowane]);
+  const punktyCmentarzeFiltrowane = useMemo(
+    () => punktyCmentarze.filter((c) => idWsiFiltrowanych.has(c.villageId)),
+    [punktyCmentarze, idWsiFiltrowanych],
+  );
 
-  const punktyGeoKontekstFiltrowane = useMemo(() => {
-    const idWsi = new Set(odfiltrowane.map((z) => z.id));
-    return punktyGeoKontekst.filter((g) => idWsi.has(g.villageId));
-  }, [punktyGeoKontekst, odfiltrowane]);
+  const punktyGeoKontekstFiltrowane = useMemo(
+    () => punktyGeoKontekst.filter((g) => idWsiFiltrowanych.has(g.villageId)),
+    [punktyGeoKontekst, idWsiFiltrowanych],
+  );
 
-  const punktyKolaFiltrowane = useMemo(() => {
-    const idWsi = new Set(odfiltrowane.map((z) => z.id));
-    return punktyKola.filter((k) => idWsi.has(k.villageId));
-  }, [punktyKola, odfiltrowane]);
+  const punktyKolaFiltrowane = useMemo(
+    () => punktyKola.filter((k) => idWsiFiltrowanych.has(k.villageId)),
+    [punktyKola, idWsiFiltrowanych],
+  );
 
-  const punktyPolowaniaPosortowane = useMemo(() => {
-    const idWsi = new Set(odfiltrowane.map((z) => z.id));
-    return [...punktyPolowania]
-      .filter((p) => idWsi.has(p.villageId))
-      .filter((p) => !tylkoAktywnePolowania || p.faza === "aktywne")
-      .sort((a, b) => {
-        if (a.faza !== b.faza) return a.faza === "aktywne" ? -1 : 1;
-        return new Date(a.startsAt).getTime() - new Date(b.startsAt).getTime();
-      });
-  }, [punktyPolowania, odfiltrowane, tylkoAktywnePolowania]);
+  const punktyPolowaniaPosortowane = useMemo(
+    () =>
+      [...punktyPolowania]
+        .filter((p) => idWsiFiltrowanych.has(p.villageId))
+        .filter((p) => !tylkoAktywnePolowania || p.faza === "aktywne")
+        .sort((a, b) => {
+          if (a.faza !== b.faza) return a.faza === "aktywne" ? -1 : 1;
+          return new Date(a.startsAt).getTime() - new Date(b.startsAt).getTime();
+        }),
+    [punktyPolowania, idWsiFiltrowanych, tylkoAktywnePolowania],
+  );
 
-  const rewiryFiltrowane = useMemo(() => {
-    const idWsi = new Set(odfiltrowane.map((z) => z.id));
-    return rewiryLowieckie.filter((r) => idWsi.has(r.villageId));
-  }, [rewiryLowieckie, odfiltrowane]);
+  const rewiryFiltrowane = useMemo(
+    () => rewiryLowieckie.filter((r) => idWsiFiltrowanych.has(r.villageId)),
+    [rewiryLowieckie, idWsiFiltrowanych],
+  );
 
   const liczbaPolowanAktywnych = useMemo(
     () => punktyPolowania.filter((p) => p.faza === "aktywne").length,
@@ -783,20 +847,37 @@ export function MapaWsiStrona({
   const frazaDoPodswietlenia = tryb === "szukaj" ? szukajOdroczone.trim() : filtrNazwaOdroczony.trim();
 
   useEffect(() => {
-    if (!klientGotowy) return;
-    const ms = trybLowiectwo || pokazPolowania ? 1000 : 60_000;
-    const t = window.setInterval(() => ustawOdliczanieTick((n) => n + 1), ms);
-    return () => window.clearInterval(t);
-  }, [klientGotowy, trybLowiectwo, pokazPolowania]);
-
-  useEffect(() => {
     if (!trybLowiectwo) return;
     mapRef.current?.ustawPodklad("satelita");
   }, [trybLowiectwo]);
 
+  const kompletnoscFiltru = useMemo(
+    () =>
+      obliczSredniaKompletnoscMapy(
+        odfiltrowane.map((z) => ({
+          id: z.id,
+          name: z.name,
+          boundary_geojson: z.boundary_geojson,
+          latitude: z.lat,
+          longitude: z.lon,
+        })),
+        indeksKategoriiPoi,
+      ),
+    [odfiltrowane, indeksKategoriiPoi],
+  );
+
+  const liczbaPoiTransportu = useMemo(() => {
+    if (filtrPoiEfektywny !== "transport") return 0;
+    return punktyPoiFiltrowane.length;
+  }, [filtrPoiEfektywny, punktyPoiFiltrowane]);
+
   useEffect(() => {
     const zapisz = () => {
       const params = new URLSearchParams();
+      for (const klucz of ["poiId", "wies", "polowanie", "les", "lat", "lon", "zoom"] as const) {
+        const v = searchParams.get(klucz);
+        if (v) params.set(klucz, v);
+      }
       if (tryb === "szukaj" && szukaj.trim()) params.set("q", szukaj.trim());
       if (filtrAdmin.wojSlug) params.set("woj", filtrAdmin.wojSlug);
       if (filtrAdmin.powSlug) params.set("pow", filtrAdmin.powSlug);
@@ -836,11 +917,19 @@ export function MapaWsiStrona({
       if (pokazLesnictwa) params.set("lesnictwa", "1");
       if (pokazObwodyLowieckie) params.set("obwody_lowieckie", "1");
       if (promienKm > 0) params.set("km", String(promienKm));
-      const url = params.toString() ? `${pathname}?${params.toString()}` : pathname;
+      if (pokazAdresyKin) params.set("adresy", "1");
+      else params.delete("adresy");
+      if (pokazGeoKontekst) params.set("geo_kontekst", "1");
+      else params.delete("geo_kontekst");
+      const query = params.toString();
+      if (czyTenSamUrlMapy(pathname, query)) return;
+      const url = query ? `${pathname}?${query}` : pathname;
       router.replace(url, { scroll: false });
     };
     const t = window.setTimeout(zapisz, 400);
     return () => window.clearTimeout(t);
+    // searchParams celowo poza deps — unikamy pętli router.replace; deep linki odczytujemy w closure renderu.
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- sync filtrów, nie reakcja na własny replace
   }, [
     tryb,
     szukaj,
@@ -865,6 +954,8 @@ export function MapaWsiStrona({
     pokazOswietlenie,
     pokazZagospodarowanie,
     pokazZakonczoneInwestycje,
+    pokazAdresyKin,
+    pokazGeoKontekst,
     pathname,
     router,
   ]);
@@ -911,7 +1002,7 @@ export function MapaWsiStrona({
 
   useEffect(() => {
     if (wykonanoDeepLinkPoi.current) return;
-    const id = searchParams.get("poi");
+    const id = odczytajIdPoiZParametrow(searchParams);
     if (!id || !punktyPoi.some((p) => p.id === id)) return;
     wykonanoDeepLinkPoi.current = true;
     const t = window.setTimeout(() => mapRef.current?.pokazPoi(id), 450);
@@ -1359,8 +1450,48 @@ export function MapaWsiStrona({
               <span aria-hidden>🌾</span>
               Zagospodarowanie
             </button>
+            {punktyAdresyFiltrowane.length > 0 ? (
+              <button
+                type="button"
+                role="switch"
+                aria-checked={pokazAdresyKin}
+                onClick={() => ustawPokazAdresyKin((v) => !v)}
+                className={`mapa-pill-warstwa ${pokazAdresyKin ? "border-sky-300/80 bg-gradient-to-br from-sky-50 to-blue-50 text-sky-950 shadow-sm" : "mapa-pill-warstwa--off"}`}
+              >
+                <span aria-hidden>📍</span>
+                KIN ({punktyAdresyFiltrowane.length})
+              </button>
+            ) : null}
+            {punktyGeoKontekstFiltrowane.length > 0 ? (
+              <button
+                type="button"
+                role="switch"
+                aria-checked={pokazGeoKontekst}
+                onClick={() => ustawPokazGeoKontekst((v) => !v)}
+                className={`mapa-pill-warstwa ${pokazGeoKontekst ? "border-teal-300/80 bg-gradient-to-br from-teal-50 to-cyan-50 text-teal-950 shadow-sm" : "mapa-pill-warstwa--off"}`}
+              >
+                <span aria-hidden>🏛️</span>
+                PRNG ({punktyGeoKontekstFiltrowane.length})
+              </button>
+            ) : null}
           </div>
           </details>
+
+          {odfiltrowane.length > 0 && odfiltrowane.length <= 200 ? (
+            <div className="mt-2 rounded-lg border border-green-200/80 bg-green-50/40 px-3 py-2 text-[11px] text-green-950">
+              <p>
+                <strong>Kompletność mapy</strong> (średnia dla {odfiltrowane.length}{" "}
+                {odfiltrowane.length === 1 ? "wsi" : "wsi"}):{" "}
+                <span className="font-bold tabular-nums">{kompletnoscFiltru.srednia}%</span>
+                {kompletnoscFiltru.ponizej50 > 0 ? (
+                  <>
+                    {" "}
+                    · {kompletnoscFiltru.ponizej50} poniżej 50% (brak obrysu, GPS lub podstawowych POI)
+                  </>
+                ) : null}
+              </p>
+            </div>
+          ) : null}
 
           <details className="mapa-sidebar-sekcja mt-2">
             <summary className="mapa-sidebar-sekcja__naglowek">Filtry POI</summary>
@@ -1464,6 +1595,20 @@ export function MapaWsiStrona({
                   </li>
                 ))}
               </ul>
+            </div>
+          ) : null}
+
+          {filtrPoiEfektywny === "transport" && liczbaPoiTransportu === 0 && odfiltrowane.length > 0 ? (
+            <div className="mt-2 rounded-lg border border-sky-200/90 bg-sky-50/80 p-2.5 text-[11px] leading-relaxed text-sky-950">
+              <p className="font-semibold">Brak przystanków i stacji w tym widoku</p>
+              <p className="mt-1 text-sky-900/90">
+                Rozkłady PKS i PKP pojawiają się po synchronizacji transportu (wymaga konfiguracji operatora) lub gdy
+                sołtys doda przystanek ręcznie w{" "}
+                <Link href="/panel/soltys/moja-wies" className="font-medium underline">
+                  Moja wieś → mapa POI
+                </Link>
+                .
+              </p>
             </div>
           ) : null}
 
@@ -1591,42 +1736,11 @@ export function MapaWsiStrona({
           ) : null}
 
           {punktyPolowaniaPosortowane.length > 0 ? (
-            <ul className="mt-2 max-h-44 space-y-1 overflow-y-auto rounded-lg border border-red-200/80 bg-red-50/50 p-2">
-              {punktyPolowaniaPosortowane.map((p) => {
-                const odlicz = klientGotowy ? tekstOdliczaniaPolowania(p.startsAt, p.endsAt) : null;
-                const zywe = klientGotowy ? odliczanieZywHms(p.startsAt, p.endsAt) : null;
-                void odliczanieTick;
-                return (
-                  <li key={p.id}>
-                    <button
-                      type="button"
-                      className={`w-full rounded-md px-2 py-1.5 text-left text-xs transition hover:bg-red-100/80 ${
-                        p.faza === "aktywne" ? "bg-red-100/60 text-red-950 ring-1 ring-red-200/80" : "text-red-950"
-                      }`}
-                      onClick={() => mapRef.current?.pokazPolowanie(p.id)}
-                    >
-                      <span className="font-medium">
-                        {p.faza === "aktywne" ? "🔴 " : "🟠 "}
-                        {p.title}
-                      </span>
-                      <span className="block text-[11px] text-red-900/80">{p.villageName}</span>
-                      {zywe ? (
-                        <span
-                          suppressHydrationWarning
-                          className="mt-0.5 block font-mono text-[11px] font-bold tabular-nums text-red-800"
-                        >
-                          {zywe.etykieta}: {zywe.hms}
-                        </span>
-                      ) : odlicz ? (
-                        <span suppressHydrationWarning className="block text-[10px] font-semibold text-red-800">
-                          {odlicz}
-                        </span>
-                      ) : null}
-                    </button>
-                  </li>
-                );
-              })}
-            </ul>
+            <ListaPolowanSidebar
+              polowania={punktyPolowaniaPosortowane}
+              klientGotowy={klientGotowy}
+              onPokaz={(id) => mapRef.current?.pokazPolowanie(id)}
+            />
           ) : null}
 
           {punktyKolaFiltrowane.length > 0 && pokazKola ? (
@@ -1868,6 +1982,10 @@ export function MapaWsiStrona({
               pokazLanduse={pokazZagospodarowanie}
               pozycjaUzytkownika={pozycjaUzytkownika}
               promienKm={promienKm > 0 ? promienKm : null}
+              pokazAdresyKin={pokazAdresyKin}
+              onPokazAdresyKinChange={ustawPokazAdresyKin}
+              pokazGeoKontekst={pokazGeoKontekst}
+              onPokazGeoKontekstChange={ustawPokazGeoKontekst}
             />
           </div>
         )}

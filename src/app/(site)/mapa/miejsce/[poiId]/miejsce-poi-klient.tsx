@@ -134,7 +134,7 @@ export function MiejscePoiKlient({
           {photoCaption ? <p className="mt-2 text-sm italic text-stone-600">{photoCaption}</p> : null}
           <p className="mt-4">
             <Link
-              href={`/mapa?poi=${encodeURIComponent(poiId)}&lat=${lat}&lon=${lon}`}
+              href={`/mapa?poiId=${encodeURIComponent(poiId)}&lat=${lat}&lon=${lon}`}
               className="btn-panel-secondary inline-block text-sm"
             >
               Pokaż na mapie

@@ -6,12 +6,14 @@ import "leaflet.markercluster/dist/MarkerCluster.css";
 import "leaflet.markercluster/dist/MarkerCluster.Default.css";
 import {
   forwardRef,
+  useCallback,
   useEffect,
   useImperativeHandle,
   useMemo,
   useRef,
   useState,
 } from "react";
+import { podpisWarstwyPoi } from "@/lib/mapa/podpis-warstwy-poi";
 import {
   etykietaKategoriiPoi,
   emojiKategoriiPoi,
@@ -492,6 +494,8 @@ type InstancjaLeaflet = {
   initInvalidateTimeoutId: ReturnType<typeof setTimeout> | null;
   /** Ostatni bbox, dla którego wykonano fitBounds — unika resetu widoku przy każdym zoomie. */
   ostatniFitBboxKlucz: string | null;
+  /** Podpis listy POI — pomija pełną przebudowę klastra przy tej samej zawartości. */
+  ostatniPodpisWarstwyPoi: string | null;
 };
 
 function czyMapaLeafletOperacyjna(map: import("leaflet").Map | null | undefined): map is import("leaflet").Map {
@@ -1036,7 +1040,7 @@ function htmlPopupPoi(z: ZnacznikPoi): string {
         <a href="${z.sciezkaWsi.replace(/"/g, "")}">Strona wsi</a>
         ${katNorm === "szkola" || katNorm === "przedszkole" ? `<span aria-hidden="true"> · </span><a href="${z.sciezkaWsi.replace(/"/g, "")}#sekcja-szkola">Tablica szkoły</a>` : ""}
         <span aria-hidden="true"> · </span>
-        <a href="/mapa?poi=${encodeURIComponent(z.id)}">Na mapie</a>
+        <a href="/mapa?poiId=${encodeURIComponent(z.id)}">Na mapie</a>
         <span aria-hidden="true"> · </span>
         <a href="${osm}" target="_blank" rel="noopener noreferrer">OSM ↗</a>
         ${czyStacja ? `<span aria-hidden="true"> · </span><a href="${stacjaLink}">Rozkład PKP 🚆</a>` : ""}
@@ -1048,7 +1052,7 @@ function htmlPopupPoi(z: ZnacznikPoi): string {
   `;
 }
 
-export const MapaWsiLeaflet = forwardRef<
+const MapaWsiLeafletInner = forwardRef<
   MapaWsiLeafletRef,
   {
     znaczniki: ZnacznikWsi[];
@@ -1091,6 +1095,12 @@ export const MapaWsiLeaflet = forwardRef<
     pokazPoi?: boolean;
     pokazRynek?: boolean;
     wysokoscMapy?: "pelna" | "kompakt";
+    /** Sterowane z panelu bocznego — punkty adresowe KIN. */
+    pokazAdresyKin?: boolean;
+    onPokazAdresyKinChange?: (v: boolean) => void;
+    /** Sterowane z panelu bocznego — kontekst PRNG / instytucje. */
+    pokazGeoKontekst?: boolean;
+    onPokazGeoKontekstChange?: (v: boolean) => void;
   }
 >(function MapaWsiLeaflet(
   {
@@ -1125,6 +1135,10 @@ export const MapaWsiLeaflet = forwardRef<
     pokazPoi = true,
     pokazRynek = true,
     wysokoscMapy = "pelna",
+    pokazAdresyKin: pokazAdresyKinProp,
+    onPokazAdresyKinChange,
+    pokazGeoKontekst: pokazGeoKontekstProp,
+    onPokazGeoKontekstChange,
   },
   ref,
 ) {
@@ -1147,8 +1161,26 @@ export const MapaWsiLeaflet = forwardRef<
     const zapisaneWarstwy = useMemo(() => wczytajZapisaneWarstwy(), []);
     const [pokazPoiStan, setPokazPoiStan] = useState(zapisaneWarstwy.poi ?? pokazPoi);
     const [pokazRynekStan, setPokazRynekStan] = useState(zapisaneWarstwy.rynek ?? pokazRynek);
-    const [pokazAdresyStan, setPokazAdresyStan] = useState(zapisaneWarstwy.adresy ?? false);
-    const [pokazGeoKontekstStan, setPokazGeoKontekstStan] = useState(zapisaneWarstwy.geo ?? false);
+    const [pokazAdresyWew, ustawPokazAdresyWew] = useState(zapisaneWarstwy.adresy ?? false);
+    const [pokazGeoKontekstWew, ustawPokazGeoKontekstWew] = useState(zapisaneWarstwy.geo ?? false);
+    const pokazAdresyStan = pokazAdresyKinProp ?? pokazAdresyWew;
+    const pokazGeoKontekstStan = pokazGeoKontekstProp ?? pokazGeoKontekstWew;
+    const setPokazAdresyStan = useCallback(
+      (v: boolean | ((prev: boolean) => boolean)) => {
+        const next = typeof v === "function" ? v(pokazAdresyStan) : v;
+        if (onPokazAdresyKinChange) onPokazAdresyKinChange(next);
+        else ustawPokazAdresyWew(next);
+      },
+      [onPokazAdresyKinChange, pokazAdresyStan],
+    );
+    const setPokazGeoKontekstStan = useCallback(
+      (v: boolean | ((prev: boolean) => boolean)) => {
+        const next = typeof v === "function" ? v(pokazGeoKontekstStan) : v;
+        if (onPokazGeoKontekstChange) onPokazGeoKontekstChange(next);
+        else ustawPokazGeoKontekstWew(next);
+      },
+      [onPokazGeoKontekstChange, pokazGeoKontekstStan],
+    );
     const [pelnyEkran, setPelnyEkran] = useState(false);
     const [legendaOtwarta, setLegendaOtwarta] = useState(false);
     const [warstwyOtwarte, setWarstwyOtwarte] = useState(false);
@@ -1472,6 +1504,7 @@ export const MapaWsiLeaflet = forwardRef<
           wheelHandlers: { enter, leave },
           initInvalidateTimeoutId,
           ostatniFitBboxKlucz: null,
+          ostatniPodpisWarstwyPoi: null,
         };
         ustawPodkladMapy(instancja.current, podkladStart);
         ustawWarstweEgib(instancja.current, pokazEgibRef.current);
@@ -2106,6 +2139,10 @@ function syncWarstwaPoi(L: LeafletNs, inst: InstancjaLeaflet, punktyPoi: Znaczni
   const { map, poiCluster, poiStrefyGroup, poiMarkersById } = inst;
   if (!czyMapaLeafletOperacyjna(map)) return;
 
+  const podpis = podpisWarstwyPoi(punktyPoi);
+  if (inst.ostatniPodpisWarstwyPoi === podpis) return;
+  inst.ostatniPodpisWarstwyPoi = podpis;
+
   let otwartyId: string | null = null;
   poiMarkersById.forEach((marker, id) => {
     if (!otwartyId && marker.isPopupOpen()) otwartyId = id;
@@ -2670,3 +2707,5 @@ function syncWarstwy(
     }
   }
 }
+
+export const MapaWsiLeaflet = MapaWsiLeafletInner;

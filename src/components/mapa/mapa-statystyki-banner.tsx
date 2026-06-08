@@ -10,6 +10,7 @@ export type StatystykiMapy = {
   zMalymPoi: number;
   zPrzystankiem: number;
   zeStacja: number;
+  sredniaKompletnosc?: number;
 };
 
 const KLUCZ_ZWINIETY = "naszawies-mapa-statystyki-zwiniete";
@@ -96,6 +97,14 @@ export function MapaStatystykiBanner({ statystyki }: { statystyki: StatystykiMap
         ) : (
           <>
             <KafelekStatystyki emoji="🏘️" wartosc={statystyki.lacznie} etykieta="wsi na mapie" kolor="green" />
+            {typeof statystyki.sredniaKompletnosc === "number" ? (
+              <KafelekStatystyki
+                emoji="📊"
+                wartosc={statystyki.sredniaKompletnosc}
+                etykieta="śr. kompletność %"
+                kolor={statystyki.sredniaKompletnosc >= 60 ? "green" : "amber"}
+              />
+            ) : null}
             {statystyki.zPrzystankiem > 0 ? (
               <KafelekStatystyki emoji="🚌" wartosc={statystyki.zPrzystankiem} etykieta="z przystankiem" kolor="sky" />
             ) : null}

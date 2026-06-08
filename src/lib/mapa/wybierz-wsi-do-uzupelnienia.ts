@@ -1,4 +1,5 @@
 import type { ZnacznikPoi } from "@/components/mapa/mapa-wsi-leaflet";
+import { obliczKompletnoscMapyWsi } from "@/lib/mapa/oblicz-kompletnosc-mapy-wsi";
 
 const KAT_TRANSPORT = new Set(["przystanek", "stacja_kolejowa"]);
 
@@ -6,6 +7,8 @@ export type WiesNaMapie = {
   id: string;
   name: string;
   boundary_geojson: unknown | null;
+  latitude?: number | null;
+  longitude?: number | null;
 };
 
 /** Wsi bez obrysu PRG — do sync granic. */
@@ -87,4 +90,37 @@ export function obliczStatystykiMapy(
     zPrzystankiem: maPrzystanek.size,
     zeStacja: maStacja.size,
   };
+}
+
+/** Średnia kompletność profilu mapy dla listy wsi (0–100). */
+export function obliczSredniaKompletnoscMapy(
+  wsie: WiesNaMapie[],
+  punktyPoiLubIndeks: Pick<ZnacznikPoi, "villageId" | "category">[] | Map<string, string[]>,
+): { srednia: number; ponizej50: number } {
+  if (wsie.length === 0) return { srednia: 0, ponizej50: 0 };
+  const kategoriePoWsi =
+    punktyPoiLubIndeks instanceof Map
+      ? punktyPoiLubIndeks
+      : (() => {
+          const mapa = new Map<string, string[]>();
+          for (const p of punktyPoiLubIndeks) {
+            const arr = mapa.get(p.villageId) ?? [];
+            arr.push(p.category);
+            mapa.set(p.villageId, arr);
+          }
+          return mapa;
+        })();
+  let suma = 0;
+  let ponizej50 = 0;
+  for (const w of wsie) {
+    const k = obliczKompletnoscMapyWsi({
+      boundary_geojson: w.boundary_geojson,
+      latitude: w.latitude ?? null,
+      longitude: w.longitude ?? null,
+      kategoriePoi: kategoriePoWsi.get(w.id) ?? [],
+    });
+    suma += k.procent;
+    if (k.procent < 50) ponizej50 += 1;
+  }
+  return { srednia: Math.round(suma / wsie.length), ponizej50 };
 }
