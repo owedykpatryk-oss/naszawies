@@ -116,9 +116,9 @@ export function ProfilRolnikowKlient({
     run(() => dezaktywujOrganizacjeWsi(id, villageId), "Profil został ukryty.");
   }
 
-  const sciezkaKola = useMemo(() => {
-    if (!wiesSciezka?.slug) return (_kolo: OrganizacjaPelna) => null;
-    return (kolo: OrganizacjaPelna) =>
+  const sciezkaKola = useMemo((): ((kolo: OrganizacjaPelna) => string | null) => {
+    if (!wiesSciezka?.slug) return () => null;
+    return (kolo) =>
       sciezkaPelnejStronyOrganizacji(wiesSciezka, {
         id: kolo.id,
         name: kolo.name,
