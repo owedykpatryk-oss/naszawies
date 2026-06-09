@@ -1,22 +1,8 @@
 import { NextResponse } from "next/server";
 import { wymagajLogowaniaApi } from "@/lib/auth/wymagaj-logowania-api";
 import { createPublicSupabaseClient } from "@/lib/supabase/public-client";
-import { sciezkaProfiluWsi } from "@/lib/wies/sciezka-publiczna";
-
-type WierszRpc = {
-  id: string;
-  name: string;
-  slug: string;
-  voivodeship: string;
-  county: string;
-  commune: string;
-  teryt_id: string;
-  latitude: string | number | null;
-  longitude: string | number | null;
-  population: number | null;
-  boundary_geojson: unknown | null;
-  public_offers_count: number | string | null;
-};
+import { createAdminSupabaseClient } from "@/lib/supabase/admin-client";
+import { pobierzZnacznikiMapyPaginacja } from "@/lib/mapa/pobierz-znaczniki-mapy-paginacja";
 
 /**
  * Publiczne dane pod mapę (te same co RPC `mapa_wsi_znaczniki`).
@@ -26,42 +12,32 @@ export async function GET() {
   const auth = await wymagajLogowaniaApi();
   if (!auth.ok) return auth.response;
 
-  const supabase = createPublicSupabaseClient();
+  const supabase = createAdminSupabaseClient() ?? createPublicSupabaseClient();
   if (!supabase) {
     return NextResponse.json({ blad: "Usługa chwilowo niedostępna." }, { status: 503 });
   }
 
-  const { data, error } = await supabase.rpc("mapa_wsi_znaczniki");
-  if (error) {
-    console.error("[api/wies/mapa-znaczniki]", error.message);
+  const { znaczniki, blad } = await pobierzZnacznikiMapyPaginacja(supabase);
+  if (blad && znaczniki.length === 0) {
+    console.error("[api/wies/mapa-znaczniki]", blad);
     return NextResponse.json({ blad: "Nie udało się pobrać znaczników." }, { status: 500 });
   }
 
-  const surowe = (data ?? []) as WierszRpc[];
-  const wies = surowe.map((w) => ({
+  const wies = znaczniki.map((w) => ({
     id: w.id,
     nazwa: w.name,
-    slug: w.slug,
+    slug: w.sciezka.split("/").pop() ?? "",
     wojewodztwo: w.voivodeship,
     powiat: w.county,
     gmina: w.commune,
     terytId: w.teryt_id,
-    szerokosc: w.latitude != null ? Number(w.latitude) : null,
-    dlugosc: w.longitude != null ? Number(w.longitude) : null,
+    szerokosc: w.lat,
+    dlugosc: w.lon,
     ludnosc: w.population,
-    liczbaOfertPublicznych:
-      typeof w.public_offers_count === "number"
-        ? w.public_offers_count
-        : w.public_offers_count != null
-          ? Number.parseInt(String(w.public_offers_count), 10) || 0
-          : 0,
-    sciezka: sciezkaProfiluWsi({
-      voivodeship: w.voivodeship,
-      county: w.county,
-      commune: w.commune,
-      slug: w.slug,
-    }),
+    liczbaOfertPublicznych: w.public_offers_count,
+    sciezka: w.sciezka,
     granicaGeojson: w.boundary_geojson,
+    maGranice: w.has_boundary === true || w.boundary_geojson != null,
   }));
 
   return NextResponse.json(

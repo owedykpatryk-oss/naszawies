@@ -1,5 +1,6 @@
 import type { ZnacznikPoi } from "@/components/mapa/mapa-wsi-leaflet";
 import { obliczKompletnoscMapyWsi } from "@/lib/mapa/oblicz-kompletnosc-mapy-wsi";
+import { wiesMaObrys } from "@/lib/mapa/wies-ma-obrys";
 
 const KAT_TRANSPORT = new Set(["przystanek", "stacja_kolejowa"]);
 
@@ -7,6 +8,7 @@ export type WiesNaMapie = {
   id: string;
   name: string;
   boundary_geojson: unknown | null;
+  has_boundary?: boolean;
   latitude?: number | null;
   longitude?: number | null;
 };
@@ -14,7 +16,7 @@ export type WiesNaMapie = {
 /** Wsi bez obrysu PRG — do sync granic. */
 export function wybierzWsiBezObrysu(wsie: WiesNaMapie[], limit: number): string[] {
   return wsie
-    .filter((w) => !w.boundary_geojson)
+    .filter((w) => !wiesMaObrys(w))
     .slice(0, limit)
     .map((w) => w.id);
 }
@@ -79,7 +81,7 @@ export function obliczStatystykiMapy(
     if (k === "stacja_kolejowa") maStacja.add(p.villageId);
     licznikPoi.set(p.villageId, (licznikPoi.get(p.villageId) ?? 0) + 1);
   }
-  const bezObrysu = wsie.filter((w) => !w.boundary_geojson).length;
+  const bezObrysu = wsie.filter((w) => !wiesMaObrys(w)).length;
   const bezTransportu = wsie.filter((w) => !maPrzystanek.has(w.id) && !maStacja.has(w.id)).length;
   const zMalymPoi = wsie.filter((w) => (licznikPoi.get(w.id) ?? 0) < 4).length;
   return {
@@ -115,6 +117,7 @@ export function obliczSredniaKompletnoscMapy(
   for (const w of wsie) {
     const k = obliczKompletnoscMapyWsi({
       boundary_geojson: w.boundary_geojson,
+      has_boundary: w.has_boundary,
       latitude: w.latitude ?? null,
       longitude: w.longitude ?? null,
       kategoriePoi: kategoriePoWsi.get(w.id) ?? [],

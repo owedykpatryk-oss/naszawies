@@ -68,6 +68,8 @@ export type ZnacznikWsi = {
   lon: number;
   population: number | null;
   boundary_geojson: unknown | null;
+  /** Ustawiane przez lekki RPC — obrys ładowany lazy przez /api/mapa/granice-wsi. */
+  has_boundary?: boolean;
   public_offers_count: number;
   /** Do wyszukiwarki na mapie i opisu na liście */
   commune?: string;

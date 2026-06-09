@@ -25,6 +25,7 @@ import {
 } from "@/lib/mapa/kategorie-poi-grupy";
 import { czyKategoriaPoiLowiecka } from "@/lib/mapa/poi-lowieckie-widocznosc";
 import { obrysPowiatuZznacznikow } from "@/lib/mapa/obrys-administracyjny";
+import { wiesMaObrys } from "@/lib/mapa/wies-ma-obrys";
 import type { GeoJsonObject } from "geojson";
 import { MapaLowiectwoOverlay } from "@/components/mapa/mapa-lowiectwo-overlay";
 import { odliczanieZywHms, tekstOdliczaniaPolowania } from "@/lib/mapa/formatuj-polowanie";
@@ -569,7 +570,7 @@ export function MapaWsiStrona({
         lista = lista.filter((z) => polePasuje(z.name, q) || polePasuje(z.commune, q));
       }
     }
-    if (tylkoObrysPrg) lista = lista.filter((z) => z.boundary_geojson != null);
+    if (tylkoObrysPrg) lista = lista.filter((z) => wiesMaObrys(z));
     if (tylkoOferty) lista = lista.filter((z) => z.public_offers_count > 0);
     if (pozycjaUzytkownika && promienKm > 0) {
       lista = lista.filter(
@@ -620,7 +621,7 @@ export function MapaWsiStrona({
 
   useEffect(() => {
     const brakujace = odfiltrowane
-      .filter((z) => !z.boundary_geojson)
+      .filter((z) => wiesMaObrys(z) && !z.boundary_geojson && !graniceLazy[z.id])
       .map((z) => z.id)
       .slice(0, 50);
     if (brakujace.length === 0) return;
@@ -1556,9 +1557,9 @@ export function MapaWsiStrona({
                           </span>
                         ) : null}
                         <span
-                          className={`mapa-karta-wsi__odznaka ${z.boundary_geojson ? "mapa-karta-wsi__odznaka--prg" : "mapa-karta-wsi__odznaka--szacunek"}`}
+                          className={`mapa-karta-wsi__odznaka ${wiesMaObrys(z) ? "mapa-karta-wsi__odznaka--prg" : "mapa-karta-wsi__odznaka--szacunek"}`}
                         >
-                          {z.boundary_geojson ? "obrys PRG" : "szacunek"}
+                          {wiesMaObrys(z) ? "obrys PRG" : "szacunek"}
                         </span>
                       </span>
                     </Link>

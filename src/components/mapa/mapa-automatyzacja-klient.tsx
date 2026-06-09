@@ -3,11 +3,13 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { uruchomUzupelnienieMapyZMapy } from "@/app/(site)/mapa/akcje";
+import { wiesMaObrys } from "@/lib/mapa/wies-ma-obrys";
 import type { StatystykiMapy } from "./mapa-statystyki-banner";
 
 type ZnacznikDoSync = {
   id: string;
   boundary_geojson: unknown | null;
+  has_boundary?: boolean;
 };
 
 type Props = {
@@ -31,7 +33,7 @@ export function MapaAutomatyzacjaKlient({
 
   useEffect(() => {
     if (uruchomiono.current) return;
-    const bezObrysu = znaczniki.filter((z) => !z.boundary_geojson).length;
+    const bezObrysu = znaczniki.filter((z) => !wiesMaObrys(z)).length;
     const potrzeba =
       bezObrysu >= 3 ||
       (villageIdsDoUzupelnienia.length >= 4 && statystyki.lacznie >= 8) ||

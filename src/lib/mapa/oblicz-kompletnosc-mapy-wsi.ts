@@ -1,5 +1,6 @@
 import { etykietaKategoriiPoi } from "@/lib/mapa/kategorie-poi";
 import { KATEGORIE_POI_BAZOWE } from "@/lib/mapa/kategorie-poi-bazowe";
+import { wiesMaObrys } from "@/lib/mapa/wies-ma-obrys";
 
 export type KompletnoscMapyWsi = {
   procent: number;
@@ -15,6 +16,7 @@ export type KompletnoscMapyWsi = {
 
 export function obliczKompletnoscMapyWsi(args: {
   boundary_geojson: unknown | null;
+  has_boundary?: boolean;
   latitude: number | null;
   longitude: number | null;
   kategoriePoi: string[];
@@ -26,7 +28,7 @@ export function obliczKompletnoscMapyWsi(args: {
     args.longitude != null &&
     Number.isFinite(args.latitude) &&
     Number.isFinite(args.longitude);
-  const maObrys = args.boundary_geojson != null && typeof args.boundary_geojson === "object";
+  const maObrys = wiesMaObrys(args);
 
   const set = new Set(args.kategoriePoi.map((k) => k.trim().toLowerCase()));
   const brakujace = KATEGORIE_POI_BAZOWE.filter((k) => !set.has(k)).map((k) => ({

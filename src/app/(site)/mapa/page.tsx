@@ -118,6 +118,7 @@ export default async function MapaPage() {
       id: z.id,
       name: z.name,
       boundary_geojson: z.boundary_geojson,
+      has_boundary: z.has_boundary,
       latitude: z.lat,
       longitude: z.lon,
     })),
@@ -135,6 +136,7 @@ export default async function MapaPage() {
   const znacznikiDoSync = znaczniki.map((z) => ({
     id: z.id,
     boundary_geojson: z.boundary_geojson,
+    has_boundary: z.has_boundary,
   }));
 
   return (
@@ -172,7 +174,7 @@ export default async function MapaPage() {
         </p>
       ) : null}
 
-      {!bladZapytania && znaczniki.length > 0 ? (
+      {znaczniki.length > 0 ? (
         <div className="mapa-widget-pelny flex min-h-0 flex-1 flex-col">
           <MapaStatystykiBanner statystyki={statystykiMapy} />
           <Suspense fallback={<MapaWsiStronaSkeleton />}>
