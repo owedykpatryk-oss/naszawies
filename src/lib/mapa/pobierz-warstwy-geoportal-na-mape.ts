@@ -1,5 +1,6 @@
 import type { ZnacznikAdres, ZnacznikGeoKontekst } from "@/components/mapa/mapa-wsi-leaflet";
 import { mapujGeoKontekstDlaMapy } from "@/lib/mapa/mapuj-geo-kontekst-dla-mapy";
+import { podzielNaPartie } from "@/lib/mapa/podziel-na-partie";
 import type { SupabaseClient } from "@supabase/supabase-js";
 
 type WierszAdres = {
@@ -25,25 +26,32 @@ export async function pobierzWarstwyGeoportalNaMape(
   const ids = Array.from(wiesPoId.keys());
   if (ids.length === 0) return puste;
 
-  const [{ data: geoRows }, { data: adresRows }] = await Promise.all([
-    supabase
-      .from("geo_context_features")
-      .select("id, village_id, dataset, layer_name, feature_category, feature_name, latitude, longitude")
-      .in("village_id", ids)
-      .not("latitude", "is", null)
-      .not("longitude", "is", null)
-      .limit(1200),
-    supabase
-      .from("address_points")
-      .select("id, village_id, street_name, house_number, latitude, longitude")
-      .in("village_id", ids)
-      .limit(2500),
-  ]);
+  const geoRows: Parameters<typeof mapujGeoKontekstDlaMapy>[0] = [];
+  const adresRows: WierszAdres[] = [];
 
-  const punktyGeoKontekst = mapujGeoKontekstDlaMapy(geoRows ?? [], wiesPoId, 800);
+  for (const partia of podzielNaPartie(ids, 80)) {
+    const [{ data: geoPart }, { data: adresPart }] = await Promise.all([
+      supabase
+        .from("geo_context_features")
+        .select("id, village_id, dataset, layer_name, feature_category, feature_name, latitude, longitude")
+        .in("village_id", partia)
+        .not("latitude", "is", null)
+        .not("longitude", "is", null)
+        .limit(400),
+      supabase
+        .from("address_points")
+        .select("id, village_id, street_name, house_number, latitude, longitude")
+        .in("village_id", partia)
+        .limit(800),
+    ]);
+    if (geoPart) geoRows.push(...geoPart);
+    if (adresPart) adresRows.push(...(adresPart as WierszAdres[]));
+  }
+
+  const punktyGeoKontekst = mapujGeoKontekstDlaMapy(geoRows, wiesPoId, 800);
 
   const punktyAdresy: ZnacznikAdres[] = [];
-  for (const r of (adresRows ?? []) as WierszAdres[]) {
+  for (const r of adresRows) {
     const w = wiesPoId.get(r.village_id);
     if (!w) continue;
     const lat = Number(r.latitude);

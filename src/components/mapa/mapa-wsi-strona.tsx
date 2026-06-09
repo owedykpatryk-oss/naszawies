@@ -286,6 +286,8 @@ export function MapaWsiStrona({
   rewiryLowieckie = [],
   punktyCmentarze = [],
   punktyGeoKontekst = [],
+  onRozszerzDoPolski,
+  ladowaniePelnejPolski = false,
 }: {
   znaczniki: ZnacznikWsi[];
   punktyPoi?: ZnacznikPoi[];
@@ -299,6 +301,8 @@ export function MapaWsiStrona({
   rewiryLowieckie?: ZnacznikRewirLowiecki[];
   punktyCmentarze?: ZnacznikCmentarzObrys[];
   punktyGeoKontekst?: ZnacznikGeoKontekst[];
+  onRozszerzDoPolski?: () => void;
+  ladowaniePelnejPolski?: boolean;
 }) {
   const searchParams = useSearchParams();
   const pathname = usePathname();
@@ -410,7 +414,7 @@ export function MapaWsiStrona({
     return PROMIENIE_KM.includes(n as (typeof PROMIENIE_KM)[number]) ? n : 0;
   });
   const [pokazPoiWarstwa, ustawPokazPoiWarstwa] = useState(
-    () => searchParams.get("poi_warstwa") !== "0",
+    () => searchParams.get("poi_warstwa") === "1" || searchParams.get("poi") != null,
   );
   const [pokazRynekDzialki, ustawPokazRynekDzialki] = useState(
     () => searchParams.get("rynek_dzialki") !== "0",
@@ -1310,7 +1314,8 @@ export function MapaWsiStrona({
 
   const wyczyscDoCalejPolski = useCallback(() => {
     ustawFiltrAdmin({ wojSlug: "", powSlug: "", gminaSlug: "" });
-  }, []);
+    onRozszerzDoPolski?.();
+  }, [onRozszerzDoPolski]);
 
   if (!klientGotowy) {
     return (
@@ -1544,8 +1549,13 @@ export function MapaWsiStrona({
           {pokazDomyslnyBanner ? (
             <p className="mb-2 rounded-lg border border-emerald-200/80 bg-emerald-50/90 px-2.5 py-2 text-[11px] leading-snug text-emerald-950">
               Startujesz od <strong>powiatu nakielskiego</strong> — mapa działa płynniej.{" "}
-              <button type="button" className="font-medium underline" onClick={wyczyscDoCalejPolski}>
-                Pokaż całą Polskę
+              <button
+                type="button"
+                className="font-medium underline disabled:opacity-60"
+                disabled={ladowaniePelnejPolski}
+                onClick={wyczyscDoCalejPolski}
+              >
+                {ladowaniePelnejPolski ? "Wczytuję całą Polskę…" : "Pokaż całą Polskę"}
               </button>
             </p>
           ) : null}

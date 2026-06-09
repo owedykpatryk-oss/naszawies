@@ -68,10 +68,12 @@ function mapujWiersz(w: WierszWsi): ZnacznikWsi | null {
 async function pobierzStroneRpc(
   supabase: SupabaseClient,
   offset: number,
+  county: string | null,
 ): Promise<{ wiersze: WierszWsi[]; blad: string | null }> {
   const { data, error } = await supabase.rpc("mapa_wsi_znaczniki", {
     p_limit: ROZMIAR_STRONY,
     p_offset: offset,
+    p_county: county,
   });
   if (error) return { wiersze: [], blad: error.message };
   return { wiersze: (data ?? []) as WierszWsi[], blad: null };
@@ -80,8 +82,9 @@ async function pobierzStroneRpc(
 async function pobierzStroneTabeli(
   supabase: SupabaseClient,
   offset: number,
+  county: string | null,
 ): Promise<{ wiersze: WierszWsi[]; blad: string | null }> {
-  const { data, error } = await supabase
+  let q = supabase
     .from("villages")
     .select(
       "id, name, slug, voivodeship, county, commune, teryt_id, gmina_teryt_kod, powiat_teryt_kod, latitude, longitude, population, boundary_source",
@@ -93,6 +96,9 @@ async function pobierzStroneTabeli(
     .order("name", { ascending: true })
     .range(offset, offset + ROZMIAR_STRONY - 1);
 
+  if (county) q = q.ilike("county", county);
+
+  const { data, error } = await q;
   if (error) return { wiersze: [], blad: error.message };
   return { wiersze: (data ?? []) as WierszWsi[], blad: null };
 }
@@ -100,17 +106,20 @@ async function pobierzStroneTabeli(
 /** Wsi na mapę katalogu — paginacja po 1000 (limit PostgREST). */
 export async function pobierzZnacznikiMapyPaginacja(
   supabase: SupabaseClient,
+  opts?: { county?: string | null; maxStron?: number },
 ): Promise<{ znaczniki: ZnacznikWsi[]; blad: string | null }> {
+  const county = opts?.county?.trim() || null;
+  const maxStron = opts?.maxStron ?? MAX_STRON;
   const znaczniki: ZnacznikWsi[] = [];
   let pierwszyBlad: string | null = null;
 
-  for (let strona = 0; strona < MAX_STRON; strona += 1) {
+  for (let strona = 0; strona < maxStron; strona += 1) {
     const offset = strona * ROZMIAR_STRONY;
-    let { wiersze, blad } = await pobierzStroneRpc(supabase, offset);
+    let { wiersze, blad } = await pobierzStroneRpc(supabase, offset, county);
 
     if (blad && strona === 0) {
       pierwszyBlad = blad;
-      ({ wiersze, blad } = await pobierzStroneTabeli(supabase, offset));
+      ({ wiersze, blad } = await pobierzStroneTabeli(supabase, offset, county));
       if (blad) return { znaczniki: [], blad: `${pierwszyBlad} · ${blad}` };
     } else if (blad) {
       break;
