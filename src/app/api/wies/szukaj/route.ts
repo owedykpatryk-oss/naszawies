@@ -4,6 +4,7 @@ import { odczytajAdresIpZNaglowkow } from "@/lib/api/odczytaj-adres-ip";
 import { sprawdzLimitApi } from "@/lib/rate-limit/sprawdz-limit-upstash";
 import { createPublicSupabaseClient } from "@/lib/supabase/public-client";
 import { sciezkaProfiluWsi } from "@/lib/wies/sciezka-publiczna";
+import { pobierzLicznikiPoiDlaWsi } from "@/lib/mapa/pobierz-liczniki-poi-wsi";
 
 const zapytanie = z.object({
   q: z.string().trim().min(2, "Minimum 2 znaki.").max(80),
@@ -74,6 +75,16 @@ export async function GET(request: Request) {
     wiersze = (fallback ?? []) as WierszRpc[];
   }
 
+  const ids = wiersze.map((w) => w.id);
+  const licznikiPoi = await pobierzLicznikiPoiDlaWsi(supabase, ids);
+  const { data: metaGranice } =
+    ids.length > 0
+      ? await supabase.from("villages").select("id, boundary_geojson").in("id", ids)
+      : { data: [] as { id: string; boundary_geojson: unknown | null }[] };
+  const maGranicePoId = new Map(
+    (metaGranice ?? []).map((r) => [r.id as string, r.boundary_geojson != null]),
+  );
+
   const wyniki = wiersze.map((w) => ({
     id: w.id,
     nazwa: w.name,
@@ -81,6 +92,8 @@ export async function GET(request: Request) {
     powiat: w.county,
     wojewodztwo: w.voivodeship,
     terytId: w.teryt_id,
+    liczbaPoi: licznikiPoi.get(w.id) ?? 0,
+    maGranice: maGranicePoId.get(w.id) ?? false,
     sciezka: sciezkaProfiluWsi({
       voivodeship: w.voivodeship,
       county: w.county,

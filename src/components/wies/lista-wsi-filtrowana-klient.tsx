@@ -72,9 +72,14 @@ export function ListaWsiFiltrowanaKlient({ wies, grupujPoGminie = false }: Props
                 <Link href={v.sciezka} className="font-medium text-green-900 hover:underline">
                   {v.name}
                 </Link>
-                {!v.is_active ? (
+                {!v.is_active && (v.liczba_poi ?? 0) === 0 ? (
                   <span className="ml-2 rounded bg-amber-100 px-1.5 py-0.5 text-[10px] text-amber-900">
                     w przygotowaniu
+                  </span>
+                ) : null}
+                {(v.liczba_poi ?? 0) > 0 ? (
+                  <span className="ml-2 rounded bg-emerald-100 px-1.5 py-0.5 text-[10px] font-medium text-emerald-900">
+                    {v.liczba_poi} POI
                   </span>
                 ) : null}
                 <p className="text-xs text-stone-500">
@@ -156,8 +161,11 @@ export function ListaWsiFiltrowanaKlient({ wies, grupujPoGminie = false }: Props
                   <li key={v.id}>
                     <Link href={v.sciezka} className="block rounded-lg px-2 py-1.5 text-sm text-stone-800 hover:bg-green-50">
                       {v.name}
-                      {!v.is_active ? (
+                      {!v.is_active && (v.liczba_poi ?? 0) === 0 ? (
                         <span className="ml-1 text-[10px] text-amber-800">· w przygotowaniu</span>
+                      ) : null}
+                      {(v.liczba_poi ?? 0) > 0 ? (
+                        <span className="ml-1 text-[10px] font-medium text-emerald-800">· {v.liczba_poi} POI</span>
                       ) : null}
                     </Link>
                   </li>

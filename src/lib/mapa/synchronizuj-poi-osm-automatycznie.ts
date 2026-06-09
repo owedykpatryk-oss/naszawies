@@ -212,6 +212,8 @@ export type OpcjeSynchronizacjiPoiOsm = {
   tylkoVillageIds?: string[];
   /** Pomiń limit dni od ostatniego sync OSM. */
   wymus?: boolean;
+  /** Import katalogowy — także wsi nieaktywne (is_active=false). */
+  pominFiltrAktywnych?: boolean;
 };
 
 export async function synchronizujPoiOsmAutomatycznie(
@@ -237,8 +239,11 @@ export async function synchronizujPoiOsmAutomatycznie(
 
   let zapytanieWsi = supabase
     .from("villages")
-    .select("id, name, latitude, longitude, population")
-    .eq("is_active", true);
+    .select("id, name, latitude, longitude, population");
+
+  if (!opts?.pominFiltrAktywnych) {
+    zapytanieWsi = zapytanieWsi.eq("is_active", true);
+  }
 
   if (opts?.tylkoVillageIds?.length) {
     zapytanieWsi = zapytanieWsi.in("id", opts.tylkoVillageIds);

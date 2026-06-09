@@ -145,6 +145,7 @@ const schemaNowyWatek = z.object({
   title: z.string().trim().min(5).max(180),
   body: z.string().trim().min(20).max(12000),
   category: z.string().trim().min(2).max(80).default("ogolne"),
+  visibility: z.enum(["village", "public"]).default("village"),
 });
 
 export async function dodajWatekDyskusjiMieszkanca(
@@ -200,7 +201,7 @@ export async function dodajWatekDyskusjiMieszkanca(
     title: parsed.data.title,
     body: parsed.data.body,
     category: parsed.data.category.toLowerCase(),
-    visibility: "village",
+    visibility: parsed.data.visibility,
     status: "open",
   });
 
@@ -210,6 +211,7 @@ export async function dodajWatekDyskusjiMieszkanca(
   }
 
   revalidatePath("/panel/mieszkaniec/spolecznosc");
+  revalidatePath("/wies", "layout");
   return { ok: true, komunikat: "Wątek został opublikowany." };
 }
 

@@ -2,8 +2,10 @@ import { unstable_cache } from "next/cache";
 import type { SupabaseClient } from "@supabase/supabase-js";
 import { pobierzPublicznePlakatyWsi } from "@/app/(site)/panel/grafika/akcje";
 import type { PlakatPubliczny } from "@/components/grafika/galeria-plakatow-wsi";
-import { pobierzFotokronikePublicznaWsi } from "@/lib/fotokronika/pobierz-fotokronike-publiczna";
-import type { ZdjeciePubliczne } from "@/lib/fotokronika/pobierz-fotokronike-publiczna";
+import { pobierzFotokronikePublicznaPelna } from "@/lib/fotokronika/pobierz-fotokronike-publiczna";
+import type { AlbumPublicznyFotokroniki, ZdjeciePubliczne } from "@/lib/fotokronika/pobierz-fotokronike-publiczna";
+import { pobierzCiekawostkiMiejscWsi, type CiekawostkaMiejscaWsi } from "@/lib/wies/pobierz-ciekawostki-miejsc-wsi";
+import { pobierzDyskusjePubliczneWsi, type WatekDyskusjiPubliczny } from "@/lib/wies/pobierz-dyskusje-publiczne-wsi";
 import type { KonkursFotoPubliczny, ZdjecieKonkursu } from "@/lib/konkurs-foto/fazy-konkursu";
 import { pobierzAktywneOstrzezeniaLesne } from "@/lib/lesnictwo/pobierz-ostrzezenia-publiczne";
 import type { OstrzezenieLesne } from "@/lib/lesnictwo/pobierz-ostrzezenia-publiczne";
@@ -23,6 +25,8 @@ export type SuroweDanePubliczneProfiluWsi = {
   plakatyPubliczne: PlakatPubliczny[];
   konkursFoto: { konkurs: KonkursFotoPubliczny; zdjecia: ZdjecieKonkursu[] } | null;
   fotokronikaPubliczna: ZdjeciePubliczne[];
+  fotokronikaAlbumy: AlbumPublicznyFotokroniki[];
+  dyskusjePubliczne: WatekDyskusjiPubliczny[];
   ostrzezeniaLowieckie: OstrzezenieLowieckie[];
   ostrzezeniaLesne: OstrzezenieLesne[];
   maProfilLesnictwa: boolean;
@@ -45,6 +49,7 @@ export type SuroweDanePubliczneProfiluWsi = {
   planCmentarzaId: string | null;
   liczbaMieszkancowAktywnych: number;
   ogloszeniaSzkoly: OgloszenieSzkolyPubliczne[];
+  ciekawostkiMiejsc: CiekawostkaMiejscaWsi[];
 };
 
 async function pobierzKonkursBezGlosu(
@@ -110,6 +115,8 @@ async function pobierzSuroweDanePubliczneProfiluWsi(
       plakatyPubliczne: [],
       konkursFoto: null,
       fotokronikaPubliczna: [],
+      fotokronikaAlbumy: [],
+      dyskusjePubliczne: [],
       ostrzezeniaLowieckie: [],
       ostrzezeniaLesne: [],
       maProfilLesnictwa: false,
@@ -132,6 +139,7 @@ async function pobierzSuroweDanePubliczneProfiluWsi(
       planCmentarzaId: null,
       liczbaMieszkancowAktywnych: 0,
       ogloszeniaSzkoly: [],
+      ciekawostkiMiejsc: [],
     };
   }
 
@@ -141,7 +149,8 @@ async function pobierzSuroweDanePubliczneProfiluWsi(
     { data: postyRaw },
     plakatyPubliczne,
     konkursFoto,
-    fotokronikaPubliczna,
+    fotokronikaPelna,
+    dyskusjePubliczne,
     ostrzezeniaLowieckie,
     ostrzezeniaLesne,
     profilLesny,
@@ -164,6 +173,7 @@ async function pobierzSuroweDanePubliczneProfiluWsi(
     planCmentarzaRes,
     { count: liczbaMieszkancowAktywnych },
     ogloszeniaSzkoly,
+    ciekawostkiMiejsc,
   ] = await Promise.all([
     supabase
       .from("posts")
@@ -175,7 +185,8 @@ async function pobierzSuroweDanePubliczneProfiluWsi(
       .limit(25),
     isActive ? pobierzPublicznePlakatyWsi(villageId) : Promise.resolve([]),
     isActive ? pobierzKonkursBezGlosu(supabase, villageId) : Promise.resolve(null),
-    isActive ? pobierzFotokronikePublicznaWsi(supabase, villageId) : Promise.resolve([]),
+    pobierzFotokronikePublicznaPelna(supabase, villageId),
+    pobierzDyskusjePubliczneWsi(supabase, villageId),
     isActive ? pobierzAktywneOstrzezeniaLowieckie(supabase, villageId) : Promise.resolve([]),
     isActive ? pobierzAktywneOstrzezeniaLesne(supabase, villageId) : Promise.resolve([]),
     isActive ? pobierzProfilLesnictwaPubliczny(supabase, villageId) : Promise.resolve(null),
@@ -311,13 +322,16 @@ async function pobierzSuroweDanePubliczneProfiluWsi(
       .eq("role", "mieszkaniec")
       .eq("status", "active"),
     pobierzOgloszeniaSzkolyPubliczne(supabase, villageId),
+    pobierzCiekawostkiMiejscWsi(supabase, villageId),
   ]);
 
   return {
     postyRaw: postyRaw ?? [],
     plakatyPubliczne,
     konkursFoto,
-    fotokronikaPubliczna,
+    fotokronikaPubliczna: fotokronikaPelna.zdjecia,
+    fotokronikaAlbumy: fotokronikaPelna.albumy,
+    dyskusjePubliczne,
     ostrzezeniaLowieckie,
     ostrzezeniaLesne,
     maProfilLesnictwa: profilLesny != null,
@@ -340,6 +354,7 @@ async function pobierzSuroweDanePubliczneProfiluWsi(
     planCmentarzaId: (planCmentarzaRes.data as { id?: string } | null)?.id ?? null,
     liczbaMieszkancowAktywnych: liczbaMieszkancowAktywnych ?? 0,
     ogloszeniaSzkoly,
+    ciekawostkiMiejsc,
   };
 }
 

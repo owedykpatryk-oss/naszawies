@@ -5,6 +5,36 @@
 
 const USER_AGENT = "NaszawiesPl/1.0 (+https://naszawies.pl/)";
 
+const OVERPASS_URL = "https://overpass-api.de/api/interpreter";
+
+async function sleepMs(ms: number) {
+  await new Promise((r) => setTimeout(r, ms));
+}
+
+async function fetchOverpass(body: string, maxProb = 4): Promise<Response> {
+  let lastStatus = 0;
+  for (let proba = 0; proba < maxProb; proba += 1) {
+    const res = await fetch(OVERPASS_URL, {
+      method: "POST",
+      headers: {
+        "Content-Type": "text/plain;charset=UTF-8",
+        "User-Agent": USER_AGENT,
+      },
+      body,
+      cache: "no-store",
+      signal: AbortSignal.timeout(62_000),
+    });
+    if (res.ok) return res;
+    lastStatus = res.status;
+    if (proba < maxProb - 1 && (res.status === 429 || res.status === 504 || res.status === 502)) {
+      await sleepMs(4000 * (proba + 1));
+      continue;
+    }
+    return res;
+  }
+  return new Response(null, { status: lastStatus || 503 });
+}
+
 export type SugerowanyPoiZOsm = {
   category: string;
   name: string;
@@ -507,16 +537,7 @@ export async function pobierzPoiZOsmWokolPunktu(
 
   let res: Response;
   try {
-    res = await fetch("https://overpass-api.de/api/interpreter", {
-      method: "POST",
-      headers: {
-        "Content-Type": "text/plain;charset=UTF-8",
-        "User-Agent": USER_AGENT,
-      },
-      body,
-      cache: "no-store",
-      signal: AbortSignal.timeout(62_000),
-    });
+    res = await fetchOverpass(body);
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
     return { ok: false, blad: `Nie udało się połączyć z OpenStreetMap (Overpass): ${msg}` };
@@ -585,16 +606,7 @@ export async function pobierzCmentarzeZOsmWokolPunktu(
 
   let res: Response;
   try {
-    res = await fetch("https://overpass-api.de/api/interpreter", {
-      method: "POST",
-      headers: {
-        "Content-Type": "text/plain;charset=UTF-8",
-        "User-Agent": USER_AGENT,
-      },
-      body,
-      cache: "no-store",
-      signal: AbortSignal.timeout(40_000),
-    });
+    res = await fetchOverpass(body);
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
     return { ok: false, blad: `Nie udało się połączyć z OpenStreetMap (Overpass): ${msg}` };
@@ -657,16 +669,7 @@ export async function pobierzKosciolZOsmWokolPunktu(
 
   let res: Response;
   try {
-    res = await fetch("https://overpass-api.de/api/interpreter", {
-      method: "POST",
-      headers: {
-        "Content-Type": "text/plain;charset=UTF-8",
-        "User-Agent": USER_AGENT,
-      },
-      body,
-      cache: "no-store",
-      signal: AbortSignal.timeout(40_000),
-    });
+    res = await fetchOverpass(body);
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
     return { ok: false, blad: `Nie udało się połączyć z OpenStreetMap (Overpass): ${msg}` };
@@ -729,16 +732,7 @@ export async function pobierzOspZOsmWokolPunktu(
 
   let res: Response;
   try {
-    res = await fetch("https://overpass-api.de/api/interpreter", {
-      method: "POST",
-      headers: {
-        "Content-Type": "text/plain;charset=UTF-8",
-        "User-Agent": USER_AGENT,
-      },
-      body,
-      cache: "no-store",
-      signal: AbortSignal.timeout(40_000),
-    });
+    res = await fetchOverpass(body);
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
     return { ok: false, blad: `Nie udało się połączyć z OpenStreetMap (Overpass): ${msg}` };
@@ -802,16 +796,7 @@ export async function pobierzStacjeKolejoweZOsmWokolPunktu(
 
   let res: Response;
   try {
-    res = await fetch("https://overpass-api.de/api/interpreter", {
-      method: "POST",
-      headers: {
-        "Content-Type": "text/plain;charset=UTF-8",
-        "User-Agent": USER_AGENT,
-      },
-      body,
-      cache: "no-store",
-      signal: AbortSignal.timeout(40_000),
-    });
+    res = await fetchOverpass(body);
   } catch (e) {
     const msg = e instanceof Error ? e.message : String(e);
     return { ok: false, blad: `Nie udało się połączyć z OpenStreetMap (Overpass): ${msg}` };

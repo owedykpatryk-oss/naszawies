@@ -12,6 +12,10 @@ export function BlogTrybCiemny() {
     const preferuje = zapisany === "dark" || (!zapisany && window.matchMedia("(prefers-color-scheme: dark)").matches);
     ustawCiemny(preferuje);
     document.documentElement.classList.toggle("dark", preferuje);
+
+    return () => {
+      document.documentElement.classList.remove("dark");
+    };
   }, []);
 
   function przelacz() {

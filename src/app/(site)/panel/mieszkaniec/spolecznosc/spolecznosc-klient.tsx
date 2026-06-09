@@ -1,7 +1,7 @@
 "use client";
 
-import { useMemo, useState, useTransition } from "react";
-import { useRouter } from "next/navigation";
+import { useEffect, useMemo, useState, useTransition } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import {
   dodajKomentarzDyskusjiMieszkanca,
   dodajWatekDyskusjiMieszkanca,
@@ -61,6 +61,7 @@ export function MieszkaniecSpolecznoscKlient({
   mojeGlosy: GlosMoj[];
 }) {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [villageId, setVillageId] = useState(wsie[0]?.id ?? "");
   const [threadId, setThreadId] = useState<string>("");
   const [wiadomosc, setWiadomosc] = useState("");
@@ -97,6 +98,16 @@ export function MieszkaniecSpolecznoscKlient({
     for (const g of mojeGlosy) m.set(g.thread_id, g.vote);
     return m;
   }, [mojeGlosy]);
+
+  useEffect(() => {
+    const tid = searchParams.get("threadId");
+    if (!tid) return;
+    const watek = watki.find((w) => w.id === tid);
+    if (watek) {
+      setVillageId(watek.village_id);
+      setThreadId(tid);
+    }
+  }, [searchParams, watki]);
 
   function wykonaj(akcja: () => Promise<{ ok?: true; blad?: string; komunikat?: string }>) {
     setWiadomosc("");
@@ -157,6 +168,7 @@ export function MieszkaniecSpolecznoscKlient({
               title: String(fd.get("title") ?? ""),
               body: String(fd.get("body") ?? ""),
               category: String(fd.get("category") ?? "ogolne"),
+              visibility: fd.get("publicProfile") === "on" ? "public" : "village",
             }),
           );
           e.currentTarget.reset();
@@ -183,6 +195,12 @@ export function MieszkaniecSpolecznoscKlient({
             placeholder="Opisz temat, kontekst i propozycję rozwiązania."
             className="rounded border border-stone-300 px-3 py-2 text-sm"
           />
+          <label className="flex items-start gap-2 text-sm text-stone-700">
+            <input type="checkbox" name="publicProfile" className="mt-1" />
+            <span>
+              Pokaż podgląd na profilu publicznym wsi (widoczne dla odwiedzających bez logowania)
+            </span>
+          </label>
         </div>
         <button
           type="submit"

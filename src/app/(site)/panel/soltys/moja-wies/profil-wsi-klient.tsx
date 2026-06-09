@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { FormEvent, useState, useTransition } from "react";
+import { EdytorTresciProstej } from "@/components/ui/edytor-tresci-prostej";
 import { dodajBrakujacePoiZOpenStreetMap, dodajPunktCzerpaniaWodyOsp } from "../akcje-mapa-poi";
 import { zapiszProfilPublicznyWsi, zapiszBannerRynkuWsi } from "../akcje";
 import { sciezkaProfiluWsi } from "@/lib/wies/sciezka-publiczna";
@@ -9,9 +10,11 @@ import { LadneMiejsceFormularz } from "@/components/panel/ladne-miejsce-formular
 import { CmentarzNaMapieFormularz } from "@/components/panel/cmentarz-na-mapie-formularz";
 import {
   EdytorKontaktuPoiSoltys,
+  type OrganizacjaOpcja,
   type PoiDoEdycjiKontaktu,
   type SalaOpcja,
 } from "@/components/panel/edytor-kontaktu-poi-soltys";
+import { EdytorProfiluPoiSoltys, type PoiDoEdycjiProfilu } from "@/components/panel/edytor-profilu-poi-soltys";
 import { QrProfilWsiPanel } from "@/components/panel/qr-profil-wsi-panel";
 import { SugestieAutomatyzacjiMapy } from "@/components/panel/sugestie-automatyzacji-mapy";
 import { KolejkaWeryfikacjiPoi } from "@/components/panel/kolejka-weryfikacji-poi";
@@ -46,6 +49,8 @@ export function ProfilWsiSoltysKlient({
   wies,
   sugestieMapy = {},
   poisByVillage = {},
+  poisProfilByVillage = {},
+  organizacjeByVillage = {},
   saleByVillage = {},
   poiDoWeryfikacji = {},
   propozycjePoi = {},
@@ -55,6 +60,8 @@ export function ProfilWsiSoltysKlient({
   wies: WiesDoEdycji[];
   sugestieMapy?: Record<string, SugestiaAutomatyzacjiMapy[]>;
   poisByVillage?: Record<string, PoiDoEdycjiKontaktu[]>;
+  poisProfilByVillage?: Record<string, PoiDoEdycjiProfilu[]>;
+  organizacjeByVillage?: Record<string, OrganizacjaOpcja[]>;
   saleByVillage?: Record<string, SalaOpcja[]>;
   poiDoWeryfikacji?: Record<string, PoiDoWeryfikacji[]>;
   propozycjePoi?: Record<string, PropozycjaPoiDoReview[]>;
@@ -217,14 +224,7 @@ export function ProfilWsiSoltysKlient({
                 <label className="font-medium" htmlFor={`opis-${w.id}`}>
                   Opis miejscowości (widać na stronie wsi)
                 </label>
-                <textarea
-                  id={`opis-${w.id}`}
-                  name="description"
-                  rows={6}
-                  defaultValue={w.description ?? ""}
-                  className="mt-1 w-full rounded border border-stone-300 px-2 py-1.5"
-                  maxLength={20000}
-                />
+                <OpisMiejscowosciEdytor id={`opis-${w.id}`} domyslny={w.description ?? ""} />
               </div>
               <div>
                 <label className="font-medium" htmlFor={`www-${w.id}`}>
@@ -389,11 +389,20 @@ export function ProfilWsiSoltysKlient({
                 />
               </div>
 
+              <div className="mt-6 rounded-xl border border-amber-200/80 bg-amber-50/30 p-4">
+                <h4 className="font-medium text-amber-950">Profil miejsca — historia, ciekawostki, galeria</h4>
+                <p className="mt-1 text-xs text-stone-700">
+                  Kościół, szkoła, remiza — każda pinezka może mieć opowieść, zdjęcia archiwalne i link do wpisów kroniki wsi.
+                </p>
+                <EdytorProfiluPoiSoltys villageId={w.id} pois={poisProfilByVillage[w.id] ?? []} />
+              </div>
+
               <div className="mt-6 rounded-xl border border-emerald-200/80 bg-emerald-50/30 p-4">
                 <h4 className="font-medium text-emerald-950">Telefon i godziny otwarcia (POI)</h4>
                 <EdytorKontaktuPoiSoltys
                   villageId={w.id}
                   pois={poisByVillage[w.id] ?? []}
+                  organizacje={organizacjeByVillage[w.id] ?? []}
                   sale={saleByVillage[w.id] ?? []}
                 />
               </div>
@@ -481,5 +490,23 @@ export function ProfilWsiSoltysKlient({
         );
       })}
     </ul>
+  );
+}
+
+function OpisMiejscowosciEdytor({ id, domyslny }: { id: string; domyslny: string }) {
+  const [value, ustawValue] = useState(domyslny);
+  return (
+    <>
+      <EdytorTresciProstej
+        id={id}
+        value={value}
+        onChange={ustawValue}
+        rows={6}
+        maxLength={20000}
+        className="mt-1 w-full rounded border border-stone-300 px-2 py-1.5"
+        placeholder="Opis wsi — możesz użyć **pogrubienia**, linków i list."
+      />
+      <input type="hidden" name="description" value={value} />
+    </>
   );
 }

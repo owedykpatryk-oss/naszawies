@@ -8,6 +8,7 @@ import { KodyEmbedWsiKlient } from "@/components/wies/kody-embed-wsi-klient";
 import { PodgladWygladWsiKlient } from "@/components/wies/podglad-wyglad-wsi-klient";
 import { WgrajObrazWiesKlient } from "@/components/wies/wgraj-obraz-wies-klient";
 import { ListaPrzeciagnij } from "@/components/ui/lista-przeciagnij";
+import { EdytorTresciProstej } from "@/components/ui/edytor-tresci-prostej";
 import {
   DOMYSLNE_IKONY_SEKCJI_WSI,
   ikonaSekcjiWsi,
@@ -66,6 +67,7 @@ function wczytajStan(w: WiesWygladDoEdycji) {
     zakladki: { ...w.ustawienia.zakladki },
     pasek: { ...w.ustawienia.pasek_nawigacji },
     domyslnyTrybSeniora: w.ustawienia.domyslny_tryb_seniora,
+    ciekawostkiWsi: w.ustawienia.ciekawostki_wsi ?? "",
   };
 }
 
@@ -92,6 +94,7 @@ export function UstawieniaWygladWsiKlient({ wsie }: { wsie: WiesWygladDoEdycji[]
   );
   const [pasek, ustawPasek] = useState<PasekNawigacjiWsi>(pocz?.pasek ?? domyslnyPasekNawigacjiWsi());
   const [domyslnyTrybSeniora, ustawDomyslnyTrybSeniora] = useState(pocz?.domyslnyTrybSeniora ?? false);
+  const [ciekawostkiWsi, ustawCiekawostkiWsi] = useState(pocz?.ciekawostkiWsi ?? "");
   const [czek, startT] = useTransition();
   const [blad, ustawBlad] = useState("");
   const [ok, ustawOk] = useState(false);
@@ -114,6 +117,7 @@ export function UstawieniaWygladWsiKlient({ wsie }: { wsie: WiesWygladDoEdycji[]
     ustawZakladkiCfg(s.zakladki);
     ustawPasek(s.pasek);
     ustawDomyslnyTrybSeniora(s.domyslnyTrybSeniora);
+    ustawCiekawostkiWsi(s.ciekawostkiWsi);
     ustawBlad("");
     ustawOk(false);
   }
@@ -165,6 +169,7 @@ export function UstawieniaWygladWsiKlient({ wsie }: { wsie: WiesWygladDoEdycji[]
         skroty: skroty.filter((s) => s.label.trim() && s.href.trim()),
         bloki: bloki.filter((b) => b.id.trim()),
         domyslny_tryb_seniora: domyslnyTrybSeniora,
+        ciekawostki_wsi: ciekawostkiWsi.trim() || null,
         zakladki: Object.keys(zakladkiDoZapisu).length ? zakladkiDoZapisu : undefined,
         pasek_nawigacji: pasek,
       });
@@ -336,6 +341,23 @@ export function UstawieniaWygladWsiKlient({ wsie }: { wsie: WiesWygladDoEdycji[]
               </li>
             ))}
           </ul>
+        </div>
+
+        <div>
+          <label className="text-sm font-medium text-stone-800" htmlFor="ciekawostki-wsi">
+            Ciekawostki o wsi (profil publiczny)
+          </label>
+          <p className="mt-1 text-xs text-stone-500">
+            Legendy, daty powstania, ciekawe fakty — sekcja „Ciekawostki” na stronie wsi. Możesz użyć **pogrubienia**, linków i list.
+          </p>
+          <EdytorTresciProstej
+            id="ciekawostki-wsi"
+            value={ciekawostkiWsi}
+            onChange={ustawCiekawostkiWsi}
+            rows={6}
+            maxLength={6000}
+            placeholder="np. Wieś powstała w XIV w. · **Kościół z 1782 r.** · Tutaj odbywały się pierwsze dożynki powiatu…"
+          />
         </div>
 
         <div>

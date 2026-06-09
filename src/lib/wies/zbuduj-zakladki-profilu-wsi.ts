@@ -20,6 +20,8 @@ type KontekstZakladek = {
   maDotacje: boolean;
   maPlanCmentarza: boolean;
   maFotokronika: boolean;
+  /** Moduł fotokroniki włączony w ustawieniach. */
+  maModulFotokronika?: boolean;
   maGrafika: boolean;
   maSzkola: boolean;
   sciezkaCmentarz: string;
@@ -51,7 +53,7 @@ const DEFINICJE: {
     label: "Cmentarz",
     widoczna: (c) => c.maPlanCmentarza,
   },
-  { klucz: "fotokronika", href: "#fotokronika-wsi", label: "Foto", widoczna: (c) => c.maFotokronika },
+  { klucz: "fotokronika", href: "#fotokronika-wsi", label: "Foto", widoczna: (c) => c.maModulFotokronika ?? c.maFotokronika },
   { klucz: "grafika", href: "#galeria-plakatow", label: "Grafika", widoczna: (c) => c.maGrafika },
 ];
 

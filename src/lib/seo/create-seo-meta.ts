@@ -13,6 +13,9 @@ export type OpcjeSeoMeta = {
   bezIndeksowania?: boolean;
   /** Nadpisanie tytułu w <title> (SEO). */
   tytulSeo?: string;
+  /** Ścieżki względne strony poprzedniej / następnej (paginacja). */
+  stronaPoprzednia?: string | null;
+  stronaNastepna?: string | null;
 };
 
 function absolutnyUrlObrazu(obraz: string | null | undefined, baza: string): string | undefined {
@@ -35,7 +38,11 @@ export function createSeoMeta(opcje: OpcjeSeoMeta): Metadata {
   return {
     title: tytulZSzablonem,
     description: opcje.opis.slice(0, 320),
-    alternates: { canonical: opcje.sciezka },
+    alternates: {
+      canonical: opcje.sciezka,
+      ...(opcje.stronaPoprzednia ? { prev: opcje.stronaPoprzednia } : {}),
+      ...(opcje.stronaNastepna ? { next: opcje.stronaNastepna } : {}),
+    },
     robots: opcje.bezIndeksowania
       ? { index: false, follow: false }
       : { index: true, follow: true },

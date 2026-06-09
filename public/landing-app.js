@@ -549,6 +549,7 @@
         var eased = 1 - Math.pow(1 - t, 3);
         el.textContent = Math.round(target * eased).toLocaleString("pl-PL");
         if (t < 1) requestAnimationFrame(frame);
+        else el.classList.add("is-done");
       }
       requestAnimationFrame(frame);
     }
@@ -743,6 +744,139 @@
     );
   }
 
+  function initHeroSpotlight() {
+    var hero = document.querySelector(".hero");
+    if (!hero || window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    if (window.matchMedia("(max-width: 1100px)").matches) return;
+
+    hero.classList.add("is-spotlight-active");
+
+    hero.addEventListener("mousemove", function (e) {
+      var rect = hero.getBoundingClientRect();
+      var x = ((e.clientX - rect.left) / rect.width) * 100;
+      var y = ((e.clientY - rect.top) / rect.height) * 100;
+      hero.style.setProperty("--spot-x", x + "%");
+      hero.style.setProperty("--spot-y", y + "%");
+    });
+
+    hero.addEventListener("mouseleave", function () {
+      hero.style.setProperty("--spot-x", "50%");
+      hero.style.setProperty("--spot-y", "40%");
+    });
+  }
+
+  function initHeroParallax() {
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    if (window.matchMedia("(max-width: 1100px)").matches) return;
+
+    var visual = document.querySelector(".hero-visual");
+    var photo = visual && visual.querySelector(".hero-visual__photo img");
+    if (!visual || !photo) return;
+
+    var raf = 0;
+    var targetX = 0;
+    var targetY = 0;
+    var active = false;
+
+    function apply() {
+      raf = 0;
+      if (!active) return;
+      photo.style.transform =
+        "scale(1.08) translate(" + targetX * 0.4 + "px, " + targetY * 0.35 + "px)";
+    }
+
+    visual.addEventListener("mouseenter", function () {
+      active = true;
+      visual.classList.add("is-parallax");
+    });
+
+    visual.addEventListener("mousemove", function (e) {
+      if (!active) return;
+      var rect = visual.getBoundingClientRect();
+      targetX = (e.clientX - rect.left - rect.width / 2) / (rect.width / 2);
+      targetY = (e.clientY - rect.top - rect.height / 2) / (rect.height / 2);
+      if (!raf) raf = requestAnimationFrame(apply);
+    });
+
+    visual.addEventListener("mouseleave", function () {
+      active = false;
+      targetX = 0;
+      targetY = 0;
+      visual.classList.remove("is-parallax");
+      photo.style.transform = "";
+    });
+  }
+
+  function initCardTilt() {
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    if (window.matchMedia("(max-width: 1100px)").matches) return;
+
+    document.querySelectorAll(".floating-card[data-tilt]").forEach(function (card) {
+      card.addEventListener("mousemove", function (e) {
+        var rect = card.getBoundingClientRect();
+        var px = (e.clientX - rect.left) / rect.width - 0.5;
+        var py = (e.clientY - rect.top) / rect.height - 0.5;
+        card.style.transform =
+          "perspective(600px) rotateY(" +
+          px * 10 +
+          "deg) rotateX(" +
+          -py * 10 +
+          "deg) translateZ(4px)";
+      });
+
+      card.addEventListener("mouseleave", function () {
+        card.style.transform = "";
+      });
+    });
+  }
+
+  function initTrustStripMarquee() {
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    var inner = document.querySelector(".trust-strip__inner");
+    if (!inner) return;
+
+    function teardown() {
+      var track = inner.querySelector(".trust-strip__track");
+      if (!track) return;
+      var half = Math.floor(track.children.length / 2);
+      for (var i = 0; i < half; i++) {
+        inner.insertBefore(track.children[0], track);
+      }
+      track.remove();
+      inner.classList.remove("is-marquee");
+    }
+
+    function setup() {
+      if (!window.matchMedia("(max-width: 720px)").matches) {
+        teardown();
+        return;
+      }
+
+      if (inner.querySelector(".trust-strip__track")) return;
+
+      var track = document.createElement("div");
+      track.className = "trust-strip__track";
+      var items = Array.prototype.slice.call(inner.children);
+      items.forEach(function (node) {
+        track.appendChild(node);
+      });
+      items.forEach(function (node) {
+        track.appendChild(node.cloneNode(true));
+      });
+      inner.appendChild(track);
+      inner.classList.add("is-marquee");
+    }
+
+    setup();
+    window.addEventListener("resize", setup);
+  }
+
+  function initHeroRevealImmediate() {
+    document.querySelectorAll(".hero .wow-on-scroll").forEach(function (el) {
+      el.classList.add("is-visible", "ujawnij-scroll--widoczny");
+    });
+  }
+
   initPlannerLazy();
   initFaq();
   initTabs();
@@ -755,6 +889,11 @@
   initNavScrollSpy();
   initFaqFilter();
   initHeroPathScrollHint();
+  initHeroRevealImmediate();
+  initHeroSpotlight();
+  initHeroParallax();
+  initCardTilt();
+  initTrustStripMarquee();
   initWowScroll();
   initStatCounters();
   initProductPreview();

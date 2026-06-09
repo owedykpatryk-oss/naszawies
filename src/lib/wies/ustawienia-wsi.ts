@@ -138,6 +138,8 @@ export const schemaUstawieniaWsiJson = z.object({
     .optional(),
   skroty: z.array(schemaSkrot).max(6).optional(),
   bloki: z.array(schemaBlok).max(8).optional(),
+  /** Krótkie ciekawostki o wsi — widoczne na profilu publicznym. */
+  ciekawostki_wsi: z.string().trim().max(3000).nullable().optional(),
   domyslny_tryb_seniora: z.boolean().optional(),
   /** Po pierwszej konfiguracji przez kreator — ukrywa wizard. */
   konfiguracja_ukonczona: z.boolean().optional(),
@@ -158,6 +160,7 @@ export type UstawieniaWsiPubliczne = {
   hero_cta: HeroCtaWsi[];
   skroty: SkrotWsiPubliczny[];
   bloki: BlokTresciWsiPubliczny[];
+  ciekawostki_wsi: string | null;
   domyslny_tryb_seniora: boolean;
   konfiguracja_ukonczona: boolean;
   zakladki: Partial<Record<KluczSekcjiWsi, ZakladkaSekcjiWsiConfig>>;
@@ -315,6 +318,7 @@ export function zbudujUstawieniaWsiPubliczne(wiersz: {
     hero_cta: normalizujHeroCta(parsed.hero),
     skroty: normalizujSkroty(parsed.skroty),
     bloki: normalizujBloki(parsed.bloki),
+    ciekawostki_wsi: parsed.ciekawostki_wsi?.trim() || null,
     domyslny_tryb_seniora: parsed.domyslny_tryb_seniora === true,
     konfiguracja_ukonczona: parsed.konfiguracja_ukonczona === true,
     zakladki: normalizujZakladkiSekcji(parsed.zakladki),

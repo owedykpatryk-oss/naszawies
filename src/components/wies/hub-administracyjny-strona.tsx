@@ -9,11 +9,6 @@ import { sciezkaPowiatu, sciezkaWojewodztwa } from "@/lib/wies/sciezka-publiczna
 import { KartaStatystykiHub } from "@/components/wies/karta-statystyki-hub";
 import { TytulSekcjiWies } from "@/components/wies/tytul-sekcji-wies";
 
-function formatPopulacja(n: number | null): string {
-  if (n == null) return "—";
-  return n.toLocaleString("pl-PL");
-}
-
 function Okruszki({
   woj,
   pow,
@@ -72,12 +67,13 @@ export function HubGminyStrona({
         <MojeObserwujGminePasek wojewodztwo={hub.wojewodztwo} powiat={hub.powiat} gmina={hub.gmina} />
       </header>
 
-      <div className="mt-6 grid gap-3 sm:grid-cols-3">
+      <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <KartaStatystykiHub etykieta="Miejscowości w serwisie" wartosc={hub.wies.length} />
         <KartaStatystykiHub etykieta="Aktywne profile" wartosc={aktywne} wariant="akcent" />
+        <KartaStatystykiHub etykieta="Punkty na mapie" wartosc={hub.liczba_poi} wariant="akcent" />
         <KartaStatystykiHub
-          etykieta="Łącznie mieszkańców (szac.)"
-          wartosc={formatPopulacja(hub.wies.reduce((s, w) => s + (w.population ?? 0), 0))}
+          etykieta="Wsi z mapą POI"
+          wartosc={`${hub.liczba_wsi_z_poi} / ${hub.wies.length}`}
         />
       </div>
 
@@ -98,8 +94,8 @@ export function HubGminyStrona({
           ← Wszystkie gminy w powiecie {hub.powiat}
         </Link>
         {" · "}
-        <Link href={linkChroniony("/mapa", zalogowany)} className="text-green-800 underline">
-          Mapa wsi
+        <Link href={linkChroniony(`/mapa?q=${encodeURIComponent(hub.powiat)}`, zalogowany)} className="text-green-800 underline">
+          Mapa powiatu {hub.powiat}
         </Link>
       </p>
     </main>
@@ -116,13 +112,13 @@ export function HubPowiatuStrona({ hub }: { hub: HubPowiatu }) {
         <p className="mt-2 text-sm text-stone-600">Województwo {hub.wojewodztwo}</p>
       </header>
 
-      <div className="mt-6 grid gap-3 sm:grid-cols-3">
+      <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <KartaStatystykiHub etykieta="Gmin" wartosc={hub.gminy.length} />
         <KartaStatystykiHub etykieta="Miejscowości" wartosc={hub.wies.length} />
+        <KartaStatystykiHub etykieta="Punkty na mapie" wartosc={hub.liczba_poi} wariant="akcent" />
         <KartaStatystykiHub
-          etykieta="Aktywne profile"
-          wartosc={hub.wies.filter((w) => w.is_active).length}
-          wariant="akcent"
+          etykieta="Wsi z mapą POI"
+          wartosc={`${hub.liczba_wsi_z_poi} / ${hub.wies.length}`}
         />
       </div>
 
@@ -157,6 +153,10 @@ export function HubPowiatuStrona({ hub }: { hub: HubPowiatu }) {
       <p className="mt-10 text-sm text-stone-500">
         <Link href={sciezkaWojewodztwa(hub.wojewodztwo)} className="text-green-800 underline">
           ← Powiaty w woj. {hub.wojewodztwo}
+        </Link>
+        {" · "}
+        <Link href={`/mapa?q=${encodeURIComponent(hub.powiat)}`} className="text-green-800 underline">
+          Mapa powiatu na katalogu
         </Link>
       </p>
     </main>

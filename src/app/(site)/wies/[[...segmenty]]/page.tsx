@@ -26,6 +26,7 @@ import { pobierzDanePubliczneProfiluWsi } from "@/lib/wies/pobierz-dane-publiczn
 import { pobierzUstawieniaWsi } from "@/lib/wies/pobierz-ustawienia-wsi";
 import { czyModulWsiWlaczony } from "@/lib/wies/ustawienia-wsi";
 import { maCiasteczkaSesjiSupabaseSerwer } from "@/lib/auth/ciasteczka-sesji";
+import { pobierzKomentarzeOgloszenia } from "@/lib/ogloszenia/pobierz-komentarze-ogloszenia";
 import { pobierzUzytkownikaSerwer } from "@/lib/auth/pobierz-uzytkownika-serwer";
 import { pobierzLinkiPrzydatneDlaWsiGminy } from "@/lib/wies/pobierz-linki-przydatne";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
@@ -77,7 +78,10 @@ import { HistoriaListaFiltryKlient } from "@/components/wies/historia-lista-filt
 import { MapaJednegoWydarzeniaHistoria } from "@/components/wies/mapa-jednego-wydarzenia-historia";
 import { HistoriaSzczegolyMedia } from "@/components/wies/sekcja-historia-publiczna";
 import { HistoriaWpisEngagementKlient } from "@/components/wies/historia-wpis-engagement-klient";
+import { KomentarzeWpisHistoriiKlient } from "@/components/wies/komentarze-wpis-historii-klient";
+import { WyswietlTrescBogata } from "@/components/ui/tresc-bogata";
 import { mapujWpisHistoriiPubliczny } from "@/lib/historia/pobierz-historie-wsi";
+import { pobierzKomentarzeWpisuHistorii } from "@/lib/historia/pobierz-komentarze-wpisu-historii";
 import { czyUzytkownikZapalilSwieczke } from "@/lib/historia/akcje-historia-reakcje";
 import { urlRssHistoriiWsi } from "@/lib/historia/rss-historii";
 import { SportListaFiltryKlient } from "@/components/wies/sport-lista-filtry-klient";
@@ -542,6 +546,8 @@ export default async function WiesCatchAllPage({ params, searchParams }: Props) 
       ? { ...danePubliczne.konkursFoto, mojGlosPhotoId: null as string | null }
       : null;
     const fotokronikaPubliczna = danePubliczne.fotokronikaPubliczna;
+    const fotokronikaAlbumy = danePubliczne.fotokronikaAlbumy;
+    const dyskusjePubliczne = danePubliczne.dyskusjePubliczne;
     const ostrzezeniaLowieckie = danePubliczne.ostrzezeniaLowieckie;
     const ostrzezeniaLesne = danePubliczne.ostrzezeniaLesne;
     const maProfilLesnictwa = danePubliczne.maProfilLesnictwa;
@@ -564,6 +570,7 @@ export default async function WiesCatchAllPage({ params, searchParams }: Props) 
     const maPlanCmentarza = !!danePubliczne.planCmentarzaId;
     const liczbaMieszkancowAktywnych = danePubliczne.liczbaMieszkancowAktywnych;
     const ogloszeniaSzkoly = danePubliczne.ogloszeniaSzkoly;
+    const ciekawostkiMiejsc = danePubliczne.ciekawostkiMiejsc;
 
     let userSesji: { id: string } | null = null;
     let mieszkaniecWsi = false;
@@ -584,6 +591,10 @@ export default async function WiesCatchAllPage({ params, searchParams }: Props) 
 
     let subskrybowaneKategorieRynek: (string | null)[] = [];
 
+    const daneMapyWsi = await pobierzDaneMapyWsi(supabase, wies);
+    mapaZnacznik = daneMapyWsi.znacznik;
+    mapaPoi = daneMapyWsi.pois;
+
     if (maCiasteczkaSesjiSupabaseSerwer()) {
       const supabaseSerwer = utworzKlientaSupabaseSerwer();
       userSesji = await pobierzUzytkownikaSerwer();
@@ -592,9 +603,8 @@ export default async function WiesCatchAllPage({ params, searchParams }: Props) 
         const { pobierzHarmonogramLowieckiProfilWsi } = await import(
           "@/lib/lowiectwo/pobierz-kalendarz-harmonogram"
         );
-        const [daneMapy, uvrResult, rolaWsiResult, zapisaneResult, harmResult, subskrypcjeRynek] =
+        const [uvrResult, rolaWsiResult, zapisaneResult, harmResult, subskrypcjeRynek] =
           await Promise.all([
-          pobierzDaneMapyWsi(supabase, wies),
           supabaseSerwer
             .from("user_village_roles")
             .select("id")
@@ -619,8 +629,6 @@ export default async function WiesCatchAllPage({ params, searchParams }: Props) 
           pobierzSubskrypcjeKategoriiRynku(supabaseSerwer, userSesji.id, wies.id),
         ]);
         subskrybowaneKategorieRynek = subskrypcjeRynek;
-        mapaZnacznik = daneMapy.znacznik;
-        mapaPoi = daneMapy.pois;
         mozeZobaczycListeZakupow = !!uvrResult.data;
         mozeEdytowacListeZakupow = !!uvrResult.data;
         mieszkaniecWsi = !!rolaWsiResult.data;
@@ -815,6 +823,9 @@ export default async function WiesCatchAllPage({ params, searchParams }: Props) 
           plakatyPubliczne={plakatyPubliczne}
           konkursFoto={konkursFoto}
           fotokronikaPubliczna={fotokronikaPubliczna}
+          fotokronikaAlbumy={fotokronikaAlbumy}
+          dyskusjePubliczne={dyskusjePubliczne}
+          ciekawostkiMiejsc={ciekawostkiMiejsc}
           ostrzezeniaLowieckie={ostrzezeniaLowieckie}
           ostrzezeniaLesne={ostrzezeniaLesne}
           maProfilLesnictwa={maProfilLesnictwa}
@@ -1366,6 +1377,11 @@ export default async function WiesCatchAllPage({ params, searchParams }: Props) 
     }
 
     const sciezka = sciezkaProfiluWsi(wies);
+    const hrefOgloszenia = `${sciezka}/ogloszenie/${post.id}`;
+    const [komentarze, zalogowanyOgloszenie] = await Promise.all([
+      pobierzKomentarzeOgloszenia(supabase, post.id as string),
+      pobierzUzytkownikaSerwer().then((u) => Boolean(u)),
+    ]);
 
     return (
       <main className="mx-auto min-w-0 w-full max-w-7xl px-4 py-16 text-stone-800 sm:px-6">
@@ -1376,6 +1392,10 @@ export default async function WiesCatchAllPage({ params, searchParams }: Props) 
           tresc={post.body}
           sciezkaWsi={sciezka}
           nazwaWsi={wies.name}
+          postId={post.id as string}
+          komentarze={komentarze}
+          zalogowany={zalogowanyOgloszenie}
+          sciezkaPowrotu={hrefOgloszenia}
         />
       </main>
     );
@@ -1436,8 +1456,13 @@ export default async function WiesCatchAllPage({ params, searchParams }: Props) 
     const hrefWpisu = `${sciezka}/historia/${wpisHistoria.id}`;
     let zapalonaSwieczka = false;
     let zapisaneId: string | null = null;
+    let zalogowanyHistoria = false;
+    const [komentarzeHistoria] = await Promise.all([
+      pobierzKomentarzeWpisuHistorii(supabase, wpisHistoria.id),
+    ]);
     if (await maCiasteczkaSesjiSupabaseSerwer()) {
       const user = await pobierzUzytkownikaSerwer();
+      zalogowanyHistoria = Boolean(user);
       if (user) {
         const supabaseSerwer = utworzKlientaSupabaseSerwer();
         zapalonaSwieczka = await czyUzytkownikZapalilSwieczke(wpisHistoria.id, user.id);
@@ -1494,7 +1519,16 @@ export default async function WiesCatchAllPage({ params, searchParams }: Props) 
             villageName={wies.name}
             sciezkaProfilu={sciezka}
           />
-          <div className="mt-4 whitespace-pre-wrap text-sm leading-relaxed text-stone-800">{wpisHistoria.body}</div>
+          <div className="mt-4">
+            <WyswietlTrescBogata tresc={wpisHistoria.body ?? ""} className="text-stone-800" />
+          </div>
+          <KomentarzeWpisHistoriiKlient
+            entryId={wpisHistoria.id}
+            villageId={wies.id}
+            sciezkaPowrotu={hrefWpisu}
+            komentarze={komentarzeHistoria}
+            zalogowany={zalogowanyHistoria}
+          />
         </article>
       </main>
     );

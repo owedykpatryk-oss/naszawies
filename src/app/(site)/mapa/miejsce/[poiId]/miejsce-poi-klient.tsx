@@ -7,7 +7,16 @@ import { dodajKomentarzPodPoi } from "@/app/(site)/panel/soltys/akcje-poi-miejsc
 import { MiejscePoiMapaLokalizacji } from "@/components/mapa/miejsce-poi-mapa-lokalizacji";
 import type { ZnacznikPoi } from "@/components/mapa/mapa-wsi-leaflet";
 import { etykietaKategoriiPoi } from "@/lib/mapa/kategorie-poi";
+import type { WierszGodzinOtwarcia } from "@/lib/mapa/formatuj-godziny-otwarcia";
+import { WyswietlTrescBogata } from "@/components/ui/tresc-bogata";
 import { linkChroniony, urlLogowaniaZPowrotem } from "@/lib/auth/sciezki-chronione";
+import { linkGoogleMapsTransit } from "@/lib/transport/linki-zewnetrzne";
+import { RynekUdostepnijPrzycisk } from "@/components/wies/rynek-udostepnij-przycisk";
+import type { PodgladOrganizacjiPoi } from "@/lib/mapa/pobierz-organizacje-dla-poi";
+import { PoiProfilTrescPubliczna } from "@/components/mapa/poi-profil-tresc-publiczna";
+import { PoiBrakOrganizacjiPodpowiedz, PoiTeaserOrganizacji } from "@/components/mapa/poi-teaser-organizacji";
+import type { WpisKronikiPoi } from "@/lib/mapa/pobierz-kronike-poi";
+import type { ZdjecieProfiluPoi } from "@/lib/mapa/zdjecia-profilu-poi";
 
 export type KomentarzPoiWiersz = {
   id: string;
@@ -25,6 +34,7 @@ type Props = {
   photoCaption: string | null;
   telefon: string | null;
   godziny: string | null;
+  godzinyLista: WierszGodzinOtwarcia[];
   villageName: string;
   villageSciezka: string;
   lat: number;
@@ -35,6 +45,13 @@ type Props = {
   zrodloTekst: string;
   zrodloKlasy: string;
   wymagaWeryfikacji: boolean;
+  organizacja: PodgladOrganizacjiPoi | null;
+  pokazPodpowiedzOrganizacji: boolean;
+  historia: string | null;
+  ciekawostki: string | null;
+  galeria: ZdjecieProfiluPoi[];
+  wpisyKroniki: WpisKronikiPoi[];
+  sciezkaKronikiWsi: string;
 };
 
 export function MiejscePoiKlient({
@@ -46,6 +63,7 @@ export function MiejscePoiKlient({
   photoCaption,
   telefon,
   godziny,
+  godzinyLista,
   villageName,
   villageSciezka,
   lat,
@@ -56,10 +74,18 @@ export function MiejscePoiKlient({
   zrodloTekst,
   zrodloKlasy,
   wymagaWeryfikacji,
+  organizacja,
+  pokazPodpowiedzOrganizacji,
+  historia,
+  ciekawostki,
+  galeria,
+  wpisyKroniki,
+  sciezkaKronikiWsi,
 }: Props) {
   const [komentarze, ustawKomentarze] = useState(poczatkowe);
   const [blad, ustawBlad] = useState("");
   const [czek, startT] = useTransition();
+  const okladkaZdalna = Boolean(photoUrl?.startsWith("http") && !photoUrl.includes(".supabase.co"));
 
   function onKomentarz(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
@@ -107,7 +133,12 @@ export function MiejscePoiKlient({
       <header className="overflow-hidden rounded-2xl border border-stone-200/80 bg-white shadow-md ring-1 ring-amber-400/20">
         {photoUrl ? (
           <div className="relative aspect-[16/10] w-full bg-stone-100">
-            <Image src={photoUrl} alt={photoCaption || nazwa} fill className="object-cover" sizes="(max-width: 768px) 100vw, 720px" priority />
+            {okladkaZdalna ? (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={photoUrl} alt={photoCaption || nazwa} className="h-full w-full object-cover" />
+            ) : (
+              <Image src={photoUrl} alt={photoCaption || nazwa} fill className="object-cover" sizes="(max-width: 768px) 100vw, 720px" priority />
+            )}
             <div className="pointer-events-none absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />
             <p className="absolute bottom-3 left-4 right-4 font-serif text-2xl text-white drop-shadow-md">{nazwa}</p>
           </div>
@@ -129,7 +160,11 @@ export function MiejscePoiKlient({
               korekty.
             </p>
           ) : null}
-          {opis ? <p className="mt-2 text-sm leading-relaxed text-stone-700">{opis}</p> : null}
+          {opis ? (
+            <div className="mt-2">
+              <WyswietlTrescBogata tresc={opis} className="text-stone-700" />
+            </div>
+          ) : null}
           {telefon ? (
             <p className="mt-2 text-sm">
               <strong>Tel.</strong>{" "}
@@ -138,16 +173,43 @@ export function MiejscePoiKlient({
               </a>
             </p>
           ) : null}
-          {godziny ? (
+          {godzinyLista.length > 0 ? (
+            <div className="mt-3">
+              <p className="text-sm font-semibold text-stone-800">Godziny i terminy</p>
+              <ul className="mt-1.5 space-y-1 text-sm text-stone-700">
+                {godzinyLista.map((w) => (
+                  <li key={`${w.etykieta}-${w.wartosc}`} className="flex flex-wrap gap-x-2">
+                    <span className="font-medium text-stone-800">{w.etykieta}:</span>
+                    <span>{w.wartosc}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          ) : godziny ? (
             <p className="mt-2 text-sm">
               <strong>Godziny:</strong> {godziny}
             </p>
           ) : null}
           {photoCaption ? <p className="mt-2 text-sm italic text-stone-600">{photoCaption}</p> : null}
-          <p className="mt-4 flex flex-wrap gap-2">
+          <p className="mt-4 flex flex-wrap items-center gap-2">
             <a href="#lokalizacja" className="btn-panel-secondary inline-block text-sm">
               Pokaż na mapie
             </a>
+            {Number.isFinite(lat) && Number.isFinite(lon) ? (
+              <a
+                href={linkGoogleMapsTransit(lat, lon, nazwa)}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="btn-panel-secondary inline-block text-sm"
+              >
+                Nawiguj (Google Maps)
+              </a>
+            ) : null}
+            <RynekUdostepnijPrzycisk
+              url={`/mapa/miejsce/${poiId}`}
+              tytul={nazwa}
+              tekst={`${nazwa} — ${villageName}`}
+            />
             {zalogowany ? (
               <Link
                 href={linkChroniony("/mapa", zalogowany, `?poiId=${encodeURIComponent(poiId)}`)}
@@ -159,6 +221,19 @@ export function MiejscePoiKlient({
           </p>
         </div>
       </header>
+
+      {organizacja ? <PoiTeaserOrganizacji organizacja={organizacja} kategoria={kategoria} /> : null}
+      {pokazPodpowiedzOrganizacji ? (
+        <PoiBrakOrganizacjiPodpowiedz kategoria={kategoria} sciezkaPanelu="/panel/soltys/spolecznosc" />
+      ) : null}
+
+      <PoiProfilTrescPubliczna
+        historia={historia}
+        ciekawostki={ciekawostki}
+        galeria={galeria}
+        wpisyKroniki={wpisyKroniki}
+        sciezkaKronikiWsi={sciezkaKronikiWsi}
+      />
 
       <section
         id="lokalizacja"
@@ -173,6 +248,18 @@ export function MiejscePoiKlient({
             ? `${lat.toFixed(5)}, ${lon.toFixed(5)} (WGS84)`
             : "Brak współrzędnych w bazie."}
         </p>
+        <div className="mt-4 flex flex-wrap gap-2">
+          {Number.isFinite(lat) && Number.isFinite(lon) ? (
+            <a
+              href={linkGoogleMapsTransit(lat, lon, nazwa)}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="btn-panel-primary inline-block text-sm"
+            >
+              Nawiguj do miejsca
+            </a>
+          ) : null}
+        </div>
         <div className="mt-4">
           <MiejscePoiMapaLokalizacji pinezka={pinezkaMapy} />
         </div>

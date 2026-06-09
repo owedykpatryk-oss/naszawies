@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { Suspense } from "react";
 import { PanelStronaMieszkaneca } from "@/components/panel/panel-strona-mieszkaneca";
 import { pojedynczaWies } from "@/lib/supabase/wies-z-zapytania";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
@@ -86,12 +87,14 @@ export default async function MieszkaniecSpolecznoscPage() {
       opis="Zakładaj wątki, komentuj i zgłaszaj treści do moderacji. Blog mieszkańca trafia do akceptacji sołtysa."
       szeroki
       dzieci={
-        <MieszkaniecSpolecznoscKlient
-          wsie={wsie}
-          watki={(watkiRows ?? []) as Watek[]}
-          komentarze={(komentarzeRows ?? []) as Komentarz[]}
-          mojeGlosy={(glosyRows ?? []) as GlosMoj[]}
-        />
+        <Suspense fallback={<p className="text-sm text-stone-600">Ładowanie dyskusji…</p>}>
+          <MieszkaniecSpolecznoscKlient
+            wsie={wsie}
+            watki={(watkiRows ?? []) as Watek[]}
+            komentarze={(komentarzeRows ?? []) as Komentarz[]}
+            mojeGlosy={(glosyRows ?? []) as GlosMoj[]}
+          />
+        </Suspense>
       }
     />
   );

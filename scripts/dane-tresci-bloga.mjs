@@ -677,4 +677,241 @@ export const noweArtykuly = [
 <hr class="blog-separator" />
 <p>Więcej o mapie: <a href="/blog/mapa-wsi-po-zalogowaniu">mapa wsi po zalogowaniu</a>, <a href="/blog/jak-znalezc-swoja-wies">jak znaleźć swoją wieś</a>.</p>`,
   },
+  {
+    title: "Miejsca POI z historią — kościół, remiza i szkoła na mapie wsi",
+    slug: "poi-z-historia-na-mapie-wsi",
+    excerpt:
+      "Profil punktu na mapie to więcej niż pinezka: opis, msze, galeria zdjęć i ciekawostki. Jak sołtys i mieszkańcy mogą opowiedzieć historię kościoła, OSP czy szkoły.",
+    coverImage: "/blog/poi-z-historia-na-mapie-wsi/cover.webp",
+    gallery: [
+      "/blog/poi-z-historia-na-mapie-wsi/cover.webp",
+      "/blog/poi-z-historia-na-mapie-wsi/visual-01.webp",
+    ],
+    authorId: "zespol",
+    categorySlug: "poradniki",
+    tags: ["mapa", "poi", "kosciol", "historia", "miejsca"],
+    faq: [
+      {
+        question: "Skąd wziąć treść do profilu POI?",
+        answer:
+          "Z tablic informacyjnych przy obiekcie, materiałów parafii lub OSP, skanów ze starych kronik. Warto dopisać godziny mszy, odpustów i kontakt do opiekuna miejsca.",
+      },
+      {
+        question: "Czy profil POI jest widoczny bez logowania?",
+        answer:
+          "Tak — publiczna strona miejsca pod adresem /mapa/miejsce/… jest dostępna dla każdego. Mapa katalogu wymaga konta, ale link do profilu można wysłać sąsiadowi.",
+      },
+      {
+        question: "Kto może edytować dane POI?",
+        answer:
+          "Sołtys moderuje punkty na mapie wsi. Przy współpracy z parafią lub naczelnikiem OSP można uzupełnić opis, zdjęcia i godziny otwarcia lub nabożeństw.",
+      },
+    ],
+    relatedSlugs: ["mapa-wsi-po-zalogowaniu", "osp-na-profilu-wsi", "fotokronika-i-historia-wsi"],
+    featured: true,
+    status: "published",
+    publishedAt: "2026-06-16T08:00:00.000Z",
+    seoTitle: "POI z historią — profil miejsca na mapie wsi",
+    seoDescription:
+      "Jak wzbogacić punkty na mapie wsi o opowieść, msze, galerię i ciekawostki. Kościół, remiza OSP i szkoła jako cyfrowe wizytówki miejscowości.",
+    ogImage: "/blog/poi-z-historia-na-mapie-wsi/cover.webp",
+    internalLinks: [
+      { href: "/mapa", label: "Mapa wsi" },
+      { href: "/szukaj", label: "Szukaj wsi" },
+    ],
+    generatedImages: [
+      "/blog/poi-z-historia-na-mapie-wsi/cover.webp",
+      "/blog/poi-z-historia-na-mapie-wsi/visual-01.webp",
+    ],
+    content: `<p>Na mapie wsi widać sklep, przystanek i kościół — ale sama pinezka nie mówi, że świątynia stoi od XVIII wieku albo że w niedzielę msza jest o 11:00. Na <strong>naszawies.pl</strong> każdy punkt POI może mieć własny publiczny profil: opis, zdjęcia, godziny i sekcję „Warto wiedzieć”.</p>
+
+<div class="blog-pullquote">Dobry profil miejsca to cyfrowa tablica informacyjna — tylko że nie znika po deszczu i można ją udostępnić linkiem.</div>
+
+<h2 id="co-zawiera">Co zawiera profil miejsca?</h2>
+<ul class="blog-lista-check">
+<li><strong>Opowieść</strong> — krótka historia obiektu, remonty, ciekawe fakty</li>
+<li><strong>Godziny i terminy</strong> — msze, dyżury, odpusty w czytelnej liście</li>
+<li><strong>Galeria</strong> — zdjęcia archiwalne i współczesne z podpisami</li>
+<li><strong>Link do profilu wsi</strong> — kontekst: w której miejscowości leży punkt</li>
+</ul>
+
+<figure><img src="/blog/poi-z-historia-na-mapie-wsi/visual-01.webp" alt="Wiejski kościół i okolica — przykład miejsca wartego opisu na mapie POI" width="900" height="600" loading="lazy" /><figcaption>Kościół, remiza OSP czy stara szkoła — to naturalne pierwsze miejsca do opisania na mapie.</figcaption></figure>
+
+<h2 id="od-czego-zaczac">Od czego zacząć?</h2>
+<ol class="blog-lista-kroki">
+<li>Wybierz 3–5 najważniejszych punktów: kościół, remiza, szkoła/przedszkole, cmentarz</li>
+<li>Przepisz treść z tablicy informacyjnej lub ulotki parafialnej</li>
+<li>Dodaj jedno zdjęcie archiwalne i jedno współczesne</li>
+<li>Sprawdź profil na telefonie — czy godziny mszy czytają się bez przewijania w bok</li>
+</ol>
+
+<h2 id="kosciol">Przykład: kościół parafialny</h2>
+<p>W opisie warto podać rok konsekracji, cechy architektury, patrona i najbliższe uroczystości. Godziny nabożeństw wpisz jako osobne wiersze (niedziela, sobota, święta) — tak robią tablice przy wejściu, a czytelnik od razu widzi to samo w telefonie.</p>
+
+<div class="blog-callout blog-callout-porada"><strong>Porada</strong><p>Na profilu wsi chipy kategorii POI prowadzą teraz bezpośrednio do profilu miejsca — warto uzupełnić choć jeden punkt wzorcowo, reszta będzie dla sołtysa wzorem.</p></div>
+
+<h2 id="wspolpraca">Współpraca z parafią i OSP</h2>
+<p>Sołtys nie musi pisać wszystkiego sam. Proś proboszcza lub naczelnika OSP o akapit tekstu i zdjęcie — profil organizacji na wsi (<a href="/blog/osp-na-profilu-wsi">OSP</a>, <a href="/blog/kgw-integracja-spolecznosci">KGW</a>) uzupełnia mapę, a POI pokazuje dokładnie lokalizację budynku.</p>
+
+<h2 id="udostepnianie">Udostępnianie i wyszukiwarki</h2>
+<p>Profil POI ma własny link do wysłania turystom i rodzinie: „Tu jest nasz kościół — zobacz historię i msze”. Metadane Open Graph sprawiają, że podgląd linku w komunikatorze wygląda schludnie, ze zdjęciem okładki.</p>
+
+<hr class="blog-separator" />
+<p>Powiązane: <a href="/blog/transport-i-przystanki-mapa-wsi">transport na mapie</a>, <a href="/blog/jak-zalozyc-profil-wsi">założenie profilu wsi</a>.</p>`,
+  },
+  {
+    title: "Dyskusje mieszkańców na profilu wsi — podgląd bez logowania",
+    slug: "dyskusje-mieszkancow-na-profilu-wsi",
+    excerpt:
+      "Wątki z panelu społeczności mogą być widoczne publicznie na profilu wsi. Jak to włączyć, moderować i kierować sąsiadów do pełnej rozmowy.",
+    coverImage: "/blog/dyskusje-mieszkancow-na-profilu-wsi/cover.webp",
+    gallery: [
+      "/blog/dyskusje-mieszkancow-na-profilu-wsi/cover.webp",
+      "/blog/dyskusje-mieszkancow-na-profilu-wsi/visual-01.webp",
+    ],
+    authorId: "zespol",
+    categorySlug: "spolecznosc",
+    tags: ["dyskusje", "spolecznosc", "profil wsi", "moderacja", "sołtys"],
+    faq: [
+      {
+        question: "Czy każdy wątek trafia na profil publiczny?",
+        answer:
+          "Nie — autor przy tworzeniu wątku musi zaznaczyć „Pokaż na profilu wsi”. Sołtys nadal moderuje treści w panelu społeczności.",
+      },
+      {
+        question: "Czy gość może pisać komentarze?",
+        answer:
+          "Podgląd wątków na profilu jest publiczny, ale odpowiedzi i nowe tematy wymagają logowania jako mieszkaniec lub obserwator wsi.",
+      },
+      {
+        question: "Jak przejść z profilu do pełnej dyskusji?",
+        answer:
+          "Kliknięcie karty wątku otwiera panel społeczności z wybranym tematem (parametr threadId w adresie).",
+      },
+    ],
+    relatedSlugs: ["tablica-ogloszen-cyfrowa", "zebranie-wiejskie-swietlica", "kgw-integracja-spolecznosci"],
+    featured: false,
+    status: "published",
+    publishedAt: "2026-06-17T08:00:00.000Z",
+    seoTitle: "Publiczne dyskusje na profilu wsi",
+    seoDescription:
+      "Podgląd wątków mieszkańców na stronie wsi: jak włączyć widoczność, moderować rozmowy i zapraszać do panelu społeczności.",
+    ogImage: "/blog/dyskusje-mieszkancow-na-profilu-wsi/cover.webp",
+    internalLinks: [
+      { href: "/rejestracja", label: "Załóż konto" },
+      { href: "/pomoc", label: "Centrum pomocy" },
+    ],
+    generatedImages: [
+      "/blog/dyskusje-mieszkancow-na-profilu-wsi/cover.webp",
+      "/blog/dyskusje-mieszkancow-na-profilu-wsi/visual-01.webp",
+    ],
+    content: `<p>Grupa na komunikatorze szybko się zapełnia memami, a ważny wątek o drodze do szkoły ginie pod reklamą kogutów. <strong>Panel społeczności</strong> na naszawies.pl porządkuje rozmowy mieszkańców — a wybrane wątki można pokazać na publicznym profilu wsi, żeby sąsiedzi spoza platformy widzieli, o czym się dyskutuje.</p>
+
+<h2 id="jak-dziala">Jak to działa?</h2>
+<ol class="blog-lista-kroki">
+<li>Mieszkaniec zakłada wątek w panelu społeczności (np. „Remont placu zabaw”)</li>
+<li>Zaznacza opcję <em>Pokaż na profilu wsi</em></li>
+<li>Po moderacji wątek pojawia się w sekcji „Dyskusje mieszkańców” na stronie wsi</li>
+<li>Kliknięcie karty przenosi zalogowanego użytkownika do pełnej rozmowy</li>
+</ol>
+
+<figure><img src="/blog/dyskusje-mieszkancow-na-profilu-wsi/visual-01.webp" alt="Spotkanie mieszkańców wsi przy tablicy ogłoszeń — analogia do cyfrowej dyskusji" width="900" height="600" loading="lazy" /><figcaption>Publiczny podgląd wątku to jak tablica przy sklepie — zachęca do dołączenia do rozmowy.</figcaption></figure>
+
+<h2 id="dla-soltysa">Dla sołtysa</h2>
+<p>Nie musisz publikować wszystkiego. Podgląd służy tematom, które <em>chcecie</em> pokazać gościom: plan festynu, konsultacje o chodniku, zbiórka na boisko. Wątki personalne lub sporne zostaw w panelu bez flagi publicznej.</p>
+
+<div class="blog-callout blog-callout-uwaga"><strong>Ważne</strong><p>Moderacja nadal obowiązuje — zgłoszenia naruszeń trafiają do sołtysa. Publiczny podgląd nie zastępuje zasad kultury w rozmowie.</p></div>
+
+<h2 id="zakladki">Nawigacja na profilu</h2>
+<p>Na profilu wsi pojawia się zakładka <strong>Dyskusje</strong>, gdy są co najmniej jeden publiczny wątek. Razem z zakładkami Ciekawostki i Pamięć ułatwia to orientację osobom, które pierwszy raz wchodzą na stronę miejscowości.</p>
+
+<h2 id="zacheta">Jak zachęcić mieszkańców?</h2>
+<ul class="blog-lista-check">
+<li>Na zebraniu pokaż przykładowy wątek na telefonie</li>
+<li>Pierwszy temat załóż sam jako sołtys — „Co sądzicie o terminie dożynek?”</li>
+<li>Link do panelu wyślij w ogłoszeniu na <a href="/blog/tablica-ogloszen-cyfrowa">cyfrowej tablicy</a></li>
+</ul>
+
+<hr class="blog-separator" />
+<p>Zobacz też: <a href="/blog/kalendarz-wydarzen-wiejskich">kalendarz wydarzeń</a>, <a href="/blog/rola-soltysa-narzedzia-cyfrowe">narzędzia cyfrowe sołtysa</a>.</p>`,
+  },
+  {
+    title: "Centrum wspomnień wsi — fotokronika, kronika i liczniki pamięci",
+    slug: "centrum-wspomnien-wsi-fotokronika",
+    excerpt:
+      "Nowa sekcja profilu łączy fotokronikę i historię w jednym miejscu: podgląd zdjęć, wpisy kroniki i animowane statystyki — jak z niej korzystać.",
+    coverImage: "/blog/centrum-wspomnien-wsi-fotokronika/cover.webp",
+    gallery: [
+      "/blog/centrum-wspomnien-wsi-fotokronika/cover.webp",
+      "/blog/centrum-wspomnien-wsi-fotokronika/visual-01.webp",
+    ],
+    authorId: "zespol",
+    categorySlug: "spolecznosc",
+    tags: ["fotokronika", "historia", "wspomnienia", "zdjecia", "kronika"],
+    faq: [
+      {
+        question: "Czym różni się centrum wspomnień od zwykłej galerii?",
+        answer:
+          "Centrum łączy fotokronikę, wpisy historii wsi i albumy tematyczne w jednym widoku z podglądem i skrótami — zamiast szukać modułów osobno.",
+      },
+      {
+        question: "Czy sekcja jest widoczna na każdej wsi?",
+        answer:
+          "Pojawia się, gdy sołtys włączy moduł historii lub fotokroniki w ustawieniach profilu — nawet przed dodaniem pierwszych zdjęć.",
+      },
+      {
+        question: "Jak dodać album tematyczny?",
+        answer:
+          "W panelu fotokroniki przypisz zdjęcia do albumu (np. Dożynki, Stare chaty). Albumy publiczne trafiają do układu bento na profilu wsi.",
+      },
+    ],
+    relatedSlugs: ["fotokronika-i-historia-wsi", "kgw-integracja-spolecznosci", "osp-na-profilu-wsi"],
+    featured: true,
+    status: "published",
+    publishedAt: "2026-06-18T08:00:00.000Z",
+    seoTitle: "Centrum wspomnień — fotokronika i historia wsi",
+    seoDescription:
+      "Jak korzystać z centrum wspomnień na profilu wsi: fotokronika bento, wpisy kroniki, albumy tematyczne i współpraca mieszkańców.",
+    ogImage: "/blog/centrum-wspomnien-wsi-fotokronika/cover.webp",
+    internalLinks: [
+      { href: "/o-nas", label: "O naszawies.pl" },
+      { href: "/blog/fotokronika-i-historia-wsi", label: "Fotokronika wsi" },
+    ],
+    generatedImages: [
+      "/blog/centrum-wspomnien-wsi-fotokronika/cover.webp",
+      "/blog/centrum-wspomnien-wsi-fotokronika/visual-01.webp",
+    ],
+    content: `<p>Zdjęcia z dożynek leżą u księgowej, skan chaty u emeryta, a opis remontu boiska — w protokole zebrania z 2019 roku. <strong>Centrum wspomnień</strong> na profilu wsi zbiera fotokronikę i historię w jednym, wizualnym miejscu — z podglądem albumów, licznikami i zaproszeniem do współtworzenia.</p>
+
+<div class="blog-pullquote">Pamięć wsi to nie archiwum kurzu — to żywy album, do którego można dołożyć kartę w każdej chwili.</div>
+
+<h2 id="co-widac">Co widać w centrum?</h2>
+<ul class="blog-lista-check">
+<li>Animowane liczniki: ile wpisów historii, zdjęć i albumów</li>
+<li>Filmstrip — poziomy podgląd ostatnich fotografii</li>
+<li>Karty historii z datą, epoką i skrótem opisu</li>
+<li>Odnośniki do pełnej kroniki i fotokroniki</li>
+</ul>
+
+<figure><img src="/blog/centrum-wspomnien-wsi-fotokronika/visual-01.webp" alt="Stare i współczesne zdjęcia wiejskie — archiwum fotokroniki miejscowości" width="900" height="600" loading="lazy" /><figcaption>Centrum wspomnień łączy archiwalne i współczesne zdjęcia — jeden punkt startu dla odwiedzających profil.</figcaption></figure>
+
+<h2 id="albumy">Albumy tematyczne (bento)</h2>
+<p>Fotokronika na profilu układa albumy w siatce bento — większe kafle dla ważniejszych zbiorów. Badge „Żywa kronika” pojawia się, gdy w ostatnich tygodniach ktoś dodał zdjęcia. To sygnał dla gości: ta wieś aktualizuje pamięć, nie tylko trzyma stare PDF-y.</p>
+
+<h2 id="plan">Plan na pierwszy miesiąc</h2>
+<ol class="blog-lista-kroki">
+<li>Tydzień 1: 15 zdjęć z ostatniego festynu + album „Dożynki 2025”</li>
+<li>Tydzień 2: jeden wpis historii — „Kiedy powstało sołectwo”</li>
+<li>Tydzień 3: skan starej pocztówki od seniora (za zgodą autora zdjęcia)</li>
+<li>Tydzień 4: ogłoszenie: „Szukamy zdjęć przedwojennych”</li>
+</ol>
+
+<div class="blog-callout blog-callout-porada"><strong>Porada</strong><p>Na profilu wsi zakładka <strong>Pamięć</strong> prowadzi prosto do centrum — warto wspomnieć o niej na zebraniu i w ogłoszeniu KGW.</p></div>
+
+<h2 id="prywatnosc">Prywatność i zgody</h2>
+<p>Publiczne albumy są widoczne dla każdego odwiedzającego stronę wsi. Nie publikuj zdjęć dzieci bez zgody rodziców ani wizerunków osób, które wyraźnie tego nie chcą. Wątpliwe materiały zostaw w panelu do moderacji.</p>
+
+<hr class="blog-separator" />
+<p>Więcej: <a href="/blog/fotokronika-i-historia-wsi">fotokronika krok po kroku</a>, <a href="/blog/jak-zalozyc-profil-wsi">profil wsi od zera</a>.</p>`,
+  },
 ];

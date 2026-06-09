@@ -15,6 +15,7 @@ import { UstawieniaWygladWsiKlient, type WiesWygladDoEdycji } from "./ustawienia
 import { KonfiguracjaWiesWizardKlient, type WiesWizardDoEdycji } from "@/components/wies/konfiguracja-wies-wizard-klient";
 import { zbudujUstawieniaWsiPubliczne } from "@/lib/wies/ustawienia-wsi";
 import type { PoiDoEdycjiKontaktu } from "@/components/panel/edytor-kontaktu-poi-soltys";
+import type { PoiDoEdycjiProfilu } from "@/components/panel/edytor-profilu-poi-soltys";
 import type { PrzystanekDoRozkladu } from "@/components/panel/edytor-rozkladu-przystanku-soltys";
 import { mapujPrzystanekDoRozkladu } from "@/components/panel/edytor-rozkladu-przystanku-soltys";
 
@@ -52,21 +53,31 @@ export default async function SoltysMojaWiesPage() {
   const poiDoWeryfikacji = await pobierzPoiDoWeryfikacjiWsi(supabase, villageIds);
   const propozycjePoi = await pobierzPropozycjePoiWsi(supabase, villageIds);
 
-  const [{ data: poisRaw }, { data: saleRaw }, { data: ustawieniaRaw }] = await Promise.all([
+  const [{ data: poisRaw }, { data: saleRaw }, { data: ustawieniaRaw }, { data: organizacjeRaw }] = await Promise.all([
     supabase
       .from("pois")
-      .select("id, village_id, name, category, phone, opening_hours, linked_hall_id, source, photo_url, photo_caption, bus_schedule_manual")
+      .select("id, village_id, name, category, phone, opening_hours, linked_hall_id, linked_group_id, source, photo_url, photo_caption, story_text, facts_text, gallery_photos, bus_schedule_manual")
       .in("village_id", villageIds)
       .order("category")
       .order("name"),
     supabase.from("halls").select("id, village_id, name").in("village_id", villageIds).order("name"),
     supabase.from("village_settings").select("village_id, theme_id, logo_url, settings").in("village_id", villageIds),
+    supabase
+      .from("village_community_groups")
+      .select("id, village_id, name, group_type")
+      .in("village_id", villageIds)
+      .eq("is_active", true)
+      .order("name"),
   ]);
 
   const poisByVillage: Record<string, PoiDoEdycjiKontaktu[]> = {};
+  const poisProfilByVillage: Record<string, PoiDoEdycjiProfilu[]> = {};
+  const organizacjeByVillage: Record<string, { id: string; name: string; group_type: string }[]> = {};
   const przystankiRozkladByVillage: Record<string, PrzystanekDoRozkladu[]> = {};
   for (const id of villageIds) {
     poisByVillage[id] = [];
+    poisProfilByVillage[id] = [];
+    organizacjeByVillage[id] = [];
     przystankiRozkladByVillage[id] = [];
   }
   for (const p of poisRaw ?? []) {
@@ -79,7 +90,21 @@ export default async function SoltysMojaWiesPage() {
         phone: p.phone,
         opening_hours: p.opening_hours,
         linked_hall_id: p.linked_hall_id,
+        linked_group_id: (p as { linked_group_id?: string | null }).linked_group_id ?? null,
         source: p.source,
+      });
+    }
+    const profilLista = poisProfilByVillage[p.village_id];
+    if (profilLista && p.category !== "ladne_miejsce") {
+      profilLista.push({
+        id: p.id,
+        name: p.name,
+        category: p.category,
+        story_text: (p as { story_text?: string | null }).story_text ?? null,
+        facts_text: (p as { facts_text?: string | null }).facts_text ?? null,
+        photo_url: p.photo_url,
+        photo_caption: p.photo_caption,
+        gallery_photos: (p as { gallery_photos?: unknown }).gallery_photos ?? [],
       });
     }
     if (p.category === "przystanek") {
@@ -93,6 +118,12 @@ export default async function SoltysMojaWiesPage() {
   for (const s of saleRaw ?? []) {
     const lista = saleByVillage[s.village_id];
     if (lista) lista.push({ id: s.id, name: s.name });
+  }
+  for (const o of organizacjeRaw ?? []) {
+    const lista = organizacjeByVillage[o.village_id];
+    if (lista) {
+      lista.push({ id: o.id, name: o.name, group_type: o.group_type });
+    }
   }
 
   const kompletnoscMapy: Record<string, ReturnType<typeof obliczKompletnoscMapyWsi>> = {};
@@ -159,6 +190,8 @@ export default async function SoltysMojaWiesPage() {
             wies={wies}
             sugestieMapy={sugestieMapy}
             poisByVillage={poisByVillage}
+            poisProfilByVillage={poisProfilByVillage}
+            organizacjeByVillage={organizacjeByVillage}
             saleByVillage={saleByVillage}
             poiDoWeryfikacji={poiDoWeryfikacji}
             propozycjePoi={propozycjePoi}

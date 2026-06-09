@@ -60,7 +60,7 @@ function odlegloscMetry(lat1: number, lon1: number, lat2: number, lon2: number):
 
 export async function synchronizujPoiZGeoportalAutomatycznie(
   supabase: SupabaseClient,
-  opts?: { tylkoVillageIds?: string[] },
+  opts?: { tylkoVillageIds?: string[]; pominFiltrAktywnych?: boolean },
 ): Promise<GeoportalPoiSyncSummary> {
   const summary: GeoportalPoiSyncSummary = {
     scannedVillages: 0,
@@ -78,7 +78,10 @@ export async function synchronizujPoiZGeoportalAutomatycznie(
   const maxGeoPerVillage = parseIntEnv("GEOPORTAL_POI_SYNC_FEATURES_PER_VILLAGE", 60, 5, 250);
   const promienDuplikatuM = parseIntEnv("GEOPORTAL_POI_SYNC_DEDUP_METERS", 450, 80, 2000);
 
-  let zapytanieWsi = supabase.from("villages").select("id, name").eq("is_active", true);
+  let zapytanieWsi = supabase.from("villages").select("id, name");
+  if (!opts?.pominFiltrAktywnych) {
+    zapytanieWsi = zapytanieWsi.eq("is_active", true);
+  }
   if (opts?.tylkoVillageIds?.length) {
     zapytanieWsi = zapytanieWsi.in("id", opts.tylkoVillageIds);
   } else {

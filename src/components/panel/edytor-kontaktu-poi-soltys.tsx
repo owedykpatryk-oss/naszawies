@@ -4,6 +4,7 @@ import { FormEvent, useState, useTransition } from "react";
 import { aktualizujKontaktPoiSoltysa } from "@/app/(site)/panel/soltys/akcje-poi-miejsca";
 import { etykietaKategoriiPoi } from "@/lib/mapa/kategorie-poi";
 import { godzinyOtwarciaDoTekstu } from "@/lib/mapa/edycja-godzin-poi";
+import { kandydaciOrganizacjiDlaKategoriiPoi } from "@/lib/mapa/powiazanie-poi-organizacja";
 
 export type PoiDoEdycjiKontaktu = {
   id: string;
@@ -12,18 +13,27 @@ export type PoiDoEdycjiKontaktu = {
   phone: string | null;
   opening_hours: unknown;
   linked_hall_id: string | null;
+  linked_group_id: string | null;
   source: string | null;
 };
 
 export type SalaOpcja = { id: string; name: string };
 
+export type OrganizacjaOpcja = {
+  id: string;
+  name: string;
+  group_type: string;
+};
+
 export function EdytorKontaktuPoiSoltys({
   pois,
   sale,
+  organizacje = [],
 }: {
   villageId: string;
   pois: PoiDoEdycjiKontaktu[];
   sale: SalaOpcja[];
+  organizacje?: OrganizacjaOpcja[];
 }) {
   const [blad, ustawBlad] = useState("");
   const [okId, ustawOkId] = useState<string | null>(null);
@@ -49,6 +59,7 @@ export function EdytorKontaktuPoiSoltys({
         phone: String(fd.get("phone") ?? "") || null,
         openingHoursText: String(fd.get("opening_hours") ?? "") || null,
         linkedHallId: String(fd.get("linked_hall_id") ?? "") || null,
+        linkedGroupId: String(fd.get("linked_group_id") ?? "") || null,
       });
       if ("blad" in w) {
         ustawBlad(w.blad);
@@ -62,7 +73,8 @@ export function EdytorKontaktuPoiSoltys({
     <div className="mt-4 space-y-4">
       <p className="text-sm text-stone-600">
         Uzupełnij <strong>telefon</strong> i <strong>godziny otwarcia</strong> — widać na mapie po kliknięciu pinezki.
-        Import z OSM często tego nie ma. Przy świetlicy wybierz salę, żeby na mapie pokazać jej kalendarz zajętości.
+        Import z OSM często tego nie ma. Przy kościele, szkole lub OSP możesz powiązać pinezkę z profilem organizacji (msze,
+        zarząd, wydarzenia). Przy świetlicy wybierz salę, żeby pokazać kalendarz zajętości.
       </p>
       {blad ? (
         <p className="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-800" role="alert">
@@ -73,6 +85,22 @@ export function EdytorKontaktuPoiSoltys({
         {punkty.map((p) => {
           const kat = etykietaKategoriiPoi(p.category) ?? p.category;
           const domyslneGodziny = godzinyOtwarciaDoTekstu(p.opening_hours);
+          const orgKandydaci = kandydaciOrganizacjiDlaKategoriiPoi(
+            p.category,
+            organizacje.map((o) => ({
+              id: o.id,
+              village_id: "",
+              group_type: o.group_type,
+              name: o.name,
+              short_description: null,
+              contact_phone: null,
+              contact_email: null,
+              meeting_place: null,
+              schedule_text: null,
+              profile_data: null,
+              public_slug: null,
+            })),
+          );
           return (
             <li key={p.id} className="rounded-xl border border-stone-200 bg-white p-4 shadow-sm">
               <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
@@ -124,6 +152,25 @@ export function EdytorKontaktuPoiSoltys({
                       {sale.map((s) => (
                         <option key={s.id} value={s.id}>
                           {s.name}
+                        </option>
+                      ))}
+                    </select>
+                  </label>
+                ) : null}
+                {orgKandydaci.length > 0 ? (
+                  <label className="text-sm sm:col-span-2">
+                    Profil organizacji (link ze strony miejsca)
+                    <select
+                      name="linked_group_id"
+                      defaultValue={p.linked_group_id ?? ""}
+                      className="mt-1 block w-full max-w-md rounded-lg border border-stone-300 px-2 py-1.5"
+                    >
+                      <option value="">
+                        {orgKandydaci.length === 1 ? "— automatycznie (jedna organizacja) —" : "— wybierz profil —"}
+                      </option>
+                      {orgKandydaci.map((o) => (
+                        <option key={o.id} value={o.id}>
+                          {o.name}
                         </option>
                       ))}
                     </select>

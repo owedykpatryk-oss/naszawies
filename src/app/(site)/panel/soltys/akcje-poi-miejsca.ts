@@ -5,6 +5,8 @@ import { z } from "zod";
 import { pobierzVillageIdsRoliPaneluSoltysaDlaUzytkownikaCache } from "@/lib/panel/rola-panelu-soltysa";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
 import { KATEGORIA_LADNE_MIEJSCE } from "@/lib/mapa/kategorie-poi";
+import { segmentOrganizacjiDlaKategoriiPoi } from "@/lib/mapa/powiazanie-poi-organizacja";
+import { pasujeOrganizacjaDoSegmentu } from "@/lib/wies/sciezka-organizacji-publicznej";
 import { pobierzUzytkownikaDoAkcji } from "@/lib/auth/pobierz-uzytkownika-serwer";
 
 export type WynikPoiMiejsca = { ok: true } | { blad: string };
@@ -66,6 +68,7 @@ const schemaKontaktPoi = z.object({
   phone: z.string().trim().max(40).optional().nullable(),
   openingHoursText: z.string().trim().max(500).optional().nullable(),
   linkedHallId: z.string().uuid().nullable().optional(),
+  linkedGroupId: z.string().uuid().nullable().optional(),
 });
 
 export async function aktualizujKontaktPoiSoltysa(
@@ -100,9 +103,28 @@ export async function aktualizujKontaktPoiSoltysa(
     }
   }
 
+  let linkedGroupId: string | null = p.data.linkedGroupId ?? null;
+  if (linkedGroupId) {
+    const { data: grupa } = await supabase
+      .from("village_community_groups")
+      .select("id, village_id, group_type, name")
+      .eq("id", linkedGroupId)
+      .maybeSingle();
+    if (!grupa || grupa.village_id !== poi.village_id) {
+      return { blad: "Wybrana organizacja nie należy do tej wsi." };
+    }
+    const segment = segmentOrganizacjiDlaKategoriiPoi(String(poi.category ?? ""));
+    if (!segment || !pasujeOrganizacjaDoSegmentu(grupa.group_type, grupa.name, segment)) {
+      return { blad: "Ta organizacja nie pasuje do kategorii pinezki." };
+    }
+  }
+
   const kat = String(poi.category ?? "").toLowerCase();
   if (kat !== "swietlica") {
     linkedHallId = null;
+  }
+  if (!segmentOrganizacjiDlaKategoriiPoi(kat)) {
+    linkedGroupId = null;
   }
 
   const phone = p.data.phone?.trim() || null;
@@ -114,6 +136,7 @@ export async function aktualizujKontaktPoiSoltysa(
       phone,
       opening_hours: godzinyTekst,
       linked_hall_id: linkedHallId,
+      linked_group_id: linkedGroupId,
       verified_at: new Date().toISOString(),
       is_local_override: true,
     })

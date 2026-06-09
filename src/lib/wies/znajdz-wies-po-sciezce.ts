@@ -23,10 +23,11 @@ export type WiesPubliczna = {
   is_active: boolean;
   cover_image_url: string | null;
   updated_at: string | null;
+  boundary_geojson?: unknown | null;
 };
 
 const POLE_WIES =
-  "id, teryt_id, name, slug, voivodeship, county, commune, commune_type, latitude, longitude, population, gmina_population, gmina_population_rok, gmina_population_zrodlo, description, website, is_active, cover_image_url, updated_at";
+  "id, teryt_id, name, slug, voivodeship, county, commune, commune_type, latitude, longitude, population, gmina_population, gmina_population_rok, gmina_population_zrodlo, description, website, is_active, cover_image_url, updated_at, boundary_geojson";
 
 async function lookupWiesPoSciezce(
   supabase: SupabaseClient,

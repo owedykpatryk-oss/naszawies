@@ -24,7 +24,7 @@ export function BlogFiltryKategorii({ kategorie, aktywna }: Props) {
         return (
           <Link
             key={k.slug}
-            href={`/blog?kategoria=${k.slug}`}
+            href={`/blog/kategoria/${k.slug}`}
             className={
               active
                 ? "rounded-full bg-green-800 px-3 py-1.5 text-sm font-medium text-white"

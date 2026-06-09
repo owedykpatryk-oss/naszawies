@@ -38,7 +38,9 @@
     "sync:granice:wszystkie": "node --experimental-strip-types --env-file=.env.local scripts/synchronizuj-granice-wsi-cli.mjs --tylko-bez-granicy --geokoduj --limit=500",
     "sync:granice:katalog": "node --experimental-strip-types --env-file=.env.local scripts/synchronizuj-granice-wsi-cli.mjs --tylko-bez-granicy --geokoduj --limit=1000 --delay=200",
     "sync:granice:gmina": "node --experimental-strip-types --env-file=.env.local scripts/synchronizuj-granice-wsi-cli.mjs --tylko-bez-granicy --geokoduj --tylko-simc-7 --limit=200 --delay=200",
-    "sync:granice:powiat": "node --experimental-strip-types --env-file=.env.local scripts/synchronizuj-granice-wsi-cli.mjs --tylko-bez-granicy --geokoduj --limit=500 --delay=200",
+    "sync:granice:powiat": "node --experimental-strip-types --env-file=.env.local scripts/synchronizuj-granice-wsi-cli.mjs --tylko-bez-granicy --geokoduj --county=nakielski --limit=500 --delay=300",
+    "sync:poi:powiat": "npx tsx --env-file=.env.local scripts/synchronizuj-poi-powiat-cli.mjs --powiat=nakielski --petla --etap=osm --wsie-na-run=2 --delay=5000",
+    "sync:poi:gmina-kcynia": "npx tsx --env-file=.env.local scripts/synchronizuj-poi-powiat-cli.mjs --gmina=Kcynia --petla --etap=osm --wsie-na-run=2 --delay=5000",
     "raport:granice": "node scripts/raport-stan-granic.mjs",
     "uzupelnij:gmina-teryt": "node scripts/uzupelnij-gmina-teryt.mjs",
     "automatyzuj:katalog": "npm run import:simc && npm run uzupelnij:gmina-teryt && npm run sync:granice -- --limit=120 --tylko-bez-granicy"

@@ -28,6 +28,8 @@ import {
 import { SekcjaSzkolaPubliczna } from "@/components/wies/sekcja-szkola-publiczna";
 import { SekcjaHistoriaPubliczna } from "@/components/wies/sekcja-historia-publiczna";
 import { SekcjaHistoriaPusta } from "@/components/wies/sekcja-historia-pusta";
+import { SekcjaCiekawostkiWsi } from "@/components/wies/sekcja-ciekawostki-wsi";
+import { CentrumWspomnienWsi } from "@/components/wies/centrum-wspomnien-wsi";
 import { SekcjaSportPubliczna } from "@/components/wies/sekcja-sport-publiczna";
 import { SekcjaSportPusta } from "@/components/wies/sekcja-sport-pusta";
 import type { WpisHistoriiPubliczny } from "@/lib/historia/typy-historii";
@@ -93,10 +95,15 @@ import {
   type UstawieniaWsiPubliczne,
 } from "@/lib/wies/ustawienia-wsi";
 import { zbudujZakladkiProfiluWsi } from "@/lib/wies/zbuduj-zakladki-profilu-wsi";
+import { dolaczZakladkiSpolecznoscioweProfilu } from "@/lib/wies/dolacz-zakladki-spolecznosciowe-profilu";
 import type { KonkursFotoPubliczny, ZdjecieKonkursu } from "@/lib/konkurs-foto/fazy-konkursu";
 import type { OstrzezenieLesne } from "@/lib/lesnictwo/pobierz-ostrzezenia-publiczne";
 import type { OstrzezenieLowieckie } from "@/lib/lowiectwo/pobierz-ostrzezenia-publiczne";
-import type { ZdjeciePubliczne } from "@/lib/fotokronika/pobierz-fotokronike-publiczna";
+import type { AlbumPublicznyFotokroniki, ZdjeciePubliczne } from "@/lib/fotokronika/pobierz-fotokronike-publiczna";
+import type { CiekawostkaMiejscaWsi } from "@/lib/wies/pobierz-ciekawostki-miejsc-wsi";
+import type { WatekDyskusjiPubliczny } from "@/lib/wies/pobierz-dyskusje-publiczne-wsi";
+import { WyswietlTrescBogata } from "@/components/ui/tresc-bogata";
+import { SekcjaDyskusjePubliczneWsi } from "@/components/wies/sekcja-dyskusje-publiczne-wsi";
 
 const GaleriaPlakatowWsi = dynamic(
   () => import("@/components/grafika/galeria-plakatow-wsi").then((m) => ({ default: m.GaleriaPlakatowWsi })),
@@ -184,6 +191,9 @@ export function WiesProfilPubliczny({
   plakatyPubliczne = [],
   konkursFoto = null,
   fotokronikaPubliczna = [],
+  fotokronikaAlbumy = [],
+  dyskusjePubliczne = [],
+  ciekawostkiMiejsc = [],
   ostrzezeniaLowieckie = [],
   ostrzezeniaLesne = [],
   maProfilLesnictwa = false,
@@ -219,6 +229,9 @@ export function WiesProfilPubliczny({
     mojGlosPhotoId: string | null;
   } | null;
   fotokronikaPubliczna?: ZdjeciePubliczne[];
+  fotokronikaAlbumy?: AlbumPublicznyFotokroniki[];
+  dyskusjePubliczne?: WatekDyskusjiPubliczny[];
+  ciekawostkiMiejsc?: CiekawostkaMiejscaWsi[];
   ostrzezeniaLowieckie?: OstrzezenieLowieckie[];
   ostrzezeniaLesne?: OstrzezenieLesne[];
   maProfilLesnictwa?: boolean;
@@ -500,6 +513,23 @@ export function WiesProfilPubliczny({
   const maBlog = blog.length > 0;
   const maHistoria = historia.length > 0;
   const maModulHistoria = modul("historia");
+  const maModulFotokronika = modul("fotokronika");
+  const liczbaSwiecHistorii = historia.reduce((s, w) => s + (w.candle_count ?? 0), 0);
+  const zywaKronika =
+    (maModulHistoria || maModulFotokronika) && (maHistoria || fotokronikaPubliczna.length > 0);
+  const podgladHistoriiCentrum = historia.slice(0, 4).map((w) => ({
+    id: w.id,
+    title: w.title,
+    eraLabel: w.era_label,
+    mediaUrl: w.media_urls[0] ?? null,
+    href: `${sciezka}/historia/${w.id}`,
+  }));
+  const podgladZdjecCentrum = fotokronikaPubliczna.slice(0, 10).map((z) => ({
+    id: z.id,
+    url: z.url,
+    caption: z.caption,
+  }));
+  const liczbaAlbumowFotokroniki = fotokronikaAlbumy.filter((a) => a.id !== "__inne__").length;
   const maSport =
     klubySportowe.length > 0 ||
     aktywnosciFitness.length > 0 ||
@@ -515,30 +545,44 @@ export function WiesProfilPubliczny({
     wydarzeniaBezSportu.length > 0;
   const maPomocSasiedzka = pomocSasiedzka.length > 0 || zalogowany;
 
-  const zakladkiProfilu: ZakladkaProfiluWsi[] = zbudujZakladkiProfiluWsi(
+  const zakladkiProfilu: ZakladkaProfiluWsi[] = dolaczZakladkiSpolecznoscioweProfilu(
+    zbudujZakladkiProfiluWsi(
+      {
+        maRynek,
+        maPomocSasiedzka,
+        maBlog,
+        maHistoria,
+        maModulHistoria,
+        maModulFotokronika,
+        maSport,
+        maModulSport,
+        maOrganizacje,
+        maDotacje: dotacjeSkrot.length > 0,
+        maPlanCmentarza,
+        maFotokronika: maModulFotokronika,
+        maGrafika: plakatyPubliczne.length > 0,
+        maSzkola: szkoly.length > 0 || ogloszeniaSzkoly.length > 0,
+        sciezkaCmentarz: `${sciezka}/cmentarz`,
+      },
+      ustawieniaWsi,
+    ),
     {
-      maRynek,
-      maPomocSasiedzka,
-      maBlog,
-      maHistoria,
-      maModulHistoria,
-      maSport,
-      maModulSport,
-      maOrganizacje,
-      maDotacje: dotacjeSkrot.length > 0,
-      maPlanCmentarza,
-      maFotokronika: fotokronikaPubliczna.length > 0,
-      maGrafika: plakatyPubliczne.length > 0,
-      maSzkola: szkoly.length > 0 || ogloszeniaSzkoly.length > 0,
-      sciezkaCmentarz: `${sciezka}/cmentarz`,
+      maCiekawostki: Boolean(ustawieniaWsi.ciekawostki_wsi?.trim()) || ciekawostkiMiejsc.length > 0,
+      maCentrumWspomnien: maModulHistoria || maModulFotokronika,
+      maDyskusje: dyskusjePubliczne.length > 0,
     },
-    ustawieniaWsi,
   );
 
   const linkSzkolaMapa =
     mapaPoi.find((p) => p.category === "szkola" || p.category === "przedszkole") != null
       ? `${sciezka}#sekcja-szkola`
       : null;
+  const maMapeNaProfilu = mapaPoi.length > 0 || mapaZnacznik != null;
+  const maTransportNaProfilu =
+    wies.is_active ||
+    mapaPoi.some((p) =>
+      ["przystanek", "stacja_kolejowa", "stacja_paliw", "parking_publiczny"].includes(p.category),
+    );
   const linkBoiskoNaMapie = mapaPoi.some((p) => p.category === "boisko") ? `${sciezka}#sekcja-mapa` : null;
 
   const pasekNaw = ustawieniaWsi.pasek_nawigacji;
@@ -628,6 +672,12 @@ export function WiesProfilPubliczny({
               Aktywny profil
             </span>
           ) : null}
+          {zywaKronika ? (
+            <span className="zyla-kronika-badge mt-1 inline-flex items-center rounded-full px-2.5 py-0.5 text-[11px]">
+              <span className="spolecznosc-puls" aria-hidden />
+              Żywa kronika
+            </span>
+          ) : null}
           <RynekUdostepnijPrzycisk
             url={sciezka}
             tytul={`${wies.name} — naszawies.pl`}
@@ -676,6 +726,10 @@ export function WiesProfilPubliczny({
           liczbaOgloszen={rynek.length}
           liczbaAktualnosci={laczonyFeed.length}
           aktywnyProfil={wies.is_active}
+          liczbaPoi={mapaPoi.length}
+          maGranice={Boolean(wies.boundary_geojson ?? mapaZnacznik?.boundary_geojson)}
+          liczbaHistorii={historia.length}
+          liczbaZdjecKroniki={fotokronikaPubliczna.length}
         />
         {wies.population != null && wies.population > 0 ? (
           <p className="mt-2 text-sm text-stone-600">
@@ -827,10 +881,42 @@ export function WiesProfilPubliczny({
       <WiesKontaktSzybkiPasek kontakty={kontaktyUrzedowe} />
 
       {wies.description ? (
-        <OslonaSekcjiWies className="mt-8">
-          <TytulSekcjiWies etykieta="Opis" tytul="O miejscowości" />
-          <div className="mt-3 whitespace-pre-wrap text-sm leading-relaxed text-stone-700">{wies.description}</div>
+        <OslonaSekcjiWies id="sekcja-o-miejscowosci" className="mt-8">
+          <UjawnijPoPrzewinieciu as="section">
+            <TytulSekcjiWies etykieta="Opis" tytul="O miejscowości" />
+            <div className="o-miejscowosci-tresc mt-4 rounded-2xl border border-stone-200/80 bg-gradient-to-br from-white via-stone-50/30 to-emerald-50/20 p-5 shadow-sm sm:p-6">
+              <WyswietlTrescBogata tresc={wies.description} />
+            </div>
+          </UjawnijPoPrzewinieciu>
         </OslonaSekcjiWies>
+      ) : null}
+
+      <SekcjaCiekawostkiWsi
+        ciekawostkiWsi={ustawieniaWsi.ciekawostki_wsi}
+        miejsca={ciekawostkiMiejsc}
+        nazwaWsi={wies.name}
+      />
+
+      {dyskusjePubliczne.length > 0 ? (
+        <SekcjaDyskusjePubliczneWsi
+          watki={dyskusjePubliczne}
+          nazwaWsi={wies.name}
+          zalogowany={zalogowany}
+        />
+      ) : null}
+
+      {maModulHistoria || maModulFotokronika ? (
+        <CentrumWspomnienWsi
+          sciezkaProfilu={sciezka}
+          nazwaWsi={wies.name}
+          liczbaHistorii={historia.length}
+          liczbaZdjec={fotokronikaPubliczna.length}
+          liczbaSwiec={liczbaSwiecHistorii}
+          liczbaAlbumow={liczbaAlbumowFotokroniki}
+          podgladHistorii={podgladHistoriiCentrum}
+          podgladZdjec={podgladZdjecCentrum}
+          zalogowany={zalogowany}
+        />
       ) : null}
 
       {modul("informacje") ? (
@@ -843,8 +929,8 @@ export function WiesProfilPubliczny({
           maSwietlice={wies.is_active}
           maRynek={maRynek}
           maDotacje={dotacjeSkrot.length > 0}
-          maTransport={wies.is_active}
-          maMape={wies.is_active}
+          maTransport={maTransportNaProfilu}
+          maMape={maMapeNaProfilu}
         />
       ) : null}
 
@@ -1005,8 +1091,14 @@ export function WiesProfilPubliczny({
         </LazyWidoczny>
       ) : null}
 
-      {modul("fotokronika") ? (
-        <FotokronikaPublicznaWsi zdjecia={fotokronikaPubliczna} nazwaWsi={wies.name} pokazLinkDodaj={zalogowany} />
+      {maModulFotokronika ? (
+        <FotokronikaPublicznaWsi
+          zdjecia={fotokronikaPubliczna}
+          albumy={fotokronikaAlbumy}
+          nazwaWsi={wies.name}
+          pokazLinkDodaj={zalogowany}
+          pokazPusta
+        />
       ) : null}
 
       {konkursFoto ? (

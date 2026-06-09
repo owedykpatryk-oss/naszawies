@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import Link from "next/link";
+import { redirect } from "next/navigation";
 import { Suspense } from "react";
 import { HeroModuluPublicznego } from "@/components/wspolne/hero-modulu-publicznego";
 import { BlogBreadcrumbs } from "@/components/blog/blog-breadcrumbs";
@@ -12,7 +13,6 @@ import { BlogPaginacja } from "@/components/blog/blog-paginacja";
 import { BlogSidebar } from "@/components/blog/blog-sidebar";
 import { pobierzPopularneTagi } from "@/lib/blog/pobierz-popularne-tagi";
 import {
-  pobierzArtykulyKategorii,
   pobierzKategorieBlog,
   pobierzOpublikowaneArtykuly,
   szukajArtykulowBlog,
@@ -23,14 +23,19 @@ import { generateBreadcrumbsBlog } from "@/lib/seo/generate-breadcrumbs";
 export const revalidate = 3600;
 
 const NA_STRONE = 9;
+const WYROZNIONE_W_HERO = 4;
 
 type Props = {
   searchParams: { q?: string; strona?: string; kategoria?: string };
 };
 
+function sciezkaPaginacji(strona: number): string {
+  if (strona <= 1) return "/blog";
+  return `/blog?strona=${strona}`;
+}
+
 export function generateMetadata({ searchParams }: Props): Metadata {
   const zapytanie = searchParams.q?.trim();
-  const kategoria = searchParams.kategoria?.trim();
   const strona = Math.max(1, Number.parseInt(searchParams.strona ?? "1", 10) || 1);
 
   if (zapytanie) {
@@ -42,25 +47,20 @@ export function generateMetadata({ searchParams }: Props): Metadata {
     });
   }
 
-  const p = new URLSearchParams();
-  if (kategoria) p.set("kategoria", kategoria);
-  if (strona > 1) p.set("strona", String(strona));
-  const sciezka = p.toString() ? `/blog?${p}` : "/blog";
-
-  const kat = kategoria ? pobierzKategorieBlog().find((k) => k.slug === kategoria) : null;
-  if (kat) {
-    return createSeoMeta({
-      tytul: `${kat.name} — blog`,
-      opis: kat.description,
-      sciezka,
-    });
-  }
+  const sciezka = sciezkaPaginacji(strona);
+  const wszystkie = pobierzOpublikowaneArtykuly();
+  const featuredIds = new Set(wszystkie.filter((a) => a.featured).slice(0, WYROZNIONE_W_HERO).map((a) => a.slug));
+  const lista = wszystkie.filter((a) => !featuredIds.has(a.slug));
+  const liczbaStron = Math.max(1, Math.ceil(lista.length / NA_STRONE));
 
   return createSeoMeta({
     tytul: "Blog — poradniki o życiu na wsi i narzędziach naszawies.pl",
     opis:
       "Artykuły po polsku dla sołtysów i mieszkańców: profil wsi, świetlica, rynek lokalny, cyfryzacja sołectwa i katalog miejscowości.",
     sciezka,
+    bezIndeksowania: strona > 1,
+    stronaPoprzednia: strona > 1 ? sciezkaPaginacji(strona - 1) : null,
+    stronaNastepna: strona < liczbaStron ? sciezkaPaginacji(strona + 1) : null,
   });
 }
 
@@ -69,21 +69,21 @@ export default function StronaBlog({ searchParams }: Props) {
   const kategoria = searchParams.kategoria?.trim() ?? "";
   const strona = Math.max(1, Number.parseInt(searchParams.strona ?? "1", 10) || 1);
 
-  const baza = zapytanie
-    ? szukajArtykulowBlog(zapytanie)
-    : kategoria
-      ? pobierzArtykulyKategorii(kategoria)
-      : pobierzOpublikowaneArtykuly();
+  if (kategoria && !zapytanie) {
+    redirect(`/blog/kategoria/${encodeURIComponent(kategoria)}`);
+  }
+
+  const baza = zapytanie ? szukajArtykulowBlog(zapytanie) : pobierzOpublikowaneArtykuly();
   const wszystkie = baza;
-  const filtrujWyroznione = !zapytanie && !kategoria;
-  const featured = filtrujWyroznione ? wszystkie.filter((a) => a.featured) : [];
-  const lista = filtrujWyroznione ? wszystkie.filter((a) => !a.featured) : wszystkie;
+  const filtrujWyroznione = !zapytanie;
+  const featured = filtrujWyroznione ? wszystkie.filter((a) => a.featured).slice(0, WYROZNIONE_W_HERO) : [];
+  const featuredIds = new Set(featured.map((a) => a.slug));
+  const lista = filtrujWyroznione ? wszystkie.filter((a) => !featuredIds.has(a.slug)) : wszystkie;
   const offset = (strona - 1) * NA_STRONE;
   const stronaLista = lista.slice(offset, offset + NA_STRONE);
   const kategorie = pobierzKategorieBlog();
   const ostatnie = pobierzOpublikowaneArtykuly();
   const tagiPopularne = pobierzPopularneTagi();
-  const katAktywna = kategorie.find((k) => k.slug === kategoria);
 
   const breadcrumbs = generateBreadcrumbsBlog([]);
   const liczbaStron = Math.max(1, Math.ceil(lista.length / NA_STRONE));
@@ -119,11 +119,7 @@ export default function StronaBlog({ searchParams }: Props) {
             <BlogWyszukiwarka />
           </Suspense>
 
-          {!zapytanie ? <BlogFiltryKategorii kategorie={kategorie} aktywna={kategoria || undefined} /> : null}
-
-          {katAktywna && !zapytanie ? (
-            <p className="mt-4 text-sm text-stone-600 dark:text-stone-400">{katAktywna.description}</p>
-          ) : null}
+          {!zapytanie ? <BlogFiltryKategorii kategorie={kategorie} /> : null}
 
           {zapytanie ? (
             <p className="mt-4 text-sm text-stone-600 dark:text-stone-400">
@@ -136,8 +132,9 @@ export default function StronaBlog({ searchParams }: Props) {
 
           {!zapytanie && featured.length > 0 ? (
             <section className="mt-8" aria-label="Wyróżnione artykuły">
+              <h2 className="mb-4 font-serif text-xl text-green-950 dark:text-green-50">Wyróżnione</h2>
               <div className="grid gap-6 md:grid-cols-2">
-                {featured.slice(0, 2).map((a) => (
+                {featured.map((a) => (
                   <BlogKartaArtykulu key={a.slug} artykul={a} featured />
                 ))}
               </div>
@@ -158,12 +155,7 @@ export default function StronaBlog({ searchParams }: Props) {
             </section>
           )}
 
-          <BlogPaginacja
-            strona={strona}
-            liczbaStron={liczbaStron}
-            zapytanie={zapytanie || undefined}
-            kategoria={kategoria || undefined}
-          />
+          <BlogPaginacja strona={strona} liczbaStron={liczbaStron} zapytanie={zapytanie || undefined} />
 
           <BlogCtaStopka />
         </div>

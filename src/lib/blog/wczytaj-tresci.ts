@@ -114,10 +114,22 @@ export function pobierzPowiazaneArtykuly(artykul: BlogArtykulPelny, limit = 3): 
 export function szukajArtykulowBlog(zapytanie: string): BlogArtykulPelny[] {
   const q = zapytanie.trim().toLowerCase();
   if (!q || q.length < 2) return [];
-  return pobierzOpublikowaneArtykuly().filter((a) => {
-    const haystack = `${a.title} ${a.excerpt} ${a.tags.join(" ")} ${a.category.name}`.toLowerCase();
-    return haystack.includes(q);
-  });
+
+  function tekstBezHtml(html: string): string {
+    return html.replace(/<[^>]+>/g, " ").replace(/\s+/g, " ").trim();
+  }
+
+  return pobierzOpublikowaneArtykuly()
+    .map((a) => {
+      const haystack =
+        `${a.title} ${a.excerpt} ${a.tags.join(" ")} ${a.category.name} ${tekstBezHtml(a.content)}`.toLowerCase();
+      const trafienie = haystack.includes(q);
+      const wTytule = a.title.toLowerCase().includes(q);
+      return { artykul: a, wynik: trafienie ? (wTytule ? 2 : 1) : 0 };
+    })
+    .filter((x) => x.wynik > 0)
+    .sort((a, b) => b.wynik - a.wynik || +new Date(b.artykul.publishedAt) - +new Date(a.artykul.publishedAt))
+    .map((x) => x.artykul);
 }
 
 /** Wersja admin — także szkice. */

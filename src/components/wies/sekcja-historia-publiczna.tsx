@@ -69,12 +69,21 @@ export function SekcjaHistoriaPubliczna({
       {wyrozniony?.is_featured ? (
         <Link
           href={`${sciezkaProfilu}/historia/${wyrozniony.id}`}
-          className="mt-4 block rounded-xl border border-amber-400/60 bg-gradient-to-br from-amber-100/90 to-white p-4 shadow-sm hover:border-amber-500"
+          className="historia-wyrozniony mt-4 block overflow-hidden rounded-2xl border border-amber-400/60 bg-gradient-to-br from-amber-100/90 via-white to-amber-50/50 p-4 shadow-md transition hover:-translate-y-0.5 hover:border-amber-500 hover:shadow-lg sm:p-5"
         >
-          <p className="text-xs font-semibold uppercase tracking-wide text-amber-900">Wyróżniony wpis</p>
-          <p className="mt-1 font-serif text-lg text-green-950">{wyrozniony.title}</p>
+          <p className="text-xs font-semibold uppercase tracking-wide text-amber-900">★ Wyróżniony wpis</p>
+          <p className="mt-1 font-serif text-lg text-green-950 sm:text-xl">{wyrozniony.title}</p>
           {wyrozniony.short_description ? (
             <p className="mt-1 line-clamp-2 text-sm text-stone-600">{wyrozniony.short_description}</p>
+          ) : null}
+          {wyrozniony.media_urls[0] ? (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img
+              src={wyrozniony.media_urls[0]}
+              alt=""
+              className="mt-3 max-h-40 w-full rounded-xl object-cover"
+              loading="lazy"
+            />
           ) : null}
         </Link>
       ) : null}

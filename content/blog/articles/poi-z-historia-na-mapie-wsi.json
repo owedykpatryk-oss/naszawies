@@ -1,0 +1,59 @@
+{
+  "title": "Miejsca POI z historią — kościół, remiza i szkoła na mapie wsi",
+  "slug": "poi-z-historia-na-mapie-wsi",
+  "excerpt": "Profil punktu na mapie to więcej niż pinezka: opis, msze, galeria zdjęć i ciekawostki. Jak sołtys i mieszkańcy mogą opowiedzieć historię kościoła, OSP czy szkoły.",
+  "coverImage": "/blog/poi-z-historia-na-mapie-wsi/cover.webp",
+  "gallery": [
+    "/blog/poi-z-historia-na-mapie-wsi/cover.webp",
+    "/blog/poi-z-historia-na-mapie-wsi/visual-01.webp"
+  ],
+  "authorId": "zespol",
+  "categorySlug": "poradniki",
+  "tags": [
+    "mapa",
+    "poi",
+    "kosciol",
+    "historia",
+    "miejsca"
+  ],
+  "faq": [
+    {
+      "question": "Skąd wziąć treść do profilu POI?",
+      "answer": "Z tablic informacyjnych przy obiekcie, materiałów parafii lub OSP, skanów ze starych kronik. Warto dopisać godziny mszy, odpustów i kontakt do opiekuna miejsca."
+    },
+    {
+      "question": "Czy profil POI jest widoczny bez logowania?",
+      "answer": "Tak — publiczna strona miejsca pod adresem /mapa/miejsce/… jest dostępna dla każdego. Mapa katalogu wymaga konta, ale link do profilu można wysłać sąsiadowi."
+    },
+    {
+      "question": "Kto może edytować dane POI?",
+      "answer": "Sołtys moderuje punkty na mapie wsi. Przy współpracy z parafią lub naczelnikiem OSP można uzupełnić opis, zdjęcia i godziny otwarcia lub nabożeństw."
+    }
+  ],
+  "relatedSlugs": [
+    "mapa-wsi-po-zalogowaniu",
+    "osp-na-profilu-wsi",
+    "fotokronika-i-historia-wsi"
+  ],
+  "featured": true,
+  "status": "published",
+  "publishedAt": "2026-06-16T08:00:00.000Z",
+  "seoTitle": "POI z historią — profil miejsca na mapie wsi",
+  "seoDescription": "Jak wzbogacić punkty na mapie wsi o opowieść, msze, galerię i ciekawostki. Kościół, remiza OSP i szkoła jako cyfrowe wizytówki miejscowości.",
+  "ogImage": "/blog/poi-z-historia-na-mapie-wsi/cover.webp",
+  "internalLinks": [
+    {
+      "href": "/mapa",
+      "label": "Mapa wsi"
+    },
+    {
+      "href": "/szukaj",
+      "label": "Szukaj wsi"
+    }
+  ],
+  "generatedImages": [
+    "/blog/poi-z-historia-na-mapie-wsi/cover.webp",
+    "/blog/poi-z-historia-na-mapie-wsi/visual-01.webp"
+  ],
+  "content": "<p>Na mapie wsi widać sklep, przystanek i kościół — ale sama pinezka nie mówi, że świątynia stoi od XVIII wieku albo że w niedzielę msza jest o 11:00. Na <strong>naszawies.pl</strong> każdy punkt POI może mieć własny publiczny profil: opis, zdjęcia, godziny i sekcję „Warto wiedzieć”.</p>\n\n<div class=\"blog-pullquote\">Dobry profil miejsca to cyfrowa tablica informacyjna — tylko że nie znika po deszczu i można ją udostępnić linkiem.</div>\n\n<h2 id=\"co-zawiera\">Co zawiera profil miejsca?</h2>\n<ul class=\"blog-lista-check\">\n<li><strong>Opowieść</strong> — krótka historia obiektu, remonty, ciekawe fakty</li>\n<li><strong>Godziny i terminy</strong> — msze, dyżury, odpusty w czytelnej liście</li>\n<li><strong>Galeria</strong> — zdjęcia archiwalne i współczesne z podpisami</li>\n<li><strong>Link do profilu wsi</strong> — kontekst: w której miejscowości leży punkt</li>\n</ul>\n\n<figure><img src=\"/blog/poi-z-historia-na-mapie-wsi/visual-01.webp\" alt=\"Wiejski kościół i okolica — przykład miejsca wartego opisu na mapie POI\" width=\"900\" height=\"600\" loading=\"lazy\" /><figcaption>Kościół, remiza OSP czy stara szkoła — to naturalne pierwsze miejsca do opisania na mapie.</figcaption></figure>\n\n<h2 id=\"od-czego-zaczac\">Od czego zacząć?</h2>\n<ol class=\"blog-lista-kroki\">\n<li>Wybierz 3–5 najważniejszych punktów: kościół, remiza, szkoła/przedszkole, cmentarz</li>\n<li>Przepisz treść z tablicy informacyjnej lub ulotki parafialnej</li>\n<li>Dodaj jedno zdjęcie archiwalne i jedno współczesne</li>\n<li>Sprawdź profil na telefonie — czy godziny mszy czytają się bez przewijania w bok</li>\n</ol>\n\n<h2 id=\"kosciol\">Przykład: kościół parafialny</h2>\n<p>W opisie warto podać rok konsekracji, cechy architektury, patrona i najbliższe uroczystości. Godziny nabożeństw wpisz jako osobne wiersze (niedziela, sobota, święta) — tak robią tablice przy wejściu, a czytelnik od razu widzi to samo w telefonie.</p>\n\n<div class=\"blog-callout blog-callout-porada\"><strong>Porada</strong><p>Na profilu wsi chipy kategorii POI prowadzą teraz bezpośrednio do profilu miejsca — warto uzupełnić choć jeden punkt wzorcowo, reszta będzie dla sołtysa wzorem.</p></div>\n\n<h2 id=\"wspolpraca\">Współpraca z parafią i OSP</h2>\n<p>Sołtys nie musi pisać wszystkiego sam. Proś proboszcza lub naczelnika OSP o akapit tekstu i zdjęcie — profil organizacji na wsi (<a href=\"/blog/osp-na-profilu-wsi\">OSP</a>, <a href=\"/blog/kgw-integracja-spolecznosci\">KGW</a>) uzupełnia mapę, a POI pokazuje dokładnie lokalizację budynku.</p>\n\n<h2 id=\"udostepnianie\">Udostępnianie i wyszukiwarki</h2>\n<p>Profil POI ma własny link do wysłania turystom i rodzinie: „Tu jest nasz kościół — zobacz historię i msze”. Metadane Open Graph sprawiają, że podgląd linku w komunikatorze wygląda schludnie, ze zdjęciem okładki.</p>\n\n<hr class=\"blog-separator\" />\n<p>Powiązane: <a href=\"/blog/transport-i-przystanki-mapa-wsi\">transport na mapie</a>, <a href=\"/blog/jak-zalozyc-profil-wsi\">założenie profilu wsi</a>.</p>"
+}

@@ -1,0 +1,59 @@
+{
+  "title": "Dyskusje mieszkańców na profilu wsi — podgląd bez logowania",
+  "slug": "dyskusje-mieszkancow-na-profilu-wsi",
+  "excerpt": "Wątki z panelu społeczności mogą być widoczne publicznie na profilu wsi. Jak to włączyć, moderować i kierować sąsiadów do pełnej rozmowy.",
+  "coverImage": "/blog/dyskusje-mieszkancow-na-profilu-wsi/cover.webp",
+  "gallery": [
+    "/blog/dyskusje-mieszkancow-na-profilu-wsi/cover.webp",
+    "/blog/dyskusje-mieszkancow-na-profilu-wsi/visual-01.webp"
+  ],
+  "authorId": "zespol",
+  "categorySlug": "spolecznosc",
+  "tags": [
+    "dyskusje",
+    "spolecznosc",
+    "profil wsi",
+    "moderacja",
+    "sołtys"
+  ],
+  "faq": [
+    {
+      "question": "Czy każdy wątek trafia na profil publiczny?",
+      "answer": "Nie — autor przy tworzeniu wątku musi zaznaczyć „Pokaż na profilu wsi”. Sołtys nadal moderuje treści w panelu społeczności."
+    },
+    {
+      "question": "Czy gość może pisać komentarze?",
+      "answer": "Podgląd wątków na profilu jest publiczny, ale odpowiedzi i nowe tematy wymagają logowania jako mieszkaniec lub obserwator wsi."
+    },
+    {
+      "question": "Jak przejść z profilu do pełnej dyskusji?",
+      "answer": "Kliknięcie karty wątku otwiera panel społeczności z wybranym tematem (parametr threadId w adresie)."
+    }
+  ],
+  "relatedSlugs": [
+    "tablica-ogloszen-cyfrowa",
+    "zebranie-wiejskie-swietlica",
+    "kgw-integracja-spolecznosci"
+  ],
+  "featured": false,
+  "status": "published",
+  "publishedAt": "2026-06-17T08:00:00.000Z",
+  "seoTitle": "Publiczne dyskusje na profilu wsi",
+  "seoDescription": "Podgląd wątków mieszkańców na stronie wsi: jak włączyć widoczność, moderować rozmowy i zapraszać do panelu społeczności.",
+  "ogImage": "/blog/dyskusje-mieszkancow-na-profilu-wsi/cover.webp",
+  "internalLinks": [
+    {
+      "href": "/rejestracja",
+      "label": "Załóż konto"
+    },
+    {
+      "href": "/pomoc",
+      "label": "Centrum pomocy"
+    }
+  ],
+  "generatedImages": [
+    "/blog/dyskusje-mieszkancow-na-profilu-wsi/cover.webp",
+    "/blog/dyskusje-mieszkancow-na-profilu-wsi/visual-01.webp"
+  ],
+  "content": "<p>Grupa na komunikatorze szybko się zapełnia memami, a ważny wątek o drodze do szkoły ginie pod reklamą kogutów. <strong>Panel społeczności</strong> na naszawies.pl porządkuje rozmowy mieszkańców — a wybrane wątki można pokazać na publicznym profilu wsi, żeby sąsiedzi spoza platformy widzieli, o czym się dyskutuje.</p>\n\n<h2 id=\"jak-dziala\">Jak to działa?</h2>\n<ol class=\"blog-lista-kroki\">\n<li>Mieszkaniec zakłada wątek w panelu społeczności (np. „Remont placu zabaw”)</li>\n<li>Zaznacza opcję <em>Pokaż na profilu wsi</em></li>\n<li>Po moderacji wątek pojawia się w sekcji „Dyskusje mieszkańców” na stronie wsi</li>\n<li>Kliknięcie karty przenosi zalogowanego użytkownika do pełnej rozmowy</li>\n</ol>\n\n<figure><img src=\"/blog/dyskusje-mieszkancow-na-profilu-wsi/visual-01.webp\" alt=\"Spotkanie mieszkańców wsi przy tablicy ogłoszeń — analogia do cyfrowej dyskusji\" width=\"900\" height=\"600\" loading=\"lazy\" /><figcaption>Publiczny podgląd wątku to jak tablica przy sklepie — zachęca do dołączenia do rozmowy.</figcaption></figure>\n\n<h2 id=\"dla-soltysa\">Dla sołtysa</h2>\n<p>Nie musisz publikować wszystkiego. Podgląd służy tematom, które <em>chcecie</em> pokazać gościom: plan festynu, konsultacje o chodniku, zbiórka na boisko. Wątki personalne lub sporne zostaw w panelu bez flagi publicznej.</p>\n\n<div class=\"blog-callout blog-callout-uwaga\"><strong>Ważne</strong><p>Moderacja nadal obowiązuje — zgłoszenia naruszeń trafiają do sołtysa. Publiczny podgląd nie zastępuje zasad kultury w rozmowie.</p></div>\n\n<h2 id=\"zakladki\">Nawigacja na profilu</h2>\n<p>Na profilu wsi pojawia się zakładka <strong>Dyskusje</strong>, gdy są co najmniej jeden publiczny wątek. Razem z zakładkami Ciekawostki i Pamięć ułatwia to orientację osobom, które pierwszy raz wchodzą na stronę miejscowości.</p>\n\n<h2 id=\"zacheta\">Jak zachęcić mieszkańców?</h2>\n<ul class=\"blog-lista-check\">\n<li>Na zebraniu pokaż przykładowy wątek na telefonie</li>\n<li>Pierwszy temat załóż sam jako sołtys — „Co sądzicie o terminie dożynek?”</li>\n<li>Link do panelu wyślij w ogłoszeniu na <a href=\"/blog/tablica-ogloszen-cyfrowa\">cyfrowej tablicy</a></li>\n</ul>\n\n<hr class=\"blog-separator\" />\n<p>Zobacz też: <a href=\"/blog/kalendarz-wydarzen-wiejskich\">kalendarz wydarzeń</a>, <a href=\"/blog/rola-soltysa-narzedzia-cyfrowe\">narzędzia cyfrowe sołtysa</a>.</p>"
+}

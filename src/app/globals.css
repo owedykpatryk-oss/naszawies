@@ -190,6 +190,40 @@ body {
   );
 }
 
+.profil-wies-motyw .wies-sekcja-ciekawostki {
+  border-color: color-mix(in srgb, #059669 18%, var(--wies-ramka, #86efac));
+  background: linear-gradient(
+    145deg,
+    color-mix(in srgb, #ecfdf5 55%, white) 0%,
+    white 55%,
+    color-mix(in srgb, #fffbeb 30%, white) 100%
+  );
+}
+
+.centrum-wspomnien {
+  box-shadow: 0 12px 40px -20px rgba(120, 80, 20, 0.25);
+}
+
+.historia-karta-timeline:hover .historia-punkt {
+  border-color: #d97706;
+  box-shadow: 0 0 0 4px rgba(251, 191, 36, 0.25);
+}
+
+.fotokronika-kafelek:focus-visible {
+  outline: 2px solid var(--wies-akcent, #166534);
+  outline-offset: 2px;
+}
+
+.lightbox-galerii__ramka img {
+  animation: wow-wejscie 0.35s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .lightbox-galerii__ramka img {
+    animation: none;
+  }
+}
+
 .profil-wies-motyw .wies-sekcja-sport {
   border-color: color-mix(in srgb, #059669 22%, var(--wies-ramka, #86efac));
   background: linear-gradient(
@@ -793,6 +827,112 @@ html[data-tryb-dostepnosci="wysoki-kontrast"] .btn-panel-secondary {
     border-radius: 9999px;
     background: radial-gradient(circle, rgba(34, 197, 94, 0.12), transparent 70%);
     pointer-events: none;
+  }
+
+  .centrum-wspomnien-wow {
+    @apply wow-wejscie relative overflow-hidden;
+    background: linear-gradient(135deg, #fffbeb 0%, #fef3c7 22%, #ecfdf5 55%, #fff 100%);
+    box-shadow:
+      0 1px 0 rgba(255, 255, 255, 0.95) inset,
+      0 20px 56px rgba(180, 83, 9, 0.12),
+      0 6px 20px rgba(21, 64, 28, 0.06);
+  }
+
+  .centrum-wspomnien-wow::before {
+    content: "";
+    position: absolute;
+    top: -4rem;
+    right: -3rem;
+    width: 16rem;
+    height: 16rem;
+    border-radius: 9999px;
+    background: radial-gradient(circle, rgba(251, 191, 36, 0.28), transparent 68%);
+    pointer-events: none;
+  }
+
+  .centrum-wspomnien-wow::after {
+    content: "";
+    position: absolute;
+    bottom: -3rem;
+    left: -2rem;
+    width: 12rem;
+    height: 12rem;
+    border-radius: 9999px;
+    background: radial-gradient(circle, rgba(52, 211, 153, 0.18), transparent 70%);
+    pointer-events: none;
+  }
+
+  .zyla-kronika-badge {
+    @apply bg-gradient-to-r from-amber-100 to-emerald-100 text-amber-950 ring-1 ring-amber-300/60;
+    font-size: 0.65rem;
+    font-weight: 700;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+  }
+
+  .ciekawostki-wow-hero {
+    @apply relative overflow-hidden;
+    box-shadow:
+      0 1px 0 rgba(255, 255, 255, 0.9) inset,
+      0 16px 40px rgba(16, 185, 129, 0.1);
+  }
+
+  .ciekawostki-wow-hero::before {
+    content: "";
+    position: absolute;
+    top: -2rem;
+    right: -1rem;
+    width: 10rem;
+    height: 10rem;
+    border-radius: 9999px;
+    background: radial-gradient(circle, rgba(52, 211, 153, 0.15), transparent 70%);
+    pointer-events: none;
+  }
+
+  .fotokronika-bento {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-auto-rows: minmax(7rem, auto);
+  }
+
+  @media (min-width: 640px) {
+    .fotokronika-bento {
+      grid-template-columns: repeat(4, minmax(0, 1fr));
+    }
+
+    .fotokronika-bento__hero {
+      grid-column: span 2;
+      grid-row: span 2;
+    }
+
+    .fotokronika-bento__hero .fotokronika-kafelek img {
+      aspect-ratio: auto;
+      min-height: 100%;
+      height: 100%;
+    }
+  }
+
+  .centrum-wspomnien-filmstrip__kadr {
+    animation: filmstrip-wejscie 0.55s cubic-bezier(0.22, 1, 0.36, 1) both;
+  }
+
+  @keyframes filmstrip-wejscie {
+    from {
+      opacity: 0;
+      transform: translateY(8px) scale(0.96);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0) scale(1);
+    }
+  }
+
+  .dyskusja-karta-wow {
+    @apply transition-[transform,box-shadow,border-color] duration-200;
+  }
+
+  .dyskusja-karta-wow:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 28px rgba(14, 116, 144, 0.12);
   }
 
   .rynek-karta-wow {
@@ -1418,6 +1558,10 @@ html[data-tryb-dostepnosci="wysoki-kontrast"] .btn-panel-secondary {
     box-shadow: none;
   }
 
+  .centrum-wspomnien-filmstrip__kadr {
+    animation: none;
+  }
+
   .wow-wejscie,
   .animate-wow-fade-up {
     animation: none;
@@ -1543,7 +1687,10 @@ html[data-tryb-dostepnosci="wysoki-kontrast"] .btn-panel-secondary {
   @apply block text-xs font-bold uppercase tracking-wide opacity-80;
 }
 .blog-tresc-artykulu table.blog-tabela {
-  @apply my-6 w-full border-collapse overflow-hidden rounded-xl text-sm;
+  @apply my-0 w-full min-w-[480px] border-collapse overflow-hidden rounded-xl text-sm;
+}
+.blog-tresc-artykulu .blog-tabela-scroll {
+  @apply -mx-1 my-6 overflow-x-auto rounded-xl;
 }
 .blog-tresc-artykulu table.blog-tabela th {
   @apply border border-stone-200 bg-stone-100 px-3 py-2 text-left font-semibold dark:border-stone-600 dark:bg-stone-800;

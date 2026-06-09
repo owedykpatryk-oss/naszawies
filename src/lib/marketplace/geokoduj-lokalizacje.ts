@@ -6,7 +6,22 @@ export async function geokodujLokalizacjeTekst(
   const fragment = locationText.trim();
   if (fragment.length < 3) return null;
 
-  const zapytanie = [fragment, kontekstWsi?.trim(), "Polska"].filter(Boolean).join(", ");
+  const kontekst = kontekstWsi?.trim() ?? "";
+  const wariantyZapytan = [
+    [fragment, kontekst, "Polska"].filter(Boolean).join(", "),
+    kontekst ? `${fragment}, ${kontekst.split(",")[0]?.trim()}, Polska` : null,
+    `${fragment}, Polska`,
+  ].filter((q): q is string => Boolean(q?.trim()));
+
+  for (const zapytanie of wariantyZapytan) {
+    const wynik = await geokodujJednoZapytanie(zapytanie);
+    if (wynik) return wynik;
+    await new Promise((r) => setTimeout(r, 1100));
+  }
+  return null;
+}
+
+async function geokodujJednoZapytanie(zapytanie: string): Promise<{ latitude: number; longitude: number } | null> {
   const url = new URL("https://nominatim.openstreetmap.org/search");
   url.searchParams.set("format", "json");
   url.searchParams.set("limit", "1");

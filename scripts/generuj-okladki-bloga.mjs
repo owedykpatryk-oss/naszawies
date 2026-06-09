@@ -58,6 +58,26 @@ async function okladkaBuffer(tytul, categorySlug) {
   return sharp(Buffer.from(svg)).webp({ quality: 86 }).toBuffer();
 }
 
+async function wizualizacjaBuffer(tytul, categorySlug) {
+  const [c1, c2] = kolorDlaKategorii(categorySlug);
+  const svg = `<?xml version="1.0" encoding="UTF-8"?>
+<svg width="900" height="600" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="g2" x1="0%" y1="100%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="${c2}"/>
+      <stop offset="100%" stop-color="${c1}"/>
+    </linearGradient>
+  </defs>
+  <rect width="900" height="600" fill="url(#g2)"/>
+  <rect x="48" y="48" width="804" height="504" rx="24" fill="#ffffff" opacity="0.08"/>
+  <circle cx="760" cy="120" r="90" fill="#ffffff" opacity="0.12"/>
+  <circle cx="160" cy="480" r="120" fill="#ffffff" opacity="0.07"/>
+  <text x="72" y="280" font-family="Georgia, serif" font-size="34" fill="#f5f1e8">${ucieczkaXml(tytul).slice(0, 55)}</text>
+  <text x="72" y="340" font-family="Arial, sans-serif" font-size="20" fill="#d4ead4">Ilustracja artykułu · naszawies.pl</text>
+</svg>`;
+  return sharp(Buffer.from(svg)).webp({ quality: 84 }).toBuffer();
+}
+
 async function main() {
   const pliki = fs.readdirSync(ARTICLES).filter((f) => f.endsWith(".json"));
   let n = 0;
@@ -69,6 +89,9 @@ async function main() {
     const out = path.join(outDir, "cover.webp");
     const buf = await okladkaBuffer(artykul.title, artykul.categorySlug ?? "poradniki");
     await fs.promises.writeFile(out, buf);
+    const visual = path.join(outDir, "visual-01.webp");
+    const vbuf = await wizualizacjaBuffer(artykul.title, artykul.categorySlug ?? "poradniki");
+    await fs.promises.writeFile(visual, vbuf);
     console.log("✓", artykul.slug);
     n++;
   }

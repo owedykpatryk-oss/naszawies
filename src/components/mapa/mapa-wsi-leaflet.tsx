@@ -39,6 +39,10 @@ import {
 } from "@/lib/lesnictwo/kategorie-ostrzezen";
 import type { ZnacznikOstrzezeniaLesnego } from "@/lib/lesnictwo/pobierz-ostrzezenia-na-mape";
 import { tekstPrecyzjiPoiMapy, czyKategoriaPoiLowiecka } from "@/lib/mapa/poi-lowieckie-widocznosc";
+import {
+  etykietaLinkuOrganizacjiDlaPoi,
+  kotwicaProfiluWsiDlaKategoriiPoi,
+} from "@/lib/mapa/powiazanie-poi-organizacja";
 import { bezpiecznyHref } from "@/lib/tekst/bezpieczny-url";
 import {
   CZY_KIEG_WMS_DOSTEPNY,
@@ -1009,6 +1013,12 @@ function htmlPopupPoi(z: ZnacznikPoi): string {
       ? `${z.sciezkaWsi.replace(/"/g, "")}/historia/${encodeURIComponent(historiaId)}`
       : null;
   const stronaMiejsca = czyHistoria ? (linkHistorii ?? z.sciezkaWsi) : `/mapa/miejsce/${encodeURIComponent(z.id)}`;
+  const kotwicaOrganizacji = kotwicaProfiluWsiDlaKategoriiPoi(katNorm);
+  const etykietaOrganizacji = etykietaLinkuOrganizacjiDlaPoi(katNorm);
+  const linkOrganizacji =
+    kotwicaOrganizacji && etykietaOrganizacji
+      ? `${z.sciezkaWsi.replace(/"/g, "")}${kotwicaOrganizacji}`
+      : null;
   const miniatura = z.photoUrl
     ? `<p class="mapa-wsi-popup-foto"><img src="${escapeHtml(z.photoUrl)}" alt="" width="220" height="124" style="width:100%;max-width:220px;height:auto;border-radius:8px;object-fit:cover" loading="lazy" /></p>`
     : "";
@@ -1060,10 +1070,10 @@ function htmlPopupPoi(z: ZnacznikPoi): string {
         ${
           czyHistoria && linkHistorii
             ? `<a href="${linkHistorii}">Czytaj kronikę →</a><span aria-hidden="true"> · </span>`
-            : `<a href="${stronaMiejsca}">Zdjęcie i komentarze →</a><span aria-hidden="true"> · </span>`
+            : `<a href="${stronaMiejsca}">Profil miejsca →</a><span aria-hidden="true"> · </span>`
         }
         <a href="${z.sciezkaWsi.replace(/"/g, "")}">Strona wsi</a>
-        ${katNorm === "szkola" || katNorm === "przedszkole" ? `<span aria-hidden="true"> · </span><a href="${z.sciezkaWsi.replace(/"/g, "")}#sekcja-szkola">Tablica szkoły</a>` : ""}
+        ${linkOrganizacji ? `<span aria-hidden="true"> · </span><a href="${linkOrganizacji}">${escapeHtml(etykietaOrganizacji!)} →</a>` : ""}
         <span aria-hidden="true"> · </span>
         <a href="${stronaMiejsca}#lokalizacja">Na mapie</a>
         <span aria-hidden="true"> · </span>

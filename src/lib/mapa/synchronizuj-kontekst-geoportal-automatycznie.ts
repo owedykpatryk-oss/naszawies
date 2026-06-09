@@ -75,7 +75,12 @@ async function upsertSyncState(
 
 export async function synchronizujKontekstGeoportalAutomatycznie(
   supabase: SupabaseClient,
-  opts?: { tylkoVillageIds?: string[]; maxVillagesPerRun?: number },
+  opts?: {
+    tylkoVillageIds?: string[];
+    maxVillagesPerRun?: number;
+    pominFiltrAktywnych?: boolean;
+    wymus?: boolean;
+  },
 ): Promise<GeoportalContextSyncSummary> {
   const maxPerRun = opts?.maxVillagesPerRun ?? parseIntEnv("GEOPORTAL_CONTEXT_SYNC_VILLAGES_PER_RUN", 5, 1, 30);
   const maxScanned = parseIntEnv("GEOPORTAL_CONTEXT_SYNC_VILLAGES_SCANNED", 40, 3, 500);
@@ -95,8 +100,11 @@ export async function synchronizujKontekstGeoportalAutomatycznie(
 
   let zapytanieWsi = supabase
     .from("villages")
-    .select("id,name,latitude,longitude,population")
-    .eq("is_active", true);
+    .select("id,name,latitude,longitude,population");
+
+  if (!opts?.pominFiltrAktywnych) {
+    zapytanieWsi = zapytanieWsi.eq("is_active", true);
+  }
 
   if (opts?.tylkoVillageIds?.length) {
     zapytanieWsi = zapytanieWsi.in("id", opts.tylkoVillageIds);
@@ -125,8 +133,14 @@ export async function synchronizujKontekstGeoportalAutomatycznie(
 
     const stP = statePrng.get(village.id);
     const stI = stateInst.get(village.id);
-    const recentP = msFromIso(stP?.last_sync_at) > 0 && Date.now() - msFromIso(stP?.last_sync_at) < minSyncMs;
-    const recentI = msFromIso(stI?.last_sync_at) > 0 && Date.now() - msFromIso(stI?.last_sync_at) < minSyncMs;
+    const recentP =
+      !opts?.wymus &&
+      msFromIso(stP?.last_sync_at) > 0 &&
+      Date.now() - msFromIso(stP?.last_sync_at) < minSyncMs;
+    const recentI =
+      !opts?.wymus &&
+      msFromIso(stI?.last_sync_at) > 0 &&
+      Date.now() - msFromIso(stI?.last_sync_at) < minSyncMs;
     if (recentP && recentI) {
       summary.skippedRecentSync += 1;
       continue;

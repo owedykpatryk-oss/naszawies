@@ -8,6 +8,12 @@ import {
 } from "@/lib/wies/sciezka-publiczna";
 import { slugCzesciAdministracyjnej } from "@/lib/wies/slug-administracyjny";
 import { createPublicSupabaseClient } from "@/lib/supabase/public-client";
+import {
+  dolaczLicznikiPoiDoWsi,
+  liczbaWsiZPoi,
+  pobierzLicznikiPoiDlaWsi,
+  sumaLicznikaPoi,
+} from "@/lib/mapa/pobierz-liczniki-poi-wsi";
 
 export type WiesNaHubie = {
   id: string;
@@ -20,6 +26,7 @@ export type WiesNaHubie = {
   population: number | null;
   is_active: boolean;
   sciezka: string;
+  liczba_poi?: number;
 };
 
 export type GminaNaHubie = {
@@ -44,6 +51,8 @@ export type HubGminy = {
   powiat: string;
   gmina: string;
   wies: WiesNaHubie[];
+  liczba_poi: number;
+  liczba_wsi_z_poi: number;
 };
 
 export type HubPowiatu = {
@@ -52,6 +61,8 @@ export type HubPowiatu = {
   powiat: string;
   gminy: GminaNaHubie[];
   wies: WiesNaHubie[];
+  liczba_poi: number;
+  liczba_wsi_z_poi: number;
 };
 
 export type HubWojewodztwa = {
@@ -99,7 +110,9 @@ export async function pobierzHubGminy(
     return null;
   }
 
-  const wies = (data as Omit<WiesNaHubie, "sciezka">[]).map(mapWies);
+  const wiesSurowe = (data as Omit<WiesNaHubie, "sciezka" | "liczba_poi">[]).map(mapWies);
+  const liczniki = await pobierzLicznikiPoiDlaWsi(supabase, wiesSurowe.map((w) => w.id));
+  const wies = dolaczLicznikiPoiDoWsi(wiesSurowe, liczniki);
   const pierwsza = wies[0]!;
 
   return {
@@ -108,6 +121,8 @@ export async function pobierzHubGminy(
     powiat: pierwsza.county,
     gmina: pierwsza.commune,
     wies,
+    liczba_poi: sumaLicznikaPoi(liczniki),
+    liczba_wsi_z_poi: liczbaWsiZPoi(liczniki),
   };
 }
 
@@ -128,7 +143,9 @@ export async function pobierzHubPowiatu(
     return null;
   }
 
-  const wies = (wiesRaw as Omit<WiesNaHubie, "sciezka">[]).map(mapWies);
+  const wiesSurowe = (wiesRaw as Omit<WiesNaHubie, "sciezka" | "liczba_poi">[]).map(mapWies);
+  const liczniki = await pobierzLicznikiPoiDlaWsi(supabase, wiesSurowe.map((w) => w.id));
+  const wies = dolaczLicznikiPoiDoWsi(wiesSurowe, liczniki);
   const pierwsza = wies[0]!;
 
   const gminy: GminaNaHubie[] = ((gminyRaw ?? []) as {
@@ -154,6 +171,8 @@ export async function pobierzHubPowiatu(
     powiat: pierwsza.county,
     gminy,
     wies,
+    liczba_poi: sumaLicznikaPoi(liczniki),
+    liczba_wsi_z_poi: liczbaWsiZPoi(liczniki),
   };
 }
 
@@ -217,7 +236,7 @@ function hubGminyCached(wojSeg: string, powSeg: string, gminaSeg: string) {
       return pobierzHubGminy(supabase, wojSeg, powSeg, gminaSeg);
     },
     ["hub-gmina", wojSeg, powSeg, gminaSeg],
-    { revalidate: 3600 },
+    { revalidate: 600 },
   )();
 }
 
@@ -229,7 +248,7 @@ function hubPowiatuCached(wojSeg: string, powSeg: string) {
       return pobierzHubPowiatu(supabase, wojSeg, powSeg);
     },
     ["hub-powiat", wojSeg, powSeg],
-    { revalidate: 3600 },
+    { revalidate: 600 },
   )();
 }
 

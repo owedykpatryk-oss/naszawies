@@ -11,6 +11,7 @@ import { BlogPasekCzytania } from "@/components/blog/blog-pasek-czytania";
 import { pobierzSasiednieArtykuly } from "@/lib/blog/pobierz-sasiednie-artykuly";
 import { BlogJsonLd } from "@/components/blog/blog-json-ld";
 import { BlogPodsumowanie } from "@/components/blog/blog-podsumowanie";
+import { BlogSpisTresci } from "@/components/blog/blog-spis-tresci";
 import { BlogPowiazane } from "@/components/blog/blog-powiazane";
 import { BlogSidebar } from "@/components/blog/blog-sidebar";
 import { BlogUdostepnij } from "@/components/blog/blog-udostepnij";
@@ -60,7 +61,10 @@ export default function StronaArtykuluBlog({ params }: Props) {
   if (!artykul) notFound();
 
   const okladka = sciezkaOkladkiArtykulu(artykul.slug, artykul.ogImage ?? artykul.coverImage);
-  const breadcrumbs = generateBreadcrumbsBlog([{ nazwa: artykul.title }]);
+  const breadcrumbs = generateBreadcrumbsBlog([
+    { nazwa: artykul.category.name, href: `/blog/kategoria/${artykul.category.slug}` },
+    { nazwa: artykul.title },
+  ]);
   const powiazane = pobierzPowiazaneArtykuly(artykul);
   const { nowszy, starszy } = pobierzSasiednieArtykuly(artykul.slug);
   const linki =
@@ -122,6 +126,10 @@ export default function StronaArtykuluBlog({ params }: Props) {
           </header>
 
           <BlogPodsumowanie tekst={artykul.excerpt} />
+
+          <div className="mt-6 lg:hidden">
+            <BlogSpisTresci />
+          </div>
 
           <div
             className="blog-tresc-artykulu mt-8"

@@ -13,6 +13,8 @@ export type WpisWsi = {
   sciezka: string;
   /** Kod TERYT — gdy zwróci `/api/wies/szukaj` */
   terytId?: string;
+  liczbaPoi?: number;
+  maGranice?: boolean;
 };
 
 type Props = {
@@ -126,6 +128,20 @@ export function WyszukiwarkaWsi({ etykietaAkcji, onAkcja, tekstPrzycisku }: Prop
                     <p className="text-xs text-stone-600">
                       {w.gmina}, {w.powiat} · {w.wojewodztwo}
                     </p>
+                    {(w.liczbaPoi ?? 0) > 0 || w.maGranice ? (
+                      <p className="mt-1 flex flex-wrap gap-1.5">
+                        {(w.liczbaPoi ?? 0) > 0 ? (
+                          <span className="rounded-full bg-emerald-50 px-2 py-0.5 text-[10px] font-medium text-emerald-900 ring-1 ring-emerald-200/80">
+                            {w.liczbaPoi} POI
+                          </span>
+                        ) : null}
+                        {w.maGranice ? (
+                          <span className="rounded-full bg-teal-50 px-2 py-0.5 text-[10px] font-medium text-teal-900 ring-1 ring-teal-200/80">
+                            granica PRG
+                          </span>
+                        ) : null}
+                      </p>
+                    ) : null}
                     <a href={w.sciezka} className="text-xs text-green-800 underline">
                       Zobacz profil wsi
                     </a>

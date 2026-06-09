@@ -50,7 +50,7 @@ export function BlogKartaArtykulu({ artykul, featured = false }: Props) {
         </h2>
         <p className="mt-2 line-clamp-3 flex-1 text-sm text-stone-600 dark:text-stone-400">{artykul.excerpt}</p>
         <p className="mt-3 text-xs text-stone-500 dark:text-stone-500">
-          {artykul.readingTime} min czytania ·{" "}
+          {artykul.author.name} · {artykul.readingTime} min czytania ·{" "}
           {new Date(artykul.publishedAt).toLocaleDateString("pl-PL", {
             day: "numeric",
             month: "long",

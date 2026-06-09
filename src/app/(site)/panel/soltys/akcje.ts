@@ -1993,6 +1993,7 @@ const schemaWygladWsi = z.object({
     .max(8)
     .optional(),
   domyslny_tryb_seniora: z.boolean().optional(),
+  ciekawostki_wsi: z.string().max(3000).optional().nullable(),
   konfiguracja_ukonczona: z.boolean().optional(),
   cover_image_url: z.string().max(2048).optional().nullable(),
   zakladki: z
@@ -2105,6 +2106,10 @@ export async function zapiszUstawieniaWygladuWsi(dane: z.infer<typeof schemaWygl
       obraz_url: b.obraz_url?.trim() || null,
     })),
     domyslny_tryb_seniora: p.data.domyslny_tryb_seniora === true,
+    ciekawostki_wsi:
+      p.data.ciekawostki_wsi != null && p.data.ciekawostki_wsi.trim().length > 0
+        ? p.data.ciekawostki_wsi.trim()
+        : null,
     konfiguracja_ukonczona: p.data.konfiguracja_ukonczona === true,
     zakladki: p.data.zakladki,
     pasek_nawigacji: p.data.pasek_nawigacji,

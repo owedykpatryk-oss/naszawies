@@ -13,7 +13,11 @@ type Props = {
 export function BlogSidebar({ kategorie, ostatnie, tagiPopularne = [], pokazSpis = false }: Props) {
   return (
     <aside className="space-y-6 lg:sticky lg:top-6 lg:max-h-[calc(100dvh-2rem)] lg:overflow-y-auto">
-      {pokazSpis ? <BlogSpisTresci /> : null}
+      {pokazSpis ? (
+        <div className="hidden lg:block">
+          <BlogSpisTresci />
+        </div>
+      ) : null}
 
       <div className="rounded-xl border border-stone-200/80 bg-white/90 p-4 dark:border-stone-700 dark:bg-stone-900/40">
         <p className="text-xs font-semibold uppercase tracking-wide text-stone-500">Kategorie</p>

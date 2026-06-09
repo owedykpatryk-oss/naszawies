@@ -1,0 +1,59 @@
+{
+  "title": "Centrum wspomnień wsi — fotokronika, kronika i liczniki pamięci",
+  "slug": "centrum-wspomnien-wsi-fotokronika",
+  "excerpt": "Nowa sekcja profilu łączy fotokronikę i historię w jednym miejscu: podgląd zdjęć, wpisy kroniki i animowane statystyki — jak z niej korzystać.",
+  "coverImage": "/blog/centrum-wspomnien-wsi-fotokronika/cover.webp",
+  "gallery": [
+    "/blog/centrum-wspomnien-wsi-fotokronika/cover.webp",
+    "/blog/centrum-wspomnien-wsi-fotokronika/visual-01.webp"
+  ],
+  "authorId": "zespol",
+  "categorySlug": "spolecznosc",
+  "tags": [
+    "fotokronika",
+    "historia",
+    "wspomnienia",
+    "zdjecia",
+    "kronika"
+  ],
+  "faq": [
+    {
+      "question": "Czym różni się centrum wspomnień od zwykłej galerii?",
+      "answer": "Centrum łączy fotokronikę, wpisy historii wsi i albumy tematyczne w jednym widoku z podglądem i skrótami — zamiast szukać modułów osobno."
+    },
+    {
+      "question": "Czy sekcja jest widoczna na każdej wsi?",
+      "answer": "Pojawia się, gdy sołtys włączy moduł historii lub fotokroniki w ustawieniach profilu — nawet przed dodaniem pierwszych zdjęć."
+    },
+    {
+      "question": "Jak dodać album tematyczny?",
+      "answer": "W panelu fotokroniki przypisz zdjęcia do albumu (np. Dożynki, Stare chaty). Albumy publiczne trafiają do układu bento na profilu wsi."
+    }
+  ],
+  "relatedSlugs": [
+    "fotokronika-i-historia-wsi",
+    "kgw-integracja-spolecznosci",
+    "osp-na-profilu-wsi"
+  ],
+  "featured": true,
+  "status": "published",
+  "publishedAt": "2026-06-18T08:00:00.000Z",
+  "seoTitle": "Centrum wspomnień — fotokronika i historia wsi",
+  "seoDescription": "Jak korzystać z centrum wspomnień na profilu wsi: fotokronika bento, wpisy kroniki, albumy tematyczne i współpraca mieszkańców.",
+  "ogImage": "/blog/centrum-wspomnien-wsi-fotokronika/cover.webp",
+  "internalLinks": [
+    {
+      "href": "/o-nas",
+      "label": "O naszawies.pl"
+    },
+    {
+      "href": "/blog/fotokronika-i-historia-wsi",
+      "label": "Fotokronika wsi"
+    }
+  ],
+  "generatedImages": [
+    "/blog/centrum-wspomnien-wsi-fotokronika/cover.webp",
+    "/blog/centrum-wspomnien-wsi-fotokronika/visual-01.webp"
+  ],
+  "content": "<p>Zdjęcia z dożynek leżą u księgowej, skan chaty u emeryta, a opis remontu boiska — w protokole zebrania z 2019 roku. <strong>Centrum wspomnień</strong> na profilu wsi zbiera fotokronikę i historię w jednym, wizualnym miejscu — z podglądem albumów, licznikami i zaproszeniem do współtworzenia.</p>\n\n<div class=\"blog-pullquote\">Pamięć wsi to nie archiwum kurzu — to żywy album, do którego można dołożyć kartę w każdej chwili.</div>\n\n<h2 id=\"co-widac\">Co widać w centrum?</h2>\n<ul class=\"blog-lista-check\">\n<li>Animowane liczniki: ile wpisów historii, zdjęć i albumów</li>\n<li>Filmstrip — poziomy podgląd ostatnich fotografii</li>\n<li>Karty historii z datą, epoką i skrótem opisu</li>\n<li>Odnośniki do pełnej kroniki i fotokroniki</li>\n</ul>\n\n<figure><img src=\"/blog/centrum-wspomnien-wsi-fotokronika/visual-01.webp\" alt=\"Stare i współczesne zdjęcia wiejskie — archiwum fotokroniki miejscowości\" width=\"900\" height=\"600\" loading=\"lazy\" /><figcaption>Centrum wspomnień łączy archiwalne i współczesne zdjęcia — jeden punkt startu dla odwiedzających profil.</figcaption></figure>\n\n<h2 id=\"albumy\">Albumy tematyczne (bento)</h2>\n<p>Fotokronika na profilu układa albumy w siatce bento — większe kafle dla ważniejszych zbiorów. Badge „Żywa kronika” pojawia się, gdy w ostatnich tygodniach ktoś dodał zdjęcia. To sygnał dla gości: ta wieś aktualizuje pamięć, nie tylko trzyma stare PDF-y.</p>\n\n<h2 id=\"plan\">Plan na pierwszy miesiąc</h2>\n<ol class=\"blog-lista-kroki\">\n<li>Tydzień 1: 15 zdjęć z ostatniego festynu + album „Dożynki 2025”</li>\n<li>Tydzień 2: jeden wpis historii — „Kiedy powstało sołectwo”</li>\n<li>Tydzień 3: skan starej pocztówki od seniora (za zgodą autora zdjęcia)</li>\n<li>Tydzień 4: ogłoszenie: „Szukamy zdjęć przedwojennych”</li>\n</ol>\n\n<div class=\"blog-callout blog-callout-porada\"><strong>Porada</strong><p>Na profilu wsi zakładka <strong>Pamięć</strong> prowadzi prosto do centrum — warto wspomnieć o niej na zebraniu i w ogłoszeniu KGW.</p></div>\n\n<h2 id=\"prywatnosc\">Prywatność i zgody</h2>\n<p>Publiczne albumy są widoczne dla każdego odwiedzającego stronę wsi. Nie publikuj zdjęć dzieci bez zgody rodziców ani wizerunków osób, które wyraźnie tego nie chcą. Wątpliwe materiały zostaw w panelu do moderacji.</p>\n\n<hr class=\"blog-separator\" />\n<p>Więcej: <a href=\"/blog/fotokronika-i-historia-wsi\">fotokronika krok po kroku</a>, <a href=\"/blog/jak-zalozyc-profil-wsi\">profil wsi od zera</a>.</p>"
+}

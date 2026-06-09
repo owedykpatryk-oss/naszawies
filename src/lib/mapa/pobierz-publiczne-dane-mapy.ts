@@ -223,6 +223,6 @@ async function pobierzPubliczneDaneMapyRaw(): Promise<PubliczneDaneMapy> {
 /** Współdzielone dane mapy (znaczniki + warstwy publiczne) — cache 2 min. */
 export const pobierzPubliczneDaneMapy = unstable_cache(
   pobierzPubliczneDaneMapyRaw,
-  ["mapa-publiczne-warstwy-v1"],
+  ["mapa-publiczne-warstwy-v2"],
   { revalidate: 120 },
 );

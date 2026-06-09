@@ -51,6 +51,13 @@
 </nav>
 
 <header class="hero">
+  <div class="hero-ambient" aria-hidden="true">
+    <span class="hero-ambient__blob hero-ambient__blob--1"></span>
+    <span class="hero-ambient__blob hero-ambient__blob--2"></span>
+    <span class="hero-ambient__blob hero-ambient__blob--3"></span>
+    <span class="hero-ambient__grain"></span>
+  </div>
+  <div class="hero-spotlight" aria-hidden="true"></div>
   <div class="hero-photo-mobile">
     <img
       src="/landing/hero-wies.jpg"
@@ -68,9 +75,9 @@
   <div class="container">
     <div class="hero-grid">
       <div class="hero-text">
-        <div class="hero-eyebrow hero-eyebrow--pulse">Już działa · Rejestracja w 2 min · 0 zł na zawsze</div>
-        <h1>Cyfrowy dom dla <em>naszej wsi</em>.</h1>
-        <p class="hero-lead">Jedna strona wsi zamiast rozproszonych grup i zeszytów. Świetlica z planem stołów, rynek bez prowizji, przypomnienia o terminach — sołtys ma kontrolę, sąsiedzi mają porządek.</p>
+        <div class="hero-eyebrow hero-eyebrow--pulse hero-anim-in">Już działa · Rejestracja w 2 min · 0 zł na zawsze</div>
+        <h1 class="hero-anim-in hero-anim-in--2">Cyfrowy dom dla <em class="hero-em-shimmer">naszej wsi</em>.</h1>
+        <p class="hero-lead hero-anim-in hero-anim-in--3">Jedna strona wsi zamiast rozproszonych grup i zeszytów. Świetlica z planem stołów, rynek bez prowizji, przypomnienia o terminach — sołtys ma kontrolę, sąsiedzi mają porządek.</p>
         <div class="hero-ctas wow-on-scroll">
           <a href="/rejestracja" class="btn btn-primary btn-hero-glow">Załóż konto — 0 zł</a>
           <a href="#zobacz" class="btn btn-secondary">Zobacz, jak to wygląda</a>
@@ -168,19 +175,19 @@
             <path d="M140 70 Q145 65 150 70 Q155 65 160 70" stroke="#2d5a2d" stroke-width="1.5" fill="none"/>
           </svg>
         </div>
-        <div class="floating-card card-1">
+        <div class="floating-card card-1" data-tilt>
           <div class="icon" style="background: #e8f0e3;">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2d5a2d" stroke-width="2.5"><rect x="3" y="4" width="18" height="18" rx="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg>
           </div>
           <div class="text"><strong>Rezerwacja na sobotę</strong><span>Urodziny Zosi · 40 osób</span></div>
         </div>
-        <div class="floating-card card-2">
+        <div class="floating-card card-2" data-tilt>
           <div class="icon" style="background: rgba(212, 160, 23, 0.15);">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#a37b0c" stroke-width="2.5"><path d="M21 10c0 7-9 13-9 13s-9-6-9-13a9 9 0 0 1 18 0z"/><circle cx="12" cy="10" r="3"/></svg>
           </div>
           <div class="text"><strong>Plan sali gotowy</strong><span>Układ bankietowy · 40 miejsc · do wydruku</span></div>
         </div>
-        <div class="floating-card card-3">
+        <div class="floating-card card-3" data-tilt>
           <div class="icon" style="background: rgba(90, 156, 62, 0.12);">
             <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#2d5a2d" stroke-width="2.5"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/></svg>
           </div>
@@ -236,7 +243,7 @@
       <span class="section-eyebrow">Zacznij w 60 sekund</span>
       <h2 id="audience-tytul">Wybierz, kim jesteś — reszta <em>prosta</em>.</h2>
     </div>
-    <div class="audience-grid">
+    <div class="audience-grid wow-stagger-grid">
       <article class="audience-card audience-card--accent">
         <span class="audience-card__badge">Sołtys</span>
         <h3>Prowadzę wieś</h3>
@@ -368,14 +375,14 @@
   </div>
 </section>
 
-<section class="nowosci" id="nowosci">
+<section class="nowosci ujawnij-scroll" id="nowosci">
   <div class="container">
     <div class="section-header">
       <span class="section-eyebrow">Świeżo na platformie</span>
       <h2>Co dodaliśmy <em>ostatnio</em>.</h2>
       <p>Platforma rośnie razem z pierwszymi wsiami — oto moduły, które już działają po zalogowaniu.</p>
     </div>
-    <div class="nowosci-grid">
+    <div class="nowosci-grid wow-stagger-grid">
       <article class="nowosci-card nowosci-card--accent">
         <span class="nowosci-card__badge">Rynek lokalny</span>
         <h3>Firmy, sklepy i ogłoszenia sąsiedzkie</h3>
@@ -416,9 +423,9 @@
   </div>
 </section>
 
-<section class="hero-feature" id="swietlica">
+<section class="hero-feature ujawnij-scroll" id="swietlica">
   <div class="container">
-    <div class="feature-showcase">
+    <div class="feature-showcase wow-stagger-split">
       <div class="feature-showcase-text">
         <span class="section-eyebrow">Funkcja flagowa</span>
         <h2>Zaplanuj <em>układ stołów</em> w świetlicy zanim przyjdą goście.</h2>
@@ -564,14 +571,14 @@
   </div>
 </section>
 
-<section class="roles" id="dla-kogo">
+<section class="roles ujawnij-scroll" id="dla-kogo">
   <div class="container">
     <div class="section-header">
       <span class="section-eyebrow">Kto może dołączyć</span>
       <h2>Trzy role, <em>jedna wieś</em>.</h2>
       <p>Każdy wnosi coś innego. Razem tworzą żywą społeczność.</p>
     </div>
-    <div class="roles-grid">
+    <div class="roles-grid wow-stagger-grid">
       <div class="role-card">
         <span class="role-badge">Wolny dostęp</span>
         <h3>Gość</h3>
@@ -644,16 +651,16 @@
       <h2 id="opinie-tytul">Co mówią <em>pierwsi użytkownicy</em>.</h2>
       <p>Opinie z pilota — sołtysi i mieszkańcy, którzy testują platformę na żywo.</p>
     </div>
-    <div class="opinie-grid">
-      <blockquote class="opinia-card ujawnij-scroll">
+    <div class="opinie-grid ujawnij-scroll">
+      <blockquote class="opinia-card">
         <p class="opinia-card__tekst">„Wreszcie wiem, ile stołów postawić przed urodzinami wnuka. Plan wydrukowałam, mąż ustawił meble wieczorem wcześniej — bez awantur w sobotę.”</p>
         <footer><strong>Maria K.</strong><span>Mieszkanka · rezerwacja świetlicy</span></footer>
       </blockquote>
-      <blockquote class="opinia-card opinia-card--zloto ujawnij-scroll">
+      <blockquote class="opinia-card opinia-card--zloto">
         <p class="opinia-card__tekst">„Rynek na stronie wsi to dla mnie sklep bez prowizji. Sąsiedzi widzą miód, ja widzę kto obserwuje profil — a sołtys ma porządek.”</p>
         <footer><strong>Pasieka u Wojtka</strong><span>Profil firmy na rynku wsi</span></footer>
       </blockquote>
-      <blockquote class="opinia-card ujawnij-scroll">
+      <blockquote class="opinia-card">
         <p class="opinia-card__tekst">„Ustawiłem przypomnienie o śmieciach i podatku rolnego. Ludzie dostają to w panelu, nie muszę co tydzień przypominać na grupie.”</p>
         <footer><strong>Sołtys z pilota</strong><span>Przewodnik samorządowy</span></footer>
       </blockquote>
