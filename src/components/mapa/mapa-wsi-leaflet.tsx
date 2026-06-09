@@ -32,6 +32,7 @@ import {
 import { formatujGodzinyOtwarcia } from "@/lib/mapa/formatuj-godziny-otwarcia";
 import { etykietaLanduseOsm, stylLanduseOsm } from "@/lib/mapa/landuse-osm";
 import { granicaJakoGeoJson } from "@/lib/mapa/granica-geojson";
+import { filtrujZnacznikiWBbox, type BboxMapy } from "@/lib/mapa/bbox-mapy";
 import { tekstOdliczaniaPolowania, type FazaPolowaniaMapy } from "@/lib/mapa/formatuj-polowanie";
 import {
   etykietaRodzajuOstrzezenia,
@@ -1147,6 +1148,8 @@ const MapaWsiLeafletInner = forwardRef<
     /** Ukrywa panel „Warstwy” na mapie — sterowanie z sidebara. */
     sterowanieWarstwZewnetrzne?: boolean;
     onZoomChange?: (zoom: number) => void;
+    bboxWidoku?: BboxMapy | null;
+    onBoundsChange?: (bbox: BboxMapy) => void;
   }
 >(function MapaWsiLeaflet(
   {
@@ -1191,6 +1194,8 @@ const MapaWsiLeafletInner = forwardRef<
     onPokazGeoKontekstChange,
     sterowanieWarstwZewnetrzne = false,
     onZoomChange,
+    bboxWidoku = null,
+    onBoundsChange,
   },
   ref,
 ) {
@@ -1320,6 +1325,10 @@ const MapaWsiLeafletInner = forwardRef<
     promienRef.current = promienKm;
     const graniceWsiRef = useRef(graniceWsi);
     graniceWsiRef.current = graniceWsi;
+    const bboxMapyRef = useRef(bboxWidoku);
+    bboxMapyRef.current = bboxWidoku;
+    const onBoundsChangeRef = useRef(onBoundsChange);
+    onBoundsChangeRef.current = onBoundsChange;
     const [mapaGotowa, setMapaGotowa] = useState(false);
 
     const bboxPoczatkowy = useMemo(
@@ -1335,8 +1344,8 @@ const MapaWsiLeafletInner = forwardRef<
       [znaczniki, punktyPoi, punktyRynek, punktyRynekDzialki, punktyPolowania, punktyCmentarze, pokazPoiStan, pokazRynekStan],
     );
 
-    const bboxWidokuRef = useRef(bboxPoczatkowy);
-    bboxWidokuRef.current = bboxPoczatkowy;
+    const bboxFitRef = useRef(bboxPoczatkowy);
+    bboxFitRef.current = bboxPoczatkowy;
 
     useEffect(() => {
       if (sterowanieWarstwZewnetrzne) return;
@@ -1374,7 +1383,7 @@ const MapaWsiLeafletInner = forwardRef<
       przyblizDoWszystkich() {
         const inst = instancja.current;
         const L = leafletRef.current;
-        const bb = bboxWidokuRef.current;
+        const bb = bboxFitRef.current;
         if (!inst || !L || !bb) return false;
         const bounds = L.latLngBounds(bb);
         if (!bounds.isValid()) return false;
@@ -1568,6 +1577,17 @@ const MapaWsiLeafletInner = forwardRef<
           onZoomChange?.(z);
         };
         map.on("zoomend", onZoom);
+        const raportujBbox = () => {
+          const b = map.getBounds();
+          onBoundsChangeRef.current?.({
+            south: b.getSouth(),
+            west: b.getWest(),
+            north: b.getNorth(),
+            east: b.getEast(),
+          });
+        };
+        map.on("moveend", raportujBbox);
+        raportujBbox();
         const zoomStart = map.getZoom();
         setZoomMapy(zoomStart);
         onZoomChange?.(zoomStart);
@@ -1653,6 +1673,7 @@ const MapaWsiLeafletInner = forwardRef<
         syncGraniceWsiNaMapie(L, instancja.current, z0, graniceWsiRef.current, {
           pokazGranice: pokazGraniceRef.current,
           egibWidoczny: egibWidocznyInit,
+          bbox: bboxMapyRef.current,
         });
         syncWarstwaUzytkownika(L, instancja.current, pozycjaRef.current, promienRef.current);
         setMapaGotowa(true);
@@ -1747,8 +1768,9 @@ const MapaWsiLeafletInner = forwardRef<
       syncGraniceWsiNaMapie(L, inst, znaczniki, graniceWsi, {
         pokazGranice: pokazGraniceStan,
         egibWidoczny,
+        bbox: bboxWidoku,
       });
-    }, [graniceWsi, znaczniki, pokazGraniceStan, pokazKiegStan, zoomMapy, mapaGotowa]);
+    }, [graniceWsi, znaczniki, pokazGraniceStan, pokazKiegStan, zoomMapy, mapaGotowa, bboxWidoku]);
 
     useEffect(() => {
       const inst = instancja.current;
@@ -2234,13 +2256,15 @@ function syncGraniceWsiNaMapie(
   inst: InstancjaLeaflet,
   znaczniki: ZnacznikWsi[],
   granicePoId: Record<string, unknown>,
-  opts: { pokazGranice: boolean; egibWidoczny: boolean },
+  opts: { pokazGranice: boolean; egibWidoczny: boolean; bbox?: BboxMapy | null },
 ) {
   const { graniceWsiGroup } = inst;
   graniceWsiGroup.clearLayers();
   if (!opts.pokazGranice) return;
 
-  for (const z of znaczniki) {
+  const widoczne = filtrujZnacznikiWBbox(znaczniki, opts.bbox ?? null, 100);
+
+  for (const z of widoczne) {
     const gj = granicaJakoGeoJson(granicePoId[z.id] ?? z.boundary_geojson);
     let wariant: WariantGranicyWPopup = "pozor";
     if (gj) {

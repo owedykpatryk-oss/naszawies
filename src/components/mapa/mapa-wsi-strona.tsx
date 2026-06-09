@@ -26,6 +26,7 @@ import {
 import { czyKategoriaPoiLowiecka } from "@/lib/mapa/poi-lowieckie-widocznosc";
 import { obrysPowiatuZznacznikow } from "@/lib/mapa/obrys-administracyjny";
 import { wiesMaObrys } from "@/lib/mapa/wies-ma-obrys";
+import { punktWBbox } from "@/lib/mapa/bbox-mapy";
 import type { GeoJsonObject } from "geojson";
 import { MapaLowiectwoOverlay } from "@/components/mapa/mapa-lowiectwo-overlay";
 import { odliczanieZywHms, tekstOdliczaniaPolowania } from "@/lib/mapa/formatuj-polowanie";
@@ -48,6 +49,8 @@ import {
   obliczStatystykiPoiNaMapie,
 } from "@/lib/mapa/statystyki-poi-mapy";
 import { obliczSredniaKompletnoscMapy } from "@/lib/mapa/wybierz-wsi-do-uzupelnienia";
+import { filtrAdminZParametrowUrl, czyDomyslnyFiltrPowiatu } from "@/lib/mapa/domyslny-filtr-mapy";
+import type { BboxMapy } from "@/lib/mapa/bbox-mapy";
 import {
   liczAktywneWarstwy,
   zastosujPresetWarstw,
@@ -267,6 +270,8 @@ function podswietlDopasowanie(tekst: string, frazaSurowa: string): ReactNode {
 type TrybSidebara = "katalog" | "szukaj";
 
 const PROMIENIE_KM = [0, 10, 25, 50, 100] as const;
+const LIMIT_LISTY_WSI = 80;
+const MIN_ZOOM_GRANICE_WSI = 12;
 
 export function MapaWsiStrona({
   znaczniki,
@@ -358,11 +363,13 @@ export function MapaWsiStrona({
     if (searchParams.get("rynek") === "0") return false;
     return searchParams.get("warstwa") !== "transport" && searchParams.get("warstwa") !== "lowiectwo";
   });
-  const [filtrAdmin, ustawFiltrAdmin] = useState<FiltrAdministracyjny>(() => ({
-    wojSlug: searchParams.get("woj") ?? "",
-    powSlug: searchParams.get("pow") ?? "",
-    gminaSlug: searchParams.get("gmina") ?? "",
-  }));
+  const [filtrAdmin, ustawFiltrAdmin] = useState<FiltrAdministracyjny>(() =>
+    filtrAdminZParametrowUrl({
+      woj: searchParams.get("woj"),
+      pow: searchParams.get("pow"),
+      gmina: searchParams.get("gmina"),
+    }),
+  );
   const [filtrNazwa, ustawFiltrNazwa] = useState("");
   const [tylkoObrysPrg, ustawTylkoObrysPrg] = useState(searchParams.get("obrys") === "1");
   const [tylkoOferty, ustawTylkoOferty] = useState(searchParams.get("oferty") === "1");
@@ -375,9 +382,11 @@ export function MapaWsiStrona({
   const [pokazObrysWojewodztwa, ustawPokazObrysWojewodztwa] = useState(
     () => searchParams.get("woj_obrys") === "1" || Boolean(searchParams.get("woj")),
   );
-  const [pokazGraniceWsi, ustawPokazGraniceWsi] = useState(
-    () => searchParams.get("granice_wsi") !== "0",
-  );
+  const [pokazGraniceWsi, ustawPokazGraniceWsi] = useState(() => {
+    if (searchParams.get("granice_wsi") === "0") return false;
+    if (searchParams.get("granice_wsi") === "1") return true;
+    return false;
+  });
   const [pokazGraniceDzialek, ustawPokazGraniceDzialek] = useState(
     () => searchParams.get("dzialki") !== "0",
   );
@@ -410,6 +419,8 @@ export function MapaWsiStrona({
     () => searchParams.get("cmentarze") !== "0",
   );
   const [zoomMapy, ustawZoomMapy] = useState(7);
+  const [bboxWidoku, ustawBboxWidoku] = useState<BboxMapy | null>(null);
+  const [limitListyWsi, ustawLimitListyWsi] = useState(LIMIT_LISTY_WSI);
 
   const szukajOdroczone = useDeferredValue(szukaj);
   const filtrNazwaOdroczony = useDeferredValue(filtrNazwa);
@@ -622,8 +633,9 @@ export function MapaWsiStrona({
   useEffect(() => {
     const brakujace = odfiltrowane
       .filter((z) => wiesMaObrys(z) && !z.boundary_geojson && !graniceLazy[z.id])
+      .filter((z) => !bboxWidoku || punktWBbox(z.lat, z.lon, bboxWidoku))
       .map((z) => z.id)
-      .slice(0, 50);
+      .slice(0, 30);
     if (brakujace.length === 0) return;
     const ctrl = new AbortController();
     void pobierzGraniceWsiApi(brakujace, ctrl.signal).then((granice) => {
@@ -633,7 +645,7 @@ export function MapaWsiStrona({
     return () => {
       ctrl.abort();
     };
-  }, [odfiltrowane]);
+  }, [odfiltrowane, bboxWidoku]);
 
   useEffect(() => {
     if (!pokazNadlesnictwa || !srodekObszaruMapy) {
@@ -848,6 +860,13 @@ export function MapaWsiStrona({
         odlegloscKm(pozycjaUzytkownika.lat, pozycjaUzytkownika.lon, b.lat, b.lon),
     );
   }, [odfiltrowane, pozycjaUzytkownika]);
+
+  const wierszeListyWidoczne = useMemo(
+    () => wierszeListy.slice(0, limitListyWsi),
+    [wierszeListy, limitListyWsi],
+  );
+
+  const animujListeWsi = wierszeListyWidoczne.length <= 36;
 
   const kluczZnacznikowMapy = useMemo(
     () => wierszeListy.map((z) => `${z.id}\t${z.lat}\t${z.lon}\t${z.public_offers_count}`).join("\n"),
@@ -1281,6 +1300,18 @@ export function MapaWsiStrona({
 
   const kluczListy = `${frazaDoPodswietlenia}|${pozycjaUzytkownika ? "gps" : "nogps"}|${filtrAdmin.gminaSlug}`;
 
+  useEffect(() => {
+    ustawLimitListyWsi(LIMIT_LISTY_WSI);
+  }, [kluczListy]);
+
+  const pokazDomyslnyBanner = czyDomyslnyFiltrPowiatu(filtrAdmin);
+  const graniceWsiAktywne =
+    pokazGraniceWsi && zoomMapy >= MIN_ZOOM_GRANICE_WSI;
+
+  const wyczyscDoCalejPolski = useCallback(() => {
+    ustawFiltrAdmin({ wojSlug: "", powSlug: "", gminaSlug: "" });
+  }, []);
+
   if (!klientGotowy) {
     return (
       <div
@@ -1503,10 +1534,23 @@ export function MapaWsiStrona({
 
           <div className="mapa-lista-wsi-naglowek mt-4">
             <span className="mapa-lista-wsi-naglowek__tytul">Lista wsi</span>
-            <span className="mapa-lista-wsi-naglowek__liczba">{wierszeListy.length}</span>
+            <span className="mapa-lista-wsi-naglowek__liczba">
+              {wierszeListy.length}
+              {wierszeListy.length !== wierszeListyWidoczne.length
+                ? ` · ${wierszeListyWidoczne.length} na liście`
+                : ""}
+            </span>
           </div>
+          {pokazDomyslnyBanner ? (
+            <p className="mb-2 rounded-lg border border-emerald-200/80 bg-emerald-50/90 px-2.5 py-2 text-[11px] leading-snug text-emerald-950">
+              Startujesz od <strong>powiatu nakielskiego</strong> — mapa działa płynniej.{" "}
+              <button type="button" className="font-medium underline" onClick={wyczyscDoCalejPolski}>
+                Pokaż całą Polskę
+              </button>
+            </p>
+          ) : null}
           <ul key={kluczListy} className="space-y-1.5 pb-2">
-          {wierszeListy.length === 0 ? (
+          {wierszeListyWidoczne.length === 0 ? (
             <li className="mapa-sidebar-pusty">
               Brak wsi pasujących do filtrów.{" "}
               <button type="button" className="font-medium text-green-900 underline" onClick={wyczyscFiltry}>
@@ -1519,7 +1563,7 @@ export function MapaWsiStrona({
               .
             </li>
           ) : (
-            wierszeListy.map((z, index) => {
+            wierszeListyWidoczne.map((z, index) => {
               const km = pozycjaUzytkownika
                 ? Math.round(odlegloscKm(pozycjaUzytkownika.lat, pozycjaUzytkownika.lon, z.lat, z.lon))
                 : null;
@@ -1527,8 +1571,12 @@ export function MapaWsiStrona({
               return (
                 <li
                   key={z.id}
-                  className="opacity-0 animate-mapa-row motion-reduce:animate-none motion-reduce:opacity-100"
-                  style={{ animationDelay: `${Math.min(index, 18) * 38}ms` }}
+                  className={
+                    animujListeWsi
+                      ? "opacity-0 animate-mapa-row motion-reduce:animate-none motion-reduce:opacity-100"
+                      : undefined
+                  }
+                  style={animujListeWsi ? { animationDelay: `${Math.min(index, 18) * 38}ms` } : undefined}
                 >
                   <div className="mapa-karta-wsi">
                     <button
@@ -1568,6 +1616,18 @@ export function MapaWsiStrona({
               );
             })
           )}
+
+          {wierszeListy.length > wierszeListyWidoczne.length ? (
+            <li className="pt-1">
+              <button
+                type="button"
+                className="w-full rounded-lg border border-green-900/12 bg-white px-3 py-2 text-xs font-medium text-green-900 hover:bg-green-50"
+                onClick={() => ustawLimitListyWsi((n) => n + LIMIT_LISTY_WSI)}
+              >
+                Pokaż więcej ({wierszeListy.length - wierszeListyWidoczne.length} pozostało)
+              </button>
+            </li>
+          ) : null}
 
           <MapaSidebarSkroty
             pokazZagospodarowanie={pokazZagospodarowanie}
@@ -1727,8 +1787,10 @@ export function MapaWsiStrona({
               nadlesnictwaObrysy={pokazNadlesnictwa ? nadlesnictwaObrysy : []}
               lesnictwaObrysy={pokazLesnictwa ? lesnictwaObrysy : []}
               obwodyLowieckieObrysy={pokazObwodyLowieckie ? obwodyLowieckieObrysy : []}
-              pokazGranice={pokazGraniceWsi}
+              pokazGranice={graniceWsiAktywne}
               onPokazGraniceChange={ustawPokazGraniceWsi}
+              onBoundsChange={ustawBboxWidoku}
+              bboxWidoku={bboxWidoku}
               pokazGraniceDzialek={pokazGraniceDzialek}
               onPokazGraniceDzialekChange={ustawPokazGraniceDzialek}
               pokazGraniceObrebow={pokazGraniceObrebow}
