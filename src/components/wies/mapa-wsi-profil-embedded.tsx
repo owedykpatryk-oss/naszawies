@@ -66,8 +66,14 @@ export function MapaWsiProfilEmbedded({ nazwaWsi, villageId, zalogowany, znaczni
 
       {pois.length > 0 ? <SekcjaSkrotPoiWsi pois={pois} nazwaWsi={nazwaWsi} /> : null}
 
-      <div className="mt-4 overflow-hidden rounded-xl border border-stone-200 shadow-sm ring-1 ring-stone-900/[0.03]">
-        <MapaWsiLeaflet znaczniki={znaczniki} punktyPoi={pois} pokazRynek={false} wysokoscMapy="kompakt" />
+      <div className="mt-4 overflow-hidden rounded-xl border border-stone-200 shadow-sm ring-1 ring-stone-900/[0.03] [&_.mapa-wsi-map-shell]:min-h-[min(320px,45dvh)]">
+        <MapaWsiLeaflet
+          znaczniki={znaczniki}
+          punktyPoi={pois}
+          pokazRynek={false}
+          wysokoscMapy="kompakt"
+          sterowanieWarstwZewnetrzne
+        />
       </div>
 
       <p className="mt-3 flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-stone-600">

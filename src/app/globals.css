@@ -456,10 +456,22 @@ html[data-tryb-dostepnosci="wysoki-kontrast"] .btn-panel-secondary {
 
   .mapa-strona-glowna--immersive {
     min-height: calc(100dvh - var(--dolna-naw-offset, 0px));
+    overscroll-behavior: none;
   }
 
-  .mapa-strona-glowna--immersive .mapa-widget-pelny {
+  .site-tlo-aplikacji:has(.mapa-strona-glowna--immersive) {
+    overscroll-behavior: none;
+  }
+
+  .mapa-strona-glowna--immersive .mapa-widget-glowny {
     min-height: calc(100dvh - var(--dolna-naw-offset, 0px) - 2.75rem);
+  }
+
+  .mapa-kolumna-mapy {
+    flex: 1 1 auto;
+    height: 100%;
+    min-height: 0;
+    overflow: hidden;
   }
 
   @media (max-width: 1023px) {
@@ -469,7 +481,7 @@ html[data-tryb-dostepnosci="wysoki-kontrast"] .btn-panel-secondary {
       overflow: hidden;
     }
 
-    .mapa-strona-glowna--immersive .mapa-widget-pelny {
+    .mapa-strona-glowna--immersive .mapa-widget-glowny {
       flex: 1 1 auto;
       min-height: 0;
       overflow: hidden;
@@ -477,8 +489,16 @@ html[data-tryb-dostepnosci="wysoki-kontrast"] .btn-panel-secondary {
   }
 
   @media (min-width: 1024px) {
-    .mapa-strona-glowna--immersive .mapa-widget-pelny {
-      min-height: calc(100dvh - var(--dolna-naw-offset, 0px) - 2.75rem);
+    .mapa-strona-glowna--immersive {
+      height: calc(100dvh - var(--dolna-naw-offset, 0px));
+      max-height: calc(100dvh - var(--dolna-naw-offset, 0px));
+      overflow: hidden;
+    }
+
+    .mapa-strona-glowna--immersive .mapa-widget-glowny {
+      flex: 1 1 auto;
+      min-height: 0;
+      overflow: hidden;
     }
   }
 
@@ -1039,10 +1059,16 @@ html[data-tryb-dostepnosci="wysoki-kontrast"] .btn-panel-secondary {
   }
 
   .mapa-fab-filtry {
-    @apply fixed z-[44] flex min-h-[44px] flex-col items-start gap-0 rounded-2xl border border-green-900/15 px-3.5 py-2 text-white shadow-[0_8px_28px_rgba(45,90,45,0.28)] ring-2 ring-white/90 transition active:scale-[0.98];
+    @apply fixed z-[44] flex min-h-[44px] max-w-[min(calc(100vw-5.5rem),13rem)] flex-col items-start gap-0 rounded-2xl border border-green-900/15 px-3 py-2 text-white shadow-[0_8px_28px_rgba(45,90,45,0.28)] ring-2 ring-white/90 transition active:scale-[0.98];
     left: max(0.75rem, env(safe-area-inset-left));
     bottom: calc(0.75rem + var(--dolna-naw-offset, 0px) + env(safe-area-inset-bottom));
     background: linear-gradient(145deg, #2d5a2d 0%, #3d7a3d 55%, #2d5a2d 100%);
+  }
+
+  @media (max-width: 380px) {
+    .mapa-fab-filtry__dopisek {
+      display: none;
+    }
   }
 
   .mapa-fab-filtry__glowny {

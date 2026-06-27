@@ -280,6 +280,8 @@ export type MapaWsiLeafletRef = {
   pokazOstrzezenieLesne: (id: string) => boolean;
   pokazPoi: (idPoi: string) => boolean;
   ustawPodklad: (rodzaj: RodzajPodkladuMapy) => void;
+  /** Po zmianie układu (hydratacja, panel) — odświeża rozmiar kafelków. */
+  odswiezRozmiar: () => void;
 };
 
 function escapeHtml(s: string): string {
@@ -523,6 +525,68 @@ function bezpieczneInvalidateSize(map: import("leaflet").Map): void {
   } catch {
     /* mapa w trakcie niszczenia lub przejścia zoomu */
   }
+}
+
+function czekajNaWymiaryKontenera(
+  el: HTMLElement,
+  signal: AbortSignal,
+): Promise<void> {
+  return new Promise((resolve, reject) => {
+    if (signal.aborted) {
+      reject(new DOMException("Aborted", "AbortError"));
+      return;
+    }
+
+    const gotowe = () => {
+      const h = el.clientHeight;
+      const w = el.clientWidth;
+      return h >= 120 && w >= 120;
+    };
+
+    if (gotowe()) {
+      resolve();
+      return;
+    }
+
+    let raf = 0;
+    let ro: ResizeObserver | null = null;
+    const limit = window.setTimeout(() => {
+      cleanup();
+      resolve();
+    }, 2500);
+
+    const cleanup = () => {
+      window.clearTimeout(limit);
+      if (raf) window.cancelAnimationFrame(raf);
+      ro?.disconnect();
+      signal.removeEventListener("abort", onAbort);
+    };
+
+    const onAbort = () => {
+      cleanup();
+      reject(new DOMException("Aborted", "AbortError"));
+    };
+
+    const sprawdz = () => {
+      if (signal.aborted) {
+        onAbort();
+        return;
+      }
+      if (gotowe()) {
+        cleanup();
+        resolve();
+      } else {
+        raf = window.requestAnimationFrame(sprawdz);
+      }
+    };
+
+    signal.addEventListener("abort", onAbort);
+    if (typeof ResizeObserver !== "undefined") {
+      ro = new ResizeObserver(() => sprawdz());
+      ro.observe(el);
+    }
+    raf = window.requestAnimationFrame(sprawdz);
+  });
 }
 
 function kluczBboxMapy(bbox: [[number, number], [number, number]] | null): string | null {
@@ -1460,20 +1524,31 @@ const MapaWsiLeafletInner = forwardRef<
         const inst = instancja.current;
         if (inst) ustawPodkladMapy(inst, rodzaj);
       },
+      odswiezRozmiar() {
+        const map = instancja.current?.map;
+        if (map) bezpieczneInvalidateSize(map);
+      },
     }));
 
     // Jednorazowa inicjalizacja mapy
     useEffect(() => {
       const el = refMapa.current;
-      if (!el) return;
+      const shell = refShell.current;
+      if (!el || !shell) return;
 
-      let cancelled = false;
+      const ctrl = new AbortController();
 
       void (async () => {
+        try {
+          await czekajNaWymiaryKontenera(shell, ctrl.signal);
+        } catch {
+          return;
+        }
+
         const L = (await import("leaflet")).default as unknown as LeafletNs;
         await import("leaflet.markercluster");
 
-        if (cancelled || !refMapa.current) return;
+        if (ctrl.signal.aborted || !refMapa.current) return;
 
         const map = L.map(el, {
           zoomControl: true,
@@ -1677,10 +1752,14 @@ const MapaWsiLeafletInner = forwardRef<
         });
         syncWarstwaUzytkownika(L, instancja.current, pozycjaRef.current, promienRef.current);
         setMapaGotowa(true);
+        requestAnimationFrame(() => {
+          bezpieczneInvalidateSize(map);
+          requestAnimationFrame(() => bezpieczneInvalidateSize(map));
+        });
       })();
 
       return () => {
-        cancelled = true;
+        ctrl.abort();
         setMapaGotowa(false);
         const inst = instancja.current;
         if (inst) {
@@ -1899,15 +1978,15 @@ const MapaWsiLeafletInner = forwardRef<
           trybLowiectwo ? "mapa-wsi-map-shell--lowiectwo" : ""
         } ${
           pelnyEkran
-            ? "h-[100dvh] max-h-[100dvh]"
+            ? "mapa-wsi-map-shell--pelny-ekran h-[100dvh] max-h-[100dvh]"
             : wysokoscMapy === "kompakt"
               ? "h-[min(420px,55dvh)]"
-              : "h-full min-h-[min(360px,45dvh)]"
+              : "mapa-wsi-map-shell--pelna h-full min-h-0 flex-1"
         }`}
       >
         <div
           ref={refMapa}
-          className="mapa-wsi-canvas z-0 h-full w-full bg-stone-200/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-700/35 focus-visible:ring-offset-2"
+          className="mapa-wsi-canvas absolute inset-0 z-0 bg-stone-200/80 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-green-700/35 focus-visible:ring-offset-2"
           role="application"
           aria-label="Mapa interaktywna — wsie naszawies.pl"
           tabIndex={0}

@@ -15,9 +15,9 @@ export default function MapaPage() {
     <>
       <BramkiChronionychTras />
       <main className="mapa-strona-glowna mapa-strona-glowna--immersive flex min-h-0 flex-1 flex-col">
-        <header className="flex shrink-0 flex-wrap items-center justify-between gap-2 border-b border-green-900/8 bg-gradient-to-r from-white via-emerald-50/30 to-white px-3 py-2 backdrop-blur-sm sm:px-4">
-          <div className="flex min-w-0 flex-wrap items-center gap-2">
-            <h1 className="font-serif text-base font-medium leading-tight text-green-950 sm:text-lg">Mapa wiosek</h1>
+        <header className="flex shrink-0 flex-wrap items-center justify-between gap-1.5 border-b border-green-900/8 bg-gradient-to-r from-white via-emerald-50/30 to-white px-2 py-1.5 backdrop-blur-sm sm:gap-2 sm:px-4 sm:py-2">
+          <div className="flex min-w-0 flex-wrap items-center gap-1.5 sm:gap-2">
+            <h1 className="font-serif text-sm font-medium leading-tight text-green-950 sm:text-lg">Mapa wiosek</h1>
             <LinkPomocyKontekstowej
               href="/pomoc#mapa"
               label="Pomoc: mapa wsi"

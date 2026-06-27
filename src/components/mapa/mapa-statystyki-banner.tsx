@@ -51,7 +51,13 @@ export function MapaStatystykiBanner({ statystyki }: { statystyki: StatystykiMap
 
   useEffect(() => {
     try {
-      ustawZwiniety(window.sessionStorage.getItem(KLUCZ_ZWINIETY) === "1");
+      const zapis = window.sessionStorage.getItem(KLUCZ_ZWINIETY);
+      if (zapis === "1" || zapis === "0") {
+        ustawZwiniety(zapis === "1");
+        return;
+      }
+      const mobile = window.matchMedia("(max-width: 640px)").matches;
+      ustawZwiniety(mobile);
     } catch {
       /* ignore */
     }
@@ -63,7 +69,7 @@ export function MapaStatystykiBanner({ statystyki }: { statystyki: StatystykiMap
     statystyki.bezObrysu > 0 || statystyki.bezTransportu > 0 || statystyki.zMalymPoi > 0;
 
   return (
-    <div className="animate-mapa-reveal border-b border-green-900/10 bg-gradient-to-r from-emerald-50/90 via-white to-amber-50/40 px-3 py-2 sm:px-4">
+    <div className="animate-mapa-reveal shrink-0 border-b border-green-900/10 bg-gradient-to-r from-emerald-50/90 via-white to-amber-50/40 px-2 py-1.5 sm:px-4 sm:py-2">
       <div className="flex flex-wrap items-center gap-2">
         <button
           type="button"
@@ -122,7 +128,7 @@ export function MapaStatystykiBanner({ statystyki }: { statystyki: StatystykiMap
             ) : null}
             <Link
               href="/panel/soltys/moja-wies"
-              className="ml-auto rounded-xl border border-green-800/25 bg-white/90 px-3 py-1.5 text-[11px] font-semibold text-green-900 shadow-sm transition hover:border-green-700 hover:bg-green-50"
+              className="w-full rounded-xl border border-green-800/25 bg-white/90 px-3 py-1.5 text-center text-[11px] font-semibold text-green-900 shadow-sm transition hover:border-green-700 hover:bg-green-50 sm:ml-auto sm:w-auto sm:text-left"
             >
               Uzupełnij jako sołtys →
             </Link>

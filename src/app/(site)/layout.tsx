@@ -81,14 +81,20 @@ export default async function LayoutWitryny({ children }: { children: React.Reac
 
   return (
     <TrybSeniorProvider>
-      <div className="site-tlo-aplikacji min-h-[100dvh] min-w-0 overflow-x-hidden text-stone-900 [padding-left:max(1rem,env(safe-area-inset-left))] [padding-right:max(1rem,env(safe-area-inset-right))]">
+      <div
+        className={`site-tlo-aplikacji min-w-0 text-stone-900 ${
+          mapaImmersyjna
+            ? "flex h-[100dvh] max-h-[100dvh] flex-col overflow-hidden [padding-left:env(safe-area-inset-left)] [padding-right:env(safe-area-inset-right)]"
+            : "min-h-[100dvh] overflow-x-hidden [padding-left:max(1rem,env(safe-area-inset-left))] [padding-right:max(1rem,env(safe-area-inset-right))]"
+        }`}
+      >
         {!bezNaglowka ? (
           <NaglowekWarunkowy linkiGlowne={linkiGlowne} linkiAkcje={linkiAkcje} logoHref={logoHref} />
         ) : null}
         <div
           className={
             mapaImmersyjna
-              ? "min-h-0 pb-0 [padding-bottom:var(--dolna-naw-offset,0px)]"
+              ? "flex min-h-0 flex-1 flex-col overflow-hidden pb-0 [padding-bottom:var(--dolna-naw-offset,0px)]"
               : "pb-8 sm:pb-10 [padding-bottom:calc(2rem+var(--app-bottom-bar-offset,0px)+var(--dolna-naw-offset,0px))] sm:[padding-bottom:calc(2.5rem+var(--dolna-naw-offset,0px))]"
           }
         >

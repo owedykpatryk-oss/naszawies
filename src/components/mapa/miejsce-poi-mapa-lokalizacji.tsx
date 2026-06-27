@@ -24,8 +24,8 @@ type Props = {
 
 export function MiejscePoiMapaLokalizacji({ pinezka }: Props) {
   return (
-    <div className="overflow-hidden rounded-xl border border-stone-200 shadow-sm ring-1 ring-stone-900/[0.03]">
-      <MapaWsiLeaflet znaczniki={[]} punktyPoi={[pinezka]} pokazRynek={false} wysokoscMapy="kompakt" />
+    <div className="overflow-hidden rounded-xl border border-stone-200 shadow-sm ring-1 ring-stone-900/[0.03] [&_.mapa-wsi-map-shell]:min-h-[min(320px,45dvh)]">
+      <MapaWsiLeaflet znaczniki={[]} punktyPoi={[pinezka]} pokazRynek={false} wysokoscMapy="kompakt" sterowanieWarstwZewnetrzne />
     </div>
   );
 }

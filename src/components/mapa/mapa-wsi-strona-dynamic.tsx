@@ -7,7 +7,7 @@ import type { MapaWsiStrona } from "./mapa-wsi-strona";
 export function MapaWsiStronaSkeleton() {
   return (
     <div
-      className="mapa-widget-pelny relative flex min-h-[280px] flex-1 flex-col overflow-hidden bg-stone-200/50"
+      className="relative flex min-h-0 flex-1 flex-col overflow-hidden bg-stone-200/50"
       role="status"
       aria-live="polite"
       aria-label="Ładowanie mapy"

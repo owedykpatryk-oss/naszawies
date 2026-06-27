@@ -71,7 +71,7 @@ export function RynekMapaEmbedded({
           Pełna mapa →
         </Link>
       </div>
-      <div className="mt-4 overflow-hidden rounded-xl border border-stone-200 shadow-sm">
+      <div className="mt-4 overflow-hidden rounded-xl border border-stone-200 shadow-sm [&_.mapa-wsi-map-shell]:min-h-[min(320px,45dvh)]">
         <MapaWsiLeaflet
           znaczniki={znaczniki}
           punktyRynek={punktyRynek}
@@ -79,6 +79,7 @@ export function RynekMapaEmbedded({
           pokazPoi={false}
           pokazRynek={true}
           wysokoscMapy="kompakt"
+          sterowanieWarstwZewnetrzne
         />
       </div>
       <p className="mt-2 text-xs text-stone-500">

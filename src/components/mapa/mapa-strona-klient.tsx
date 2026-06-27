@@ -122,7 +122,7 @@ export function MapaStronaKlient() {
   }
 
   return (
-    <div className="mapa-widget-pelny flex min-h-0 flex-1 flex-col">
+    <div className="mapa-widget-pelny mapa-widget-glowny flex min-h-0 flex-1 flex-col overflow-hidden">
       {blad ? (
         <p className="mx-3 mt-2 rounded-lg bg-red-50 px-3 py-2 text-xs text-red-800 sm:mx-4" role="alert">
           {blad}
@@ -134,12 +134,17 @@ export function MapaStronaKlient() {
         </p>
       ) : null}
       {ladowanieWarstw ? (
-        <p className="pointer-events-none mx-3 mt-1 text-center text-[11px] text-green-900/60 sm:mx-4">
+        <p
+          className="pointer-events-none fixed left-1/2 top-[calc(3.25rem+env(safe-area-inset-top))] z-[420] max-w-[min(92vw,20rem)] -translate-x-1/2 rounded-full border border-green-900/10 bg-white/92 px-3 py-1.5 text-center text-[11px] font-medium text-green-900/75 shadow-md backdrop-blur-sm sm:top-auto sm:bottom-[calc(5.5rem+var(--dolna-naw-offset,0px)+env(safe-area-inset-bottom))]"
+          role="status"
+          aria-live="polite"
+        >
           Uzupełniamy POI i warstwy w tle…
         </p>
       ) : null}
       <MapaStatystykiBanner statystyki={dane.statystykiMapy} />
       <Suspense fallback={<MapaWsiStronaSkeleton />}>
+        <div className="flex h-full min-h-0 flex-1 flex-col overflow-hidden">
         <MapaAutomatyzacjaKlient
           znaczniki={dane.znacznikiDoSync}
           villageIdsDoUzupelnienia={dane.villageIdsDoUzupelnienia}
@@ -161,6 +166,7 @@ export function MapaStronaKlient() {
           onRozszerzDoPolski={rozszerzDoPolski}
           ladowaniePelnejPolski={ladowanieWarstw && zakres === "polska"}
         />
+        </div>
       </Suspense>
     </div>
   );

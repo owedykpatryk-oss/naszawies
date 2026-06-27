@@ -313,9 +313,42 @@ export function MapaWsiStrona({
   const [tryb, ustawTryb] = useState<TrybSidebara>(() =>
     searchParams.get("q")?.trim() ? "szukaj" : "katalog",
   );
-  const [panelFiltrOtwarty, ustawPanelFiltrOtwarty] = useState(
-    () => Boolean(searchParams.get("q")?.trim() || searchParams.get("woj")),
-  );
+  const [panelFiltrOtwarty, ustawPanelFiltrOtwarty] = useState(false);
+
+  useEffect(() => {
+    if (!klientGotowy) return;
+    const maFiltrUrl = Boolean(searchParams.get("q")?.trim() || searchParams.get("woj"));
+    if (maFiltrUrl && window.matchMedia("(min-width: 1024px)").matches) {
+      ustawPanelFiltrOtwarty(true);
+    }
+  }, [klientGotowy, searchParams]);
+
+  useEffect(() => {
+    if (!klientGotowy) return;
+    const odswiez = () => mapRef.current?.odswiezRozmiar();
+    odswiez();
+    const opoznienia = [150, 450, 900].map((ms) => window.setTimeout(odswiez, ms));
+    return () => opoznienia.forEach((id) => window.clearTimeout(id));
+  }, [klientGotowy, panelFiltrOtwarty]);
+
+  useEffect(() => {
+    if (!klientGotowy || !panelFiltrOtwarty) return;
+    if (!window.matchMedia("(max-width: 1023px)").matches) return;
+    const poprzedni = document.body.style.overflow;
+    document.body.style.overflow = "hidden";
+    return () => {
+      document.body.style.overflow = poprzedni;
+    };
+  }, [klientGotowy, panelFiltrOtwarty]);
+
+  useEffect(() => {
+    if (!panelFiltrOtwarty) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") ustawPanelFiltrOtwarty(false);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [panelFiltrOtwarty]);
   const [szukaj, setSzukaj] = useState(() => searchParams.get("q") ?? "");
   const [trybLowiectwo, ustawTrybLowiectwo] = useState(() => searchParams.get("warstwa") === "lowiectwo");
   const [filtrPoi, setFiltrPoi] = useState(() => {
@@ -1331,7 +1364,7 @@ export function MapaWsiStrona({
   }
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col">
+    <div className="flex min-h-0 flex-1 flex-col overflow-hidden">
       {panelFiltrOtwarty ? (
         <button
           type="button"
@@ -1355,7 +1388,7 @@ export function MapaWsiStrona({
         </button>
       ) : null}
 
-      <div className="flex min-h-0 flex-1 flex-col lg:h-full lg:flex-row lg:items-stretch">
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden lg:h-full lg:flex-row lg:items-stretch">
       <aside
         className={`${
           panelFiltrOtwarty ? "fixed inset-x-0 z-[46] flex rounded-t-2xl border-t border-stone-200/90 shadow-[0_-12px_40px_rgba(45,90,45,0.14)]" : "hidden"
@@ -1695,7 +1728,7 @@ export function MapaWsiStrona({
         </div>
       </aside>
 
-      <div className="mapa-widget-pelny relative flex min-h-0 flex-1 flex-col bg-stone-200/40">
+      <div className="mapa-kolumna-mapy relative flex h-full min-h-0 flex-1 flex-col overflow-hidden bg-stone-200/40">
         {odfiltrowane.length === 0 ? (
           <div className="mapa-pusty-widok">
             <p className="mapa-pusty-widok__tytul">Brak wsi w tym widoku</p>
@@ -1711,7 +1744,7 @@ export function MapaWsiStrona({
             </button>
           </div>
         ) : (
-          <div className="relative flex min-h-0 flex-1 flex-col">
+          <div className="relative flex h-full min-h-0 flex-1 flex-col overflow-hidden">
             <MapaLowiectwoOverlay
               widoczne={trybLowiectwo || pokazPolowania}
               polowania={punktyPolowaniaWidoczne}
@@ -1723,15 +1756,6 @@ export function MapaWsiStrona({
               }}
             />
             <div className="mapa-fab-pasek absolute left-2 z-[415] flex flex-col gap-1.5 sm:left-3">
-              <button
-                type="button"
-                onClick={() => ustawPanelFiltrOtwarty(true)}
-                className="mapa-fab-btn lg:hidden"
-                title={`Warstwy mapy (${liczbaWarstwAktywnych})`}
-                aria-label={`Otwórz panel warstw, ${liczbaWarstwAktywnych} aktywnych`}
-              >
-                🗺
-              </button>
               <button
                 type="button"
                 onClick={() => {
