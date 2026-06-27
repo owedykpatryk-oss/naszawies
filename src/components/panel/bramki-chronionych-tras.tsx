@@ -1,8 +1,8 @@
-import { Suspense } from "react";
 import { headers } from "next/headers";
 import { redirect } from "next/navigation";
-import { BramkaOnboardingu } from "@/components/panel/bramka-onboardingu";
-import { BramkaZgodPrawnych } from "@/components/panel/bramka-zgod-prawnych";
+import { wymagajAkceptacjiPrawnejJesliTrzeba } from "@/app/(site)/panel/akceptacja-regulaminu/akcje-akceptacja";
+import { wymagajOnboardinguJesliTrzeba } from "@/app/(site)/panel/onboarding/akcje-onboarding";
+import { bezpiecznaSciezkaNastepna } from "@/lib/auth/bezpieczna-sciezka-nastepna";
 import { sciezkaPowrotuZNaglowkow } from "@/lib/auth/sciezka-powrotu-naglowki";
 import { urlLogowaniaZPowrotem } from "@/lib/auth/sciezki-chronione";
 import { pobierzUzytkownikaSerwer } from "@/lib/auth/pobierz-uzytkownika-serwer";
@@ -15,14 +15,12 @@ export async function BramkiChronionychTras() {
     redirect(urlLogowaniaZPowrotem(sciezkaPowrotuZNaglowkow(sciezka)));
   }
 
-  return (
-    <>
-      <Suspense fallback={null}>
-        <BramkaZgodPrawnych />
-      </Suspense>
-      <Suspense fallback={null}>
-        <BramkaOnboardingu />
-      </Suspense>
-    </>
-  );
+  /** redirect() w Suspense powoduje fałszywy błąd RSC w konsoli produkcyjnej — sprawdzenia synchronicznie w rodzicu. */
+  const next = bezpiecznaSciezkaNastepna(sciezka);
+  await wymagajAkceptacjiPrawnejJesliTrzeba(sciezka, next);
+  const nextRaw = headers().get("x-next-onboarding");
+  const nextOnboarding = nextRaw ? bezpiecznaSciezkaNastepna(nextRaw) : sciezka;
+  await wymagajOnboardinguJesliTrzeba(sciezka, nextOnboarding);
+
+  return null;
 }

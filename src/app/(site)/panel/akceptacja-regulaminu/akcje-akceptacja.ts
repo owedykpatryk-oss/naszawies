@@ -9,6 +9,7 @@ import { AKTUALNY_BUNDLE_WERSJI_PRAWNYCH } from "@/lib/rodo/wersje-dokumentow";
 import { zapiszZgodyUzytkownika, zgodyPakietuRejestracji } from "@/lib/rodo/zapisz-zgody-uzytkownika";
 import { pobierzUzytkownikaDoAkcji } from "@/lib/auth/pobierz-uzytkownika-serwer";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
+import { ponowJesliRedirect } from "@/lib/next/ponow-redirect";
 
 export type WynikAkceptacji = { blad: string } | { ok: true; next: string };
 
@@ -49,15 +50,20 @@ export async function wymagajAkceptacjiPrawnejJesliTrzeba(sciezka: string, next?
   const user = await pobierzUzytkownikaDoAkcji();
   if (!user) return;
 
-  const supabase = utworzKlientaSupabaseSerwer();
-  const { data: profil } = await supabase
-    .from("users")
-    .select("legal_accepted_at, legal_bundle_version")
-    .eq("id", user.id)
-    .maybeSingle();
+  try {
+    const supabase = utworzKlientaSupabaseSerwer();
+    const { data: profil } = await supabase
+      .from("users")
+      .select("legal_accepted_at, legal_bundle_version")
+      .eq("id", user.id)
+      .maybeSingle();
 
-  if (czyProfilMaAktualnaAkceptacjePrawna(profil)) return;
+    if (czyProfilMaAktualnaAkceptacjePrawna(profil)) return;
 
-  const cel = bezpiecznaSciezkaNastepna(next ?? sciezka);
-  redirect(`/panel/akceptacja-regulaminu?next=${encodeURIComponent(cel)}`);
+    const cel = bezpiecznaSciezkaNastepna(next ?? sciezka);
+    redirect(`/panel/akceptacja-regulaminu?next=${encodeURIComponent(cel)}`);
+  } catch (e) {
+    ponowJesliRedirect(e);
+    console.error("[wymagajAkceptacjiPrawnejJesliTrzeba]", e);
+  }
 }

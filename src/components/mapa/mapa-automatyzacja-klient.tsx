@@ -16,6 +16,8 @@ type Props = {
   znaczniki: ZnacznikDoSync[];
   villageIdsDoUzupelnienia: string[];
   statystyki: StatystykiMapy;
+  /** Po udanej synchronizacji — odśwież dane mapy bez router.refresh (unika błędu RSC w konsoli). */
+  onOdswiezDane?: () => void;
 };
 
 /**
@@ -25,6 +27,7 @@ export function MapaAutomatyzacjaKlient({
   znaczniki,
   villageIdsDoUzupelnienia,
   statystyki,
+  onOdswiezDane,
 }: Props) {
   const router = useRouter();
   const uruchomiono = useRef(false);
@@ -78,9 +81,15 @@ export function MapaAutomatyzacjaKlient({
         return;
       }
       setStatus(`Zaktualizowano mapę (${czesci.join(", ")}). Odświeżam…`);
-      window.setTimeout(() => router.refresh(), 2200);
+      window.setTimeout(() => {
+        if (onOdswiezDane) {
+          onOdswiezDane();
+        } else {
+          router.refresh();
+        }
+      }, 2200);
     });
-  }, [znaczniki, villageIdsDoUzupelnienia, statystyki.lacznie, statystyki.zMalymPoi, router]);
+  }, [znaczniki, villageIdsDoUzupelnienia, statystyki.lacznie, statystyki.zMalymPoi, router, onOdswiezDane]);
 
   if (!status) return null;
 

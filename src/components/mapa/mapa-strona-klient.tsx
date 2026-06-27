@@ -149,6 +149,14 @@ export function MapaStronaKlient() {
           znaczniki={dane.znacznikiDoSync}
           villageIdsDoUzupelnienia={dane.villageIdsDoUzupelnienia}
           statystyki={dane.statystykiMapy}
+          onOdswiezDane={() => {
+            const ctrl = new AbortController();
+            void zaladujZakres(zakres, ctrl.signal).catch((err: unknown) => {
+              if (ctrl.signal.aborted) return;
+              ustawBlad(err instanceof Error ? err.message : "Nie udało się odświeżyć mapy.");
+              ustawLadowanieWarstw(false);
+            });
+          }}
         />
         <MapaWsiStronaDynamic
           znaczniki={dane.znaczniki}

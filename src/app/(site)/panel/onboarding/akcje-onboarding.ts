@@ -13,6 +13,7 @@ import { zlozWniosekSoltysa } from "@/lib/soltys/wniosek-soltysa";
 import { createAdminSupabaseClient } from "@/lib/supabase/admin-client";
 import { utworzKlientaSupabaseSerwer } from "@/lib/supabase/serwer";
 import { pobierzUzytkownikaDoAkcji } from "@/lib/auth/pobierz-uzytkownika-serwer";
+import { ponowJesliRedirect } from "@/lib/next/ponow-redirect";
 
 export type WynikOnboardingu = { blad: string } | { ok: true; next: string };
 
@@ -184,15 +185,20 @@ export async function wymagajOnboardinguJesliTrzeba(sciezka: string, nextPoUkncz
   const user = await pobierzUzytkownikaSerwer();
   if (!user) return;
 
-  const { sciezkaPomijaOnboarding, czyUzytkownikUknczylOnboarding } = await import(
-    "@/lib/auth/onboarding-uzytkownika"
-  );
-  if (sciezkaPomijaOnboarding(sciezka)) return;
+  try {
+    const { sciezkaPomijaOnboarding, czyUzytkownikUknczylOnboarding } = await import(
+      "@/lib/auth/onboarding-uzytkownika"
+    );
+    if (sciezkaPomijaOnboarding(sciezka)) return;
 
-  const supabase = utworzKlientaSupabaseSerwer();
-  const ukonczony = await czyUzytkownikUknczylOnboarding(supabase, user);
-  if (ukonczony) return;
+    const supabase = utworzKlientaSupabaseSerwer();
+    const ukonczony = await czyUzytkownikUknczylOnboarding(supabase, user);
+    if (ukonczony) return;
 
-  const cel = nextPoUknczeniu ?? sciezka;
-  redirect(`/panel/onboarding?next=${encodeURIComponent(cel)}`);
+    const cel = nextPoUknczeniu ?? sciezka;
+    redirect(`/panel/onboarding?next=${encodeURIComponent(cel)}`);
+  } catch (e) {
+    ponowJesliRedirect(e);
+    console.error("[wymagajOnboardinguJesliTrzeba]", e);
+  }
 }
