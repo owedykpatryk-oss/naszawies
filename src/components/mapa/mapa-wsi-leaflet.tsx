@@ -470,6 +470,9 @@ const URL_PODKLAD_MAPA = "https://{s}.basemaps.cartocdn.com/rastertiles/voyager/
 const URL_PODKLAD_SATELITA = "https://server.arcgisonline.com/ArcGIS/rest/services/World_Imagery/MapServer/tile/{z}/{y}/{x}";
 const URL_PODKLAD_ETYKIETY =
   "https://server.arcgisonline.com/ArcGIS/rest/services/Reference/World_Boundaries_and_Places/MapServer/tile/{z}/{y}/{x}";
+/** Leaflet.markercluster wymaga skończonego maxZoom na mapie przed addLayer(cluster). */
+const ZOOM_MIN_MAPA = 4;
+const ZOOM_MAX_MAPA = 19;
 /** Przezroczysty 1×1 px — Leaflet nie pokazuje „zepsutego” kafelka przy chwilowej awarii CDN. */
 const KAFEL_BLEDU =
   "data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs=";
@@ -1567,6 +1570,8 @@ const MapaWsiLeafletInner = forwardRef<
           attributionControl: true,
           touchZoom: true,
           dragging: true,
+          minZoom: ZOOM_MIN_MAPA,
+          maxZoom: ZOOM_MAX_MAPA,
         });
         map.zoomControl.setPosition("bottomright");
         map.attributionControl.setPosition("bottomleft");
@@ -1576,18 +1581,21 @@ const MapaWsiLeafletInner = forwardRef<
           attribution:
             '&copy; <a href="https://www.openstreetmap.org/copyright">OSM</a> &copy; <a href="https://carto.com/">CARTO</a>',
           subdomains: "abcd",
-          maxZoom: 19,
+          minZoom: ZOOM_MIN_MAPA,
+          maxZoom: ZOOM_MAX_MAPA,
           errorTileUrl: KAFEL_BLEDU,
         });
         const podkladSatelita = L.tileLayer(URL_PODKLAD_SATELITA, {
           attribution:
             'Zdjęcia &copy; <a href="https://www.esri.com/">Esri</a>, Maxar, Earthstar Geographics',
-          maxZoom: 19,
+          minZoom: ZOOM_MIN_MAPA,
+          maxZoom: ZOOM_MAX_MAPA,
           errorTileUrl: KAFEL_BLEDU,
         });
         const podkladEtykietySatelita = L.tileLayer(URL_PODKLAD_ETYKIETY, {
           attribution: 'Etykiety &copy; <a href="https://www.esri.com/">Esri</a>',
-          maxZoom: 19,
+          minZoom: ZOOM_MIN_MAPA,
+          maxZoom: ZOOM_MAX_MAPA,
           pane: "overlayPane",
           opacity: 0.88,
           errorTileUrl: KAFEL_BLEDU,
