@@ -515,7 +515,18 @@ function czyMapaLeafletOperacyjna(map: import("leaflet").Map | null | undefined)
   const container = map.getContainer?.();
   if (!container?.isConnected) return false;
   const pane = (map as unknown as { _mapPane?: HTMLElement })._mapPane;
-  return Boolean(pane?.isConnected);
+  if (!pane?.isConnected) return false;
+  const loaded = (map as unknown as { _loaded?: boolean })._loaded;
+  return loaded !== false;
+}
+
+function bezpiecznyZoomMapy(map: import("leaflet").Map, fallback = 6): number {
+  if (!czyMapaLeafletOperacyjna(map)) return fallback;
+  try {
+    return map.getZoom();
+  } catch {
+    return fallback;
+  }
 }
 
 function bezpieczneInvalidateSize(map: import("leaflet").Map): void {
@@ -1633,6 +1644,7 @@ const MapaWsiLeafletInner = forwardRef<
         const userLayer = L.layerGroup().addTo(map);
         map.addLayer(cluster);
         map.addLayer(poiCluster);
+        map.setView([52.1, 19.3], 6, { animate: false });
 
         const container = map.getContainer();
         const enter = () => {
@@ -1653,17 +1665,21 @@ const MapaWsiLeafletInner = forwardRef<
         };
         map.on("zoomend", onZoom);
         const raportujBbox = () => {
-          const b = map.getBounds();
-          onBoundsChangeRef.current?.({
-            south: b.getSouth(),
-            west: b.getWest(),
-            north: b.getNorth(),
-            east: b.getEast(),
-          });
+          if (!czyMapaLeafletOperacyjna(map)) return;
+          try {
+            const b = map.getBounds();
+            onBoundsChangeRef.current?.({
+              south: b.getSouth(),
+              west: b.getWest(),
+              north: b.getNorth(),
+              east: b.getEast(),
+            });
+          } catch {
+            /* widok jeszcze nie ustawiony — np. tuż po inicjalizacji */
+          }
         };
         map.on("moveend", raportujBbox);
-        raportujBbox();
-        const zoomStart = map.getZoom();
+        const zoomStart = bezpiecznyZoomMapy(map);
         setZoomMapy(zoomStart);
         onZoomChange?.(zoomStart);
 
@@ -1744,13 +1760,14 @@ const MapaWsiLeafletInner = forwardRef<
         );
         syncWarstwaPoi(L, instancja.current, p0);
         const egibWidocznyInit =
-          pokazKiegRef.current && czyKiegWidocznyNaZoomie(map.getZoom());
+          pokazKiegRef.current && czyKiegWidocznyNaZoomie(bezpiecznyZoomMapy(map));
         syncGraniceWsiNaMapie(L, instancja.current, z0, graniceWsiRef.current, {
           pokazGranice: pokazGraniceRef.current,
           egibWidoczny: egibWidocznyInit,
           bbox: bboxMapyRef.current,
         });
         syncWarstwaUzytkownika(L, instancja.current, pozycjaRef.current, promienRef.current);
+        raportujBbox();
         setMapaGotowa(true);
         requestAnimationFrame(() => {
           bezpieczneInvalidateSize(map);
@@ -1843,7 +1860,7 @@ const MapaWsiLeafletInner = forwardRef<
       const inst = instancja.current;
       const L = leafletRef.current;
       if (!inst || !L || !mapaGotowa || znaczniki.length === 0) return;
-      const egibWidoczny = pokazKiegStan && czyKiegWidocznyNaZoomie(inst.map.getZoom());
+      const egibWidoczny = pokazKiegStan && czyKiegWidocznyNaZoomie(bezpiecznyZoomMapy(inst.map));
       syncGraniceWsiNaMapie(L, inst, znaczniki, graniceWsi, {
         pokazGranice: pokazGraniceStan,
         egibWidoczny,
@@ -2484,7 +2501,7 @@ function syncWarstwy(
   const pokazGranice = opts?.pokazGranice !== false;
   const pokazEgib = opts?.pokazEgib !== false;
   const trybLowiectwo = opts?.trybLowiectwo === true;
-  const egibWidoczny = pokazEgib && czyKiegWidocznyNaZoomie(inst.map.getZoom());
+  const egibWidoczny = pokazEgib && czyKiegWidocznyNaZoomie(bezpiecznyZoomMapy(inst.map));
   const { map, cluster, inneObrysyGroup, markersById, polowaniaById, lesneById, rynekDzialkiById } = inst;
   if (!czyMapaLeafletOperacyjna(map)) return;
   ustawPaneWarstwicyGranicy(map);

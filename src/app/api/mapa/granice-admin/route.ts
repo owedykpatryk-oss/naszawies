@@ -16,11 +16,22 @@ function czyPoziom(v: string | null): v is PoziomGranicyAdministracyjnej {
 
 async function pobierzGraniceAdminCached(poziom: PoziomGranicyAdministracyjnej, teryt: string) {
   const fn = unstable_cache(
-    async () => pobierzGraniceAdministracyjnePrg(poziom, teryt),
+    async () => {
+      const wynik = await pobierzGraniceAdministracyjnePrg(poziom, teryt);
+      if (!wynik.ok) {
+        throw new Error(wynik.reason);
+      }
+      return wynik;
+    },
     [`granice-admin-prg`, poziom, teryt],
     { revalidate: 60 * 60 * 24 * 7, tags: [`granice-admin-${poziom}-${teryt}`] },
   );
-  return fn();
+  try {
+    return await fn();
+  } catch (e) {
+    const reason = e instanceof Error ? e.message : String(e);
+    return { ok: false as const, reason, retryable: true };
+  }
 }
 
 /** Urzędowa granica województwa / powiatu / gminy z PRG WFS (Geoportal). */

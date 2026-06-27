@@ -260,6 +260,24 @@ function powierzchniaPrzyblizona(g: GeoJsonGeometry): number {
 /** Maks. powierzchnia obrysu w „stopniach²” (bez projekcji) — odrzuca obrys wielkości gminy. */
 export const MAX_POWIERZCHNIA_OBRYSU_WSI_STOPNIE2 = 0.012;
 
+/** Wybór obrysu po kodzie TERC (woj/powiat/gmina) — bez punktu GPS wsi. */
+function wybierzGeometriePoKodzieTerc(kandydaci: GeoJsonGeometry[]): GeoJsonGeometry | null {
+  if (kandydaci.length === 0) return null;
+  if (kandydaci.length === 1) return kandydaci[0] ?? null;
+  let najlepszy = kandydaci[0]!;
+  let maxArea = powierzchniaPrzyblizona(najlepszy);
+  for (let i = 1; i < kandydaci.length; i += 1) {
+    const k = kandydaci[i];
+    if (!k) continue;
+    const a = powierzchniaPrzyblizona(k);
+    if (a > maxArea) {
+      maxArea = a;
+      najlepszy = k;
+    }
+  }
+  return najlepszy;
+}
+
 function wybierzGeometrieKandydata(kandydaci: GeoJsonGeometry[], lon?: number, lat?: number): GeoJsonGeometry | null {
   if (kandydaci.length === 0) return null;
   if (!Number.isFinite(lon) || !Number.isFinite(lat)) {
@@ -591,6 +609,16 @@ async function probujWarstwePrgCql(
   if (mamyPunkt) {
     return probujWarstwePrgBbox(wfsUrl, wfsVersion, typeName, lat as number, lon as number);
   }
+  const poTerc = wybierzGeometriePoKodzieTerc(kandydaci);
+  if (poTerc) {
+    return {
+      ok: true,
+      boundaryGeojson: poTerc,
+      sourceName: wfsUrl,
+      sourceTypeName: typeName,
+      featureCount,
+    };
+  }
   return null;
 }
 
@@ -663,12 +691,26 @@ const WARSTWY_ADMIN: Record<
   PoziomGranicyAdministracyjnej,
   { typeName: string; dlugoscKodu: number; envKey: string }
 > = {
-  woj: { typeName: "A02_Granice_wojewodztw", dlugoscKodu: 2, envKey: "GEOPORTAL_PRG_LAYER_WOJ" },
-  powiat: { typeName: "A03_Granice_powiatow", dlugoscKodu: 4, envKey: "GEOPORTAL_PRG_LAYER_POWIAT" },
-  gmina: { typeName: "A04_Granice_gmin", dlugoscKodu: 7, envKey: "GEOPORTAL_PRG_LAYER_GMINA" },
+  woj: { typeName: "A01_Granice_wojewodztw", dlugoscKodu: 2, envKey: "GEOPORTAL_PRG_LAYER_WOJ" },
+  powiat: { typeName: "A02_Granice_powiatow", dlugoscKodu: 4, envKey: "GEOPORTAL_PRG_LAYER_POWIAT" },
+  gmina: { typeName: "A03_Granice_gmin", dlugoscKodu: 7, envKey: "GEOPORTAL_PRG_LAYER_GMINA" },
 };
 
-/** Urzędowa granica administracyjna z PRG (A02/A03/A04) po kodzie TERC. */
+/** Stare nazwy warstw PRG (A02/A03/A04) — często ustawione w env na produkcji. */
+const ALIASY_STARYCH_WARSTW_PRG: Record<string, string> = {
+  A02_Granice_wojewodztw: "A01_Granice_wojewodztw",
+  A03_Granice_powiatow: "A02_Granice_powiatow",
+  A04_Granice_gmin: "A03_Granice_gmin",
+};
+
+function rozwiazTypeNameWarstwyAdmin(poziom: PoziomGranicyAdministracyjnej): string {
+  const cfg = WARSTWY_ADMIN[poziom];
+  const surowy = env(cfg.envKey) ?? cfg.typeName;
+  const znormalizowany = normalizujTypeName(surowy);
+  return ALIASY_STARYCH_WARSTW_PRG[znormalizowany] ?? znormalizowany;
+}
+
+/** Urzędowa granica administracyjna z PRG (A01/A02/A03) po kodzie TERC. */
 export async function pobierzGraniceAdministracyjnePrg(
   poziom: PoziomGranicyAdministracyjnej,
   kodTeryt: string,
@@ -690,7 +732,7 @@ export async function pobierzGraniceAdministracyjnePrg(
   const wfsUrl = env("GEOPORTAL_PRG_WFS_URL") ?? DEFAULT_WFS_URL;
   const wfsVersion = env("GEOPORTAL_PRG_WFS_VERSION") ?? "1.1.0";
   const terytField = env("GEOPORTAL_PRG_WFS_TERYT_FIELD") ?? "JPT_KOD_JE";
-  const typeName = normalizujTypeName(env(cfg.envKey) ?? cfg.typeName);
+  const typeName = rozwiazTypeNameWarstwyAdmin(poziom);
 
   try {
     const wynik = await probujWarstwePrgCql(
