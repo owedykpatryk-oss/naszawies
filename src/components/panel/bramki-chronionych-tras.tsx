@@ -7,6 +7,15 @@ import { sciezkaPowrotuZNaglowkow } from "@/lib/auth/sciezka-powrotu-naglowki";
 import { urlLogowaniaZPowrotem } from "@/lib/auth/sciezki-chronione";
 import { pobierzUzytkownikaSerwer } from "@/lib/auth/pobierz-uzytkownika-serwer";
 
+/** Sprawdzenia RODO + onboarding — poza Suspense (unika fałszywego błędu RSC w konsoli). */
+export async function uruchomBramkiSesji(sciezka: string): Promise<void> {
+  const next = bezpiecznaSciezkaNastepna(sciezka);
+  await wymagajAkceptacjiPrawnejJesliTrzeba(sciezka, next);
+  const nextRaw = headers().get("x-next-onboarding");
+  const nextOnboarding = nextRaw ? bezpiecznaSciezkaNastepna(nextRaw) : sciezka;
+  await wymagajOnboardinguJesliTrzeba(sciezka, nextOnboarding);
+}
+
 /** Wspólne bramki dla /mapa, /transport, /grafika, /wybierz-wies (sesja + RODO + onboarding). */
 export async function BramkiChronionychTras() {
   const sciezka = headers().get("x-pathname") ?? "/";
@@ -15,12 +24,7 @@ export async function BramkiChronionychTras() {
     redirect(urlLogowaniaZPowrotem(sciezkaPowrotuZNaglowkow(sciezka)));
   }
 
-  /** redirect() w Suspense powoduje fałszywy błąd RSC w konsoli produkcyjnej — sprawdzenia synchronicznie w rodzicu. */
-  const next = bezpiecznaSciezkaNastepna(sciezka);
-  await wymagajAkceptacjiPrawnejJesliTrzeba(sciezka, next);
-  const nextRaw = headers().get("x-next-onboarding");
-  const nextOnboarding = nextRaw ? bezpiecznaSciezkaNastepna(nextRaw) : sciezka;
-  await wymagajOnboardinguJesliTrzeba(sciezka, nextOnboarding);
+  await uruchomBramkiSesji(sciezka);
 
   return null;
 }

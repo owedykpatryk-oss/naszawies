@@ -23,7 +23,7 @@ async function pobierzGraniceAdminCached(poziom: PoziomGranicyAdministracyjnej, 
       }
       return wynik;
     },
-    [`granice-admin-prg`, poziom, teryt],
+    [`granice-admin-prg-v2`, poziom, teryt],
     { revalidate: 60 * 60 * 24 * 7, tags: [`granice-admin-${poziom}-${teryt}`] },
   );
   try {

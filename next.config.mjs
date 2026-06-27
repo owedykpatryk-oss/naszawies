@@ -1,8 +1,4 @@
-import { createRequire } from "module";
 import { withSentryConfig } from "@sentry/nextjs";
-
-const require = createRequire(import.meta.url);
-const { budujCspProdukcji } = require("./src/lib/bezpieczenstwo/csp-produkcji.ts");
 
 /** @type {import('next').NextConfig} */
 const nextConfig = {
@@ -45,15 +41,11 @@ const nextConfig = {
   },
   async headers() {
     const prod = process.env.NODE_ENV === "production";
-    const cspProd = budujCspProdukcji();
 
     const security = [
       { key: "X-DNS-Prefetch-Control", value: "on" },
       { key: "X-Content-Type-Options", value: "nosniff" },
-      {
-        key: "Content-Security-Policy",
-        value: prod ? cspProd : "frame-ancestors 'self' https://vercel.com",
-      },
+      /** CSP ustawiane w middleware (dolaczNaglowkiBezpieczenstwa) — tu bez importu .ts (CI/build). */
       { key: "Referrer-Policy", value: "strict-origin-when-cross-origin" },
       {
         key: "Permissions-Policy",
