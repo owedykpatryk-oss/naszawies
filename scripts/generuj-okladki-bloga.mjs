@@ -84,6 +84,10 @@ async function main() {
   for (const plik of pliki) {
     const artykul = JSON.parse(fs.readFileSync(path.join(ARTICLES, plik), "utf8"));
     if (!artykul.slug || !artykul.title) continue;
+    if (Array.isArray(artykul.generatedImages) && artykul.generatedImages.length > 0) {
+      console.log("⊘", artykul.slug, "(własne grafiki — pominięto)");
+      continue;
+    }
     const outDir = path.join(PUBLIC_BLOG, artykul.slug);
     fs.mkdirSync(outDir, { recursive: true });
     const out = path.join(outDir, "cover.webp");
