@@ -75,7 +75,7 @@ export default function StronaArtykuluBlog({ params }: Props) {
   const trescHtml = uzupelnijHtmlTresci(artykul.content);
 
   return (
-    <main className="page-shell max-w-6xl py-8 sm:py-12">
+    <main className="blog-shell">
       <BlogPasekCzytania />
       <BlogJsonLd
         artykul={{
@@ -95,13 +95,13 @@ export default function StronaArtykuluBlog({ params }: Props) {
 
       <BlogBreadcrumbs okruszki={breadcrumbs} />
 
-      <div className="grid gap-8 lg:grid-cols-[1fr_280px]">
-        <article>
+      <div className="grid min-w-0 gap-8 lg:grid-cols-[1fr_280px]">
+        <article className="min-w-0 max-w-full">
           <header>
             <p className="text-xs font-medium uppercase tracking-wide text-emerald-800 dark:text-emerald-300">
               <Link href={`/blog/kategoria/${artykul.category.slug}`}>{artykul.category.name}</Link>
             </p>
-            <h1 className="mt-2 font-serif text-3xl leading-tight text-green-950 dark:text-green-50 sm:text-4xl">
+            <h1 className="mt-2 break-words font-serif text-2xl leading-tight text-green-950 text-balance dark:text-green-50 sm:text-3xl lg:text-4xl">
               {artykul.title}
             </h1>
             <p className="mt-3 text-sm text-stone-600 dark:text-stone-400">

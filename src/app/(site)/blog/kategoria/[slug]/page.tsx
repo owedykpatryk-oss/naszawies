@@ -47,7 +47,7 @@ export default function StronaKategoriiBlog({ params }: Props) {
   const ostatnie = pobierzOpublikowaneArtykuly();
 
   return (
-    <main className="page-shell max-w-6xl py-8 sm:py-12">
+    <main className="blog-shell">
       <BlogJsonLd
         listing={{
           tytul: `${kategoria.name} — blog naszawies.pl`,
@@ -69,8 +69,8 @@ export default function StronaKategoriiBlog({ params }: Props) {
         <span className="text-stone-600 dark:text-stone-400">{artykuly.length} artykułów</span>
       </p>
 
-      <div className="mt-8 grid gap-8 lg:grid-cols-[1fr_280px]">
-        <div>
+      <div className="mt-8 grid min-w-0 gap-8 lg:grid-cols-[1fr_280px]">
+        <div className="min-w-0 max-w-full">
           {artykuly.length === 0 ? (
             <p className="rounded-xl border border-stone-200 bg-stone-50 px-4 py-8 text-center text-sm text-stone-600 dark:border-stone-700 dark:bg-stone-900/40 dark:text-stone-400">
               Brak artykułów w tej kategorii.

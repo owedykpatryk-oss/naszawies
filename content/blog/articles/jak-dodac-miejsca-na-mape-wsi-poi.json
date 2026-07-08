@@ -1,0 +1,26 @@
+{
+  "title": "Jak dodać miejsca na mapę wsi — kapliczka, sklep, punkt widokowy",
+  "slug": "jak-dodac-miejsca-na-mape-wsi-poi",
+  "excerpt": "POI na mapie wsi: co oznacza punkt na mapie, kto może go dodać, jakie kategorie wybrać i dlaczego warto uzupełniać mapę dla turystów i mieszkańców.",
+  "coverImage": "/blog/jak-dodac-miejsca-na-mape-wsi-poi/cover.webp",
+  "gallery": ["/blog/jak-dodac-miejsca-na-mape-wsi-poi/cover.webp", "/blog/jak-dodac-miejsca-na-mape-wsi-poi/visual-01.webp"],
+  "content": "<p>Mapa wsi na naszawies.pl to coś więcej niż kropka na OpenStreetMap — to <strong>żyjący katalog miejsc</strong>, które tworzą tożsamość miejscowości: kapliczka na rozstajach, punkt widokowy na wzgórzu, sklep z lokalnymi produktami, przystanek autobusowy z rozkładem. Każdy punkt (POI) może mieć opis, zdjęcie i historię. Im pełniejsza mapa, tym łatwiej nowym mieszkańcom i gościom odnaleźć się we wsi.</p>\n\n<div class=\"blog-pullquote\">Dobra mapa wsi to nie atlas geodezyjny — to opowieść o miejscu, którą mieszkańcy sami uzupełniają.</div>\n\n<h2 id=\"co-to-poi\">Co to jest POI na mapie wsi?</h2>\n<p>POI (point of interest) to oznaczone miejsce z kategorią, krótkim opisem i opcjonalnie zdjęciem. Na naszawies.pl POI są powiązane z profilem konkretnej miejscowości i widoczne na <a href=\"/mapa\">mapie Polski</a> po wybraniu wsi.</p>\n\n<h2 id=\"kategorie\">Popularne kategorie</h2>\n<ul class=\"blog-lista-check\">\n<li><strong>Zabytek / kapliczka</strong> — z krótką historią w opisie</li>\n<li><strong>Punkt widokowy</strong> — przyciąga turystów i fotografów</li>\n<li><strong>Sklep / punkt usługowy</strong> — godziny otwarcia w opisie</li>\n<li><strong>Przystanek komunikacji</strong> — link do rozkładu lub godziny w tekście</li>\n<li><strong>Leśnictwo / łowiectwo</strong> — z zachowaniem zasad bezpieczeństwa i RODO</li>\n<li><strong>Inwestycja gminna</strong> — droga, chodnik, plac zabaw</li>\n</ul>\n\n<h2 id=\"kto-dodaje\">Kto może dodać punkt?</h2>\n<table class=\"blog-tabela\">\n<thead><tr><th>Rola</th><th>Możliwości</th></tr></thead>\n<tbody>\n<tr><td>Sołtys</td><td>Pełne zarządzanie POI, moderacja, opisy z historią</td></tr>\n<tr><td>Mieszkaniec</td><td>Wnioski i uzupełnienia — zależnie od ustawień wsi</td></tr>\n<tr><td>Gość</td><td>Przeglądanie mapy publicznej</td></tr>\n</tbody>\n</table>\n\n<h2 id=\"jak-dodac\">Jak dodać miejsce — krok po kroku</h2>\n<ol class=\"blog-lista-kroki\">\n<li>Zaloguj się i wybierz swoją wieś w panelu</li>\n<li>Wejdź w moduł mapy / miejsc na profilu wsi</li>\n<li>Kliknij na mapie w lokalizację lub wpisz współrzędne</li>\n<li>Wybierz kategorię, dodaj tytuł i 2–3 zdania opisu</li>\n<li>Wgraj zdjęcie (własne, za zgodą autora praw)</li>\n<li>Opublikuj — punkt pojawi się na publicznej mapie wsi</li>\n</ol>\n\n<div class=\"blog-callout blog-callout-porada\"><strong>Porada</strong><p>Przy miejscach z historią (stara szkoła, krzyż przydrożny) dodaj rok i 2–3 zdania kontekstu — to materiał na <a href=\"/blog/poi-z-historia-na-mapie-wsi\">POI z historią</a> i lepsze SEO miejscowości.</p></div>\n\n<h2 id=\"po-co\">Po co uzupełniać mapę?</h2>\n<ul>\n<li>Nowi mieszkańcy szybciej orientują się w terenie</li>\n<li>Turyści zatrzymują się na dłużej — lokalna gospodarka zyskuje</li>\n<li>Sołectwo ma argument przy staraniach o dotacje („mamy cyfrową wizytówkę atrakcji”)</li>\n<li>Spójność z fotokroniką i centrum wspomnień wsi</li>\n</ul>\n\n<hr class=\"blog-separator\" />\n\n<p>Więcej: <a href=\"/blog/mapa-wsi-po-zalogowaniu\">mapa wsi po zalogowaniu</a>, <a href=\"/blog/transport-i-przystanki-mapa-wsi\">przystanki na mapie</a>, <a href=\"/mapa\">otwórz mapę</a>.</p>",
+  "authorId": "zespol",
+  "categorySlug": "poradniki",
+  "tags": ["mapa", "poi", "turystyka", "soltys", "historia"],
+  "faq": [
+    {"question": "Czy dodanie POI jest płatne?", "answer": "Nie — uzupełnianie mapy wsi na naszawies.pl jest bezpłatne dla sołectw i mieszkańców, w ramach profilu miejscowości."},
+    {"question": "Czy mogę dodać prywatny dom na mapę?", "answer": "Unikaj oznaczania posesji prywatnych bez zgody właścicieli. Skup się na miejscach publicznych, usługowych i kulturowych."},
+    {"question": "Czy mapa jest widoczna poza naszawies.pl?", "answer": "Publiczna mapa wsi jest indeksowana w serwisie i może pojawiać się w wynikach wyszukiwania dla nazwy miejscowości i atrakcji."}
+  ],
+  "relatedSlugs": ["poi-z-historia-na-mapie-wsi", "mapa-wsi-po-zalogowaniu", "transport-i-przystanki-mapa-wsi"],
+  "featured": false,
+  "status": "published",
+  "publishedAt": "2026-07-11T08:00:00.000Z",
+  "seoTitle": "Mapa wsi — jak dodać miejsca (POI) krok po kroku",
+  "seoDescription": "Poradnik dodawania punktów na mapę wsi: kategorie POI, kapliczki, sklepy, przystanki, kto może edytować i dlaczego warto uzupełniać mapę miejscowości.",
+  "ogImage": "/blog/jak-dodac-miejsca-na-mape-wsi-poi/cover.webp",
+  "readingTime": null,
+  "internalLinks": [{"href": "/mapa", "label": "Mapa wsi"}, {"href": "/szukaj", "label": "Szukaj wsi"}],
+  "generatedImages": []
+}

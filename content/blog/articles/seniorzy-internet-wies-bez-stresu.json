@@ -1,0 +1,26 @@
+{
+  "title": "Seniorzy a internet na wsi — jak pomóc sąsiadom bez stresu",
+  "slug": "seniorzy-internet-wies-bez-stresu",
+  "excerpt": "Jak wprowadzić starszych mieszkańców w cyfrowy świat wsi: prosty język, kod QR, pomoc przy pierwszym logowaniu i profil bez Facebooka.",
+  "coverImage": "/blog/seniorzy-internet-wies-bez-stresu/cover.webp",
+  "gallery": ["/blog/seniorzy-internet-wies-bez-stresu/cover.webp", "/blog/seniorzy-internet-wies-bez-stresu/visual-01.webp"],
+  "content": "<p>Na zebraniu wiejskim często pada: „Starsi nie ogarniają internetu”. Tymczasem wielu seniorów na wsi korzysta ze smartfona — do rozmów z rodziną za granicą, zdjęć wnuków i płatności w sklepie. Problem nie w wieku, tylko w <strong>skomplikowanym języku i chaotycznych kanałach</strong>. Profil wsi na naszawies.pl może być pierwszym miejscem, gdzie sąsiad bez konta na Facebooku przeczyta ogłoszenie sołtysa.</p>\n\n<div class=\"blog-pullquote\">Nie ucz seniora „internetu”. Pokaż mu jedną rzecz, która mu służy — np. termin zbiórki śmieci zawsze pod tym samym adresem.</div>\n\n<h2 id=\"barier\">Typowe bariery — i jak je obniżyć</h2>\n<table class=\"blog-tabela\">\n<thead><tr><th>„Nie dam rady”</th><th>Co zrobić</th></tr></thead>\n<tbody>\n<tr><td>„Za dużo haseł”</td><td>Na start: przeglądanie bez logowania; konto zakłada wnuk lub sąsiad</td></tr>\n<tr><td>„Nie wiem, gdzie kliknąć”</td><td>Jeden duży kod QR przy sklepie — zeskanuj aparatem</td></tr>\n<tr><td>„Boję się oszustów”</td><td>Oficjalny adres wsi w katalogu — nie link z SMS-a od nieznajomego</td></tr>\n<tr><td>„Facebook mnie męczy”</td><td>Profil wsi to strona informacyjna, nie portal społecznościowy</td></tr>\n</tbody>\n</table>\n\n<h2 id=\"pierwsza-godzina\">Pierwsza godzina z sąsiadem — plan</h2>\n<ol class=\"blog-lista-kroki\">\n<li>Otwórz profil wsi na jego telefonie (bez logowania)</li>\n<li>Pokaż jedno ogłoszenie sołtysa — np. termin zebrania</li>\n<li>Zeskanujcie razem kod QR z ulotki — „to tylko aparat”</li>\n<li>Zapiszcie adres w zakładkach przeglądarki pod nazwą wsi</li>\n<li>Zostaw karteczkę z adresem i numerem sołtysa na wypadek pytań</li>\n</ol>\n\n<h2 id=\"rola-soltysa\">Rola sołtysa i KGW</h2>\n<ul class=\"blog-lista-check\">\n<li>Krótkie ogłoszenia — bez żargonu („zebranie w świetlicy, 18:00, 15 marca”)</li>\n<li>Duża czcionka w plakatach drukowanych (kreator grafiki w panelu)</li>\n<li>KGW może pomóc przy stanowisku z tabletem podczas festynu</li>\n<li>Fotokronika wsi — seniorzy chętnie oglądają zdjęcia z lat młodości</li>\n</ul>\n\n<div class=\"blog-callout blog-callout-porada\"><strong>Porada</strong><p>Zamiast „załóż konto” powiedz „pokażę, gdzie jest termin zebrania”. Konkretna korzyść motywuje lepiej niż abstrakcyjna „cyfryzacja”.</p></div>\n\n<h2 id=\"bez-facebooka\">Profil wsi bez Facebooka</h2>\n<p>W artykule <a href=\"/blog/facebook-vs-profil-wsi\">Facebook vs profil wsi</a> porównujemy oba kanały. Dla seniorów kluczowe jest to, że profil działa w zwykłej przeglądarce — nie trzeba zakładać konta na portalu społecznościowym, żeby przeczytać ogłoszenie.</p>\n\n<hr class=\"blog-separator\" />\n\n<p>Pomoc przy zaproszeniach: <a href=\"/blog/kod-qr-profil-wsi-zapros-mieszkancow\">kod QR na profil wsi</a>. Dla sołtysa: <a href=\"/blog/rola-soltysa-narzedzia-cyfrowe\">narzędzia cyfrowe</a>.</p>",
+  "authorId": "zespol",
+  "categorySlug": "poradniki",
+  "tags": ["seniorzy", "cyfryzacja", "mieszkaniec", "soltys", "qr-kod"],
+  "faq": [
+    {"question": "Czy senior musi mieć smartfon?", "answer": "Nie — może korzystać z informacji na papierze, przez sąsiada lub telefon do sołtysa. Cyfrowy profil wsi ułatwia życie tym, którzy mają telefon, ale nie zastępuje tradycyjnych kanałów."},
+    {"question": "Jak duży powinien być kod QR na ulotce?", "answer": "Minimum 3×3 cm na wydruku A5 — im większy, tym łatwiej zeskanować starszym smartfonem. Przetestuj skan przed drukiem większej partii."},
+    {"question": "Czy tryb senior w aplikacji pomoże?", "answer": "naszawies.pl oferuje powiększoną czytelność w trybie senior — warto włączyć go przy pokazywaniu panelu osobie z gorszym wzrokiem."}
+  ],
+  "relatedSlugs": ["kod-qr-profil-wsi-zapros-mieszkancow", "facebook-vs-profil-wsi", "cyfryzacja-solectwa-od-czego-zaczac"],
+  "featured": true,
+  "status": "published",
+  "publishedAt": "2026-07-10T08:00:00.000Z",
+  "seoTitle": "Seniorzy a internet na wsi — poradnik dla sołtysa i sąsiadów",
+  "seoDescription": "Jak pomóc seniorom na wsi korzystać z profilu miejscowości: kod QR, proste ogłoszenia, bezpieczeństwo i brak konieczności Facebooka.",
+  "ogImage": "/blog/seniorzy-internet-wies-bez-stresu/cover.webp",
+  "readingTime": null,
+  "internalLinks": [{"href": "/pomoc", "label": "Centrum pomocy"}, {"href": "/szukaj", "label": "Szukaj wsi"}],
+  "generatedImages": []
+}

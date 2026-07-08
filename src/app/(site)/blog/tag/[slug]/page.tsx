@@ -38,7 +38,7 @@ export default function StronaTaguBlog({ params }: Props) {
   ]);
 
   return (
-    <main className="page-shell max-w-6xl py-8 sm:py-12">
+    <main className="blog-shell">
       <BlogJsonLd
         listing={{
           tytul: `Tag ${etykieta}`,

@@ -15,7 +15,7 @@ export function BlogBreadcrumbs({ okruszki }: Props) {
             <li key={`${o.nazwa}-${i}`} className="flex items-center gap-1.5">
               {i > 0 ? <span aria-hidden className="text-stone-400">/</span> : null}
               {ostatni ? (
-                <span className="font-medium text-green-950 dark:text-green-100" aria-current="page">
+                <span className="min-w-0 break-words font-medium text-green-950 dark:text-green-100" aria-current="page">
                   {o.nazwa}
                 </span>
               ) : (

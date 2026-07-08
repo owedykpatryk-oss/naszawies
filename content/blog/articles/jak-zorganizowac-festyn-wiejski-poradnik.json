@@ -1,0 +1,26 @@
+{
+  "title": "Jak zorganizować festyn wiejski — checklista sołtysa krok po kroku",
+  "slug": "jak-zorganizowac-festyn-wiejski-poradnik",
+  "excerpt": "Plan festynu od 8 tygodni wcześniej: pozwolenia, sponsorzy, kalendarz wsi, ogłoszenia i podsumowanie po imprezie — praktyczna checklista dla sołectwa.",
+  "coverImage": "/blog/jak-zorganizowac-festyn-wiejski-poradnik/cover.webp",
+  "gallery": ["/blog/jak-zorganizowac-festyn-wiejski-poradnik/cover.webp", "/blog/jak-zorganizowac-festyn-wiejski-poradnik/visual-01.webp"],
+  "content": "<p>Festyn to wizytówka sołectwa — łączy mieszkańców, przyciąga gości z okolicy i często finansuje drobne potrzeby wsi. Problem: bez planu wszystko ląduje na jednej osobie, a informacja o terminie dociera do połowy sąsiadów. Ten poradnik to <strong>checklista od 8 tygodni przed imprezą</strong> do podsumowania po evencie, z wykorzystaniem narzędzi cyfrowych na naszawies.pl.</p>\n\n<div class=\"blog-pullquote\">Dobry festyn zaczyna się nie od grilla, tylko od daty w kalendarzu wsi — widocznej dla każdego, nie tylko na grupie Facebook.</div>\n\n<h2 id=\"8-tygodni\">8 tygodni przed — ustal fundamenty</h2>\n<ol class=\"blog-lista-kroki\">\n<li>Wybierz datę (unikaj kolizji z dożynkami w gminie i meczami lokalnej drużyny)</li>\n<li>Określ miejsce: plac przy świetlicy, boisko, parking przy remizie OSP</li>\n<li>Uzgodnij z radą sołecką budżet i listę zadań (kto za co odpowiada)</li>\n<li>Dodaj wydarzenie do <strong>kalendarza na profilu wsi</strong> — z godziną, adresem i krótkim opisem</li>\n</ol>\n\n<h2 id=\"4-tygodnie\">4 tygodnie przed — komunikacja i sponsorzy</h2>\n<ul class=\"blog-lista-check\">\n<li>Ogłoszenie na tablicy cyfrowej wsi z prośbą o wypieki, stoiska KGW i wolontariuszy</li>\n<li>Kontakt do gminy: ewentualne pozwolenie na zajęcie drogi, prąd, toalety przenośne</li>\n<li>Lista sponsorów lokalnych (sklep, zakład stolarski, firma budowlana) — podziękowanie na profilu wsi</li>\n<li>Plakat w kreatorze grafiki sołtysa + kod QR do profilu z kalendarzem</li>\n</ul>\n\n<h2 id=\"tydzien\">Tydzień przed — ostatnie szlify</h2>\n<table class=\"blog-tabela\">\n<thead><tr><th>Obszar</th><th>Do sprawdzenia</th></tr></thead>\n<tbody>\n<tr><td>Program</td><td>Godziny atrakcji, koncert, losowanie nagród</td></tr>\n<tr><td>Bezpieczeństwo</td><td>Pierwsza pomoc, kontakt OSP, plan ewakuacji</td></tr>\n<tr><td>Żywność</td><td>Chłodzenie mięsa, stoiska KGW, woda dla wolontariuszy</td></tr>\n<tr><td>Komunikacja</td><td>Przypomnienie w ogłoszeniach + SMS do sołtysów sąsiednich wsi</td></tr>\n</tbody>\n</table>\n\n<h2 id=\"dzien\">Dzień imprezy</h2>\n<p>Rano: oznaczenie wejścia, tablica z programem, punkt informacyjny. W trakcie: zdjęcia do fotokroniki wsi (za zgodą osób na zdjęciach). Po zakończeniu: krótkie podziękowanie na profilu — „Dziękujemy 200 osobom, które przyszły” buduje dumę społeczności.</p>\n\n<div class=\"blog-callout blog-callout-porada\"><strong>Porada</strong><p>Po festynie dodaj wpis do historii wsi z datą i 3–5 zdjęciami. Za rok mieszkańcy przypomną sobie, dlaczego warto być na miejscu.</p></div>\n\n<h2 id=\"cyfrowo\">Co zrobić cyfrowo na naszawies.pl</h2>\n<ul>\n<li>Wydarzenie w <a href=\"/blog/kalendarz-wydarzen-wiejskich\">kalendarzu wsi</a></li>\n<li>Ogłoszenia o zbiórce rzeczy i wolontariuszach na tablicy</li>\n<li>Podstrona KGW lub OSP z kontaktem do organizatorów</li>\n<li>Po imprezie: galeria w fotokronice lub centrum wspomnień</li>\n</ul>\n\n<hr class=\"blog-separator\" />\n\n<p>Więcej: <a href=\"/blog/jak-oglosic-zebranie-wiejskie-online\">jak skutecznie ogłaszać wydarzenia</a>, <a href=\"/blog/kgw-integracja-spolecznosci\">KGW w profilu wsi</a>, <a href=\"/rejestracja\">załóż konto</a>.</p>",
+  "authorId": "zespol",
+  "categorySlug": "soltys",
+  "tags": ["festyn", "wydarzenia", "soltys", "kalendarz", "kgw"],
+  "faq": [
+    {"question": "Czy festyn wiejski wymaga pozwolenia?", "answer": "Zależy od skali i lokalizacji — zajęcie drogi, sprzedaż alkoholu czy nagłośnienie mogą wymagać zgody gminy lub odpowiednich zezwoleń. Warto zapytać w urzędzie minimum 4 tygodnie wcześniej."},
+    {"question": "Jak dotrzeć do mieszkańców bez Facebooka?", "answer": "Profil wsi na naszawies.pl działa w przeglądarce bez konta na portalach społecznościowych. Dodaj wydarzenie do kalendarza i powieś kod QR przy sklepie."},
+    {"question": "Kto powinien prowadzić komunikację o festynie?", "answer": "Najlepiej sołtys lub wyznaczona osoba z rady sołeckiej — jeden kanał informacji unika sprzecznych terminów i duplikatów ogłoszeń."}
+  ],
+  "relatedSlugs": ["jak-oglosic-zebranie-wiejskie-online", "kalendarz-wydarzen-wiejskich", "kgw-integracja-spolecznosci"],
+  "featured": false,
+  "status": "published",
+  "publishedAt": "2026-07-09T08:00:00.000Z",
+  "seoTitle": "Festyn wiejski — checklista organizacji dla sołtysa",
+  "seoDescription": "Jak zorganizować festyn na wsi: harmonogram przygotowań, pozwolenia, sponsorzy, ogłoszenia online i podsumowanie po imprezie.",
+  "ogImage": "/blog/jak-zorganizowac-festyn-wiejski-poradnik/cover.webp",
+  "readingTime": null,
+  "internalLinks": [{"href": "/rejestracja", "label": "Załóż konto"}, {"href": "/szukaj", "label": "Szukaj wsi"}],
+  "generatedImages": []
+}

@@ -9,6 +9,7 @@ export function uzupelnijHtmlTresci(html: string): string {
     let attrs = atrybuty;
     if (!/\bloading\s*=/.test(attrs)) attrs += ' loading="lazy"';
     if (!/\bdecoding\s*=/.test(attrs)) attrs += ' decoding="async"';
+    if (!/\bstyle\s*=/.test(attrs)) attrs += ' style="max-width:100%;height:auto"';
     return `<img${attrs}>`;
   });
 

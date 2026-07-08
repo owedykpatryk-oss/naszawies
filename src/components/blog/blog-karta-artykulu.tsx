@@ -43,7 +43,7 @@ export function BlogKartaArtykulu({ artykul, featured = false }: Props) {
         <p className="text-xs font-medium uppercase tracking-wide text-emerald-800 dark:text-emerald-300">
           <Link href={`/blog/kategoria/${artykul.category.slug}`}>{artykul.category.name}</Link>
         </p>
-        <h2 className="mt-1 font-serif text-lg leading-snug text-green-950 dark:text-green-50">
+        <h2 className="mt-1 break-words font-serif text-lg leading-snug text-green-950 dark:text-green-50">
           <Link href={`/blog/${artykul.slug}`} className="hover:underline">
             {artykul.title}
           </Link>

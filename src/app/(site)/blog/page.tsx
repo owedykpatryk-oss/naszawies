@@ -89,7 +89,7 @@ export default function StronaBlog({ searchParams }: Props) {
   const liczbaStron = Math.max(1, Math.ceil(lista.length / NA_STRONE));
 
   return (
-    <main className="page-shell max-w-6xl py-8 sm:py-12">
+    <main className="blog-shell">
       <BlogJsonLd
         listing={{
           tytul: "Blog naszawies.pl",
@@ -113,8 +113,8 @@ export default function StronaBlog({ searchParams }: Props) {
         </Link>
       </p>
 
-      <div className="mt-8 grid gap-8 lg:grid-cols-[1fr_280px]">
-        <div>
+      <div className="mt-8 grid min-w-0 gap-8 lg:grid-cols-[1fr_280px]">
+        <div className="min-w-0 max-w-full">
           <Suspense fallback={null}>
             <BlogWyszukiwarka />
           </Suspense>
